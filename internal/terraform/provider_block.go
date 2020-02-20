@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	lsp "github.com/sourcegraph/go-lsp"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func ProviderBlock(block *hcl.Block) (ConfigBlock, error) {
@@ -63,13 +64,33 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		}
 
 		list.Items = append(list.Items, lsp.CompletionItem{
-			Label:  name,
-			Kind:   lsp.CIKField,
-			Detail: schemaAttributeDetail(attr),
+			Label:            name,
+			Kind:             lsp.CIKField,
+			InsertTextFormat: lsp.ITFSnippet,
+			Detail:           schemaAttributeDetail(attr),
+			TextEdit: &lsp.TextEdit{
+				Range: lsp.Range{
+					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+				},
+				NewText: fmt.Sprintf("%s = %s", name, snippetForAttr(attr)),
+			},
 		})
 	}
 
 	return list, nil
+}
+
+func snippetForAttr(attr *tfjson.SchemaAttribute) string {
+	switch attr.AttributeType {
+	case cty.String:
+		return `"${0:value}"`
+	case cty.Bool:
+		return `${0:false}`
+	case cty.Number:
+		return `${0:42}`
+	}
+	return ""
 }
 
 func schemaAttributeDetail(attr *tfjson.SchemaAttribute) string {
