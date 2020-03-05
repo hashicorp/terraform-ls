@@ -1,20 +1,24 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"log"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/mitchellh/cli"
 	fs "github.com/radeksimko/terraform-ls/internal/filesystem"
-	"github.com/radeksimko/terraform-ls/internal/terraform"
+	"github.com/radeksimko/terraform-ls/internal/terraform/exec"
+	"github.com/radeksimko/terraform-ls/internal/terraform/lang"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type completionCommand struct {
-	Ui cli.Ui
+	Ui     cli.Ui
+	Logger *log.Logger
 }
 
 func (c *completionCommand) Run(args []string) int {
@@ -60,18 +64,17 @@ func (c *completionCommand) Run(args []string) int {
 		return 1
 	}
 
-	cfgBlock, err := terraform.ConfigBlockFromHcl(hclBlock)
+	p := lang.NewParserWithLogger(c.Logger)
+	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("finding config block failed: %s", err))
 		return 1
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("unable to get workdir: %s", err))
-		return 1
-	}
-	tf := terraform.TerraformExec(wd)
+	wd := filepath.Dir(path)
+	tf := exec.NewExecutor(context.Background())
+	tf.SetLogger(c.Logger)
+	tf.SetWorkdir(wd)
 	schemas, err := tf.ProviderSchemas()
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("unable to get schemas: %s", err))

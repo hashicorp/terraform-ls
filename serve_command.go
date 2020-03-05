@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
 	"strings"
 	"syscall"
 
 	"github.com/mitchellh/cli"
+	lsctx "github.com/radeksimko/terraform-ls/internal/context"
 	"github.com/radeksimko/terraform-ls/langserver"
 )
 
@@ -31,42 +31,20 @@ func (c *serveCommand) Run(args []string) int {
 		return 1
 	}
 
-	ctx, cancelFunc := signalCtx(context.Background(), c.Logger)
+	ctx, cancelFunc := lsctx.WithSignalCancel(context.Background(), c.Logger,
+		syscall.SIGINT, syscall.SIGTERM)
 	defer cancelFunc()
 
-	srv := langserver.NewLangServer(c.Logger)
+	srv := langserver.NewLangServer(ctx, c.Logger)
 
 	if port != -1 {
-		srv.StartTCP(ctx, fmt.Sprintf("localhost:%d", port))
+		srv.StartTCP(fmt.Sprintf("localhost:%d", port))
 		return 0
 	}
 
-	srv.Start(ctx, os.Stdin, os.Stdout)
+	srv.Start(os.Stdin, os.Stdout)
 
 	return 0
-}
-
-func signalCtx(ctx context.Context, logger *log.Logger) (context.Context, func()) {
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		select {
-		case sig := <-sigChan:
-			logger.Printf("%s received, stopping server ...", sig)
-			cancelFunc()
-		case <-ctx.Done():
-		}
-	}()
-
-	f := func() {
-		signal.Stop(sigChan)
-		cancelFunc()
-	}
-
-	return ctx, f
 }
 
 func (c *serveCommand) Help() string {

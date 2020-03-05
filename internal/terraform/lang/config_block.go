@@ -1,7 +1,8 @@
-package terraform
+package lang
 
 import (
 	"fmt"
+	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -15,23 +16,31 @@ type ConfigBlock interface {
 	Name() string
 }
 
-type configBlockFunc func(*hcl.Block) (ConfigBlock, error)
+type configBlockFunc func(*log.Logger, *hcl.Block) (ConfigBlock, error)
 
 var blockTypes = map[string]configBlockFunc{
-	"provider": ProviderBlock,
+	"provider": newProviderBlock,
 	// "resource": ResourceBlock,
 	// "data":     ResourceBlock,
 	// "variable": VariableBlock,
 	// "module":   ModuleBlock,
 }
 
-func ConfigBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
+type parser struct {
+	logger *log.Logger
+}
+
+func NewParserWithLogger(logger *log.Logger) *parser {
+	return &parser{logger}
+}
+
+func (p *parser) ParseBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
 	f, ok := blockTypes[block.Type]
 	if !ok {
 		return nil, fmt.Errorf("unknown block type: %q", block.Type)
 	}
 
-	cfgBlock, err := f(block)
+	cfgBlock, err := f(p.logger, block)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", block.Type, err)
 	}

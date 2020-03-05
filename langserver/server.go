@@ -1,110 +1,150 @@
 package langserver
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"log"
-	"net"
+	"time"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/handler"
-	"github.com/creachadair/jrpc2/server"
-	"github.com/radeksimko/terraform-ls/internal/filesystem"
 )
 
-const ctxFs = "ctxFilesystem"
+// serverState represents state of the language server
+// with respect to the LSP
+type serverState int
 
-type langServer struct {
-	handlerMap handler.Map
-	logger     *log.Logger
-	srvOptions *jrpc2.ServerOptions
+const (
+	// Before server starts
+	stateEmpty serverState = -1
+	// After server starts, before any request
+	statePrepared serverState = 0
+	// After "initialize", before "initialized"
+	stateInitializedUnconfirmed serverState = 1
+	// After "initialized"
+	stateInitializedConfirmed serverState = 2
+	// After "shutdown"
+	stateDown serverState = 3
+)
+
+func (ss serverState) String() string {
+	switch ss {
+	case stateEmpty:
+		return "<empty>"
+	case statePrepared:
+		return "prepared"
+	case stateInitializedUnconfirmed:
+		return "initialized (unconfirmed)"
+	case stateInitializedConfirmed:
+		return "initialized (confirmed)"
+	case stateDown:
+		return "down"
+	}
+	return "<unknown>"
 }
 
-func NewLangServer(logger *log.Logger) *langServer {
-	m := handler.Map{
-		"initialize":              handler.New(Initialize),
-		"textDocument/completion": handler.New(TextDocumentComplete),
-		"textDocument/didChange":  handler.New(TextDocumentDidChange),
-		"textDocument/didOpen":    handler.New(TextDocumentDidOpen),
-		"textDocument/didClose":   handler.New(TextDocumentDidClose),
-		"exit":                    handler.New(Exit),
-		"shutdown":                handler.New(Shutdown),
-		"$/cancelRequest":         handler.New(CancelRequest),
-	}
-
-	fs := filesystem.NewFilesystem()
-
-	opts := &jrpc2.ServerOptions{
-		AllowPush: true,
-		Logger:    logger,
-		DecodeContext: func(ctx context.Context, _ string, msg json.RawMessage) (context.Context, json.RawMessage, error) {
-			return context.WithValue(ctx, ctxFs, fs), msg, nil
-		},
-	}
-
-	return &langServer{
-		handlerMap: m,
-		logger:     logger,
-		srvOptions: opts,
-	}
+type unexpectedSrvState struct {
+	expectedState serverState
+	currentState  serverState
 }
 
-func (ls *langServer) Start(ctx context.Context, reader io.Reader, writer io.WriteCloser) {
-	ch := LspFraming(ls.logger)(reader, writer)
+func (e *unexpectedSrvState) Error() string {
+	return fmt.Sprintf("server is not %s (%s)",
+		e.expectedState, e.currentState)
+}
 
-	srv := jrpc2.NewServer(ls.handlerMap, ls.srvOptions).Start(ch)
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	go func() {
-		ls.logger.Println("Starting server ...")
-		err := srv.Wait()
-		if err != nil {
-			ls.logger.Printf("Server failed to start: %s", err)
-			cancelFunc()
-			return
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		srv.Stop()
+func SrvNotInitializedErr(state serverState) *unexpectedSrvState {
+	return &unexpectedSrvState{
+		expectedState: stateInitializedConfirmed,
+		currentState:  state,
 	}
 }
 
-func (ls *langServer) StartTCP(ctx context.Context, address string) error {
-	ls.logger.Printf("Starting TCP server at %q ...", address)
-	lst, err := net.Listen("tcp", address)
-	if err != nil {
-		return fmt.Errorf("TCP Server failed to start: %s", err)
-	}
-	ls.logger.Printf("TCP server running at %q", lst.Addr())
+type server struct {
+	initializeReq     *jrpc2.Request
+	initializeReqTime time.Time
 
-	ctx, cancelFunc := context.WithCancel(ctx)
+	initializedReq     *jrpc2.Request
+	initializedReqTime time.Time
 
-	go func() {
-		ls.logger.Println("Starting loop server ...")
-		err = server.Loop(lst, ls.handlerMap, &server.LoopOptions{
-			Framing:       LspFraming(ls.logger),
-			ServerOptions: ls.srvOptions,
-		})
-		if err != nil {
-			ls.logger.Printf("Loop server failed to start: %s", err)
-			cancelFunc()
-			return
-		}
-	}()
+	state serverState
 
-	select {
-	case <-ctx.Done():
-		ls.logger.Println("Shutting down server ...")
-		err := lst.Close()
-		if err != nil {
-			ls.logger.Printf("TCP Server failed to shutdown: %s", err)
-			return ctx.Err()
+	downReq     *jrpc2.Request
+	downReqTime time.Time
+}
+
+func (srv *server) Prepare() error {
+	if srv.state != stateEmpty {
+		return &unexpectedSrvState{
+			expectedState: stateInitializedConfirmed,
+			currentState:  srv.state,
 		}
 	}
+
+	srv.state = statePrepared
 
 	return nil
+}
+
+func (srv *server) IsInitializedUnconfirmed() bool {
+	return srv.state == stateInitializedUnconfirmed
+}
+
+func (srv *server) Initialize(req *jrpc2.Request) error {
+	if srv.state != statePrepared {
+		if srv.IsInitializedUnconfirmed() {
+			return fmt.Errorf("Server was already initialized at %s via request %s",
+				srv.initializeReqTime, srv.initializeReq.ID())
+		}
+		return fmt.Errorf("Server is not ready to be initalized. State: %s",
+			srv.state)
+	}
+
+	srv.initializeReq = req
+	srv.initializeReqTime = time.Now()
+	srv.state = stateInitializedUnconfirmed
+
+	return nil
+}
+
+func (srv *server) IsInitializationConfirmed() bool {
+	return srv.state == stateInitializedConfirmed
+}
+
+func (srv *server) ConfirmInitialization(req *jrpc2.Request) error {
+	if srv.state != stateInitializedUnconfirmed {
+		if srv.IsInitializationConfirmed() {
+			return fmt.Errorf("Server was already confirmed as initalized at %s via request %s",
+				srv.initializedReqTime, srv.initializedReq.ID())
+		}
+		return fmt.Errorf("Server is not ready to be confirmed as initialized (%s).",
+			srv.state)
+	}
+	srv.initializedReq = req
+	srv.initializedReqTime = time.Now()
+	srv.state = stateInitializedConfirmed
+
+	return nil
+}
+
+func (srv *server) Shutdown(req *jrpc2.Request) error {
+	if srv.IsDown() {
+		return fmt.Errorf("Server was already shut down at %s via request %s",
+			srv.downReqTime, srv.downReq.ID())
+	}
+
+	srv.downReq = req
+	srv.downReqTime = time.Now()
+	srv.state = stateDown
+
+	return nil
+}
+
+func (srv *server) IsDown() bool {
+	return srv.state == stateDown
+}
+
+func (srv *server) State() serverState {
+	return srv.state
+}
+
+func newServer() *server {
+	return &server{state: stateEmpty}
 }

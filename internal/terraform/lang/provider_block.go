@@ -1,7 +1,8 @@
-package terraform
+package lang
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -11,16 +12,17 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func ProviderBlock(block *hcl.Block) (ConfigBlock, error) {
+func newProviderBlock(logger *log.Logger, block *hcl.Block) (ConfigBlock, error) {
 	labels := block.Labels
 	if len(labels) != 1 {
 		return nil, fmt.Errorf("unexpected labels for provider block: %q", labels)
 	}
 
-	return &providerBlock{hclBlock: block}, nil
+	return &providerBlock{logger: logger, hclBlock: block}, nil
 }
 
 type providerBlock struct {
+	logger   *log.Logger
 	hclBlock *hcl.Block
 	schema   *tfjson.Schema
 }
@@ -36,7 +38,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 
 	content, body, diags := p.hclBlock.Body.PartialContent(hs)
 	if diags.HasErrors() {
-		return list, diags
+		p.logger.Printf("mapping schema to config tolerated errors: %s", diags)
 	}
 
 	hclBody, ok := body.(*hclsyntax.Body)
@@ -47,11 +49,13 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 
 	if !bodyContainsPos(hclBody, pos) {
 		// Avoid autocompleting outside of body, for now
+		p.logger.Println("avoiding completion outside of block body")
 		return list, nil
 	}
 
 	if contentContainPos(hclBody, pos) {
 		// No auto-completing in the middle of existing fields
+		p.logger.Println("avoiding completion in the middle of existing field")
 		return list, nil
 	}
 

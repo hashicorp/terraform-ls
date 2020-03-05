@@ -27,7 +27,7 @@ func main() {
 
 	c.Commands = map[string]cli.CommandFactory{
 		"completion": func() (cli.Command, error) {
-			return &completionCommand{Ui: ui}, nil
+			return &completionCommand{Ui: ui, Logger: logger}, nil
 		},
 		"serve": func() (cli.Command, error) {
 			return &serveCommand{Ui: ui, Logger: logger}, nil

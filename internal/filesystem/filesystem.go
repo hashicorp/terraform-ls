@@ -17,6 +17,7 @@ type Filesystem interface {
 	Open(lsp.TextDocumentItem) error
 	Change(lsp.VersionedTextDocumentIdentifier, []lsp.TextDocumentContentChangeEvent) error
 	Close(lsp.TextDocumentIdentifier) error
+	URI(lsp.DocumentURI) URI
 	HclBlockAtDocPosition(lsp.TextDocumentPositionParams) (*hcl.Block, hcl.Pos, error)
 }
 
@@ -81,6 +82,10 @@ func (fs *fsystem) Close(doc lsp.TextDocumentIdentifier) error {
 	_, dn, fn := u.PathParts()
 	delete(fs.dirs[dn].files, fn)
 	return nil
+}
+
+func (fs *fsystem) URI(uri lsp.DocumentURI) URI {
+	return URI(uri)
 }
 
 func (fs *fsystem) HclBlockAtDocPosition(params lsp.TextDocumentPositionParams) (*hcl.Block, hcl.Pos, error) {
