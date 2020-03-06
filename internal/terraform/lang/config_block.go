@@ -16,7 +16,7 @@ type ConfigBlock interface {
 	Name() string
 }
 
-type configBlockFunc func(*log.Logger, *hcl.Block) (ConfigBlock, error)
+type configBlockFunc func(*log.Logger, lsp.TextDocumentClientCapabilities, *hcl.Block) (ConfigBlock, error)
 
 var blockTypes = map[string]configBlockFunc{
 	"provider": newProviderBlock,
@@ -28,10 +28,11 @@ var blockTypes = map[string]configBlockFunc{
 
 type parser struct {
 	logger *log.Logger
+	caps   lsp.TextDocumentClientCapabilities
 }
 
 func NewParserWithLogger(logger *log.Logger) *parser {
-	return &parser{logger}
+	return &parser{logger: logger}
 }
 
 func (p *parser) ParseBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
@@ -40,12 +41,16 @@ func (p *parser) ParseBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
 		return nil, fmt.Errorf("unknown block type: %q", block.Type)
 	}
 
-	cfgBlock, err := f(p.logger, block)
+	cfgBlock, err := f(p.logger, p.caps, block)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", block.Type, err)
 	}
 
 	return cfgBlock, nil
+}
+
+func (p *parser) SetCapabilities(caps lsp.TextDocumentClientCapabilities) {
+	p.caps = caps
 }
 
 func jsonSchemaToHcl(js *tfjson.Schema) *hcl.BodySchema {

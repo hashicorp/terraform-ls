@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mitchellh/cli"
 	fs "github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
+	"github.com/mitchellh/cli"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 

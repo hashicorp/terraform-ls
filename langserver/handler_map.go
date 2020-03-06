@@ -12,6 +12,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // logHandler provides handlers logger
@@ -32,6 +33,7 @@ func (hm *handlerMap) Map() rpch.Map {
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(hm.logger)
 	lh := logHandler{hm.logger}
+	cc := &lsp.ClientCapabilities{}
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -40,6 +42,7 @@ func (hm *handlerMap) Map() rpch.Map {
 				return nil, err
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
+			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 
 			return handle(ctx, req, Initialize)
 		},
@@ -79,6 +82,7 @@ func (hm *handlerMap) Map() rpch.Map {
 			}
 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
+			ctx = lsctx.WithClientCapabilities(cc, ctx)
 
 			tf := exec.NewExecutor(ctx)
 			tf.SetLogger(hm.logger)

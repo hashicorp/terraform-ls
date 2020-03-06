@@ -18,6 +18,11 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
+	cc, err := lsctx.ClientCapabilities(ctx)
+	if err != nil {
+		return list, err
+	}
+
 	h.logger.Printf("Finding block at position %#v", params.TextDocumentPositionParams)
 	hclBlock, hclPos, err := fs.HclBlockAtDocPosition(params.TextDocumentPositionParams)
 	if err != nil {
@@ -26,6 +31,8 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
 
 	p := lang.NewParserWithLogger(h.logger)
+	p.SetCapabilities(cc.TextDocument)
+
 	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
 	if err != nil {
 		return list, fmt.Errorf("finding config block failed: %s", err)

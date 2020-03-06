@@ -12,17 +12,20 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func newProviderBlock(logger *log.Logger, block *hcl.Block) (ConfigBlock, error) {
+func newProviderBlock(logger *log.Logger, caps lsp.TextDocumentClientCapabilities,
+	block *hcl.Block) (ConfigBlock, error) {
+
 	labels := block.Labels
 	if len(labels) != 1 {
 		return nil, fmt.Errorf("unexpected labels for provider block: %q", labels)
 	}
 
-	return &providerBlock{logger: logger, hclBlock: block}, nil
+	return &providerBlock{logger: logger, caps: caps, hclBlock: block}, nil
 }
 
 type providerBlock struct {
 	logger   *log.Logger
+	caps     lsp.TextDocumentClientCapabilities
 	hclBlock *hcl.Block
 	schema   *tfjson.Schema
 }
@@ -67,7 +70,19 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 			continue
 		}
 
-		list.Items = append(list.Items, lsp.CompletionItem{
+		list.Items = append(list.Items, p.completionItem(name, attr, pos))
+	}
+
+	return list, nil
+}
+
+func (p *providerBlock) completionItem(name string, attr *tfjson.SchemaAttribute,
+	pos hcl.Pos) lsp.CompletionItem {
+
+	snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
+
+	if snippetSupport {
+		return lsp.CompletionItem{
 			Label:            name,
 			Kind:             lsp.CIKField,
 			InsertTextFormat: lsp.ITFSnippet,
@@ -79,10 +94,15 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 				},
 				NewText: fmt.Sprintf("%s = %s", name, snippetForAttr(attr)),
 			},
-		})
+		}
 	}
 
-	return list, nil
+	return lsp.CompletionItem{
+		Label:            name,
+		Kind:             lsp.CIKField,
+		InsertTextFormat: lsp.ITFPlainText,
+		Detail:           schemaAttributeDetail(attr),
+	}
 }
 
 func snippetForAttr(attr *tfjson.SchemaAttribute) string {

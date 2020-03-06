@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/sourcegraph/go-lsp"
 )
 
 func WithSignalCancel(ctx context.Context, l *log.Logger, sigs ...os.Signal) (
@@ -63,4 +64,35 @@ func TerraformExecutor(ctx context.Context) (*exec.Executor, error) {
 	}
 
 	return tf, nil
+}
+
+const ctxClientCapsSetter = "ctxClientCapabilitiesSetter"
+
+func WithClientCapabilitiesSetter(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxClientCapsSetter, caps)
+}
+
+func SetClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) error {
+	cc, ok := ctx.Value(ctxClientCapsSetter).(*lsp.ClientCapabilities)
+	if !ok {
+		return fmt.Errorf("no client capabilities setter")
+	}
+
+	*cc = *caps
+	return nil
+}
+
+const ctxClientCaps = "ctxClientCapabilities"
+
+func WithClientCapabilities(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxClientCaps, caps)
+}
+
+func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
+	caps, ok := ctx.Value(ctxClientCaps).(*lsp.ClientCapabilities)
+	if !ok {
+		return lsp.ClientCapabilities{}, fmt.Errorf("no client capabilities")
+	}
+
+	return *caps, nil
 }
