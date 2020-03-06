@@ -30,6 +30,7 @@ type handlerMap struct {
 // and passes related dependencies to methods via context
 func (hm *handlerMap) Map() rpch.Map {
 	fs := filesystem.NewFilesystem()
+	fs.SetLogger(hm.logger)
 	lh := logHandler{hm.logger}
 
 	m := map[string]rpch.Func{

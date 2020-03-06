@@ -2,6 +2,8 @@ package filesystem
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"sync"
 
 	"github.com/hashicorp/hcl/v2"
@@ -9,8 +11,10 @@ import (
 )
 
 type fsystem struct {
-	mu   sync.RWMutex
-	dirs map[string]*dir
+	mu sync.RWMutex
+
+	logger *log.Logger
+	dirs   map[string]*dir
 }
 
 type Filesystem interface {
@@ -23,8 +27,13 @@ type Filesystem interface {
 
 func NewFilesystem() *fsystem {
 	return &fsystem{
-		dirs: make(map[string]*dir),
+		dirs:   make(map[string]*dir),
+		logger: log.New(ioutil.Discard, "", 0),
 	}
+}
+
+func (fs *fsystem) SetLogger(logger *log.Logger) {
+	fs.logger = logger
 }
 
 func (fs *fsystem) Open(doc lsp.TextDocumentItem) error {
@@ -89,10 +98,17 @@ func (fs *fsystem) URI(uri lsp.DocumentURI) URI {
 }
 
 func (fs *fsystem) HclBlockAtDocPosition(params lsp.TextDocumentPositionParams) (*hcl.Block, hcl.Pos, error) {
-	u := URI(params.TextDocument.URI)
+	u := fs.URI(params.TextDocument.URI)
 	f := fs.file(u)
+	if f == nil || !f.open {
+		return nil, hcl.Pos{}, fmt.Errorf("file %q is not open", u)
+	}
+
+	fs.logger.Printf("Converting LSP position %#v into HCL", params.Position)
 
 	hclPos := f.LspPosToHCLPos(params.Position)
+
+	fs.logger.Printf("Finding HCL block at position %#v", hclPos)
 
 	block, err := f.HclBlockAtPos(hclPos)
 
