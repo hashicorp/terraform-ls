@@ -3,7 +3,7 @@ package langserver
 import (
 	"context"
 
-	lsctx "github.com/radeksimko/terraform-ls/internal/context"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 

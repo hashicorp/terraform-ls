@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	lsctx "github.com/radeksimko/terraform-ls/internal/context"
-	"github.com/radeksimko/terraform-ls/internal/terraform/lang"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 

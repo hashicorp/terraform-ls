@@ -4,13 +4,7 @@ Experimental prototype of Terraform language server.
 
 ## Disclaimer
 
-If you found this repo via GitHub, there's likely nothing to see here for you, at least not yet.
-
-This project is likely to change, move or disappear without prior notice.
-Expect no support or stability at this point.
-
-The implementation is intentionally minimal just to initially see what's possible
-without having to import Terraform and tightly couple the LS with it.
+This is not an officially supported HashiCorp product.
 
 ## How to try it out
 

@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/mitchellh/cli"
-	fs "github.com/radeksimko/terraform-ls/internal/filesystem"
-	"github.com/radeksimko/terraform-ls/internal/terraform/exec"
-	"github.com/radeksimko/terraform-ls/internal/terraform/lang"
+	fs "github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 

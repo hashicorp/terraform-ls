@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/mitchellh/cli"
-	lsctx "github.com/radeksimko/terraform-ls/internal/context"
-	"github.com/radeksimko/terraform-ls/langserver"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 type serveCommand struct {

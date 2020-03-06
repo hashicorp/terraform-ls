@@ -1,4 +1,4 @@
-module github.com/radeksimko/terraform-ls
+module github.com/hashicorp/terraform-ls
 
 go 1.13
 

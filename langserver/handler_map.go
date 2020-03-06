@@ -9,9 +9,9 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
 	rpch "github.com/creachadair/jrpc2/handler"
-	lsctx "github.com/radeksimko/terraform-ls/internal/context"
-	"github.com/radeksimko/terraform-ls/internal/filesystem"
-	"github.com/radeksimko/terraform-ls/internal/terraform/exec"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
 // logHandler provides handlers logger

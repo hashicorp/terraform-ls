@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/radeksimko/terraform-ls/internal/filesystem"
-	"github.com/radeksimko/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
 func WithSignalCancel(ctx context.Context, l *log.Logger, sigs ...os.Signal) (
