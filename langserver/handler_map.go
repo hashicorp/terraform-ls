@@ -106,9 +106,6 @@ func (hm *handlerMap) Map() rpch.Map {
 			if !hm.srv.IsInitializationConfirmed() {
 				return nil, SrvNotInitializedErr(hm.srv.State())
 			}
-			ctx = lsctx.WithFilesystem(fs, ctx)
-
-			jrpc2.CancelRequest(ctx, req.ID())
 
 			return handle(ctx, req, CancelRequest)
 		},
