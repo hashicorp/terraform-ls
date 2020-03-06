@@ -2,10 +2,12 @@ package langserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/creachadair/jrpc2"
+	"github.com/creachadair/jrpc2/code"
 	rpch "github.com/creachadair/jrpc2/handler"
 	lsctx "github.com/radeksimko/terraform-ls/internal/context"
 	"github.com/radeksimko/terraform-ls/internal/filesystem"
@@ -94,7 +96,7 @@ func (hm *handlerMap) Map() rpch.Map {
 			return handle(ctx, req, Shutdown)
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			if !hm.srv.IsDown() {
+			if !hm.srv.IsDown() && !hm.srv.IsPrepared() {
 				return nil, fmt.Errorf("Cannot exit as server is %s", hm.srv.State())
 			}
 
@@ -126,8 +128,14 @@ func convertMap(m map[string]rpch.Func) rpch.Map {
 	return hm
 }
 
+const requestCancelled code.Code = -32800
+
 // handle calls a jrpc2.Func compatible function
 func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{}, error) {
 	f := rpch.New(fn)
-	return f.Handle(ctx, req)
+	result, err := f.Handle(ctx, req)
+	if ctx.Err() != nil && errors.Is(ctx.Err(), context.Canceled) {
+		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
+	}
+	return result, err
 }

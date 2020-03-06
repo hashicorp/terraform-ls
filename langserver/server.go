@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/creachadair/jrpc2"
+	"github.com/creachadair/jrpc2/code"
 )
 
 // serverState represents state of the language server
@@ -46,15 +47,25 @@ type unexpectedSrvState struct {
 }
 
 func (e *unexpectedSrvState) Error() string {
-	return fmt.Sprintf("server is not %s (%s)",
+	return fmt.Sprintf("server is not %s, current state: %s",
 		e.expectedState, e.currentState)
 }
 
-func SrvNotInitializedErr(state serverState) *unexpectedSrvState {
-	return &unexpectedSrvState{
+const serverNotInitialized code.Code = -32002
+
+func SrvNotInitializedErr(state serverState) error {
+	uss := &unexpectedSrvState{
 		expectedState: stateInitializedConfirmed,
 		currentState:  state,
 	}
+	if state < stateInitializedConfirmed {
+		return fmt.Errorf("%w: %s", serverNotInitialized.Err(), uss)
+	}
+	if state == stateDown {
+		return fmt.Errorf("%w: %s", code.InvalidRequest.Err(), uss)
+	}
+
+	return uss
 }
 
 type server struct {
@@ -68,6 +79,10 @@ type server struct {
 
 	downReq     *jrpc2.Request
 	downReqTime time.Time
+}
+
+func (srv *server) IsPrepared() bool {
+	return srv.state == statePrepared
 }
 
 func (srv *server) Prepare() error {
@@ -126,8 +141,8 @@ func (srv *server) ConfirmInitialization(req *jrpc2.Request) error {
 
 func (srv *server) Shutdown(req *jrpc2.Request) error {
 	if srv.IsDown() {
-		return fmt.Errorf("Server was already shut down at %s via request %s",
-			srv.downReqTime, srv.downReq.ID())
+		return fmt.Errorf("%w: server was already shut down via request %s",
+			code.InvalidRequest.Err(), srv.downReq.ID())
 	}
 
 	srv.downReq = req
