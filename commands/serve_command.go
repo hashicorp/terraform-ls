@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"context"
@@ -8,17 +8,17 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/mitchellh/cli"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/langserver"
+	"github.com/mitchellh/cli"
 )
 
-type serveCommand struct {
+type ServeCommand struct {
 	Ui     cli.Ui
 	Logger *log.Logger
 }
 
-func (c *serveCommand) Run(args []string) int {
+func (c *ServeCommand) Run(args []string) int {
 	cmdFlags := defaultFlagSet("serve")
 
 	var port int
@@ -47,7 +47,7 @@ func (c *serveCommand) Run(args []string) int {
 	return 0
 }
 
-func (c *serveCommand) Help() string {
+func (c *ServeCommand) Help() string {
 	helpText := `
 Usage: terraform-ls serve [options] [path]
 
@@ -55,6 +55,6 @@ Usage: terraform-ls serve [options] [path]
 	return strings.TrimSpace(helpText)
 }
 
-func (c *serveCommand) Synopsis() string {
+func (c *ServeCommand) Synopsis() string {
 	return "Starts the Language Server"
 }

@@ -1,11 +1,10 @@
 package main
 
 import (
-	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 
+	"github.com/hashicorp/terraform-ls/commands"
 	"github.com/mitchellh/cli"
 )
 
@@ -27,10 +26,16 @@ func main() {
 
 	c.Commands = map[string]cli.CommandFactory{
 		"completion": func() (cli.Command, error) {
-			return &completionCommand{Ui: ui, Logger: logger}, nil
+			return &commands.CompletionCommand{
+				Ui:     ui,
+				Logger: logger,
+			}, nil
 		},
 		"serve": func() (cli.Command, error) {
-			return &serveCommand{Ui: ui, Logger: logger}, nil
+			return &commands.ServeCommand{
+				Ui:     ui,
+				Logger: logger,
+			}, nil
 		},
 	}
 
@@ -40,14 +45,4 @@ func main() {
 	}
 
 	os.Exit(exitStatus)
-}
-
-func defaultFlagSet(cmdName string) *flag.FlagSet {
-	f := flag.NewFlagSet(cmdName, flag.ContinueOnError)
-	f.SetOutput(ioutil.Discard)
-
-	// Set the default Usage to empty
-	f.Usage = func() {}
-
-	return f
 }

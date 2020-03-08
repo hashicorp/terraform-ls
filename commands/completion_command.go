@@ -1,4 +1,4 @@
-package main
+package commands
 
 import (
 	"context"
@@ -16,12 +16,12 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-type completionCommand struct {
+type CompletionCommand struct {
 	Ui     cli.Ui
 	Logger *log.Logger
 }
 
-func (c *completionCommand) Run(args []string) int {
+func (c *CompletionCommand) Run(args []string) int {
 	cmdFlags := defaultFlagSet("completion")
 
 	var offset int
@@ -98,7 +98,7 @@ func (c *completionCommand) Run(args []string) int {
 	return 0
 }
 
-func (c *completionCommand) Help() string {
+func (c *CompletionCommand) Help() string {
 	helpText := `
 Usage: terraform-ls completion [options] [path]
 
@@ -110,6 +110,6 @@ Options:
 	return strings.TrimSpace(helpText)
 }
 
-func (c *completionCommand) Synopsis() string {
+func (c *CompletionCommand) Synopsis() string {
 	return "Lists available completion items"
 }

@@ -1,4 +1,4 @@
-package langserver
+package handlers
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
+func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
 	fs, err := lsctx.Filesystem(ctx)
 	if err != nil {
 		return err
 	}
 
-	return fs.Open(params.TextDocument)
+	return fs.Change(params.TextDocument, params.ContentChanges)
 }

@@ -12,13 +12,9 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/langserver/handlers"
 	"github.com/sourcegraph/go-lsp"
 )
-
-// logHandler provides handlers logger
-type logHandler struct {
-	logger *log.Logger
-}
 
 type handlerMap struct {
 	logger *log.Logger
@@ -32,7 +28,7 @@ type handlerMap struct {
 func (hm *handlerMap) Map() rpch.Map {
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(hm.logger)
-	lh := logHandler{hm.logger}
+	lh := handlers.LogHandler(hm.logger)
 	cc := &lsp.ClientCapabilities{}
 
 	m := map[string]rpch.Func{
@@ -44,7 +40,7 @@ func (hm *handlerMap) Map() rpch.Map {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 
-			return handle(ctx, req, Initialize)
+			return handle(ctx, req, handlers.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := hm.srv.ConfirmInitialization(req)
@@ -53,28 +49,28 @@ func (hm *handlerMap) Map() rpch.Map {
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
 
-			return handle(ctx, req, Initialized)
+			return handle(ctx, req, handlers.Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsInitializationConfirmed() {
 				return nil, SrvNotInitializedErr(hm.srv.State())
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			return handle(ctx, req, TextDocumentDidChange)
+			return handle(ctx, req, handlers.TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsInitializationConfirmed() {
 				return nil, SrvNotInitializedErr(hm.srv.State())
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			return handle(ctx, req, TextDocumentDidOpen)
+			return handle(ctx, req, handlers.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsInitializationConfirmed() {
 				return nil, SrvNotInitializedErr(hm.srv.State())
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			return handle(ctx, req, TextDocumentDidClose)
+			return handle(ctx, req, handlers.TextDocumentDidClose)
 		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsInitializationConfirmed() {
@@ -98,7 +94,7 @@ func (hm *handlerMap) Map() rpch.Map {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			// TODO: Exit the process after a timeout if `exit` method is not called
 			// to prevent zombie processes (?)
-			return handle(ctx, req, Shutdown)
+			return handle(ctx, req, handlers.Shutdown)
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsDown() && !hm.srv.IsPrepared() {
@@ -107,14 +103,14 @@ func (hm *handlerMap) Map() rpch.Map {
 
 			hm.srvStopFunc()
 
-			return handle(ctx, req, Shutdown)
+			return handle(ctx, req, handlers.Shutdown)
 		},
 		"$/cancelRequest": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			if !hm.srv.IsInitializationConfirmed() {
 				return nil, SrvNotInitializedErr(hm.srv.State())
 			}
 
-			return handle(ctx, req, CancelRequest)
+			return handle(ctx, req, handlers.CancelRequest)
 		},
 	}
 
