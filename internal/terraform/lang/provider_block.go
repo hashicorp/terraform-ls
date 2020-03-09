@@ -3,6 +3,7 @@ package lang
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -12,15 +13,32 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func newProviderBlock(logger *log.Logger, caps lsp.TextDocumentClientCapabilities,
-	block *hcl.Block) (ConfigBlock, error) {
+type providerBlockFactory struct {
+	logger *log.Logger
+	caps   lsp.TextDocumentClientCapabilities
+}
 
+func (f *providerBlockFactory) New(block *hcl.Block) (ConfigBlock, error) {
+	if f.logger == nil {
+		f.logger = emptyLogger()
+	}
+	if block == nil {
+		return nil, EmptyConfigErr()
+	}
 	labels := block.Labels
 	if len(labels) != 1 {
-		return nil, fmt.Errorf("unexpected labels for provider block: %q", labels)
+		return nil, &InvalidLabelsErr{"provider", labels}
 	}
 
-	return &providerBlock{logger: logger, caps: caps, hclBlock: block}, nil
+	return &providerBlock{hclBlock: block, logger: f.logger, caps: f.caps}, nil
+}
+
+func (f *providerBlockFactory) BlockType() string {
+	return "provider"
+}
+
+func (f *providerBlockFactory) InitializeCapabilities(caps lsp.TextDocumentClientCapabilities) {
+	f.caps = caps
 }
 
 type providerBlock struct {
@@ -34,7 +52,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 	list := lsp.CompletionList{}
 
 	if p.schema == nil {
-		return list, fmt.Errorf("schema unavailable for provider %q", p.Name())
+		return list, &SchemaUnavailableErr{"provider", p.Name()}
 	}
 
 	hs := jsonSchemaToHcl(p.schema)
@@ -73,7 +91,16 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		list.Items = append(list.Items, p.completionItem(name, attr, pos))
 	}
 
+	sortCompletionItems(list.Items)
+
 	return list, nil
+}
+
+func sortCompletionItems(items []lsp.CompletionItem) {
+	less := func(i, j int) bool {
+		return items[i].Label < items[j].Label
+	}
+	sort.Slice(items, less)
 }
 
 func (p *providerBlock) completionItem(name string, attr *tfjson.SchemaAttribute,
@@ -134,12 +161,16 @@ func (p *providerBlock) Name() string {
 	return p.hclBlock.Labels[0]
 }
 
+func (p *providerBlock) BlockType() string {
+	return "provider"
+}
+
 func (p *providerBlock) LoadSchema(ps *tfjson.ProviderSchemas) error {
-	providerName := p.hclBlock.Labels[0]
+	providerName := p.Name()
 
 	schema, ok := ps.Schemas[providerName]
 	if !ok {
-		return fmt.Errorf("schema not found for provider %q", providerName)
+		return &SchemaUnavailableErr{"provider", providerName}
 	}
 
 	p.schema = schema.ConfigSchema

@@ -30,8 +30,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
 
-	p := lang.NewParserWithLogger(h.logger)
-	p.SetCapabilities(cc.TextDocument)
+	p := lang.NewParser(h.logger, cc.TextDocument)
 
 	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
 	if err != nil {

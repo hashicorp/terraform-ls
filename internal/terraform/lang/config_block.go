@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -14,16 +15,12 @@ type ConfigBlock interface {
 	CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error)
 	LoadSchema(ps *tfjson.ProviderSchemas) error
 	Name() string
+	BlockType() string
 }
 
-type configBlockFunc func(*log.Logger, lsp.TextDocumentClientCapabilities, *hcl.Block) (ConfigBlock, error)
-
-var blockTypes = map[string]configBlockFunc{
-	"provider": newProviderBlock,
-	// "resource": ResourceBlock,
-	// "data":     ResourceBlock,
-	// "variable": VariableBlock,
-	// "module":   ModuleBlock,
+type configBlockFactory interface {
+	New(*hcl.Block) (ConfigBlock, error)
+	InitializeCapabilities(lsp.TextDocumentClientCapabilities)
 }
 
 type parser struct {
@@ -31,26 +28,33 @@ type parser struct {
 	caps   lsp.TextDocumentClientCapabilities
 }
 
-func NewParserWithLogger(logger *log.Logger) *parser {
-	return &parser{logger: logger}
+func NewParser(logger *log.Logger, caps lsp.TextDocumentClientCapabilities) *parser {
+	return &parser{logger: logger, caps: caps}
+}
+
+func (p *parser) blockTypes() map[string]configBlockFactory {
+	return map[string]configBlockFactory{
+		"provider": &providerBlockFactory{logger: p.logger},
+		// "resource": ResourceBlock,
+		// "data":     ResourceBlock,
+		// "variable": VariableBlock,
+		// "module":   ModuleBlock,
+	}
 }
 
 func (p *parser) ParseBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
-	f, ok := blockTypes[block.Type]
+	f, ok := p.blockTypes()[block.Type]
 	if !ok {
 		return nil, fmt.Errorf("unknown block type: %q", block.Type)
 	}
+	f.InitializeCapabilities(p.caps)
 
-	cfgBlock, err := f(p.logger, p.caps, block)
+	cfgBlock, err := f.New(block)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", block.Type, err)
 	}
 
 	return cfgBlock, nil
-}
-
-func (p *parser) SetCapabilities(caps lsp.TextDocumentClientCapabilities) {
-	p.caps = caps
 }
 
 func jsonSchemaToHcl(js *tfjson.Schema) *hcl.BodySchema {
@@ -128,4 +132,8 @@ func undeclaredSchemaAttributes(attrs map[string]*tfjson.SchemaAttribute,
 	}
 
 	return attrs
+}
+
+func emptyLogger() *log.Logger {
+	return log.New(ioutil.Discard, "", 0)
 }

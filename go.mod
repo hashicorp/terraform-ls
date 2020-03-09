@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	bitbucket.org/creachadair/stringset v0.0.8 // indirect
-	github.com/agext/levenshtein v1.2.1
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.4.2
 	github.com/google/go-cmp v0.3.1
