@@ -15,11 +15,20 @@ func (e *NoBlockFoundErr) Error() string {
 	return fmt.Sprintf("no block found at %#v", e.AtPos)
 }
 
-type InvalidPosErr struct {
+type InvalidHclPosErr struct {
+	Pos     hcl.Pos
+	InRange hcl.Range
+}
+
+func (e *InvalidHclPosErr) Error() string {
+	return fmt.Sprintf("invalid position: %#v in %s", e.Pos, e.InRange.String())
+}
+
+type InvalidLspPosErr struct {
 	Pos lsp.Position
 }
 
-func (e *InvalidPosErr) Error() string {
+func (e *InvalidLspPosErr) Error() string {
 	return fmt.Sprintf("invalid position: %s", e.Pos)
 }
 

@@ -155,7 +155,7 @@ func (ls sourceLines) byteOffsetToHcl(byte int) hcl.Pos {
 func (ls sourceLines) lspPosToHclPos(pos lsp.Position) (hcl.Pos, error) {
 	if len(ls) == 0 {
 		if pos.Character != 0 || pos.Line != 0 {
-			return hcl.Pos{}, &InvalidPosErr{pos}
+			return hcl.Pos{}, &InvalidLspPosErr{pos}
 		}
 		return hcl.Pos{Line: 1, Column: 1, Byte: 0}, nil
 	}
@@ -172,7 +172,7 @@ func (ls sourceLines) lspPosToHclPos(pos lsp.Position) (hcl.Pos, error) {
 		}
 	}
 
-	return hcl.Pos{}, &InvalidPosErr{pos}
+	return hcl.Pos{}, &InvalidLspPosErr{pos}
 }
 
 // posLSPToByte converts a position in LSP's representation into a byte

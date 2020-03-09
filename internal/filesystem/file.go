@@ -41,6 +41,15 @@ func (f *file) HclBlockAtPos(pos hcl.Pos) (*hcl.Block, error) {
 		return nil, err
 	}
 
+	if body, ok := ast.Body.(*hclsyntax.Body); ok {
+		if body.SrcRange.Empty() && pos != hcl.InitialPos {
+			return nil, &InvalidHclPosErr{pos, body.SrcRange}
+		}
+		if !body.SrcRange.Empty() && !body.SrcRange.ContainsPos(pos) {
+			return nil, &InvalidHclPosErr{pos, body.SrcRange}
+		}
+	}
+
 	block := ast.OutermostBlockAtPos(pos)
 	if block == nil {
 		return nil, &NoBlockFoundErr{pos}
@@ -157,7 +166,7 @@ func (f *file) hclAST() (*hcl.File, error) {
 		return f.ast, nil
 	}
 
-	hf, diags := hclsyntax.ParseConfig(f.content, f.fullPath, hcl.Pos{Line: 1, Column: 1})
+	hf, diags := hclsyntax.ParseConfig(f.content, f.fullPath, hcl.InitialPos)
 	if diags.HasErrors() {
 		return nil, diags
 	}
