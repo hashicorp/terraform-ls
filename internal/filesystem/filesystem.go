@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"sync"
@@ -44,7 +43,7 @@ func (fs *fsystem) Open(doc lsp.TextDocumentItem) error {
 	s := []byte(doc.Text)
 
 	if !u.Valid() {
-		return fmt.Errorf("invalid URL to open")
+		return &InvalidURIErr{URI: u}
 	}
 
 	fullName, dn, fn := u.PathParts()
@@ -70,7 +69,7 @@ func (fs *fsystem) Change(doc lsp.VersionedTextDocumentIdentifier, changes []lsp
 
 	f := fs.file(u)
 	if f == nil || !f.open {
-		return fmt.Errorf("file %q is not open", u)
+		return &FileNotOpenErr{u}
 	}
 	for _, change := range changes {
 		f.applyChange(change)
@@ -86,7 +85,7 @@ func (fs *fsystem) Close(doc lsp.TextDocumentIdentifier) error {
 
 	f := fs.file(u)
 	if f == nil || !f.open {
-		return fmt.Errorf("file %q is not open", u)
+		return &FileNotOpenErr{u}
 	}
 	_, dn, fn := u.PathParts()
 	delete(fs.dirs[dn].files, fn)
@@ -101,7 +100,7 @@ func (fs *fsystem) HclBlockAtDocPosition(params lsp.TextDocumentPositionParams) 
 	u := fs.URI(params.TextDocument.URI)
 	f := fs.file(u)
 	if f == nil || !f.open {
-		return nil, hcl.Pos{}, fmt.Errorf("file %q is not open", u)
+		return nil, hcl.Pos{}, &FileNotOpenErr{u}
 	}
 
 	fs.logger.Printf("Converting LSP position %#v into HCL", params.Position)
