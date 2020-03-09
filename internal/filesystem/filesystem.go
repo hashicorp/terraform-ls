@@ -106,7 +106,10 @@ func (fs *fsystem) HclBlockAtDocPosition(params lsp.TextDocumentPositionParams) 
 
 	fs.logger.Printf("Converting LSP position %#v into HCL", params.Position)
 
-	hclPos := f.LspPosToHCLPos(params.Position)
+	hclPos, err := f.LspPosToHCLPos(params.Position)
+	if err != nil {
+		return nil, hcl.Pos{}, err
+	}
 
 	fs.logger.Printf("Finding HCL block at position %#v", hclPos)
 

@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"fmt"
 	"unicode/utf16"
 	"unicode/utf8"
 
@@ -44,7 +43,7 @@ func (f *file) HclBlockAtPos(pos hcl.Pos) (*hcl.Block, error) {
 
 	block := ast.OutermostBlockAtPos(pos)
 	if block == nil {
-		return nil, fmt.Errorf("no block found")
+		return nil, &NoBlockFoundErr{pos}
 	}
 
 	return block, nil
@@ -54,7 +53,7 @@ func (f *file) ByteOffsetToHCLPos(offset int) hcl.Pos {
 	return f.lines().byteOffsetToHcl(offset)
 }
 
-func (f *file) LspPosToHCLPos(pos lsp.Position) hcl.Pos {
+func (f *file) LspPosToHCLPos(pos lsp.Position) (hcl.Pos, error) {
 	return f.lines().lspPosToHclPos(pos)
 }
 

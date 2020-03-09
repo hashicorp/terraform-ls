@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"path/filepath"
 	"strconv"
 	"strings"
 
-	fs "github.com/hashicorp/terraform-ls/internal/filesystem"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
+	"github.com/hashicorp/terraform-ls/langserver/handlers"
 	"github.com/mitchellh/cli"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -24,10 +24,8 @@ type CompletionCommand struct {
 func (c *CompletionCommand) Run(args []string) int {
 	cmdFlags := defaultFlagSet("completion")
 
-	var offset int
 	var atPos string
-	cmdFlags.IntVar(&offset, "offset", -1, "byte offset")
-	cmdFlags.StringVar(&atPos, "at-pos", "", "at position (line:col)")
+	cmdFlags.StringVar(&atPos, "at-pos", "", "at zero-indexed position (line:col)")
 	cmdFlags.Usage = func() { c.Ui.Error(c.Help()) }
 
 	if err := cmdFlags.Parse(args); err != nil {
@@ -36,60 +34,54 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	path := cmdFlags.Arg(0)
-
-	// TODO: Allow reading a directory too, iterate over and pre-populate fs.filesystem
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("reading file at %q failed: %s", path, err))
 		return 1
 	}
 
-	f := fs.NewFile(path, content)
-
-	hclPos := f.ByteOffsetToHCLPos(offset)
-
-	if len(atPos) > 0 {
-		parts := strings.Split(atPos, ":")
-		line, _ := strconv.Atoi(parts[0])
-		col, _ := strconv.Atoi(parts[1])
-
-		lspPos := lsp.Position{Line: line, Character: col}
-		hclPos = f.LspPosToHCLPos(lspPos)
-		c.Ui.Output(fmt.Sprintf("HCL Position: %#v", hclPos))
-	}
-
-	hclBlock, err := f.HclBlockAtPos(hclPos)
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("finding config block failed: %s", err))
+	lspUri := lsp.DocumentURI("file://" + path)
+	parts := strings.Split(atPos, ":")
+	if len(parts) != 2 {
+		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)\n", atPos))
 		return 1
 	}
-
-	p := lang.NewParserWithLogger(c.Logger)
-	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
+	line, err := strconv.Atoi(parts[0])
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("finding config block failed: %s", err))
+		c.Ui.Error(fmt.Sprintf("Error parsing line: %s (expected number)\n", err))
 		return 1
 	}
-
-	wd := filepath.Dir(path)
-	tf := exec.NewExecutor(context.Background())
-	tf.SetLogger(c.Logger)
-	tf.SetWorkdir(wd)
-	schemas, err := tf.ProviderSchemas()
+	col, err := strconv.Atoi(parts[1])
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("unable to get schemas: %s", err))
+		c.Ui.Error(fmt.Sprintf("Error parsing column: %s (expected number)\n", err))
 		return 1
 	}
+	lspPos := lsp.Position{Line: line, Character: col}
 
-	err = cfgBlock.LoadSchema(schemas)
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("loading schema failed: %s", err))
-		return 1
-	}
+	fs := filesystem.NewFilesystem()
+	fs.SetLogger(c.Logger)
+	fs.Open(lsp.TextDocumentItem{
+		URI:     lspUri,
+		Text:    string(content),
+		Version: 0,
+	})
 
-	items, err := cfgBlock.CompletionItemsAtPos(hclPos)
+	ctx := context.Background()
+	ctx = lsctx.WithFilesystem(fs, ctx)
+	ctx = lsctx.WithTerraformExecutor(exec.NewExecutor(ctx), ctx)
+	ctx = lsctx.WithClientCapabilities(&lsp.ClientCapabilities{}, ctx)
+
+	h := handlers.LogHandler(c.Logger)
+	items, err := h.TextDocumentComplete(ctx, lsp.CompletionParams{
+		TextDocumentPositionParams: lsp.TextDocumentPositionParams{
+			TextDocument: lsp.TextDocumentIdentifier{
+				URI: lspUri,
+			},
+			Position: lspPos,
+		},
+	})
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("finding completion items failed: %s", err))
+		c.Ui.Error(err.Error())
 		return 1
 	}
 
@@ -100,11 +92,11 @@ func (c *CompletionCommand) Run(args []string) int {
 
 func (c *CompletionCommand) Help() string {
 	helpText := `
-Usage: terraform-ls completion [options] [path]
+Usage: terraform-ls completion -at-pos=line:col <path>
 
 Options:
 
-  -offset Byte offset within the file
+  -at-pos at zero-indexed position (line:col)
 
 `
 	return strings.TrimSpace(helpText)

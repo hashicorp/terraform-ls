@@ -7,6 +7,7 @@ require (
 	github.com/agext/levenshtein v1.2.1
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.4.2
+	github.com/google/go-cmp v0.3.1
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/terraform-json v0.4.0
 	github.com/mitchellh/cli v1.0.0
