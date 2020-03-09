@@ -49,10 +49,6 @@ func (f *file) HclBlockAtPos(pos hcl.Pos) (*hcl.Block, error) {
 	return block, nil
 }
 
-func (f *file) ByteOffsetToHCLPos(offset int) hcl.Pos {
-	return f.lines().byteOffsetToHcl(offset)
-}
-
 func (f *file) LspPosToHCLPos(pos lsp.Position) (hcl.Pos, error) {
 	return f.lines().lspPosToHclPos(pos)
 }
