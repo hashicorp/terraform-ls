@@ -7,9 +7,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/sourcegraph/go-lsp"
 )
 
-func TestHclBlockAtPos(t *testing.T) {
+func TestFile_HclBlockAtPos(t *testing.T) {
 	testCases := []struct {
 		name string
 
@@ -126,5 +127,96 @@ func TestHclBlockAtPos(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestFile_LspPosToHCLPos(t *testing.T) {
+	testCases := []struct {
+		name string
+
+		content        string
+		lspPos         lsp.Position
+		expectedHclPos hcl.Pos
+	}{
+		{
+			"empty config, valid position",
+			``,
+			lsp.Position{Character: 0, Line: 0},
+			hcl.Pos{Column: 1, Line: 1, Byte: 0},
+		},
+		{
+			"valid config, valid position",
+			`provider "aws" {
+
+}
+`,
+			lsp.Position{Character: 0, Line: 1},
+			hcl.Pos{Column: 1, Line: 2, Byte: 17},
+		},
+		{
+			"valid non-ASCII config, position before unicode char",
+			`provider "aws" {
+	special_region = "🙃"
+}
+`,
+			lsp.Position{Character: 0, Line: 1},
+			hcl.Pos{Column: 1, Line: 2, Byte: 17},
+		},
+		{
+			"valid non-ASCII config, position after unicode char",
+			`provider "aws" {
+	special_region = "🙃"
+}
+`,
+			lsp.Position{Character: 22, Line: 1},
+			hcl.Pos{Column: 23, Line: 2, Byte: 41},
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
+			f := NewFile("file:///test.tf", []byte(tc.content))
+
+			hclPos, err := f.LspPosToHCLPos(tc.lspPos)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if hclPos != tc.expectedHclPos {
+				t.Fatalf("HCL position didn't match.\nexpected: %#v\ngiven: %#v",
+					tc.expectedHclPos, hclPos)
+			}
+		})
+	}
+}
+
+func TestFile_ApplyChange_fullUpdate(t *testing.T) {
+	f := NewFile("file:///test.tf", []byte("hello world"))
+
+	ch := lsp.TextDocumentContentChangeEvent{
+		Text: "something else",
+	}
+	err := f.applyChange(ch)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFile_ApplyChange_partialUpdate(t *testing.T) {
+	f := NewFile("file:///test.tf", []byte("hello world"))
+
+	ch := lsp.TextDocumentContentChangeEvent{
+		Range: &lsp.Range{
+			Start: lsp.Position{Character: 5, Line: 0},
+			End:   lsp.Position{Character: 11, Line: 0},
+		},
+		RangeLength: 6,
+		Text:        "people",
+	}
+	err := f.applyChange(ch)
+
+	expectedErr := "Partial updates are not supported (yet)"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("Expected error: %q", expectedErr)
 	}
 }

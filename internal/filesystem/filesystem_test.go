@@ -12,7 +12,21 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
-func TestHclBlockAtDocPosition(t *testing.T) {
+func TestFilesystem_Open_invalidUri(t *testing.T) {
+	fs := NewFilesystem()
+	err := fs.Open(lsp.TextDocumentItem{
+		URI:        lsp.DocumentURI("invalid-uri"),
+		LanguageID: "terraform",
+		Text:       "",
+		Version:    0,
+	})
+	expectedErr := "invalid URI: invalid-uri"
+	if err == nil || err.Error() != expectedErr {
+		t.Fatalf("expected error: %q", expectedErr)
+	}
+}
+
+func TestFilesystem_HclBlockAtDocPosition(t *testing.T) {
 	testCases := []struct {
 		name string
 
@@ -129,5 +143,148 @@ func TestHclBlockAtDocPosition(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func TestFilesystem_Change_notOpen(t *testing.T) {
+	fs := NewFilesystem()
+
+	uri := lsp.DocumentURI("file:///doesnotexist")
+	docId := lsp.VersionedTextDocumentIdentifier{
+		TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
+		Version: 0,
+	}
+	changes := []lsp.TextDocumentContentChangeEvent{}
+	err := fs.Change(docId, changes)
+
+	expectedErr := &FileNotOpenErr{fs.URI(uri)}
+	if err == nil {
+		t.Fatalf("Expected error: %s", expectedErr)
+	}
+	if err.Error() != expectedErr.Error() {
+		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
+			expectedErr, err)
+	}
+}
+
+func TestFilesystem_Change_closed(t *testing.T) {
+	fs := NewFilesystem()
+
+	uri := lsp.DocumentURI("file:///doesnotexist")
+	docId := lsp.TextDocumentIdentifier{
+		URI: uri,
+	}
+
+	fs.Open(lsp.TextDocumentItem{
+		URI:        uri,
+		LanguageID: "terraform",
+		Text:       ``,
+		Version:    0,
+	})
+	err := fs.Close(docId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vDocId := lsp.VersionedTextDocumentIdentifier{
+		TextDocumentIdentifier: docId,
+		Version:                0,
+	}
+	changes := []lsp.TextDocumentContentChangeEvent{}
+	err = fs.Change(vDocId, changes)
+
+	expectedErr := &FileNotOpenErr{fs.URI(uri)}
+	if err == nil {
+		t.Fatalf("Expected error: %s", expectedErr)
+	}
+	if err.Error() != expectedErr.Error() {
+		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
+			expectedErr, err)
+	}
+}
+
+func TestFilesystem_Close_closed(t *testing.T) {
+	fs := NewFilesystem()
+
+	uri := lsp.DocumentURI("file:///doesnotexist")
+	docId := lsp.TextDocumentIdentifier{
+		URI: uri,
+	}
+
+	fs.Open(lsp.TextDocumentItem{
+		URI:        uri,
+		LanguageID: "terraform",
+		Text:       ``,
+		Version:    0,
+	})
+	err := fs.Close(docId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = fs.Close(docId)
+
+	expectedErr := &FileNotOpenErr{fs.URI(uri)}
+	if err == nil {
+		t.Fatalf("Expected error: %s", expectedErr)
+	}
+	if err.Error() != expectedErr.Error() {
+		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
+			expectedErr, err)
+	}
+}
+
+func TestFilesystem_Change_noChanges(t *testing.T) {
+	uri := lsp.DocumentURI("file:///test.tf")
+
+	fs := NewFilesystem()
+	fs.Open(lsp.TextDocumentItem{
+		URI:        uri,
+		Text:       ``,
+		LanguageID: "terraform",
+		Version:    0,
+	})
+
+	docId := lsp.VersionedTextDocumentIdentifier{
+		TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
+		Version: 0,
+	}
+	changes := []lsp.TextDocumentContentChangeEvent{}
+	err := fs.Change(docId, changes)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFilesystem_Change_multipleChanges(t *testing.T) {
+	uri := lsp.DocumentURI("file:///test.tf")
+
+	fs := NewFilesystem()
+	fs.Open(lsp.TextDocumentItem{
+		URI:        uri,
+		Text:       ``,
+		LanguageID: "terraform",
+		Version:    0,
+	})
+
+	docId := lsp.VersionedTextDocumentIdentifier{
+		TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+			URI: uri,
+		},
+		Version: 0,
+	}
+	changes := []lsp.TextDocumentContentChangeEvent{
+		{Text: "ahoy"},
+		{Text: ""},
+		{Text: "quick brown fox jumped over\nthe lazy dog"},
+		{Text: "bye"},
+	}
+	err := fs.Change(docId, changes)
+	if err != nil {
+		t.Fatal(err)
 	}
 }

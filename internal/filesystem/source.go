@@ -15,29 +15,6 @@ type sourceLine struct {
 	rng     hcl.Range
 }
 
-// lspLen returns the length of the content of this line in characters as the
-// LSP thinks of them, which is by counting how many code units would represent
-// this string in UTF-16.
-func (l sourceLine) lspLen() int {
-	if l.allASCII() {
-		// Easy path: length is the byte length
-		return len(l.content)
-	}
-
-	chars := 0
-	remain := l.content
-	for len(remain) > 0 {
-		r, l := utf8.DecodeRune(remain)
-		remain = remain[l:]
-		if r1, r2 := utf16.EncodeRune(r); r1 == 0xfffd && r2 == 0xfffd {
-			chars++ // only one code unit needed for this one
-		} else {
-			chars += 2 // needs a surrogate pair
-		}
-	}
-	return chars
-}
-
 // allASCII returns true if the receiver is provably all ASCII, which allows
 // for some fast paths where we can treat columns and bytes as equivalent.
 func (l sourceLine) allASCII() bool {
@@ -129,29 +106,6 @@ func makeSourceLines(filename string, s []byte) sourceLines {
 	return ret
 }
 
-// byteOffsetToHcl converts a byte offset within a file into the equivalent
-// position in HCL's representation.
-func (ls sourceLines) byteOffsetToHcl(byte int) hcl.Pos {
-	if len(ls) == 0 {
-		return hcl.Pos{Line: 1, Column: 1, Byte: 0}
-	}
-
-	for i, srcLine := range ls {
-
-		// Account for the last character on the line
-		srcLine.rng.End.Byte += 1
-
-		if srcLine.rng.ContainsOffset(byte) {
-			lineNum := i + 1
-			column := byte - srcLine.rng.Start.Byte
-
-			return hcl.Pos{Line: lineNum, Column: column, Byte: byte}
-		}
-	}
-
-	return hcl.Pos{Line: 1, Column: 1, Byte: 0}
-}
-
 func (ls sourceLines) lspPosToHclPos(pos lsp.Position) (hcl.Pos, error) {
 	if len(ls) == 0 {
 		if pos.Character != 0 || pos.Line != 0 {
@@ -173,31 +127,4 @@ func (ls sourceLines) lspPosToHclPos(pos lsp.Position) (hcl.Pos, error) {
 	}
 
 	return hcl.Pos{}, &InvalidLspPosErr{pos}
-}
-
-// posLSPToByte converts a position in LSP's representation into a byte
-// offset into the full source buffer. If the given position is not within
-// the content then the result is undefined. This is different than the
-// byte offset returned in posLSPToHCL because it can potentially point into
-// the middle of a grapheme cluster. It will produce an incorrect result if
-// given a position referring to the second unit of a utf-16 surrogate pair.
-//
-// This should NOT be used to process incoming text change requests from the
-// LSP client because the user may type into the middle of a surrogate pair
-// and the rounding behavior of this method would cause the first unit
-// to be lost, causing us to get out of sync with the client.
-func (ls sourceLines) posLSPToByte(in *lsp.Position) int {
-	if len(ls) == 0 {
-		return 0
-	}
-	lspLine := int(in.Line)
-	if lspLine >= len(ls) {
-		return ls[len(ls)-1].rng.End.Byte
-	}
-	if lspLine < 0 {
-		return ls[0].rng.Start.Byte
-	}
-
-	l := ls[lspLine]
-	return l.byteForLSPColumn(in.Character)
 }
