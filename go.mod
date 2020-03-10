@@ -16,3 +16,5 @@ require (
 	golang.org/x/text v0.3.2
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
 )
+
+replace github.com/sourcegraph/go-lsp => github.com/radeksimko/go-lsp v0.1.0
