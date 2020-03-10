@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"github.com/creachadair/jrpc2"
+	"github.com/creachadair/jrpc2/channel"
 	rpcServer "github.com/creachadair/jrpc2/server"
 )
 
@@ -27,6 +28,7 @@ func NewLangServer(srvCtx context.Context, logger *log.Logger) *langServer {
 	opts := &jrpc2.ServerOptions{
 		AllowPush: true,
 		Logger:    logger,
+		RPCLog:    &rpcLogger{logger},
 	}
 
 	srvCtx, stopFunc := context.WithCancel(srvCtx)
@@ -49,7 +51,7 @@ func (ls *langServer) Start(reader io.Reader, writer io.WriteCloser) {
 		ls.stopFunc()
 	}
 
-	ch := LspFraming(ls.logger)(reader, writer)
+	ch := channel.LSP(reader, writer)
 
 	srv := jrpc2.NewServer(ls.assigner, ls.srvOptions).Start(ch)
 
@@ -87,7 +89,7 @@ func (ls *langServer) StartTCP(address string) error {
 	go func() {
 		ls.logger.Println("Starting loop server ...")
 		err = rpcServer.Loop(lst, ls.assigner, &rpcServer.LoopOptions{
-			Framing:       LspFraming(ls.logger),
+			Framing:       channel.LSP,
 			ServerOptions: ls.srvOptions,
 		})
 		if err != nil {
