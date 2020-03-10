@@ -16,11 +16,15 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
+
 type Executor struct {
 	ctx     context.Context
 	timeout time.Duration
 	workDir string
 	logger  *log.Logger
+
+	cmdCtxFunc cmdCtxFunc
 }
 
 func NewExecutor(ctx context.Context) *Executor {
@@ -28,6 +32,9 @@ func NewExecutor(ctx context.Context) *Executor {
 		ctx:     ctx,
 		timeout: 10 * time.Second,
 		logger:  log.New(ioutil.Discard, "", 0),
+		cmdCtxFunc: func(ctx context.Context, path string, arg ...string) *exec.Cmd {
+			return exec.CommandContext(ctx, path, arg...)
+		},
 	}
 }
 
@@ -51,9 +58,6 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 		defer cancel()
 	}
 
-	allArgs := []string{"terraform"}
-	allArgs = append(allArgs, args...)
-
 	var outBuf bytes.Buffer
 	var errBuf strings.Builder
 
@@ -63,33 +67,32 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("unable to find terraform for %q: %s", e.workDir, err)
 	}
 
-	cmd := exec.CommandContext(ctx, path)
-
-	cmd.Args = allArgs
+	cmd := e.cmdCtxFunc(ctx, path, args...)
+	cmd.Args = append([]string{"terraform"}, args...)
 	cmd.Dir = e.workDir
 	cmd.Stderr = &errBuf
 	cmd.Stdout = &outBuf
 
-	e.logger.Printf("Running %s %q in %q...", path, allArgs[1:], e.workDir)
+	e.logger.Printf("Running %s %q in %q...", path, args, e.workDir)
 	err = cmd.Run()
 	if err != nil {
 		if tErr, ok := err.(*exec.ExitError); ok {
-			err = fmt.Errorf("terraform (pid %d) exited (code %d): %s\nstdout: %q\nstderr: %q",
-				tErr.Pid(),
-				tErr.ExitCode(),
-				tErr.ProcessState.String(),
-				outBuf.String(),
-				errBuf.String())
-		}
+			exitErr := &ExitError{
+				Err:    tErr,
+				Path:   cmd.Path,
+				Stdout: outBuf.String(),
+				Stderr: errBuf.String(),
+			}
 
-		ctxErr := ctx.Err()
-		if errors.Is(ctxErr, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("%w.\n%s",
-				ExecTimeoutError(allArgs, e.timeout), err)
-		}
-		if errors.Is(ctxErr, context.Canceled) {
-			return nil, fmt.Errorf("%w.\n%s",
-				ExecCanceledError(allArgs), err)
+			ctxErr := ctx.Err()
+			if errors.Is(ctxErr, context.DeadlineExceeded) {
+				exitErr.CtxErr = ExecTimeoutError(cmd.Args, e.timeout)
+			}
+			if errors.Is(ctxErr, context.Canceled) {
+				exitErr.CtxErr = ExecCanceledError(args)
+			}
+
+			return nil, exitErr
 		}
 
 		return nil, err
@@ -97,7 +100,7 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 
 	pc := cmd.ProcessState
 	e.logger.Printf("terraform run (%s %q, in %q, pid %d) finished with exit code %d",
-		path, allArgs[1:], e.workDir, pc.Pid(), pc.ExitCode())
+		path, args, e.workDir, pc.Pid(), pc.ExitCode())
 
 	return outBuf.Bytes(), nil
 }
@@ -105,49 +108,29 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 func (e *Executor) Version() (string, error) {
 	out, err := e.run("version")
 	if err != nil {
-		return "", fmt.Errorf("failed to get version: %s", err)
+		return "", fmt.Errorf("failed to get version: %w", err)
 	}
+	outString := string(out)
+	lines := strings.Split(outString, "\n")
+	if len(lines) < 1 {
+		return "", fmt.Errorf("unexpected version output: %q", outString)
+	}
+	version := strings.TrimLeft(lines[0], "Terraform v")
 
-	return string(out), nil
+	return version, nil
 }
 
 func (e *Executor) ProviderSchemas() (*tfjson.ProviderSchemas, error) {
 	outBytes, err := e.run("providers", "schema", "-json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to get schemas: %s", err)
+		return nil, fmt.Errorf("failed to get schemas: %w", err)
 	}
 
 	var schemas tfjson.ProviderSchemas
 	err = json.Unmarshal(outBytes, &schemas)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	return &schemas, nil
-}
-
-type execTimeoutErr struct {
-	cmd      []string
-	duration time.Duration
-}
-
-func (e *execTimeoutErr) Error() string {
-	return fmt.Sprintf("Execution of %q timed out after %s",
-		e.cmd, e.duration)
-}
-
-func ExecTimeoutError(cmd []string, duration time.Duration) *execTimeoutErr {
-	return &execTimeoutErr{cmd, duration}
-}
-
-type execCanceledErr struct {
-	cmd []string
-}
-
-func (e *execCanceledErr) Error() string {
-	return fmt.Sprintf("Execution of %q canceled", e.cmd)
-}
-
-func ExecCanceledError(cmd []string) *execCanceledErr {
-	return &execCanceledErr{cmd}
 }
