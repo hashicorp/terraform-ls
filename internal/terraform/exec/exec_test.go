@@ -1,14 +1,13 @@
 package exec
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
 )
 
 func TestExec_timeout(t *testing.T) {
-	e := mockExecutor(&expected{
+	e := MockExecutor(&Mock{
 		Args:          []string{"version"},
 		SleepDuration: 100 * time.Millisecond,
 		Stdout:        "Terraform v0.12.0\n",
@@ -31,7 +30,7 @@ func TestExec_timeout(t *testing.T) {
 }
 
 func TestExec_Version(t *testing.T) {
-	e := mockExecutor(&expected{
+	e := MockExecutor(&Mock{
 		Args:     []string{"version"},
 		Stdout:   "Terraform v0.12.0\n",
 		ExitCode: 0,
@@ -46,7 +45,7 @@ func TestExec_Version(t *testing.T) {
 }
 
 func TestExec_ProviderSchemas(t *testing.T) {
-	e := mockExecutor(&expected{
+	e := MockExecutor(&Mock{
 		Args:     []string{"providers", "schema", "-json"},
 		Stdout:   `{"format_version": "0.1"}`,
 		ExitCode: 0,
@@ -62,10 +61,4 @@ func TestExec_ProviderSchemas(t *testing.T) {
 		t.Fatalf("format version doesn't match.\nexpected: %q\ngiven: %q\n",
 			expectedVersion, ps.FormatVersion)
 	}
-}
-
-func mockExecutor(e *expected) *Executor {
-	executor := NewExecutor(context.Background())
-	executor.cmdCtxFunc = mockCommandCtxFunc(e)
-	return executor
 }

@@ -10,6 +10,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/langserver/handlers"
 	"github.com/mitchellh/cli"
@@ -66,9 +67,15 @@ func (c *CompletionCommand) Run(args []string) int {
 		Version: 0,
 	})
 
+	tfPath, err := discovery.LookPath()
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
 	ctx := context.Background()
 	ctx = lsctx.WithFilesystem(fs, ctx)
-	ctx = lsctx.WithTerraformExecutor(exec.NewExecutor(ctx), ctx)
+	ctx = lsctx.WithTerraformExecutor(exec.NewExecutor(ctx, tfPath), ctx)
 	ctx = lsctx.WithClientCapabilities(&lsp.ClientCapabilities{}, ctx)
 
 	h := handlers.LogHandler(c.Logger)

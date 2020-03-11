@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -23,13 +24,46 @@ type configBlockFactory interface {
 	InitializeCapabilities(lsp.TextDocumentClientCapabilities)
 }
 
+type Parser interface {
+	SetLogger(*log.Logger)
+	SetCapabilities(lsp.TextDocumentClientCapabilities)
+	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
+}
+
 type parser struct {
 	logger *log.Logger
 	caps   lsp.TextDocumentClientCapabilities
 }
 
-func NewParser(logger *log.Logger, caps lsp.TextDocumentClientCapabilities) *parser {
-	return &parser{logger: logger, caps: caps}
+func FindCompatibleParser(v string) (Parser, error) {
+	tfVersion, err := version.NewVersion(v)
+	if err != nil {
+		return nil, err
+	}
+	supported, err := version.NewConstraint(">= 0.12.0")
+	if err != nil {
+		return nil, err
+	}
+
+	if !supported.Check(tfVersion) {
+		return nil, fmt.Errorf("No parser available for version %q (%s required)",
+			tfVersion, supported.String())
+	}
+	return newParser(), nil
+}
+
+func newParser() *parser {
+	return &parser{
+		logger: log.New(ioutil.Discard, "", 0),
+	}
+}
+
+func (p *parser) SetLogger(logger *log.Logger) {
+	p.logger = logger
+}
+
+func (p *parser) SetCapabilities(caps lsp.TextDocumentClientCapabilities) {
+	p.caps = caps
 }
 
 func (p *parser) blockTypes() map[string]configBlockFactory {
@@ -42,7 +76,7 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 	}
 }
 
-func (p *parser) ParseBlockFromHcl(block *hcl.Block) (ConfigBlock, error) {
+func (p *parser) ParseBlockFromHCL(block *hcl.Block) (ConfigBlock, error) {
 	f, ok := p.blockTypes()[block.Type]
 	if !ok {
 		return nil, fmt.Errorf("unknown block type: %q", block.Type)

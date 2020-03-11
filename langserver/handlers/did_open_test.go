@@ -8,7 +8,7 @@ import (
 )
 
 func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, New())
+	ls := langserver.NewLangServerMock(t, NewMock(nil))
 	stop := ls.Start(t)
 	defer stop()
 

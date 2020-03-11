@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/creachadair/jrpc2"
@@ -11,6 +12,7 @@ import (
 	rpch "github.com/creachadair/jrpc2/handler"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/langserver/srvctl"
 	"github.com/sourcegraph/go-lsp"
@@ -19,10 +21,26 @@ import (
 type handlerProvider struct {
 	logger *log.Logger
 	srvCtl srvctl.ServerController
+
+	executorFunc func(ctx context.Context, path string) *exec.Executor
 }
 
+var defaultLogger = log.New(ioutil.Discard, "", 0)
+
 func New() *handlerProvider {
-	return &handlerProvider{}
+	return &handlerProvider{
+		logger:       defaultLogger,
+		executorFunc: exec.NewExecutor,
+	}
+}
+
+func NewMock(mock *exec.Mock) *handlerProvider {
+	return &handlerProvider{
+		logger: defaultLogger,
+		executorFunc: func(ctx context.Context, path string) *exec.Executor {
+			return exec.MockExecutor(mock)
+		},
+	}
 }
 
 func (hp *handlerProvider) SetLogger(logger *log.Logger) {
@@ -91,7 +109,11 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
 
-			tf := exec.NewExecutor(ctx)
+			tfPath, err := discovery.LookPath()
+			if err != nil {
+				return nil, err
+			}
+			tf := hp.executorFunc(ctx, tfPath)
 			tf.SetLogger(hp.logger)
 			ctx = lsctx.WithTerraformExecutor(tf, ctx)
 

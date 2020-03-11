@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -16,22 +15,27 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// cmdCtxFunc allows mocking of Terraform in tests while retaining
+// ability to pass context for timeout/cancellation
 type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
 
 type Executor struct {
 	ctx     context.Context
 	timeout time.Duration
-	workDir string
-	logger  *log.Logger
+
+	execPath string
+	workDir  string
+	logger   *log.Logger
 
 	cmdCtxFunc cmdCtxFunc
 }
 
-func NewExecutor(ctx context.Context) *Executor {
+func NewExecutor(ctx context.Context, path string) *Executor {
 	return &Executor{
-		ctx:     ctx,
-		timeout: 10 * time.Second,
-		logger:  log.New(ioutil.Discard, "", 0),
+		ctx:      ctx,
+		timeout:  10 * time.Second,
+		execPath: path,
+		logger:   log.New(ioutil.Discard, "", 0),
 		cmdCtxFunc: func(ctx context.Context, path string, arg ...string) *exec.Cmd {
 			return exec.CommandContext(ctx, path, arg...)
 		},
@@ -61,20 +65,14 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	var outBuf bytes.Buffer
 	var errBuf bytes.Buffer
 
-	path, err := exec.LookPath("terraform")
-	if err != nil {
-		e.logger.Printf("[ERROR] Unable to find terraform with PATH set to %q", os.Getenv("PATH"))
-		return nil, fmt.Errorf("unable to find terraform for %q: %s", e.workDir, err)
-	}
-
-	cmd := e.cmdCtxFunc(ctx, path, args...)
+	cmd := e.cmdCtxFunc(ctx, e.execPath, args...)
 	cmd.Args = append([]string{"terraform"}, args...)
 	cmd.Dir = e.workDir
 	cmd.Stderr = &errBuf
 	cmd.Stdout = &outBuf
 
-	e.logger.Printf("Running %s %q in %q...", path, args, e.workDir)
-	err = cmd.Run()
+	e.logger.Printf("Running %s %q in %q...", e.execPath, args, e.workDir)
+	err := cmd.Run()
 	if err != nil {
 		if tErr, ok := err.(*exec.ExitError); ok {
 			exitErr := &ExitError{
@@ -100,7 +98,7 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 
 	pc := cmd.ProcessState
 	e.logger.Printf("terraform run (%s %q, in %q, pid %d) finished with exit code %d",
-		path, args, e.workDir, pc.Pid(), pc.ExitCode())
+		e.execPath, args, e.workDir, pc.Pid(), pc.ExitCode())
 
 	return outBuf.Bytes(), nil
 }

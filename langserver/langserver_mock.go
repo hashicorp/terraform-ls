@@ -118,6 +118,13 @@ func (lsm *langServerMock) CallAndExpectError(t *testing.T, cr *CallRequest, exp
 	}
 }
 
+func (lsm *langServerMock) Notify(t *testing.T, cr *CallRequest) {
+	err := lsm.client.Notify(context.Background(), cr.Method, json.RawMessage(cr.ReqParams))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // rawResponse is a copy of jrpc2.jresponse
 // to enable accurate comparison of responses
 type rawResponse struct {

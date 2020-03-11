@@ -5,17 +5,15 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/sourcegraph/go-lsp"
 )
 
-func TestParser_ParseBlockFromHcl(t *testing.T) {
-	caps := lsp.TextDocumentClientCapabilities{}
-	p := NewParser(emptyLogger(), caps)
+func TestParser_ParseBlockFromHCL(t *testing.T) {
+	p := newParser()
 
 	hclBlock := parseHclBlock(t, `provider "currywurst" {
 }`)
 
-	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
+	cfgBlock, err := p.ParseBlockFromHCL(hclBlock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,14 +25,13 @@ func TestParser_ParseBlockFromHcl(t *testing.T) {
 	}
 }
 
-func TestParser_ParseBlockFromHcl_unknown(t *testing.T) {
-	caps := lsp.TextDocumentClientCapabilities{}
-	p := NewParser(emptyLogger(), caps)
+func TestParser_ParseBlockFromHCL_unknown(t *testing.T) {
+	p := newParser()
 
 	hclBlock := parseHclBlock(t, `meal "currywurst" {
 }`)
 
-	_, err := p.ParseBlockFromHcl(hclBlock)
+	_, err := p.ParseBlockFromHCL(hclBlock)
 
 	expectedErr := `unknown block type: "meal"`
 	if err != nil {
@@ -47,14 +44,13 @@ func TestParser_ParseBlockFromHcl_unknown(t *testing.T) {
 	t.Fatalf("expected error: %q", expectedErr)
 }
 
-func TestParser_ParseBlockFromHcl_error(t *testing.T) {
-	caps := lsp.TextDocumentClientCapabilities{}
-	p := NewParser(emptyLogger(), caps)
+func TestParser_ParseBlockFromHCL_error(t *testing.T) {
+	p := newParser()
 
 	hclBlock := parseHclBlock(t, `provider "currywurst" "extra" {
 }`)
 
-	_, err := p.ParseBlockFromHcl(hclBlock)
+	_, err := p.ParseBlockFromHCL(hclBlock)
 
 	expectedErr := `provider: invalid labels for provider block: ["currywurst" "extra"]`
 	if err != nil {

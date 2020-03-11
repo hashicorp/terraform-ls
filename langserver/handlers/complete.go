@@ -30,26 +30,34 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
 
-	p := lang.NewParser(h.logger, cc.TextDocument)
-
-	cfgBlock, err := p.ParseBlockFromHcl(hclBlock)
-	if err != nil {
-		return list, fmt.Errorf("finding config block failed: %s", err)
-	}
-
-	uri := fs.URI(params.TextDocumentPositionParams.TextDocument.URI)
-	wd := uri.Dir()
-
-	h.logger.Printf("Retrieving schemas for %q ...", wd)
-
-	start := time.Now()
-
 	tf, err := lsctx.TerraformExecutor(ctx)
 	if err != nil {
 		return list, err
 	}
+
+	uri := fs.URI(params.TextDocumentPositionParams.TextDocument.URI)
+	wd := uri.Dir()
 	tf.SetWorkdir(wd)
 
+	tfVersion, err := tf.Version()
+	if err != nil {
+		return list, err
+	}
+
+	p, err := lang.FindCompatibleParser(tfVersion)
+	if err != nil {
+		return list, err
+	}
+	p.SetLogger(h.logger)
+	p.SetCapabilities(cc.TextDocument)
+
+	cfgBlock, err := p.ParseBlockFromHCL(hclBlock)
+	if err != nil {
+		return list, fmt.Errorf("finding config block failed: %s", err)
+	}
+
+	h.logger.Printf("Retrieving schemas for %q ...", wd)
+	start := time.Now()
 	schemas, err := tf.ProviderSchemas()
 	if err != nil {
 		return list, fmt.Errorf("unable to get schemas: %s", err)
