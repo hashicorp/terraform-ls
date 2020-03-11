@@ -85,6 +85,9 @@ func (lsm *langServerMock) Call(t *testing.T, cr *CallRequest) *rawResponse {
 func (lsm *langServerMock) CallAndExpectResponse(t *testing.T, cr *CallRequest, expectRaw string) {
 	rsp := lsm.Call(t, cr)
 
+	// Compacting is necessary because we retain params as json.RawMessage
+	// in rawResponse, which holds formatted bytes that may not match
+	// due to whitespaces
 	compactedRaw := bytes.NewBuffer([]byte{})
 	err := json.Compact(compactedRaw, []byte(expectRaw))
 	if err != nil {
