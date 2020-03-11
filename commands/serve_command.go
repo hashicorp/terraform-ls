@@ -10,6 +10,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/langserver"
+	"github.com/hashicorp/terraform-ls/langserver/handlers"
 	"github.com/mitchellh/cli"
 )
 
@@ -35,14 +36,16 @@ func (c *ServeCommand) Run(args []string) int {
 		syscall.SIGINT, syscall.SIGTERM)
 	defer cancelFunc()
 
-	srv := langserver.NewLangServer(ctx, c.Logger)
+	hp := handlers.New()
+	srv := langserver.NewLangServer(ctx, hp)
+	srv.SetLogger(c.Logger)
 
 	if port != -1 {
 		srv.StartTCP(fmt.Sprintf("localhost:%d", port))
 		return 0
 	}
 
-	srv.Start(os.Stdin, os.Stdout)
+	srv.StartAndWait(os.Stdin, os.Stdout)
 
 	return 0
 }

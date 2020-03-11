@@ -59,7 +59,7 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	}
 
 	var outBuf bytes.Buffer
-	var errBuf strings.Builder
+	var errBuf bytes.Buffer
 
 	path, err := exec.LookPath("terraform")
 	if err != nil {

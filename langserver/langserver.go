@@ -4,57 +4,65 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	rpcServer "github.com/creachadair/jrpc2/server"
+	"github.com/hashicorp/terraform-ls/langserver/srvctl"
 )
 
 type langServer struct {
 	ctx        context.Context
-	assigner   jrpc2.Assigner
+	hp         srvctl.HandlerProvider
 	logger     *log.Logger
 	srvOptions *jrpc2.ServerOptions
 
-	server   *server
+	srvCtl   srvctl.ServerController
 	stopFunc context.CancelFunc
 }
 
-func NewLangServer(srvCtx context.Context, logger *log.Logger) *langServer {
-	srv := newServer()
-
+func NewLangServer(srvCtx context.Context, hp srvctl.HandlerProvider) *langServer {
 	opts := &jrpc2.ServerOptions{
 		AllowPush: true,
-		Logger:    logger,
-		RPCLog:    &rpcLogger{logger},
 	}
 
 	srvCtx, stopFunc := context.WithCancel(srvCtx)
-	hm := &handlerMap{logger: logger, srv: srv, srvStopFunc: stopFunc}
 
 	return &langServer{
 		ctx:        srvCtx,
-		assigner:   hm.Map(),
-		logger:     logger,
+		hp:         hp,
+		logger:     log.New(ioutil.Discard, "", 0),
 		srvOptions: opts,
-		server:     srv,
+		srvCtl:     srvctl.NewServerController(),
 		stopFunc:   stopFunc,
 	}
 }
 
-func (ls *langServer) Start(reader io.Reader, writer io.WriteCloser) {
-	err := ls.server.Prepare()
+func (ls *langServer) SetLogger(logger *log.Logger) {
+	ls.srvOptions.Logger = logger
+	ls.srvOptions.RPCLog = &rpcLogger{logger}
+	ls.hp.SetLogger(logger)
+	ls.logger = logger
+}
+
+func (ls *langServer) start(reader io.Reader, writer io.WriteCloser) *jrpc2.Server {
+	err := ls.srvCtl.Prepare()
 	if err != nil {
 		ls.logger.Printf("Unable to prepare server: %s", err)
 		ls.stopFunc()
+		return nil
 	}
 
 	ch := channel.LSP(reader, writer)
 
-	srv := jrpc2.NewServer(ls.assigner, ls.srvOptions).Start(ch)
+	return jrpc2.NewServer(ls.hp.Handlers(ls.srvCtl), ls.srvOptions).Start(ch)
+}
 
+func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) {
+	srv := ls.start(reader, writer)
 	go func() {
 		ls.logger.Println("Starting server ...")
 		err := srv.Wait()
@@ -73,7 +81,7 @@ func (ls *langServer) Start(reader io.Reader, writer io.WriteCloser) {
 }
 
 func (ls *langServer) StartTCP(address string) error {
-	err := ls.server.Prepare()
+	err := ls.srvCtl.Prepare()
 	if err != nil {
 		ls.logger.Printf("Unable to prepare server: %s", err)
 		ls.stopFunc()
@@ -88,7 +96,7 @@ func (ls *langServer) StartTCP(address string) error {
 
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = rpcServer.Loop(lst, ls.assigner, &rpcServer.LoopOptions{
+		err = rpcServer.Loop(lst, ls.hp.Handlers(ls.srvCtl), &rpcServer.LoopOptions{
 			Framing:       channel.LSP,
 			ServerOptions: ls.srvOptions,
 		})

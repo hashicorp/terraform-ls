@@ -1,11 +1,11 @@
-package langserver
+package srvctl
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/code"
 )
 
 // serverState represents state of the language server
@@ -41,33 +41,6 @@ func (ss serverState) String() string {
 	return "<unknown>"
 }
 
-type unexpectedSrvState struct {
-	expectedState serverState
-	currentState  serverState
-}
-
-func (e *unexpectedSrvState) Error() string {
-	return fmt.Sprintf("server is not %s, current state: %s",
-		e.expectedState, e.currentState)
-}
-
-const serverNotInitialized code.Code = -32002
-
-func SrvNotInitializedErr(state serverState) error {
-	uss := &unexpectedSrvState{
-		expectedState: stateInitializedConfirmed,
-		currentState:  state,
-	}
-	if state < stateInitializedConfirmed {
-		return fmt.Errorf("%w: %s", serverNotInitialized.Err(), uss)
-	}
-	if state == stateDown {
-		return fmt.Errorf("%w: %s", code.InvalidRequest.Err(), uss)
-	}
-
-	return uss
-}
-
 type server struct {
 	initializeReq     *jrpc2.Request
 	initializeReqTime time.Time
@@ -75,21 +48,22 @@ type server struct {
 	initializedReq     *jrpc2.Request
 	initializedReqTime time.Time
 
-	state serverState
-
 	downReq     *jrpc2.Request
 	downReqTime time.Time
+
+	state    serverState
+	exitFunc context.CancelFunc
 }
 
-func (srv *server) IsPrepared() bool {
+func (srv *server) isPrepared() bool {
 	return srv.state == statePrepared
 }
 
 func (srv *server) Prepare() error {
 	if srv.state != stateEmpty {
 		return &unexpectedSrvState{
-			expectedState: stateInitializedConfirmed,
-			currentState:  srv.state,
+			ExpectedState: stateInitializedConfirmed,
+			CurrentState:  srv.state,
 		}
 	}
 
@@ -105,8 +79,7 @@ func (srv *server) IsInitializedUnconfirmed() bool {
 func (srv *server) Initialize(req *jrpc2.Request) error {
 	if srv.state != statePrepared {
 		if srv.IsInitializedUnconfirmed() {
-			return fmt.Errorf("Server was already initialized at %s via request %s",
-				srv.initializeReqTime, srv.initializeReq.ID())
+			return srvAlreadyInitializedErr(srv.initializeReq.ID())
 		}
 		return fmt.Errorf("Server is not ready to be initalized. State: %s",
 			srv.state)
@@ -119,13 +92,20 @@ func (srv *server) Initialize(req *jrpc2.Request) error {
 	return nil
 }
 
-func (srv *server) IsInitializationConfirmed() bool {
+func (srv *server) isInitializationConfirmed() bool {
 	return srv.state == stateInitializedConfirmed
+}
+
+func (srv *server) CheckInitializationIsConfirmed() error {
+	if !srv.isInitializationConfirmed() {
+		return srvNotInitializedErr(srv.State())
+	}
+	return nil
 }
 
 func (srv *server) ConfirmInitialization(req *jrpc2.Request) error {
 	if srv.state != stateInitializedUnconfirmed {
-		if srv.IsInitializationConfirmed() {
+		if srv.isInitializationConfirmed() {
 			return fmt.Errorf("Server was already confirmed as initalized at %s via request %s",
 				srv.initializedReqTime, srv.initializedReq.ID())
 		}
@@ -140,9 +120,8 @@ func (srv *server) ConfirmInitialization(req *jrpc2.Request) error {
 }
 
 func (srv *server) Shutdown(req *jrpc2.Request) error {
-	if srv.IsDown() {
-		return fmt.Errorf("%w: server was already shut down via request %s",
-			code.InvalidRequest.Err(), srv.downReq.ID())
+	if srv.isDown() {
+		return srvAlreadyDownErr(srv.downReq.ID())
 	}
 
 	srv.downReq = req
@@ -152,7 +131,20 @@ func (srv *server) Shutdown(req *jrpc2.Request) error {
 	return nil
 }
 
-func (srv *server) IsDown() bool {
+func (srv *server) Exit() error {
+	if !srv.isExitable() {
+		return fmt.Errorf("Cannot exit as server is %s", srv.State())
+	}
+	srv.exitFunc()
+
+	return nil
+}
+
+func (srv *server) isExitable() bool {
+	return srv.isDown() || srv.isPrepared()
+}
+
+func (srv *server) isDown() bool {
 	return srv.state == stateDown
 }
 
@@ -160,6 +152,6 @@ func (srv *server) State() serverState {
 	return srv.state
 }
 
-func newServer() *server {
+func NewServerController() *server {
 	return &server{state: stateEmpty}
 }
