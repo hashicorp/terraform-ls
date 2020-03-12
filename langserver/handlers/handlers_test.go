@@ -5,11 +5,65 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/langserver"
 )
+
+func TestInitalizeAndShutdown(t *testing.T) {
+	ls := langserver.NewLangServerMock(t, NewMock(validTfMockCalls()))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: `{
+	    "capabilities": {},
+	    "rootUri": "file:///tmp",
+	    "processId": 12345
+	}`}, `{
+		"jsonrpc": "2.0",
+		"id": 1,
+		"result": {
+			"capabilities": {
+				"textDocumentSync": {
+					"openClose": true,
+					"change": 1
+				},
+				"completionProvider": {}
+			}
+		}
+	}`)
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "shutdown", ReqParams: `{}`},
+		`{
+		"jsonrpc": "2.0",
+		"id": 2,
+		"result": null
+	}`)
+
+}
+
+func validTfMockCalls() *exec.MockQueue {
+	return &exec.MockQueue{
+		Q: []*exec.MockItem{
+			{
+				Args:   []string{"version"},
+				Stdout: "Terraform v0.12.0\n",
+			},
+			{
+				Args:   []string{"version"},
+				Stdout: "Terraform v0.12.0\n",
+			},
+			{
+				Args:   []string{"providers", "schema", "-json"},
+				Stdout: "{\"format_version\":\"0.1\"}\n",
+			},
+		},
+	}
+}
 
 func TestMain(m *testing.M) {
 	if v := os.Getenv("TF_LS_MOCK"); v != "" {
-		os.Exit(exec.ExecuteMock(v))
+		os.Exit(exec.ExecuteMockData(v))
 		return
 	}
 

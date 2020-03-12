@@ -9,12 +9,12 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type ConfigBlock interface {
 	CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error)
-	LoadSchema(ps *tfjson.ProviderSchemas) error
 	Name() string
 	BlockType() string
 }
@@ -27,12 +27,15 @@ type configBlockFactory interface {
 type Parser interface {
 	SetLogger(*log.Logger)
 	SetCapabilities(lsp.TextDocumentClientCapabilities)
+	SetSchemaReader(schema.Reader)
 	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
 }
 
 type parser struct {
 	logger *log.Logger
 	caps   lsp.TextDocumentClientCapabilities
+
+	schemaReader schema.Reader
 }
 
 func FindCompatibleParser(v string) (Parser, error) {
@@ -66,9 +69,16 @@ func (p *parser) SetCapabilities(caps lsp.TextDocumentClientCapabilities) {
 	p.caps = caps
 }
 
+func (p *parser) SetSchemaReader(sr schema.Reader) {
+	p.schemaReader = sr
+}
+
 func (p *parser) blockTypes() map[string]configBlockFactory {
 	return map[string]configBlockFactory{
-		"provider": &providerBlockFactory{logger: p.logger},
+		"provider": &providerBlockFactory{
+			logger:       p.logger,
+			schemaReader: p.schemaReader,
+		},
 		// "resource": ResourceBlock,
 		// "data":     ResourceBlock,
 		// "variable": VariableBlock,

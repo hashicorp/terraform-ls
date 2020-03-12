@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -95,4 +96,65 @@ func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
 	}
 
 	return *caps, nil
+}
+
+const ctxTfSchemaWriter = "ctxTerraformSchemaWriter"
+
+func WithTerraformSchemaWriter(s schema.Writer, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfSchemaWriter, s)
+}
+
+func TerraformSchemaWriter(ctx context.Context) (schema.Writer, error) {
+	ss, ok := ctx.Value(ctxTfSchemaWriter).(schema.Writer)
+	if !ok {
+		return nil, fmt.Errorf("no terraform schema writer")
+	}
+
+	return ss, nil
+}
+
+const ctxTfSchemaReader = "ctxTerraformSchemaWriter"
+
+func WithTerraformSchemaReader(s schema.Reader, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfSchemaReader, s)
+}
+
+func TerraformSchemaReader(ctx context.Context) (schema.Reader, error) {
+	ss, ok := ctx.Value(ctxTfSchemaReader).(schema.Reader)
+	if !ok {
+		return nil, fmt.Errorf("no terraform schema reader")
+	}
+
+	return ss, nil
+}
+
+const ctxTfVersion = "ctxTerraformVersion"
+
+func WithTerraformVersion(v string, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfVersion, v)
+}
+
+func TerraformVersion(ctx context.Context) (string, error) {
+	tfv, ok := ctx.Value(ctxTfVersion).(string)
+	if !ok {
+		return "", fmt.Errorf("no Terraform version")
+	}
+
+	return tfv, nil
+}
+
+const ctxTfVersionSetter = "ctxTerraformVersionSetter"
+
+func WithTerraformVersionSetter(v *string, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfVersionSetter, v)
+}
+
+func SetTerraformVersion(ctx context.Context, v string) error {
+	tfv, ok := ctx.Value(ctxTfVersionSetter).(*string)
+	if !ok {
+		return fmt.Errorf("no Terraform version setter")
+	}
+	*tfv = v
+
+	return nil
 }

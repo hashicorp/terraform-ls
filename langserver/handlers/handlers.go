@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/hashicorp/terraform-ls/langserver/srvctl"
 	"github.com/sourcegraph/go-lsp"
 )
@@ -22,7 +23,7 @@ type handlerProvider struct {
 	logger *log.Logger
 	srvCtl srvctl.ServerController
 
-	executorFunc func(ctx context.Context, path string) *exec.Executor
+	executorFunc func(ctx context.Context, execPath string) *exec.Executor
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
@@ -34,11 +35,11 @@ func New() *handlerProvider {
 	}
 }
 
-func NewMock(mock *exec.Mock) *handlerProvider {
+func NewMock(mid exec.MockItemDispenser) *handlerProvider {
 	return &handlerProvider{
 		logger: defaultLogger,
-		executorFunc: func(ctx context.Context, path string) *exec.Executor {
-			return exec.MockExecutor(mock)
+		executorFunc: func(ctx context.Context, execPath string) *exec.Executor {
+			return exec.MockExecutor(mid)
 		},
 	}
 }
@@ -55,6 +56,9 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 	fs.SetLogger(hp.logger)
 	lh := LogHandler(hp.logger)
 	cc := &lsp.ClientCapabilities{}
+	tfVersion := "0.0.0"
+	ss := schema.NewStorage()
+	ss.SetLogger(hp.logger)
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -64,6 +68,17 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
+
+			tfPath, err := discovery.LookPath()
+			if err != nil {
+				return nil, err
+			}
+			tf := hp.executorFunc(ctx, tfPath)
+			tf.SetLogger(hp.logger)
+
+			ctx = lsctx.WithTerraformExecutor(tf, ctx)
+			ctx = lsctx.WithTerraformVersionSetter(&tfVersion, ctx)
+			ctx = lsctx.WithTerraformSchemaWriter(ss, ctx)
 
 			return handle(ctx, req, Initialize)
 		},
@@ -108,14 +123,8 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
-
-			tfPath, err := discovery.LookPath()
-			if err != nil {
-				return nil, err
-			}
-			tf := hp.executorFunc(ctx, tfPath)
-			tf.SetLogger(hp.logger)
-			ctx = lsctx.WithTerraformExecutor(tf, ctx)
+			ctx = lsctx.WithTerraformVersion(tfVersion, ctx)
+			ctx = lsctx.WithTerraformSchemaReader(ss, ctx)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},

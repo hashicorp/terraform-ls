@@ -21,12 +21,3 @@ func (e *emptyConfigErr) Error() string {
 func EmptyConfigErr() *emptyConfigErr {
 	return &emptyConfigErr{}
 }
-
-type SchemaUnavailableErr struct {
-	BlockType string
-	FullName  string
-}
-
-func (e *SchemaUnavailableErr) Error() string {
-	return fmt.Sprintf("schema unavailable for %s %q", e.BlockType, e.FullName)
-}

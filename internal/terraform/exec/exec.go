@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -55,6 +56,10 @@ func (e *Executor) SetWorkdir(workdir string) {
 }
 
 func (e *Executor) run(args ...string) ([]byte, error) {
+	if e.workDir == "" {
+		return nil, fmt.Errorf("no work directory set")
+	}
+
 	ctx := e.ctx
 	if e.timeout > 0 {
 		var cancel context.CancelFunc
@@ -116,6 +121,24 @@ func (e *Executor) Version() (string, error) {
 	version := strings.TrimLeft(lines[0], "Terraform v")
 
 	return version, nil
+}
+
+func (e *Executor) VersionIsSupported(c version.Constraints) error {
+	v, err := e.Version()
+	if err != nil {
+		return err
+	}
+	ver, err := version.NewVersion(v)
+	if err != nil {
+		return err
+	}
+
+	if !c.Check(ver) {
+		return fmt.Errorf("version %s not supported (%s)",
+			ver.String(), c.String())
+	}
+
+	return nil
 }
 
 func (e *Executor) ProviderSchemas() (*tfjson.ProviderSchemas, error) {

@@ -9,6 +9,7 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -16,6 +17,8 @@ import (
 type providerBlockFactory struct {
 	logger *log.Logger
 	caps   lsp.TextDocumentClientCapabilities
+
+	schemaReader schema.Reader
 }
 
 func (f *providerBlockFactory) New(block *hcl.Block) (ConfigBlock, error) {
@@ -30,7 +33,12 @@ func (f *providerBlockFactory) New(block *hcl.Block) (ConfigBlock, error) {
 		return nil, &InvalidLabelsErr{"provider", labels}
 	}
 
-	return &providerBlock{hclBlock: block, logger: f.logger, caps: f.caps}, nil
+	return &providerBlock{
+		hclBlock: block,
+		logger:   f.logger,
+		caps:     f.caps,
+		sr:       f.schemaReader,
+	}, nil
 }
 
 func (f *providerBlockFactory) BlockType() string {
@@ -45,17 +53,22 @@ type providerBlock struct {
 	logger   *log.Logger
 	caps     lsp.TextDocumentClientCapabilities
 	hclBlock *hcl.Block
-	schema   *tfjson.Schema
+	sr       schema.Reader
 }
 
 func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error) {
 	list := lsp.CompletionList{}
 
-	if p.schema == nil {
-		return list, &SchemaUnavailableErr{"provider", p.Name()}
+	if p.sr == nil {
+		return list, fmt.Errorf("no schema reader available")
 	}
 
-	hs := jsonSchemaToHcl(p.schema)
+	pSchema, err := p.sr.ProviderConfigSchema(p.Name())
+	if err != nil {
+		return list, err
+	}
+
+	hs := jsonSchemaToHcl(pSchema)
 
 	content, body, diags := p.hclBlock.Body.PartialContent(hs)
 	if diags.HasErrors() {
@@ -80,8 +93,8 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		return list, nil
 	}
 
-	attrs := undeclaredSchemaAttributes(p.schema.Block.Attributes, content.Attributes)
-	// TODO: blocks := undeclaredSchemaBlocks(p.schema.Block.NestedBlocks, content.Blocks)
+	attrs := undeclaredSchemaAttributes(pSchema.Block.Attributes, content.Attributes)
+	// TODO: blocks := undeclaredSchemaBlocks(pSchema.Block.NestedBlocks, content.Blocks)
 
 	for name, attr := range attrs {
 		if attr.Computed && !attr.Optional && !attr.Required {
@@ -163,16 +176,4 @@ func (p *providerBlock) Name() string {
 
 func (p *providerBlock) BlockType() string {
 	return "provider"
-}
-
-func (p *providerBlock) LoadSchema(ps *tfjson.ProviderSchemas) error {
-	providerName := p.Name()
-
-	schema, ok := ps.Schemas[providerName]
-	if !ok {
-		return &SchemaUnavailableErr{"provider", providerName}
-	}
-
-	p.schema = schema.ConfigSchema
-	return nil
 }

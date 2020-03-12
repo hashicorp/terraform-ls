@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
@@ -23,6 +22,16 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
+	sr, err := lsctx.TerraformSchemaReader(ctx)
+	if err != nil {
+		return list, err
+	}
+
+	tfVersion, err := lsctx.TerraformVersion(ctx)
+	if err != nil {
+		return list, err
+	}
+
 	h.logger.Printf("Finding block at position %#v", params.TextDocumentPositionParams)
 	hclBlock, hclPos, err := fs.HclBlockAtDocPosition(params.TextDocumentPositionParams)
 	if err != nil {
@@ -30,48 +39,22 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
 
-	tf, err := lsctx.TerraformExecutor(ctx)
-	if err != nil {
-		return list, err
-	}
-
-	uri := fs.URI(params.TextDocumentPositionParams.TextDocument.URI)
-	wd := uri.Dir()
-	tf.SetWorkdir(wd)
-
-	tfVersion, err := tf.Version()
-	if err != nil {
-		return list, err
-	}
-
 	p, err := lang.FindCompatibleParser(tfVersion)
 	if err != nil {
-		return list, err
+		return list, fmt.Errorf("finding compatible parser failed: %w", err)
 	}
 	p.SetLogger(h.logger)
 	p.SetCapabilities(cc.TextDocument)
+	p.SetSchemaReader(sr)
 
 	cfgBlock, err := p.ParseBlockFromHCL(hclBlock)
 	if err != nil {
-		return list, fmt.Errorf("finding config block failed: %s", err)
-	}
-
-	h.logger.Printf("Retrieving schemas for %q ...", wd)
-	start := time.Now()
-	schemas, err := tf.ProviderSchemas()
-	if err != nil {
-		return list, fmt.Errorf("unable to get schemas: %s", err)
-	}
-	h.logger.Printf("Schemas retrieved in %s ...", time.Since(start))
-
-	err = cfgBlock.LoadSchema(schemas)
-	if err != nil {
-		return list, fmt.Errorf("loading schema failed: %s", err)
+		return list, fmt.Errorf("finding config block failed: %w", err)
 	}
 
 	list, err = cfgBlock.CompletionItemsAtPos(hclPos)
 	if err != nil {
-		return list, fmt.Errorf("finding completion items failed: %s", err)
+		return list, fmt.Errorf("finding completion items failed: %w", err)
 	}
 
 	return list, nil

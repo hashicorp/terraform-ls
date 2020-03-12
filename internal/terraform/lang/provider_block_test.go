@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -133,7 +134,10 @@ func TestProviderBlock_CompletionItemsAtPos(t *testing.T) {
 			nil,
 			nil,
 			lsp.CompletionList{},
-			&SchemaUnavailableErr{"provider", "aws"},
+			&schema.SchemaUnavailableErr{
+				BlockType: "provider",
+				FullName:  "aws",
+			},
 		},
 		{
 			"position in block type",
@@ -278,21 +282,23 @@ func TestProviderBlock_CompletionItemsAtPos(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			block := parseHclBlock(t, tc.src)
+
 			pf := &providerBlockFactory{}
 			if tc.caps != nil {
 				pf.InitializeCapabilities(*caps)
 			}
 
+			var sr schema.Reader
+			if tc.ps != nil {
+				sr = schema.MockStorage(tc.ps)
+			} else {
+				sr = schema.MockStorage(&tfjson.ProviderSchemas{})
+			}
+			pf.schemaReader = sr
+
 			p, err := pf.New(block)
 			if err != nil {
 				t.Fatal(err)
-			}
-
-			if tc.ps != nil {
-				err := p.LoadSchema(tc.ps)
-				if err != nil {
-					t.Fatal(err)
-				}
 			}
 
 			list, err := p.CompletionItemsAtPos(tc.pos)

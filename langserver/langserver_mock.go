@@ -31,7 +31,10 @@ type langServerMock struct {
 
 func NewLangServerMock(t *testing.T, hp srvctl.HandlerProvider) *langServerMock {
 	srv := NewLangServer(context.Background(), hp)
-	srv.SetLogger(testLogger(os.Stdout, "[SERVER] "))
+
+	if testing.Verbose() {
+		srv.SetLogger(testLogger(os.Stdout, "[SERVER] "))
+	}
 
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
@@ -63,9 +66,11 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	lsm.stopFunc = rpcSrv.Stop
 
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
-	lsm.client = jrpc2.NewClient(clientCh, &jrpc2.ClientOptions{
-		Logger: testLogger(os.Stdout, "[CLIENT] "),
-	})
+	opts := &jrpc2.ClientOptions{}
+	if testing.Verbose() {
+		opts.Logger = testLogger(os.Stdout, "[CLIENT] ")
+	}
+	lsm.client = jrpc2.NewClient(clientCh, opts)
 
 	return lsm.Stop
 }

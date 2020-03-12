@@ -4,73 +4,137 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"reflect"
 	"time"
 )
 
-type Mock struct {
+type MockItemDispenser interface {
+	NextMockItem() *MockItem
+}
+
+type MockItem struct {
 	Args          []string      `json:"args"`
 	Stdout        string        `json:"stdout"`
 	Stderr        string        `json:"stderr"`
 	SleepDuration time.Duration `json:"sleep"`
 	ExitCode      int           `json:"exit_code"`
+
+	MockError string `json:"error"`
 }
 
-func (m *Mock) MarshalJSON() ([]byte, error) {
-	type t Mock
+func (m *MockItem) MarshalJSON() ([]byte, error) {
+	type t MockItem
 	return json.Marshal((*t)(m))
 }
 
-func (m *Mock) UnmarshalJSON(b []byte) error {
-	type t Mock
+func (m *MockItem) UnmarshalJSON(b []byte) error {
+	type t MockItem
 	return json.Unmarshal(b, (*t)(m))
 }
 
-func MockExecutor(m *Mock) *Executor {
-	if m == nil {
-		m = &Mock{}
+type MockQueue struct {
+	Q []*MockItem
+}
+
+type MockCall MockItem
+
+func (mc *MockCall) MarshalJSON() ([]byte, error) {
+	item := (*MockItem)(mc)
+	q := MockQueue{
+		Q: []*MockItem{item},
+	}
+	return json.Marshal(q)
+}
+
+func (mc *MockCall) UnmarshalJSON(b []byte) error {
+	q := MockQueue{}
+	err := json.Unmarshal(b, &q)
+	if err != nil {
+		return err
 	}
 
-	path, ctxFunc := mockCommandCtxFunc(m)
+	mc = (*MockCall)(q.Q[0])
+	return nil
+}
+
+func (mc *MockCall) NextMockItem() *MockItem {
+	return (*MockItem)(mc)
+}
+
+func (mc *MockQueue) NextMockItem() *MockItem {
+	if len(mc.Q) == 0 {
+		return &MockItem{
+			MockError: "no more calls expected",
+		}
+	}
+
+	var mi *MockItem
+	mi, mc.Q = mc.Q[0], mc.Q[1:]
+
+	return mi
+}
+
+func MockExecutor(md MockItemDispenser) *Executor {
+	if md == nil {
+		md = &MockCall{
+			MockError: "no mocks provided",
+		}
+	}
+
+	path, ctxFunc := mockCommandCtxFunc(md)
 	executor := NewExecutor(context.Background(), path)
 	executor.cmdCtxFunc = ctxFunc
 	return executor
 }
 
-func mockCommandCtxFunc(e *Mock) (string, cmdCtxFunc) {
+func mockCommandCtxFunc(md MockItemDispenser) (string, cmdCtxFunc) {
 	return os.Args[0], func(ctx context.Context, path string, arg ...string) *exec.Cmd {
 		cmd := exec.CommandContext(ctx, os.Args[0], os.Args[1:]...)
 
-		expectedJson, _ := e.MarshalJSON()
+		b, err := md.NextMockItem().MarshalJSON()
+		if err != nil {
+			panic(err)
+		}
+		expectedJson := string(b)
 		cmd.Env = []string{"TF_LS_MOCK=" + string(expectedJson)}
 
 		return cmd
 	}
 }
 
-func ExecuteMock(rawMockData string) int {
-	e := &Mock{}
-	err := e.UnmarshalJSON([]byte(rawMockData))
+func ExecuteMockData(rawMockData string) int {
+	mi := &MockItem{}
+	err := mi.UnmarshalJSON([]byte(rawMockData))
 	if err != nil {
-		fmt.Fprint(os.Stderr, "unable to unmarshal mock response")
+		fmt.Fprintf(os.Stderr, "unable to unmarshal mock response: %s", err)
+		return 1
+	}
+	return validateMockItem(mi, os.Args[1:], os.Stdout, os.Stderr)
+}
+
+func validateMockItem(m *MockItem, args []string, stdout, stderr io.Writer) int {
+	if m.MockError != "" {
+		fmt.Fprintf(stderr, m.MockError)
 		return 1
 	}
 
-	givenArgs := os.Args[1:]
-	if !reflect.DeepEqual(e.Args, givenArgs) {
-		fmt.Fprintf(os.Stderr, "arguments don't match.\nexpected: %q\ngiven: %q\n",
-			e.Args, givenArgs)
+	givenArgs := args
+	if !reflect.DeepEqual(m.Args, givenArgs) {
+		fmt.Fprintf(stderr,
+			"arguments don't match.\nexpected: %q\ngiven: %q\n",
+			m.Args, givenArgs)
 		return 1
 	}
 
-	if e.SleepDuration > 0 {
-		time.Sleep(e.SleepDuration)
+	if m.SleepDuration > 0 {
+		time.Sleep(m.SleepDuration)
 	}
 
-	fmt.Fprint(os.Stdout, e.Stdout)
-	fmt.Fprint(os.Stderr, e.Stderr)
+	fmt.Fprint(stdout, m.Stdout)
+	fmt.Fprint(stderr, m.Stderr)
 
-	return e.ExitCode
+	return m.ExitCode
 }

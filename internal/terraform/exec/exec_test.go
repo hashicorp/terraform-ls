@@ -7,11 +7,12 @@ import (
 )
 
 func TestExec_timeout(t *testing.T) {
-	e := MockExecutor(&Mock{
+	e := MockExecutor(&MockCall{
 		Args:          []string{"version"},
 		SleepDuration: 100 * time.Millisecond,
 		Stdout:        "Terraform v0.12.0\n",
 	})
+	e.SetWorkdir("/tmp")
 	e.timeout = 1 * time.Millisecond
 
 	expectedErr := ExecTimeoutError([]string{"terraform", "version"}, e.timeout)
@@ -30,11 +31,12 @@ func TestExec_timeout(t *testing.T) {
 }
 
 func TestExec_Version(t *testing.T) {
-	e := MockExecutor(&Mock{
+	e := MockExecutor(&MockCall{
 		Args:     []string{"version"},
 		Stdout:   "Terraform v0.12.0\n",
 		ExitCode: 0,
 	})
+	e.SetWorkdir("/tmp")
 	v, err := e.Version()
 	if err != nil {
 		t.Fatal(err)
@@ -45,11 +47,12 @@ func TestExec_Version(t *testing.T) {
 }
 
 func TestExec_ProviderSchemas(t *testing.T) {
-	e := MockExecutor(&Mock{
+	e := MockExecutor(&MockCall{
 		Args:     []string{"providers", "schema", "-json"},
 		Stdout:   `{"format_version": "0.1"}`,
 		ExitCode: 0,
 	})
+	e.SetWorkdir("/tmp")
 
 	ps, err := e.ProviderSchemas()
 	if err != nil {
