@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
@@ -17,10 +18,11 @@ import (
 )
 
 type langServerMock struct {
-	srv         *langServer
-	srvStopFunc context.CancelFunc
-	srvStdin    io.Reader
-	srvStdout   io.WriteCloser
+	srv            *langServer
+	stopFunc       context.CancelFunc
+	stopFuncCalled bool
+	srvStdin       io.Reader
+	srvStdout      io.WriteCloser
 
 	client       *jrpc2.Client
 	clientStdin  io.Reader
@@ -28,9 +30,7 @@ type langServerMock struct {
 }
 
 func NewLangServerMock(t *testing.T, hp srvctl.HandlerProvider) *langServerMock {
-	ctx, stopFunc := context.WithCancel(context.Background())
-
-	srv := NewLangServer(ctx, hp)
+	srv := NewLangServer(context.Background(), hp)
 	srv.SetLogger(testLogger(os.Stdout, "[SERVER] "))
 
 	stdinReader, stdinWriter := io.Pipe()
@@ -38,7 +38,6 @@ func NewLangServerMock(t *testing.T, hp srvctl.HandlerProvider) *langServerMock 
 
 	return &langServerMock{
 		srv:          srv,
-		srvStopFunc:  stopFunc,
 		srvStdin:     stdinReader,
 		srvStdout:    stdoutWriter,
 		clientStdin:  stdoutReader,
@@ -46,18 +45,29 @@ func NewLangServerMock(t *testing.T, hp srvctl.HandlerProvider) *langServerMock 
 	}
 }
 
+func (lsm *langServerMock) Stop() {
+	lsm.stopFunc()
+	lsm.stopFuncCalled = true
+}
+
+func (lsm *langServerMock) StopFuncCalled() bool {
+	return lsm.stopFuncCalled
+}
+
 func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
+	lsm.srv.srvCtl = srvctl.NewServerController(lsm.Stop)
 	rpcSrv := lsm.srv.start(lsm.srvStdin, lsm.srvStdout)
 	go func() {
 		rpcSrv.Wait()
 	}()
+	lsm.stopFunc = rpcSrv.Stop
 
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
 	lsm.client = jrpc2.NewClient(clientCh, &jrpc2.ClientOptions{
 		Logger: testLogger(os.Stdout, "[CLIENT] "),
 	})
 
-	return lsm.srvStopFunc
+	return lsm.Stop
 }
 
 type CallRequest struct {
@@ -120,6 +130,17 @@ func (lsm *langServerMock) CallAndExpectError(t *testing.T, cr *CallRequest, exp
 
 func (lsm *langServerMock) Notify(t *testing.T, cr *CallRequest) {
 	err := lsm.client.Notify(context.Background(), cr.Method, json.RawMessage(cr.ReqParams))
+
+	// This is to account for the fact that
+	// notifications are asynchronous in nature per LSP spec.
+	//
+	// We assume the server under test has no other notifications
+	// to process and the method is quick to execute.
+	//
+	// TODO: We may need to re-evaluate this hack later and check
+	// if the server could be turned into sync mode somehow
+	time.Sleep(1 * time.Millisecond)
+
 	if err != nil {
 		t.Fatal(err)
 	}

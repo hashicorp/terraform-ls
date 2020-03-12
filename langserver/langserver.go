@@ -36,7 +36,7 @@ func NewLangServer(srvCtx context.Context, hp srvctl.HandlerProvider) *langServe
 		hp:         hp,
 		logger:     log.New(ioutil.Discard, "", 0),
 		srvOptions: opts,
-		srvCtl:     srvctl.NewServerController(),
+		srvCtl:     srvctl.NewServerController(stopFunc),
 		stopFunc:   stopFunc,
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestLangServer_initalizeAndShutdown(t *testing.T) {
-	ls := NewLangServerMock(t, handlers.New())
+	ls := NewLangServerMock(t, handlers.NewMock(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -51,7 +51,7 @@ func TestLangServer_initalizeAndShutdown(t *testing.T) {
 }
 
 func TestLangServer_initializeTwice(t *testing.T) {
-	ls := NewLangServerMock(t, handlers.New())
+	ls := NewLangServerMock(t, handlers.NewMock(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -70,7 +70,7 @@ func TestLangServer_initializeTwice(t *testing.T) {
 }
 
 func TestLangServer_shutdownTwice(t *testing.T) {
-	ls := NewLangServerMock(t, handlers.New())
+	ls := NewLangServerMock(t, handlers.NewMock(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -84,4 +84,18 @@ func TestLangServer_shutdownTwice(t *testing.T) {
 
 	ls.CallAndExpectError(t, &CallRequest{"shutdown", `{}`},
 		code.InvalidRequest.Err())
+}
+
+func TestLangServer_exit(t *testing.T) {
+	ls := NewLangServerMock(t, handlers.NewMock(nil))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Notify(t, &CallRequest{
+		"exit",
+		`{}`})
+
+	if !ls.StopFuncCalled() {
+		t.Fatal("Expected stop function to be called")
+	}
 }

@@ -152,6 +152,9 @@ func (srv *server) State() serverState {
 	return srv.state
 }
 
-func NewServerController() *server {
-	return &server{state: stateEmpty}
+func NewServerController(exitFunc context.CancelFunc) *server {
+	return &server{
+		state:    stateEmpty,
+		exitFunc: exitFunc,
+	}
 }
