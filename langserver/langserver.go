@@ -58,7 +58,7 @@ func (ls *langServer) start(reader io.Reader, writer io.WriteCloser) *jrpc2.Serv
 
 	ch := channel.LSP(reader, writer)
 
-	return jrpc2.NewServer(ls.hp.Handlers(ls.srvCtl), ls.srvOptions).Start(ch)
+	return jrpc2.NewServer(ls.hp.Handlers(ls.ctx, ls.srvCtl), ls.srvOptions).Start(ch)
 }
 
 func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) {
@@ -96,7 +96,7 @@ func (ls *langServer) StartTCP(address string) error {
 
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = rpcServer.Loop(lst, ls.hp.Handlers(ls.srvCtl), &rpcServer.LoopOptions{
+		err = rpcServer.Loop(lst, ls.hp.Handlers(ls.ctx, ls.srvCtl), &rpcServer.LoopOptions{
 			Framing:       channel.LSP,
 			ServerOptions: ls.srvOptions,
 		})

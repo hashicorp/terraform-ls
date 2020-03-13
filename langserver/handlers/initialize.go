@@ -63,7 +63,17 @@ func Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.Initializ
 		return serverCaps, err
 	}
 
-	err = ss.ObtainSchemasForDir(tf, rootURI)
+	err = ss.ObtainSchemasForWorkspace(tf, rootURI)
+	if err != nil {
+		return serverCaps, err
+	}
+
+	err = ss.AddWorkspaceForWatching(rootURI)
+	if err != nil {
+		return serverCaps, err
+	}
+
+	err = ss.StartWatching(tf)
 	if err != nil {
 		return serverCaps, err
 	}

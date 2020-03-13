@@ -23,6 +23,7 @@ type handlerProvider struct {
 	logger *log.Logger
 	srvCtl srvctl.ServerController
 
+	ss           *schema.Storage
 	executorFunc func(ctx context.Context, execPath string) *exec.Executor
 }
 
@@ -32,6 +33,7 @@ func New() *handlerProvider {
 	return &handlerProvider{
 		logger:       defaultLogger,
 		executorFunc: exec.NewExecutor,
+		ss:           schema.NewStorage(),
 	}
 }
 
@@ -41,6 +43,7 @@ func NewMock(mid exec.MockItemDispenser) *handlerProvider {
 		executorFunc: func(ctx context.Context, execPath string) *exec.Executor {
 			return exec.MockExecutor(mid)
 		},
+		ss: schema.MockStorage(nil),
 	}
 }
 
@@ -50,15 +53,14 @@ func (hp *handlerProvider) SetLogger(logger *log.Logger) {
 
 // Handlers builds out the jrpc2.Map according to the LSP protocol
 // and passes related dependencies to handlers via context
-func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner {
+func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerController) jrpc2.Assigner {
 	hp.srvCtl = ctl
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(hp.logger)
 	lh := LogHandler(hp.logger)
 	cc := &lsp.ClientCapabilities{}
 	tfVersion := "0.0.0"
-	ss := schema.NewStorage()
-	ss.SetLogger(hp.logger)
+	hp.ss.SetLogger(hp.logger)
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -73,12 +75,16 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 			if err != nil {
 				return nil, err
 			}
-			tf := hp.executorFunc(ctx, tfPath)
+
+			// We intentionally pass server context here to make executor cancellable
+			// on server shutdown, rather than response delivery or request cancellation
+			// as some operations may run in isolated goroutines
+			tf := hp.executorFunc(srvCtx, tfPath)
 			tf.SetLogger(hp.logger)
 
 			ctx = lsctx.WithTerraformExecutor(tf, ctx)
 			ctx = lsctx.WithTerraformVersionSetter(&tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaWriter(ss, ctx)
+			ctx = lsctx.WithTerraformSchemaWriter(hp.ss, ctx)
 
 			return handle(ctx, req, Initialize)
 		},
@@ -124,7 +130,7 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
 			ctx = lsctx.WithTerraformVersion(tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaReader(ss, ctx)
+			ctx = lsctx.WithTerraformSchemaReader(hp.ss, ctx)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
@@ -140,6 +146,11 @@ func (hp *handlerProvider) Handlers(ctl srvctl.ServerController) jrpc2.Assigner 
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := hp.srvCtl.Exit()
+			if err != nil {
+				return nil, err
+			}
+
+			err = hp.ss.StopWatching()
 			if err != nil {
 				return nil, err
 			}

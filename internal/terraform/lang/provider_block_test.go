@@ -288,12 +288,7 @@ func TestProviderBlock_CompletionItemsAtPos(t *testing.T) {
 				pf.InitializeCapabilities(*caps)
 			}
 
-			var sr schema.Reader
-			if tc.ps != nil {
-				sr = schema.MockStorage(tc.ps)
-			} else {
-				sr = schema.MockStorage(&tfjson.ProviderSchemas{})
-			}
+			sr := schema.MockStorage(tc.ps)
 			pf.schemaReader = sr
 
 			p, err := pf.New(block)

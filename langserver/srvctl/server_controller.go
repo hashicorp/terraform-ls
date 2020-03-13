@@ -2,6 +2,7 @@ package srvctl
 
 import (
 	"log"
+	"context"
 
 	"github.com/creachadair/jrpc2"
 )
@@ -16,6 +17,6 @@ type ServerController interface {
 }
 
 type HandlerProvider interface {
-	Handlers(ServerController) jrpc2.Assigner
+	Handlers(context.Context, ServerController) jrpc2.Assigner
 	SetLogger(*log.Logger)
 }
