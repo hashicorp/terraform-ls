@@ -1,15 +1,16 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"golang.org/x/sync/semaphore"
 )
 
 type Reader interface {
@@ -29,9 +30,9 @@ type Storage struct {
 
 	logger *log.Logger
 
-	// mu ensures atomic reading and obtaining of schemas
+	// sem ensures atomic reading and obtaining of schemas
 	// as the process of obtaining it may not be thread-safe
-	mu sync.RWMutex
+	sem *semaphore.Weighted
 
 	// sync makes operations synchronous which makes testing easier
 	sync bool
@@ -42,6 +43,7 @@ var defaultLogger = log.New(ioutil.Discard, "", 0)
 func NewStorage() *Storage {
 	return &Storage{
 		logger: defaultLogger,
+		sem:    semaphore.NewWeighted(1),
 	}
 }
 
@@ -70,9 +72,12 @@ func (s *Storage) ObtainSchemasForWorkspace(tf *exec.Executor, dir string) error
 }
 
 func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error {
-	s.logger.Printf("Obtaining lock before retrieving schema for %q ...", dir)
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.logger.Printf("Acquiring semaphore before retrieving schema for %q ...", dir)
+	err := s.sem.Acquire(context.Background(), 1)
+	if err != nil {
+		return fmt.Errorf("failed to acquire semaphore: %w", err)
+	}
+	defer s.sem.Release(1)
 
 	// Checking the version here may be excessive
 	// TODO: Find a way to centralize this
@@ -99,11 +104,19 @@ func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error
 }
 
 func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
-	s.logger.Printf("Obtaining lock before reading %q provider schema", name)
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.logger.Printf("Acquiring semaphore before reading %q provider schema", name)
+	acquired := s.sem.TryAcquire(1)
+	if !acquired {
+		return nil, fmt.Errorf("schema unavailable temporarily")
+	}
+	defer s.sem.Release(1)
 
 	s.logger.Printf("Reading %q provider schema", name)
+
+	if s.ps == nil {
+		return nil, &SchemaUnavailableErr{"provider", name}
+	}
+
 	schema, ok := s.ps.Schemas[name]
 	if !ok {
 		return nil, &SchemaUnavailableErr{"provider", name}
