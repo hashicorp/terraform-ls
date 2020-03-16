@@ -55,6 +55,10 @@ func (e *Executor) SetWorkdir(workdir string) {
 	e.workDir = workdir
 }
 
+func (e *Executor) GetExecPath() string {
+	return e.execPath
+}
+
 func (e *Executor) run(args ...string) ([]byte, error) {
 	if e.workDir == "" {
 		return nil, fmt.Errorf("no work directory set")
@@ -75,6 +79,11 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	cmd.Dir = e.workDir
 	cmd.Stderr = &errBuf
 	cmd.Stdout = &outBuf
+
+	// We don't perform upgrade from the context of executor
+	// and don't report outdated version to users,
+	// so we don't need to ask checkpoint for upgrades.
+	cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 
 	e.logger.Printf("Running %s %q in %q...", e.execPath, args, e.workDir)
 	err := cmd.Run()

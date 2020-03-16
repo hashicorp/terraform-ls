@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"golang.org/x/sync/semaphore"
 )
@@ -47,6 +48,31 @@ func NewStorage() *Storage {
 	}
 }
 
+func SchemaSupportsTerraform(v string) error {
+	c, err := version.NewConstraint(
+		">= 0.12.0", // Version 0.12 first introduced machine-readable schemas
+	)
+	if err != nil {
+		return fmt.Errorf("failed to parse constraint: %w", err)
+	}
+
+	ver, err := version.NewVersion(v)
+	if err != nil {
+		return fmt.Errorf("failed to parse verison: %w", err)
+	}
+
+	supported := c.Check(ver)
+	if !supported {
+		return &errors.UnsupportedTerraformVersion{
+			Component:   "schema storage",
+			Version:     v,
+			Constraints: c,
+		}
+	}
+
+	return watcherSupportsTerraform(ver)
+}
+
 func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
 }
@@ -78,17 +104,6 @@ func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error
 		return fmt.Errorf("failed to acquire semaphore: %w", err)
 	}
 	defer s.sem.Release(1)
-
-	// Checking the version here may be excessive
-	// TODO: Find a way to centralize this
-	tfVersions, err := version.NewConstraint(">= 0.12.0")
-	if err != nil {
-		return err
-	}
-	err = tf.VersionIsSupported(tfVersions)
-	if err != nil {
-		return err
-	}
 
 	tf.SetWorkdir(dir)
 

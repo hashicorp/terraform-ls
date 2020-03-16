@@ -10,6 +10,8 @@ import (
 	"runtime"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 )
 
 type watcher interface {
@@ -19,6 +21,34 @@ type watcher interface {
 	Errors() chan error
 	OnPluginChange(func(*watchedWorkspace) error)
 	SetLogger(*log.Logger)
+}
+
+func watcherSupportsTerraform(ver *version.Version) error {
+	c, err := version.NewConstraint(
+		"< 0.13.0", // Version 0.13 will likely have a different lock file path
+	)
+	if err != nil {
+		return fmt.Errorf("failed to parse constraint: %w", err)
+	}
+
+	supported := c.Check(ver)
+	if !supported {
+		return &errors.UnsupportedTerraformVersion{
+			Component:   "plugin watcher",
+			Version:     ver.String(),
+			Constraints: c,
+		}
+	}
+
+	return nil
+}
+
+func lockFilePath(dir string) string {
+	return filepath.Join(dir,
+		".terraform",
+		"plugins",
+		runtime.GOOS+"_"+runtime.GOARCH,
+		"lock.json")
 }
 
 // Watcher is a wrapper around native fsnotify.Watcher
@@ -68,14 +98,6 @@ func (w *Watcher) AddWorkspace(dir string) error {
 	}
 
 	return w.w.Add(lockPath)
-}
-
-func lockFilePath(dir string) string {
-	return filepath.Join(dir,
-		".terraform",
-		"plugins",
-		runtime.GOOS+"_"+runtime.GOARCH,
-		"lock.json")
 }
 
 func fileHashSum(path string) ([]byte, error) {

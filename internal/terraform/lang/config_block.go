@@ -9,9 +9,21 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 )
+
+// 0.12.0 first introduced HCL2 which provides
+// more convenient/cleaner parsing
+//
+// We set no upper bound for now as there is only schema-related
+// logic and schema format itself is version-checked elsewhere
+//
+// We may become more pessimistic as the parser begins to support
+// language features which may differ between versions
+// (e.g. meta-parameters)
+const supportedVersion = ">= 0.12.0"
 
 type ConfigBlock interface {
 	CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error)
@@ -38,20 +50,35 @@ type parser struct {
 	schemaReader schema.Reader
 }
 
-func FindCompatibleParser(v string) (Parser, error) {
+func ParserSupportsTerraform(v string) error {
 	tfVersion, err := version.NewVersion(v)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	supported, err := version.NewConstraint(">= 0.12.0")
+	c, err := version.NewConstraint(supportedVersion)
+	if err != nil {
+		return err
+	}
+
+	if !c.Check(tfVersion) {
+		return &errors.UnsupportedTerraformVersion{
+			Component:   "parser",
+			Version:     v,
+			Constraints: c,
+		}
+	}
+
+	return nil
+}
+
+// FindCompatibleParser finds a parser that is compatible with
+// given Terraform version, so that it parses config accuretly
+func FindCompatibleParser(v string) (Parser, error) {
+	err := ParserSupportsTerraform(v)
 	if err != nil {
 		return nil, err
 	}
 
-	if !supported.Check(tfVersion) {
-		return nil, fmt.Errorf("No parser available for version %q (%s required)",
-			tfVersion, supported.String())
-	}
 	return newParser(), nil
 }
 

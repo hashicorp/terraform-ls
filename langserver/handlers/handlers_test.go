@@ -50,10 +50,6 @@ func validTfMockCalls() *exec.MockQueue {
 				Stdout: "Terraform v0.12.0\n",
 			},
 			{
-				Args:   []string{"version"},
-				Stdout: "Terraform v0.12.0\n",
-			},
-			{
 				Args:   []string{"providers", "schema", "-json"},
 				Stdout: "{\"format_version\":\"0.1\"}\n",
 			},

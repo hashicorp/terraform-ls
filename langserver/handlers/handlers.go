@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/hashicorp/terraform-ls/langserver/srvctl"
 	"github.com/sourcegraph/go-lsp"
@@ -86,7 +87,7 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			ctx = lsctx.WithTerraformVersionSetter(&tfVersion, ctx)
 			ctx = lsctx.WithTerraformSchemaWriter(hp.ss, ctx)
 
-			return handle(ctx, req, Initialize)
+			return handle(ctx, req, lh.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := hp.srvCtl.ConfirmInitialization(req)
@@ -192,4 +193,18 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
 	}
 	return result, err
+}
+
+func supportsTerraform(tfVersion string) error {
+	err := schema.SchemaSupportsTerraform(tfVersion)
+	if err != nil {
+		return err
+	}
+
+	err = lang.ParserSupportsTerraform(tfVersion)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

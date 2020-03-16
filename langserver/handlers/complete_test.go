@@ -34,10 +34,6 @@ func TestCompletion_withValidData(t *testing.T) {
 				Stdout: "Terraform v0.12.0\n",
 			},
 			{
-				Args:   []string{"version"},
-				Stdout: "Terraform v0.12.0\n",
-			},
-			{
 				Args:   []string{"providers", "schema", "-json"},
 				Stdout: testSchemaOutput,
 			},
