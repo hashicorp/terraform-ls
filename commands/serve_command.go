@@ -60,16 +60,23 @@ func (c *ServeCommand) Run(args []string) int {
 		syscall.SIGINT, syscall.SIGTERM)
 	defer cancelFunc()
 
-	hp := handlers.New()
-	srv := langserver.NewLangServer(ctx, hp)
+	srv := langserver.NewLangServer(ctx, handlers.NewService)
 	srv.SetLogger(logger)
 
 	if c.port != 0 {
-		srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))
+		err := srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))
+		if err != nil {
+			c.Ui.Error(fmt.Sprintf("Failed to start TCP server: %s\n", err))
+			return 1
+		}
 		return 0
 	}
 
-	srv.StartAndWait(os.Stdin, os.Stdout)
+	err := srv.StartAndWait(os.Stdin, os.Stdout)
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("Failed to start server: %s\n", err))
+		return 1
+	}
 
 	return 0
 }

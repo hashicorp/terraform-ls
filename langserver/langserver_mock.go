@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -14,42 +15,59 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/langserver/srvctl"
+	"github.com/hashicorp/terraform-ls/langserver/svcctl"
 )
 
 type langServerMock struct {
-	srv            *langServer
-	stopFunc       context.CancelFunc
+	srv    *langServer
+	logger *log.Logger
+
+	// rpcSrv is set when server starts and allows Stop() to stop it after testing is finished
+	rpcSrv *singleServer
+
+	srvStopFunc    context.CancelFunc
 	stopFuncCalled bool
-	srvStdin       io.Reader
-	srvStdout      io.WriteCloser
+
+	srvStdin  io.Reader
+	srvStdout io.WriteCloser
 
 	client       *jrpc2.Client
 	clientStdin  io.Reader
 	clientStdout io.WriteCloser
 }
 
-func NewLangServerMock(t *testing.T, hp srvctl.HandlerProvider) *langServerMock {
-	srv := NewLangServer(context.Background(), hp)
-
-	if testing.Verbose() {
-		srv.SetLogger(testLogger(os.Stdout, "[SERVER] "))
-	}
-
+func NewLangServerMock(t *testing.T, sf svcctl.ServiceFactory) *langServerMock {
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
-	return &langServerMock{
-		srv:          srv,
+	logger := discardLogger()
+	if testing.Verbose() {
+		logger = testLogger(os.Stdout, "")
+	}
+
+	srvCtx, stopFunc := context.WithCancel(context.Background())
+	lsm := &langServerMock{
+		logger:       logger,
+		srvStopFunc:  stopFunc,
 		srvStdin:     stdinReader,
 		srvStdout:    stdoutWriter,
 		clientStdin:  stdoutReader,
 		clientStdout: stdinWriter,
 	}
+
+	lsm.srv = NewLangServer(srvCtx, func(srvCtx context.Context) svcctl.Service {
+		return sf(srvCtx)
+	})
+	if testing.Verbose() {
+		lsm.srv.SetLogger(testLogger(os.Stdout, "[SERVER] "))
+	}
+
+	return lsm
 }
 
 func (lsm *langServerMock) Stop() {
-	lsm.stopFunc()
+	lsm.logger.Println("Stopping mock server ...")
+	lsm.rpcSrv.Stop()
 	lsm.stopFuncCalled = true
 }
 
@@ -57,13 +75,21 @@ func (lsm *langServerMock) StopFuncCalled() bool {
 	return lsm.stopFuncCalled
 }
 
+// Start is more or less duplicate of langServer.StartAndWait
+// except that this one doesn't wait
+//
+// TODO: Explore whether we could leverage jrpc2's server.Local
 func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
-	lsm.srv.srvCtl = srvctl.NewServerController(lsm.Stop)
-	rpcSrv := lsm.srv.start(lsm.srvStdin, lsm.srvStdout)
+	srv, err := lsm.srv.startServer(lsm.srvStdin, lsm.srvStdout)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lsm.rpcSrv = srv
+	lsm.logger.Printf("Starting server (pid %d) ...", os.Getpid())
+
 	go func() {
-		rpcSrv.Wait()
+		lsm.rpcSrv.Wait()
 	}()
-	lsm.stopFunc = rpcSrv.Stop
 
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
 	opts := &jrpc2.ClientOptions{}
@@ -73,6 +99,15 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	lsm.client = jrpc2.NewClient(clientCh, opts)
 
 	return lsm.Stop
+}
+
+func (lsm *langServerMock) CloseClientStdout(t *testing.T) {
+	err := lsm.clientStdout.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(1 * time.Millisecond)
 }
 
 type CallRequest struct {
@@ -178,4 +213,8 @@ func (r *rawResponse) UnmarshalJSON(b []byte) error {
 
 func testLogger(w io.Writer, prefix string) *log.Logger {
 	return log.New(w, prefix, log.LstdFlags|log.Lshortfile)
+}
+
+func discardLogger() *log.Logger {
+	return log.New(ioutil.Discard, "", 0)
 }

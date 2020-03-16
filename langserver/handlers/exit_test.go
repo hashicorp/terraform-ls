@@ -7,7 +7,8 @@ import (
 )
 
 func TestExit(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(nil))
+	ms := newMockService(nil)
+	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
 	defer stop()
 
@@ -15,7 +16,11 @@ func TestExit(t *testing.T) {
 		Method:    "exit",
 		ReqParams: `{}`})
 
-	if !ls.StopFuncCalled() {
-		t.Fatal("Expected stop function to be called")
+	if !ms.StopFuncCalled() {
+		t.Fatal("Expected service stop function to be called")
+	}
+
+	if ls.StopFuncCalled() {
+		t.Fatal("Expected server stop function not to be called")
 	}
 }

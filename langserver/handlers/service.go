@@ -16,56 +16,62 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	"github.com/hashicorp/terraform-ls/langserver/srvctl"
+	"github.com/hashicorp/terraform-ls/langserver/svcctl"
 	"github.com/sourcegraph/go-lsp"
 )
 
-type handlerProvider struct {
+type service struct {
 	logger *log.Logger
-	srvCtl srvctl.ServerController
+
+	srvCtx context.Context
+
+	svcCtx      context.Context
+	svcStopFunc context.CancelFunc
 
 	ss           *schema.Storage
 	executorFunc func(ctx context.Context, execPath string) *exec.Executor
 }
 
-var defaultLogger = log.New(ioutil.Discard, "", 0)
+var discardLogs = log.New(ioutil.Discard, "", 0)
 
-func New() *handlerProvider {
-	return &handlerProvider{
-		logger:       defaultLogger,
+func NewService(srvCtx context.Context) svcctl.Service {
+	svcCtx, stopSvc := context.WithCancel(srvCtx)
+	return &service{
+		logger:       discardLogs,
+		srvCtx:       srvCtx,
+		svcCtx:       svcCtx,
+		svcStopFunc:  stopSvc,
 		executorFunc: exec.NewExecutor,
 		ss:           schema.NewStorage(),
 	}
 }
 
-func NewMock(mid exec.MockItemDispenser) *handlerProvider {
-	return &handlerProvider{
-		logger: defaultLogger,
-		executorFunc: func(ctx context.Context, execPath string) *exec.Executor {
-			return exec.MockExecutor(mid)
-		},
-		ss: schema.MockStorage(nil),
-	}
+func (svc *service) SetLogger(logger *log.Logger) {
+	svc.logger = logger
 }
 
-func (hp *handlerProvider) SetLogger(logger *log.Logger) {
-	hp.logger = logger
-}
-
-// Handlers builds out the jrpc2.Map according to the LSP protocol
+// Assigner builds out the jrpc2.Map according to the LSP protocol
 // and passes related dependencies to handlers via context
-func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerController) jrpc2.Assigner {
-	hp.srvCtl = ctl
+func (svc *service) Assigner() (jrpc2.Assigner, error) {
+	svc.logger.Println("Preparing new service ...")
+
+	svcCtl := svcctl.NewServiceController(svc.svcStopFunc)
+
+	err := svcCtl.Prepare()
+	if err != nil {
+		return nil, fmt.Errorf("Unable to prepare service: %w", err)
+	}
+
 	fs := filesystem.NewFilesystem()
-	fs.SetLogger(hp.logger)
-	lh := LogHandler(hp.logger)
+	fs.SetLogger(svc.logger)
+	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 	tfVersion := "0.0.0"
-	hp.ss.SetLogger(hp.logger)
+	svc.ss.SetLogger(svc.logger)
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.Initialize(req)
+			err := svcCtl.Initialize(req)
 			if err != nil {
 				return nil, err
 			}
@@ -77,20 +83,20 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 				return nil, err
 			}
 
-			// We intentionally pass server context here to make executor cancellable
-			// on server shutdown, rather than response delivery or request cancellation
+			// We intentionally pass service context here to make executor cancellable
+			// on service shutdown, rather than response delivery or request cancellation
 			// as some operations may run in isolated goroutines
-			tf := hp.executorFunc(srvCtx, tfPath)
-			tf.SetLogger(hp.logger)
+			tf := svc.executorFunc(svc.svcCtx, tfPath)
+			tf.SetLogger(svc.logger)
 
 			ctx = lsctx.WithTerraformExecutor(tf, ctx)
 			ctx = lsctx.WithTerraformVersionSetter(&tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaWriter(hp.ss, ctx)
+			ctx = lsctx.WithTerraformSchemaWriter(svc.ss, ctx)
 
 			return handle(ctx, req, lh.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.ConfirmInitialization(req)
+			err := svcCtl.ConfirmInitialization(req)
 			if err != nil {
 				return nil, err
 			}
@@ -99,7 +105,7 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			return handle(ctx, req, Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.CheckInitializationIsConfirmed()
+			err := svcCtl.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -107,7 +113,7 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.CheckInitializationIsConfirmed()
+			err := svcCtl.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -115,7 +121,7 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			return handle(ctx, req, TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.CheckInitializationIsConfirmed()
+			err := svcCtl.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +129,7 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			return handle(ctx, req, TextDocumentDidClose)
 		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.CheckInitializationIsConfirmed()
+			err := svcCtl.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -131,35 +137,30 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
 			ctx = lsctx.WithTerraformVersion(tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaReader(hp.ss, ctx)
+			ctx = lsctx.WithTerraformSchemaReader(svc.ss, ctx)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
 		"shutdown": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.Shutdown(req)
+			err := svcCtl.Shutdown(req)
 			if err != nil {
 				return nil, err
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			// TODO: Exit the process after a timeout if `exit` method is not called
-			// to prevent zombie processes (?)
 			return handle(ctx, req, Shutdown)
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.Exit()
+			err := svcCtl.Exit()
 			if err != nil {
 				return nil, err
 			}
 
-			err = hp.ss.StopWatching()
-			if err != nil {
-				return nil, err
-			}
+			svc.svcStopFunc()
 
-			return handle(ctx, req, Shutdown)
+			return nil, nil
 		},
 		"$/cancelRequest": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := hp.srvCtl.CheckInitializationIsConfirmed()
+			err := svcCtl.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +169,21 @@ func (hp *handlerProvider) Handlers(srvCtx context.Context, ctl srvctl.ServerCon
 		},
 	}
 
-	return convertMap(m)
+	return convertMap(m), nil
+}
+
+func (svc *service) Finish(status jrpc2.ServerStatus) {
+	if status.Closed() || status.Err != nil {
+		svc.logger.Printf("Service stopped unexpectedly (err: %v)", status.Err)
+	}
+
+	svc.logger.Println("Stopping schema watcher for service ...")
+	err := svc.ss.StopWatching()
+	if err != nil {
+		svc.logger.Println("Unable to stop schema watcher for service:", err)
+	}
+
+	svc.svcStopFunc()
 }
 
 // convertMap is a helper function allowing us to omit the jrpc2.Func

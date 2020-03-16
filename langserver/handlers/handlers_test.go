@@ -39,7 +39,42 @@ func TestInitalizeAndShutdown(t *testing.T) {
 		"id": 2,
 		"result": null
 	}`)
+}
 
+func TestEOF(t *testing.T) {
+	ms := newMockService(validTfMockCalls())
+	ls := langserver.NewLangServerMock(t, ms.new)
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: `{
+	    "capabilities": {},
+	    "rootUri": "file:///tmp",
+	    "processId": 12345
+	}`}, `{
+		"jsonrpc": "2.0",
+		"id": 1,
+		"result": {
+			"capabilities": {
+				"textDocumentSync": {
+					"openClose": true,
+					"change": 1
+				},
+				"completionProvider": {}
+			}
+		}
+	}`)
+
+	ls.CloseClientStdout(t)
+
+	if !ms.StopFuncCalled() {
+		t.Fatal("Expected service to stop on EOF")
+	}
+	if ls.StopFuncCalled() {
+		t.Fatal("Expected server not to stop on EOF")
+	}
 }
 
 func validTfMockCalls() *exec.MockQueue {

@@ -23,7 +23,7 @@ func WithSignalCancel(ctx context.Context, l *log.Logger, sigs ...os.Signal) (
 	go func() {
 		select {
 		case sig := <-sigChan:
-			l.Printf("%s received, stopping server ...", sig)
+			l.Printf("Cancellation signal (%s) received", sig)
 			cancelFunc()
 		case <-ctx.Done():
 		}

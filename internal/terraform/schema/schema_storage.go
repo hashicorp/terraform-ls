@@ -169,7 +169,8 @@ func (s *Storage) watcher() (watcher, error) {
 // via AddWorkspaceForWatching until StopWatching() is called
 func (s *Storage) StartWatching(tf *exec.Executor) error {
 	if s.watching {
-		return fmt.Errorf("watching already in progress")
+		s.logger.Println("watching already in progress")
+		return nil
 	}
 	w, err := s.watcher()
 	if err != nil {
@@ -191,7 +192,7 @@ func (s *Storage) StopWatching() error {
 	if s.w == nil {
 		return nil
 	}
-	s.logger.Println("Stopping watcher ...")
+
 	err := s.w.Close()
 	if err == nil {
 		s.watching = false

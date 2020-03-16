@@ -7,87 +7,84 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
-	rpcServer "github.com/creachadair/jrpc2/server"
-	"github.com/hashicorp/terraform-ls/langserver/srvctl"
+	"github.com/creachadair/jrpc2/server"
+	"github.com/hashicorp/terraform-ls/langserver/svcctl"
 )
 
 type langServer struct {
-	ctx        context.Context
-	hp         srvctl.HandlerProvider
+	srvCtx     context.Context
 	logger     *log.Logger
 	srvOptions *jrpc2.ServerOptions
-
-	srvCtl   srvctl.ServerController
-	stopFunc context.CancelFunc
+	sf         svcctl.ServiceFactory
 }
 
-func NewLangServer(srvCtx context.Context, hp srvctl.HandlerProvider) *langServer {
+func NewLangServer(srvCtx context.Context, sf svcctl.ServiceFactory) *langServer {
 	opts := &jrpc2.ServerOptions{
 		AllowPush: true,
 	}
 
-	srvCtx, stopFunc := context.WithCancel(srvCtx)
-
 	return &langServer{
-		ctx:        srvCtx,
-		hp:         hp,
+		srvCtx:     srvCtx,
 		logger:     log.New(ioutil.Discard, "", 0),
 		srvOptions: opts,
-		srvCtl:     srvctl.NewServerController(stopFunc),
-		stopFunc:   stopFunc,
+		sf:         sf,
 	}
 }
 
 func (ls *langServer) SetLogger(logger *log.Logger) {
 	ls.srvOptions.Logger = logger
 	ls.srvOptions.RPCLog = &rpcLogger{logger}
-	ls.hp.SetLogger(logger)
 	ls.logger = logger
 }
 
-func (ls *langServer) start(reader io.Reader, writer io.WriteCloser) *jrpc2.Server {
-	err := ls.srvCtl.Prepare()
-	if err != nil {
-		ls.logger.Printf("Unable to prepare server: %s", err)
-		ls.stopFunc()
-		return nil
-	}
-
-	ch := channel.LSP(reader, writer)
-
-	return jrpc2.NewServer(ls.hp.Handlers(ls.ctx, ls.srvCtl), ls.srvOptions).Start(ch)
+func (ls *langServer) newService() server.Service {
+	svc := ls.sf(ls.srvCtx)
+	svc.SetLogger(ls.logger)
+	return svc
 }
 
-func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) {
-	srv := ls.start(reader, writer)
+func (ls *langServer) startServer(reader io.Reader, writer io.WriteCloser) (*singleServer, error) {
+	srv, err := Server(ls.newService(), ls.srvOptions)
+	if err != nil {
+		return nil, err
+	}
+	srv.Start(channel.LSP(reader, writer))
+
+	return srv, nil
+}
+
+func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) error {
+	srv, err := ls.startServer(reader, writer)
+	if err != nil {
+		return err
+	}
+	ls.logger.Printf("Starting server (pid %d) ...", os.Getpid())
+
+	// Wrap waiter with a context so that we can cancel it here
+	// after the service is cancelled (and srv.Wait returns)
+	ctx, cancelFunc := context.WithCancel(ls.srvCtx)
 	go func() {
-		ls.logger.Println("Starting server ...")
-		err := srv.Wait()
-		if err != nil {
-			ls.logger.Printf("Server failed to start: %s", err)
-			ls.stopFunc()
-			return
-		}
+		srv.Wait()
+		cancelFunc()
 	}()
 
 	select {
-	case <-ls.ctx.Done():
+	case <-ctx.Done():
 		ls.logger.Println("Stopping server ...")
 		srv.Stop()
 	}
+
+	ls.logger.Println("Server stopped.")
+	return nil
 }
 
 func (ls *langServer) StartTCP(address string) error {
-	err := ls.srvCtl.Prepare()
-	if err != nil {
-		ls.logger.Printf("Unable to prepare server: %s", err)
-		ls.stopFunc()
-	}
-
-	ls.logger.Printf("Starting TCP server at %q ...", address)
+	ls.logger.Printf("Starting TCP server (pid %d) at %q ...",
+		os.Getpid(), address)
 	lst, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("TCP Server failed to start: %s", err)
@@ -96,26 +93,61 @@ func (ls *langServer) StartTCP(address string) error {
 
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = rpcServer.Loop(lst, rpcServer.NewStatic(ls.hp.Handlers(ls.ctx, ls.srvCtl)), &rpcServer.LoopOptions{
+		err = server.Loop(lst, ls.newService, &server.LoopOptions{
 			Framing:       channel.LSP,
 			ServerOptions: ls.srvOptions,
 		})
 		if err != nil {
 			ls.logger.Printf("Loop server failed to start: %s", err)
-			ls.stopFunc()
-			return
 		}
 	}()
 
 	select {
-	case <-ls.ctx.Done():
-		ls.logger.Println("Shutting down server ...")
-		err := lst.Close()
+	case <-ls.srvCtx.Done():
+		ls.logger.Println("Shutting down TCP server ...")
+		err = lst.Close()
 		if err != nil {
-			ls.logger.Printf("TCP Server failed to shutdown: %s", err)
-			return ls.ctx.Err()
+			ls.logger.Printf("TCP server failed to shutdown: %s", err)
+			return err
 		}
 	}
 
 	return nil
+}
+
+// singleServer is a wrapper around jrpc2.NewServer providing support
+// for server.Service (Assigner/Finish interface)
+type singleServer struct {
+	srv        *jrpc2.Server
+	finishFunc func(jrpc2.ServerStatus)
+}
+
+func Server(svc server.Service, opts *jrpc2.ServerOptions) (*singleServer, error) {
+	assigner, err := svc.Assigner()
+	if err != nil {
+		return nil, err
+	}
+
+	return &singleServer{
+		srv:        jrpc2.NewServer(assigner, opts),
+		finishFunc: svc.Finish,
+	}, nil
+}
+
+func (ss *singleServer) Start(ch channel.Channel) {
+	ss.srv = ss.srv.Start(ch)
+}
+
+func (ss *singleServer) StartAndWait(ch channel.Channel) {
+	ss.Start(ch)
+	ss.Wait()
+}
+
+func (ss *singleServer) Wait() {
+	status := ss.srv.WaitStatus()
+	ss.finishFunc(status)
+}
+
+func (ss *singleServer) Stop() {
+	ss.srv.Stop()
 }

@@ -1,4 +1,4 @@
-package srvctl
+package svcctl
 
 import (
 	"fmt"
@@ -7,18 +7,18 @@ import (
 	"github.com/hashicorp/terraform-ls/langserver/errors"
 )
 
-type unexpectedSrvState struct {
-	ExpectedState serverState
-	CurrentState  serverState
+type unexpectedSvcState struct {
+	ExpectedState serviceState
+	CurrentState  serviceState
 }
 
-func (e *unexpectedSrvState) Error() string {
+func (e *unexpectedSvcState) Error() string {
 	return fmt.Sprintf("server is not %s, current state: %s",
 		e.ExpectedState, e.CurrentState)
 }
 
-func srvNotInitializedErr(state serverState) error {
-	uss := &unexpectedSrvState{
+func svcNotInitializedErr(state serviceState) error {
+	uss := &unexpectedSvcState{
 		ExpectedState: stateInitializedConfirmed,
 		CurrentState:  state,
 	}
@@ -32,12 +32,12 @@ func srvNotInitializedErr(state serverState) error {
 	return uss
 }
 
-func srvAlreadyInitializedErr(reqID string) error {
+func svcAlreadyInitializedErr(reqID string) error {
 	return fmt.Errorf("%w: Server was already initialized via request ID %s",
 		code.SystemError.Err(), reqID)
 }
 
-func srvAlreadyDownErr(reqID string) error {
+func svcAlreadyDownErr(reqID string) error {
 	return fmt.Errorf("%w: server was already shut down via request %s",
 		code.InvalidRequest.Err(), reqID)
 }
