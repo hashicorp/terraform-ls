@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -20,8 +20,7 @@ import (
 )
 
 type CompletionCommand struct {
-	Ui     cli.Ui
-	Logger *log.Logger
+	Ui cli.Ui
 
 	atPos string
 }
@@ -73,8 +72,10 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 	lspPos := lsp.Position{Line: line, Character: col}
 
+	logger := NewLogger(os.Stderr)
+
 	fs := filesystem.NewFilesystem()
-	fs.SetLogger(c.Logger)
+	fs.SetLogger(logger)
 	fs.Open(lsp.TextDocumentItem{
 		URI:     lspUri,
 		Text:    string(content),
@@ -88,7 +89,7 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	ss := schema.NewStorage()
-	ss.SetLogger(c.Logger)
+	ss.SetLogger(logger)
 	ss.SetSynchronous()
 
 	ctx := context.Background()
@@ -115,7 +116,7 @@ func (c *CompletionCommand) Run(args []string) int {
 	ctx = lsctx.WithTerraformSchemaReader(ss, ctx)
 	ctx = lsctx.WithClientCapabilities(&lsp.ClientCapabilities{}, ctx)
 
-	h := handlers.LogHandler(c.Logger)
+	h := handlers.LogHandler(logger)
 	items, err := h.TextDocumentComplete(ctx, lsp.CompletionParams{
 		TextDocumentPositionParams: lsp.TextDocumentPositionParams{
 			TextDocument: lsp.TextDocumentIdentifier{

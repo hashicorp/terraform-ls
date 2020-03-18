@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/hashicorp/terraform-ls/commands"
@@ -9,8 +8,11 @@ import (
 )
 
 func main() {
-	c := cli.NewCLI("terraform-ls", "0.1.0")
-	c.Args = os.Args[1:]
+	c := &cli.CLI{
+		Name:    "terraform-ls",
+		Version: "0.1.0",
+		Args:    os.Args[1:],
+	}
 
 	ui := &cli.ColoredUi{
 		ErrorColor: cli.UiColorRed,
@@ -22,26 +24,22 @@ func main() {
 		},
 	}
 
-	logger := log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
-
 	c.Commands = map[string]cli.CommandFactory{
 		"completion": func() (cli.Command, error) {
 			return &commands.CompletionCommand{
-				Ui:     ui,
-				Logger: logger,
+				Ui: ui,
 			}, nil
 		},
 		"serve": func() (cli.Command, error) {
 			return &commands.ServeCommand{
-				Ui:     ui,
-				Logger: logger,
+				Ui: ui,
 			}, nil
 		},
 	}
 
 	exitStatus, err := c.Run()
 	if err != nil {
-		log.Println(err)
+		ui.Error("Error: " + err.Error())
 	}
 
 	os.Exit(exitStatus)
