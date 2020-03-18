@@ -23,18 +23,12 @@ func TestProviderBlock_Name(t *testing.T) {
 		expectedErr  error
 	}{
 		{
-			"empty config",
-			``,
-			"",
-			EmptyConfigErr(),
-		},
-		{
 			"invalid config - two labels",
 			`provider "aws" "extra" {
 }
 `,
 			"",
-			&InvalidLabelsErr{"provider", []string{"aws", "extra"}},
+			&invalidLabelsErr{"provider", []string{"aws", "extra"}},
 		},
 		{
 			"invalid config - no labels",
@@ -42,7 +36,7 @@ func TestProviderBlock_Name(t *testing.T) {
 }
 `,
 			"",
-			&InvalidLabelsErr{"provider", []string{}},
+			&invalidLabelsErr{"provider", []string{}},
 		},
 		{
 			"valid config",
@@ -134,9 +128,8 @@ func TestProviderBlock_CompletionItemsAtPos(t *testing.T) {
 			nil,
 			nil,
 			lsp.CompletionList{},
-			&schema.SchemaUnavailableErr{
+			&noSchemaReaderErr{
 				BlockType: "provider",
-				FullName:  "aws",
 			},
 		},
 		{
@@ -285,11 +278,13 @@ func TestProviderBlock_CompletionItemsAtPos(t *testing.T) {
 
 			pf := &providerBlockFactory{}
 			if tc.caps != nil {
-				pf.InitializeCapabilities(*caps)
+				pf.caps = *caps
 			}
 
-			sr := schema.MockStorage(tc.ps)
-			pf.schemaReader = sr
+			if tc.ps != nil {
+				sr := schema.MockStorage(tc.ps)
+				pf.schemaReader = sr
+			}
 
 			p, err := pf.New(block)
 			if err != nil {

@@ -3,15 +3,12 @@ package lang
 import (
 	"fmt"
 	"log"
-	"sort"
-	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
-	"github.com/zclconf/go-cty/cty"
 )
 
 type providerBlockFactory struct {
@@ -23,14 +20,12 @@ type providerBlockFactory struct {
 
 func (f *providerBlockFactory) New(block *hcl.Block) (ConfigBlock, error) {
 	if f.logger == nil {
-		f.logger = emptyLogger()
+		f.logger = discardLog()
 	}
-	if block == nil {
-		return nil, EmptyConfigErr()
-	}
+
 	labels := block.Labels
 	if len(labels) != 1 {
-		return nil, &InvalidLabelsErr{"provider", labels}
+		return nil, &invalidLabelsErr{f.BlockType(), labels}
 	}
 
 	return &providerBlock{
@@ -45,10 +40,6 @@ func (f *providerBlockFactory) BlockType() string {
 	return "provider"
 }
 
-func (f *providerBlockFactory) InitializeCapabilities(caps lsp.TextDocumentClientCapabilities) {
-	f.caps = caps
-}
-
 type providerBlock struct {
 	logger   *log.Logger
 	caps     lsp.TextDocumentClientCapabilities
@@ -56,11 +47,19 @@ type providerBlock struct {
 	sr       schema.Reader
 }
 
+func (p *providerBlock) Name() string {
+	return p.hclBlock.Labels[0]
+}
+
+func (p *providerBlock) BlockType() string {
+	return "provider"
+}
+
 func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error) {
 	list := lsp.CompletionList{}
 
 	if p.sr == nil {
-		return list, fmt.Errorf("no schema reader available")
+		return list, &noSchemaReaderErr{p.BlockType()}
 	}
 
 	pSchema, err := p.sr.ProviderConfigSchema(p.Name())
@@ -77,8 +76,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 
 	hclBody, ok := body.(*hclsyntax.Body)
 	if !ok {
-		// if user happens to be editing JSON
-		return list, fmt.Errorf("unsupported body type: %T", body)
+		return list, &unsupportedConfigTypeErr{body}
 	}
 
 	if !bodyContainsPos(hclBody, pos) {
@@ -101,7 +99,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 			continue
 		}
 
-		list.Items = append(list.Items, p.completionItem(name, attr, pos))
+		list.Items = append(list.Items, p.completionItemForAttr(name, attr, pos))
 	}
 
 	sortCompletionItems(list.Items)
@@ -109,14 +107,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 	return list, nil
 }
 
-func sortCompletionItems(items []lsp.CompletionItem) {
-	less := func(i, j int) bool {
-		return items[i].Label < items[j].Label
-	}
-	sort.Slice(items, less)
-}
-
-func (p *providerBlock) completionItem(name string, attr *tfjson.SchemaAttribute,
+func (p *providerBlock) completionItemForAttr(name string, attr *tfjson.SchemaAttribute,
 	pos hcl.Pos) lsp.CompletionItem {
 
 	snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
@@ -143,37 +134,4 @@ func (p *providerBlock) completionItem(name string, attr *tfjson.SchemaAttribute
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           schemaAttributeDetail(attr),
 	}
-}
-
-func snippetForAttr(attr *tfjson.SchemaAttribute) string {
-	switch attr.AttributeType {
-	case cty.String:
-		return `"${0:value}"`
-	case cty.Bool:
-		return `${0:false}`
-	case cty.Number:
-		return `${0:42}`
-	}
-	return ""
-}
-
-func schemaAttributeDetail(attr *tfjson.SchemaAttribute) string {
-	var requiredText string
-	if attr.Optional {
-		requiredText = "Optional"
-	}
-	if attr.Required {
-		requiredText = "Required"
-	}
-
-	return strings.TrimSpace(fmt.Sprintf("(%s, %s) %s",
-		requiredText, attr.AttributeType.FriendlyName(), attr.Description))
-}
-
-func (p *providerBlock) Name() string {
-	return p.hclBlock.Labels[0]
-}
-
-func (p *providerBlock) BlockType() string {
-	return "provider"
 }
