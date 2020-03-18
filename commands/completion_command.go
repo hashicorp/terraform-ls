@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/hashicorp/terraform-ls/langserver/handlers"
 	"github.com/mitchellh/cli"
 	lsp "github.com/sourcegraph/go-lsp"
@@ -20,21 +22,33 @@ import (
 type CompletionCommand struct {
 	Ui     cli.Ui
 	Logger *log.Logger
+
+	atPos string
+}
+
+func (c *CompletionCommand) flags() *flag.FlagSet {
+	fs := defaultFlagSet("completion")
+
+	fs.StringVar(&c.atPos, "at-pos", "", "at zero-indexed position (line:col)")
+
+	fs.Usage = func() { c.Ui.Error(c.Help()) }
+
+	return fs
 }
 
 func (c *CompletionCommand) Run(args []string) int {
-	cmdFlags := defaultFlagSet("completion")
-
-	var atPos string
-	cmdFlags.StringVar(&atPos, "at-pos", "", "at zero-indexed position (line:col)")
-	cmdFlags.Usage = func() { c.Ui.Error(c.Help()) }
-
-	if err := cmdFlags.Parse(args); err != nil {
+	f := c.flags()
+	if err := f.Parse(args); err != nil {
 		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s\n", err.Error()))
 		return 1
 	}
 
-	path := cmdFlags.Arg(0)
+	if f.NArg() != 1 {
+		c.Ui.Output(fmt.Sprintf("args is %q", c.flags().Args()))
+		return 1
+	}
+
+	path := f.Arg(0)
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("reading file at %q failed: %s", path, err))
@@ -42,9 +56,9 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	lspUri := lsp.DocumentURI("file://" + path)
-	parts := strings.Split(atPos, ":")
+	parts := strings.Split(c.atPos, ":")
 	if len(parts) != 2 {
-		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)\n", atPos))
+		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)\n", c.atPos))
 		return 1
 	}
 	line, err := strconv.Atoi(parts[0])
@@ -73,9 +87,32 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
+	ss := schema.NewStorage()
+	ss.SetLogger(c.Logger)
+	ss.SetSynchronous()
+
 	ctx := context.Background()
+
+	dir := fs.URI(lspUri).Dir()
+
+	tf := exec.NewExecutor(ctx, tfPath)
+	tf.SetWorkdir(dir)
+	version, err := tf.Version()
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
+	err = ss.ObtainSchemasForWorkspace(tf, dir)
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
 	ctx = lsctx.WithFilesystem(fs, ctx)
-	ctx = lsctx.WithTerraformExecutor(exec.NewExecutor(ctx, tfPath), ctx)
+	ctx = lsctx.WithTerraformVersion(version, ctx)
+	ctx = lsctx.WithTerraformExecutor(tf, ctx)
+	ctx = lsctx.WithTerraformSchemaReader(ss, ctx)
 	ctx = lsctx.WithClientCapabilities(&lsp.ClientCapabilities{}, ctx)
 
 	h := handlers.LogHandler(c.Logger)
@@ -99,13 +136,9 @@ func (c *CompletionCommand) Run(args []string) int {
 
 func (c *CompletionCommand) Help() string {
 	helpText := `
-Usage: terraform-ls completion -at-pos=line:col <path>
+Usage: terraform-ls completion [options] [path]
 
-Options:
-
-  -at-pos at zero-indexed position (line:col)
-
-`
+` + c.Synopsis() + "\n\n" + helpForFlags(c.flags())
 	return strings.TrimSpace(helpText)
 }
 

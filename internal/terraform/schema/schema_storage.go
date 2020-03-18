@@ -77,6 +77,10 @@ func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
 }
 
+func (s *Storage) SetSynchronous() {
+	s.sync = true
+}
+
 // ObtainSchemasForWorkspace will (by default) asynchronously obtain schema via tf
 // and store it for later consumption via Reader methods
 func (s *Storage) ObtainSchemasForWorkspace(tf *exec.Executor, dir string) error {

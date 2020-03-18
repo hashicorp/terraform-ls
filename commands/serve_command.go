@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -17,17 +18,26 @@ import (
 type ServeCommand struct {
 	Ui     cli.Ui
 	Logger *log.Logger
+
+	// flags
+	port    int
+	logFile string
+}
+
+func (c *ServeCommand) flags() *flag.FlagSet {
+	fs := defaultFlagSet("serve")
+
+	fs.IntVar(&c.port, "port", 0, "port number to listen on (turns server into TCP mode)")
+	fs.StringVar(&c.logFile, "log-file", "", "path to file to log into")
+
+	fs.Usage = func() { c.Ui.Error(c.Help()) }
+
+	return fs
 }
 
 func (c *ServeCommand) Run(args []string) int {
-	cmdFlags := defaultFlagSet("serve")
-
-	var port int
-	cmdFlags.IntVar(&port, "port", -1, "port")
-
-	cmdFlags.Usage = func() { c.Ui.Error(c.Help()) }
-
-	if err := cmdFlags.Parse(args); err != nil {
+	f := c.flags()
+	if err := f.Parse(args); err != nil {
 		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s\n", err.Error()))
 		return 1
 	}
@@ -40,8 +50,8 @@ func (c *ServeCommand) Run(args []string) int {
 	srv := langserver.NewLangServer(ctx, hp)
 	srv.SetLogger(c.Logger)
 
-	if port != -1 {
-		srv.StartTCP(fmt.Sprintf("localhost:%d", port))
+	if c.port != 0 {
+		srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))
 		return 0
 	}
 
@@ -52,9 +62,10 @@ func (c *ServeCommand) Run(args []string) int {
 
 func (c *ServeCommand) Help() string {
 	helpText := `
-Usage: terraform-ls serve [options] [path]
+Usage: terraform-ls serve [options]
 
-`
+` + c.Synopsis() + "\n\n" + helpForFlags(c.flags())
+
 	return strings.TrimSpace(helpText)
 }
 
