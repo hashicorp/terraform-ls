@@ -95,8 +95,6 @@ Content-Length: 47\n\n{"jsonrpc":"2.0","method":"shutdown","id":null}
 
  - Keep in mind that each TCP session receives an isolated context,
     so you cannot cancel requests you didn't start yourself
- - Any client can initiate server shutdown at this point and
-    the server generally stores state with the assumption of a single client
 
 ## Credits
 
