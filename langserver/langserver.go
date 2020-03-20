@@ -96,7 +96,7 @@ func (ls *langServer) StartTCP(address string) error {
 
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = rpcServer.Loop(lst, ls.hp.Handlers(ls.ctx, ls.srvCtl), &rpcServer.LoopOptions{
+		err = rpcServer.Loop(lst, rpcServer.NewStatic(ls.hp.Handlers(ls.ctx, ls.srvCtl)), &rpcServer.LoopOptions{
 			Framing:       channel.LSP,
 			ServerOptions: ls.srvOptions,
 		})
