@@ -3,6 +3,9 @@ package lang
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
@@ -75,4 +78,26 @@ func parseHclBlock(t *testing.T, src string) *hcl.Block {
 		t.Fatal(diags.Error())
 	}
 	return f.OutermostBlockAtPos(hcl.InitialPos)
+}
+
+func parseHclSyntaxBlocks(t *testing.T, src string) hclsyntax.Blocks {
+	f, diags := hclsyntax.ParseConfig([]byte(src), "/test.tf", hcl.InitialPos)
+	if diags.HasErrors() {
+		t.Fatal(diags.Error())
+	}
+
+	body, ok := f.Body.(*hclsyntax.Body)
+	if !ok {
+		t.Fatalf("unsupported configuration format: %T", f.Body)
+	}
+
+	return body.Blocks
+}
+
+func testLogger() *log.Logger {
+	if testing.Verbose() {
+		return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	}
+
+	return log.New(ioutil.Discard, "", 0)
 }

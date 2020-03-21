@@ -18,7 +18,7 @@ type providerBlockFactory struct {
 	schemaReader schema.Reader
 }
 
-func (f *providerBlockFactory) New(block *hcl.Block) (ConfigBlock, error) {
+func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) {
 	if f.logger == nil {
 		f.logger = discardLog()
 	}
@@ -43,7 +43,7 @@ func (f *providerBlockFactory) BlockType() string {
 type providerBlock struct {
 	logger   *log.Logger
 	caps     lsp.TextDocumentClientCapabilities
-	hclBlock *hcl.Block
+	hclBlock *hclsyntax.Block
 	sr       schema.Reader
 }
 
@@ -67,39 +67,39 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		return list, err
 	}
 
-	hs := jsonSchemaToHcl(pSchema)
+	block := ParseBlock(p.hclBlock, pSchema.Block)
 
-	content, body, diags := p.hclBlock.Body.PartialContent(hs)
-	if diags.HasErrors() {
-		p.logger.Printf("mapping schema to config tolerated errors: %s", diags)
-	}
-
-	hclBody, ok := body.(*hclsyntax.Body)
-	if !ok {
-		return list, &unsupportedConfigTypeErr{body}
-	}
-
-	if !bodyContainsPos(hclBody, pos) {
+	if !block.PosInBody(pos) {
 		// Avoid autocompleting outside of body, for now
 		p.logger.Println("avoiding completion outside of block body")
 		return list, nil
 	}
 
-	if contentContainPos(hclBody, pos) {
-		// No auto-completing in the middle of existing fields
-		p.logger.Println("avoiding completion in the middle of existing field")
+	if block.PosInAttribute(pos) {
+		p.logger.Println("avoiding completion in the middle of existing attribute")
 		return list, nil
 	}
 
-	attrs := undeclaredSchemaAttributes(pSchema.Block.Attributes, content.Attributes)
-	// TODO: blocks := undeclaredSchemaBlocks(pSchema.Block.NestedBlocks, content.Blocks)
+	b, ok := block.BlockAtPos(pos)
+	if !ok {
+		// This should never happen as the completion
+		// should only be called on a block the "pos" points to
+		p.logger.Printf("block type not found at %#v", pos)
+		return list, nil
+	}
 
-	for name, attr := range attrs {
-		if attr.Computed && !attr.Optional && !attr.Required {
+	for name, attr := range b.Attributes() {
+		if attr.IsComputedOnly() || attr.IsDeclared() {
 			continue
 		}
+		list.Items = append(list.Items, p.completionItemForAttr(name, attr.Schema(), pos))
+	}
 
-		list.Items = append(list.Items, p.completionItemForAttr(name, attr, pos))
+	for name, block := range b.BlockTypes() {
+		if block.ReachedMaxItems() {
+			continue
+		}
+		list.Items = append(list.Items, p.completionItemForNestedBlock(name, block, pos))
 	}
 
 	sortCompletionItems(list.Items)
@@ -107,7 +107,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 	return list, nil
 }
 
-func (p *providerBlock) completionItemForAttr(name string, attr *tfjson.SchemaAttribute,
+func (p *providerBlock) completionItemForAttr(name string, sAttr *tfjson.SchemaAttribute,
 	pos hcl.Pos) lsp.CompletionItem {
 
 	snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
@@ -117,13 +117,13 @@ func (p *providerBlock) completionItemForAttr(name string, attr *tfjson.SchemaAt
 			Label:            name,
 			Kind:             lsp.CIKField,
 			InsertTextFormat: lsp.ITFSnippet,
-			Detail:           schemaAttributeDetail(attr),
+			Detail:           schemaAttributeDetail(sAttr),
 			TextEdit: &lsp.TextEdit{
 				Range: lsp.Range{
 					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 				},
-				NewText: fmt.Sprintf("%s = %s", name, snippetForAttr(attr)),
+				NewText: fmt.Sprintf("%s = %s", name, snippetForAttr(sAttr)),
 			},
 		}
 	}
@@ -132,6 +132,18 @@ func (p *providerBlock) completionItemForAttr(name string, attr *tfjson.SchemaAt
 		Label:            name,
 		Kind:             lsp.CIKField,
 		InsertTextFormat: lsp.ITFPlainText,
-		Detail:           schemaAttributeDetail(attr),
+		Detail:           schemaAttributeDetail(sAttr),
+	}
+}
+
+func (p *providerBlock) completionItemForNestedBlock(name string, blockType *BlockType, pos hcl.Pos) lsp.CompletionItem {
+
+	// snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
+
+	return lsp.CompletionItem{
+		Label:            name,
+		Kind:             lsp.CIKField,
+		InsertTextFormat: lsp.ITFPlainText,
+		Detail:           schemaBlockDetail(blockType),
 	}
 }

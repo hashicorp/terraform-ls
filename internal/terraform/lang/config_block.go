@@ -2,6 +2,7 @@ package lang
 
 import (
 	hcl "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -12,5 +13,5 @@ type ConfigBlock interface {
 }
 
 type configBlockFactory interface {
-	New(*hcl.Block) (ConfigBlock, error)
+	New(*hclsyntax.Block) (ConfigBlock, error)
 }

@@ -111,9 +111,14 @@ func (p *parser) ParseBlockFromHCL(block *hcl.Block) (ConfigBlock, error) {
 		return nil, &unknownBlockTypeErr{block.Type}
 	}
 
-	cfgBlock, err := f.New(block)
+	hsBlock, err := AsHCLSyntaxBlock(block)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", block.Type, err)
+	}
+
+	cfgBlock, err := f.New(hsBlock)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", hsBlock.Type, err)
 	}
 
 	return cfgBlock, nil
