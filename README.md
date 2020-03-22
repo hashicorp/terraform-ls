@@ -1,6 +1,16 @@
-# Terraform LS
+# Terraform Language Server
 
-Experimental prototype of Terraform language server.
+Experimental version of Terraform Language Server.
+
+Not all LSP or language features are available at the time of writing as this is an active project with the aim of delivering smaller, incremental updates over time.
+
+## What is Terraform?
+
+[Terraform](https://www.terraform.io) enables you to safely and predictably create, change, and improve infrastructure. It is an open source tool that codifies APIs into declarative configuration files that can be shared amongst team members, treated as code, edited, reviewed, and versioned.
+
+## What is Language Server?
+
+A server implementing the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) (LSP), which in turn defines the protocol used between an editor or IDE and a language server that provides language features like auto complete, go to definition, find all references etc.
 
 ## Disclaimer
 
