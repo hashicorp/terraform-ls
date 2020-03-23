@@ -99,7 +99,11 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 			schemaReader: p.schemaReader,
 			caps:         p.caps,
 		},
-		// "data":     ResourceBlock,
+		"data": &datasourceBlockFactory{
+			logger:       p.logger,
+			schemaReader: p.schemaReader,
+			caps:         p.caps,
+		},
 	}
 }
 
