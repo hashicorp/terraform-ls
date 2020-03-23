@@ -6,7 +6,6 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -92,7 +91,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		if attr.IsComputedOnly() || attr.IsDeclared() {
 			continue
 		}
-		list.Items = append(list.Items, p.completionItemForAttr(name, attr.Schema(), pos))
+		list.Items = append(list.Items, p.completionItemForAttr(name, attr, pos))
 	}
 
 	for name, block := range b.BlockTypes() {
@@ -107,9 +106,7 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 	return list, nil
 }
 
-func (p *providerBlock) completionItemForAttr(name string, sAttr *tfjson.SchemaAttribute,
-	pos hcl.Pos) lsp.CompletionItem {
-
+func (p *providerBlock) completionItemForAttr(name string, attr *Attribute, pos hcl.Pos) lsp.CompletionItem {
 	snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
 
 	if snippetSupport {
@@ -117,13 +114,13 @@ func (p *providerBlock) completionItemForAttr(name string, sAttr *tfjson.SchemaA
 			Label:            name,
 			Kind:             lsp.CIKField,
 			InsertTextFormat: lsp.ITFSnippet,
-			Detail:           schemaAttributeDetail(sAttr),
+			Detail:           schemaAttributeDetail(attr.Schema()),
 			TextEdit: &lsp.TextEdit{
 				Range: lsp.Range{
 					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 				},
-				NewText: fmt.Sprintf("%s = %s", name, snippetForAttr(sAttr)),
+				NewText: fmt.Sprintf("%s = %s", name, snippetForAttrType(0, attr.Schema().AttributeType)),
 			},
 		}
 	}
@@ -132,13 +129,28 @@ func (p *providerBlock) completionItemForAttr(name string, sAttr *tfjson.SchemaA
 		Label:            name,
 		Kind:             lsp.CIKField,
 		InsertTextFormat: lsp.ITFPlainText,
-		Detail:           schemaAttributeDetail(sAttr),
+		Detail:           schemaAttributeDetail(attr.Schema()),
 	}
 }
 
 func (p *providerBlock) completionItemForNestedBlock(name string, blockType *BlockType, pos hcl.Pos) lsp.CompletionItem {
+	snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
 
-	// snippetSupport := p.caps.Completion.CompletionItem.SnippetSupport
+	if snippetSupport {
+		return lsp.CompletionItem{
+			Label:            name,
+			Kind:             lsp.CIKField,
+			InsertTextFormat: lsp.ITFSnippet,
+			Detail:           schemaBlockDetail(blockType),
+			TextEdit: &lsp.TextEdit{
+				Range: lsp.Range{
+					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+				},
+				NewText: snippetForNestedBlock(name),
+			},
+		}
+	}
 
 	return lsp.CompletionItem{
 		Label:            name,

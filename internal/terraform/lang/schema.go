@@ -10,16 +10,40 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func snippetForAttr(attr *tfjson.SchemaAttribute) string {
-	switch attr.AttributeType {
-	case cty.String:
-		return `"${0:value}"`
-	case cty.Bool:
-		return `${0:false}`
-	case cty.Number:
-		return `${0:42}`
+func snippetForAttrType(placeholder int, attrType cty.Type) string {
+	mapSnippet := func(aType cty.Type) string {
+		return fmt.Sprintf("{\n"+`  ${0:key} = %s`+"\n}",
+			snippetForAttrType(1, aType))
 	}
+
+	switch attrType {
+	case cty.String:
+		return fmt.Sprintf(`"${%d:value}"`, placeholder)
+	case cty.List(cty.String), cty.Set(cty.String):
+		return fmt.Sprintf(`["${%d:value}"]`, placeholder)
+	case cty.Map(cty.String):
+		return mapSnippet(cty.String)
+
+	case cty.Bool:
+		return fmt.Sprintf(`${%d:false}`, placeholder)
+	case cty.List(cty.Bool), cty.Set(cty.Bool):
+		return fmt.Sprintf(`[${%d:false}]`, placeholder)
+	case cty.Map(cty.Bool):
+		return mapSnippet(cty.Bool)
+
+	case cty.Number:
+		return fmt.Sprintf(`${%d:42}`, placeholder)
+	case cty.List(cty.Number), cty.Set(cty.Number):
+		return fmt.Sprintf(`[${%d:42}]`, placeholder)
+	case cty.Map(cty.Number):
+		return mapSnippet(cty.Number)
+	}
+
 	return ""
+}
+
+func snippetForNestedBlock(name string) string {
+	return fmt.Sprintf("%s {\n  ${0}\n}", name)
 }
 
 func schemaAttributeDetail(attr *tfjson.SchemaAttribute) string {
