@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestProviderBlock_Name(t *testing.T) {
+func TestResourceBlock_Name(t *testing.T) {
 	testCases := []struct {
 		name string
 		src  string
@@ -16,28 +16,35 @@ func TestProviderBlock_Name(t *testing.T) {
 		expectedErr  error
 	}{
 		{
-			"invalid config - two labels",
-			`provider "aws" "extra" {
+			"invalid config - no label",
+			`resource {
 }
 `,
 			"",
-			&invalidLabelsErr{"provider", []string{"aws", "extra"}},
+			&invalidLabelsErr{"resource", []string{}},
 		},
 		{
-			"invalid config - no labels",
-			`provider {
+			"invalid config - single label",
+			`resource "aws_instance" {
 }
 `,
 			"",
-			&invalidLabelsErr{"provider", []string{}},
+			&invalidLabelsErr{"resource", []string{"aws_instance"}},
+		},
+		{
+			"invalid config - three labels",
+			`resource "aws_instance" "name" "extra" {
+}
+`,
+			"",
+			&invalidLabelsErr{"resource", []string{"aws_instance", "name", "extra"}},
 		},
 		{
 			"valid config",
-			`provider "aws" {
-
+			`resource "aws_instance" "name" {
 }
 `,
-			"aws",
+			"aws_instance.name",
 			nil,
 		},
 	}
@@ -49,7 +56,7 @@ func TestProviderBlock_Name(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			pf := &providerBlockFactory{logger: log.New(os.Stdout, "", 0)}
+			pf := &resourceBlockFactory{logger: log.New(os.Stdout, "", 0)}
 			p, err := pf.New(block)
 
 			if err != nil {

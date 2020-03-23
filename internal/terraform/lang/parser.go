@@ -94,10 +94,12 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 			schemaReader: p.schemaReader,
 			caps:         p.caps,
 		},
-		// "resource": ResourceBlock,
+		"resource": &resourceBlockFactory{
+			logger:       p.logger,
+			schemaReader: p.schemaReader,
+			caps:         p.caps,
+		},
 		// "data":     ResourceBlock,
-		// "variable": VariableBlock,
-		// "module":   ModuleBlock,
 	}
 }
 

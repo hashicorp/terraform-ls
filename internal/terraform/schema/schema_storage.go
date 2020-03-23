@@ -16,6 +16,7 @@ import (
 
 type Reader interface {
 	ProviderConfigSchema(name string) (*tfjson.Schema, error)
+	ResourceSchema(rType string) (*tfjson.Schema, error)
 }
 
 type Writer interface {
@@ -146,6 +147,33 @@ func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
 	}
 
 	return schema.ConfigSchema, nil
+}
+
+func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
+	s.logger.Printf("Acquiring semaphore before reading %q resource schema", rType)
+	acquired := s.sem.TryAcquire(1)
+	if !acquired {
+		return nil, fmt.Errorf("schema unavailable temporarily")
+	}
+	defer s.sem.Release(1)
+
+	s.logger.Printf("Reading %q resource schema", rType)
+
+	if s.ps == nil {
+		return nil, &SchemaUnavailableErr{"resource", rType}
+	}
+
+	// Vast majority of resources should follow naming convention
+	// of <provider>_resource_name, but this is not enforced
+	// in any way so we have to check all providers
+	for _, schema := range s.ps.Schemas {
+		rSchema, ok := schema.ResourceSchemas[rType]
+		if ok {
+			return rSchema, nil
+		}
+	}
+
+	return nil, &SchemaUnavailableErr{"resource", rType}
 }
 
 // watcher creates a new Watcher instance
