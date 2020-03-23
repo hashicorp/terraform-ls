@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -84,6 +85,14 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	// and don't report outdated version to users,
 	// so we don't need to ask checkpoint for upgrades.
 	cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
+
+	// This allows Terraform to find custom-built providers
+	if v := os.Getenv("HOME"); v != "" {
+		cmd.Env = append(cmd.Env, "HOME="+v)
+	}
+	if v := os.Getenv("USER"); v != "" {
+		cmd.Env = append(cmd.Env, "USER="+v)
+	}
 
 	e.logger.Printf("Running %s %q in %q...", e.execPath, args, e.workDir)
 	err := cmd.Run()
