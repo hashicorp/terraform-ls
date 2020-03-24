@@ -4,13 +4,14 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-ls/commands"
+	"github.com/hashicorp/terraform-ls/version"
 	"github.com/mitchellh/cli"
 )
 
 func main() {
 	c := &cli.CLI{
 		Name:    "terraform-ls",
-		Version: "0.1.0",
+		Version: version.String(),
 		Args:    os.Args[1:],
 	}
 
