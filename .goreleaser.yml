@@ -1,0 +1,38 @@
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - 
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - '-s -w -X "github.com/hashicorp/terraform-ls/version.Version={{ .Version }}" -X "github.com/hashicorp/terraform-ls/version.Prerelease="'
+    targets:
+      - darwin_amd64
+      - freebsd_386
+      - freebsd_amd64
+      - freebsd_arm
+      - linux_386
+      - linux_amd64
+      - linux_arm
+      - openbsd_386
+      - openbsd_amd64
+      - solaris_amd64
+      - windows_386
+      - windows_amd64
+
+archives:
+  -
+    format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    wrap_in_directory: false
+    files: # Avoid packaging any extra (default) files
+      - none*
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+
+changelog:
+  skip: true
