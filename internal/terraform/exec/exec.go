@@ -15,6 +15,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/logging"
 )
 
 // cmdCtxFunc allows mocking of Terraform in tests while retaining
@@ -25,9 +26,10 @@ type Executor struct {
 	ctx     context.Context
 	timeout time.Duration
 
-	execPath string
-	workDir  string
-	logger   *log.Logger
+	execPath    string
+	workDir     string
+	logger      *log.Logger
+	execLogPath string
 
 	cmdCtxFunc cmdCtxFunc
 }
@@ -46,6 +48,10 @@ func NewExecutor(ctx context.Context, path string) *Executor {
 
 func (e *Executor) SetLogger(logger *log.Logger) {
 	e.logger = logger
+}
+
+func (e *Executor) SetExecLogPath(path string) {
+	e.execLogPath = path
 }
 
 func (e *Executor) SetTimeout(duration time.Duration) {
@@ -92,6 +98,17 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	}
 	if v := os.Getenv("USER"); v != "" {
 		cmd.Env = append(cmd.Env, "USER="+v)
+	}
+
+	if e.execLogPath != "" {
+		logPath, err := logging.ParseExecLogPath(cmd.Args, e.execLogPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse log path: %w", err)
+		}
+		cmd.Env = append(cmd.Env, "TF_LOG=TRACE")
+		cmd.Env = append(cmd.Env, "TF_LOG_PATH="+logPath)
+
+		e.logger.Printf("Execution will be logged to %s", logPath)
 	}
 
 	e.logger.Printf("Running %s %q in %q...", e.execPath, args, e.workDir)

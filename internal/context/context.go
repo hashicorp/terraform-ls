@@ -158,3 +158,14 @@ func SetTerraformVersion(ctx context.Context, v string) error {
 
 	return nil
 }
+
+const ctxTfExecLogPath = "ctxTerraformExecLogPath"
+
+func WithTerraformExecLogPath(path string, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfExecLogPath, path)
+}
+
+func TerraformExecLogPath(ctx context.Context) (string, bool) {
+	path, ok := ctx.Value(ctxTfExecLogPath).(string)
+	return path, ok
+}

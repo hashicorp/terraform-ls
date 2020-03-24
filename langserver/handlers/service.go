@@ -87,6 +87,11 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			// on service shutdown, rather than response delivery or request cancellation
 			// as some operations may run in isolated goroutines
 			tf := svc.executorFunc(svc.svcCtx, tfPath)
+
+			// Log path is set via CLI flag, hence in the server context
+			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
+				tf.SetExecLogPath(path)
+			}
 			tf.SetLogger(svc.logger)
 
 			ctx = lsctx.WithTerraformExecutor(tf, ctx)

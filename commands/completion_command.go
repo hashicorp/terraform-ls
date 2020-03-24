@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/hashicorp/terraform-ls/langserver/handlers"
+	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -72,7 +73,7 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 	lspPos := lsp.Position{Line: line, Character: col}
 
-	logger := NewLogger(os.Stderr)
+	logger := logging.NewLogger(os.Stderr)
 
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(logger)
