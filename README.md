@@ -60,6 +60,14 @@ $ terraform-ls serve -log-file=/tmp/terraform-ls-{{pid}}.log -tf-log-file=/tmp/t
 
 It is recommended to inspect these logs when reporting bugs.
 
+### Log Rotation
+
+Keep in mind that the language server itself does not have any log rotation facility,
+but the destination path will be truncated before being logged into.
+
+Static paths may produce large files over the lifetime of the server and
+templated paths (as described below) may produce many log files over time.
+
 ### Log Path Templating
 
 Log paths support template syntax. This allows sane separation of logs while accounting for:
