@@ -12,7 +12,7 @@ import (
 
 func snippetForAttrType(placeholder int, attrType cty.Type) string {
 	mapSnippet := func(aType cty.Type) string {
-		return fmt.Sprintf("{\n"+`  ${0:key} = %s`+"\n}",
+		return fmt.Sprintf("{\n"+`  "${0:key}" = %s`+"\n}",
 			snippetForAttrType(1, aType))
 	}
 
