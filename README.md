@@ -42,6 +42,5 @@ Please follow the [relevant guide for your IDE](./docs/USAGE.md).
 
 - [Martin Atkins](https://github.com/apparentlymart) - particularly the virtual filesystem
 - [Zhe Cheng](https://github.com/njuCZ) - research, design, prototyping assistance
-- [Julio Sueiras](https://github.com/juliosueiras) - particularly his early version
-    of the Language Server (https://github.com/juliosueiras)
+- [Julio Sueiras](https://github.com/juliosueiras) - particularly his [language server implementation](https://github.com/juliosueiras/terraform-lsp)
  
