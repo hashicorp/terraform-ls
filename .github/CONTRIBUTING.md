@@ -2,7 +2,7 @@
 
 ## Reporting Feedback
 
-Terraform Language Server is an open source project and we appreciate
+Terraform language server is an open source project and we appreciate
 contributions of various kinds, including bug reports and fixes,
 enhancement proposals, documentation updates, and user experience feedback.
 
@@ -18,7 +18,7 @@ communication channels is subject to
 
 ## Scope
 
-This repository contains the source code only for Terraform Language Server,
+This repository contains the source code only for Terraform language server,
 which in turn relies on other projects that have their own repositories.
 
 [Terraform CLI/core has its own repository.](https://github.com/hashicorp/terraform)
@@ -41,7 +41,7 @@ If you wish to work on the source code, you'll first need to install
 [Git](https://git-scm.com/).
 
 Refer to the file [`.go-version`](.go-version) to see which version of Go
-the Language Server is currently built with. Other versions will often work,
+the language server is currently built with. Other versions will often work,
 but if you run into any build or testing problems please try with the specific
 Go version indicated. You can optionally simplify the installation of multiple
 specific versions of Go on your system by installing
@@ -53,11 +53,11 @@ are tracked via [Go Modules](https://blog.golang.org/using-go-modules),
 and so you should _not_ clone it inside your `GOPATH`.
 
 Switch into the root directory of the cloned repository and build
-the Language Server using the Go toolchain in the standard way:
+the language server
 
 ```
 cd terraform-ls
-go install .
+make build
 ```
 
 Once the compilation process succeeds, you can find a `terraform-ls` executable in
@@ -128,7 +128,7 @@ than some other change types to become conflicted with other proposed changes
 during the code review process. For that reason, and to make dependency changes
 more visible in the change history, we prefer to record dependency changes as
 separate commits that include only the results of the above commands and the
-minimal set of changes to the Language Server's own code for compatibility
+minimal set of changes to the language server's own code for compatibility
 with the new version:
 
 ```

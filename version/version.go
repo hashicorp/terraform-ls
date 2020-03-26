@@ -2,12 +2,13 @@ package version
 
 import (
 	"fmt"
+	"errors"
 
 	version "github.com/hashicorp/go-version"
 )
 
 // The main version number that is being run at the moment.
-var Version = "0.0.0"
+var Version = "_"
 
 // A pre-release marker for the version. If this is "" (empty string)
 // then it means that it is a final release. Otherwise, this is a pre-release
@@ -20,7 +21,11 @@ var Prerelease = "dev"
 var SemVer *version.Version
 
 func init() {
-	SemVer = version.Must(version.NewVersion(Version))
+	var err error
+	SemVer, err = version.NewVersion(Version)
+	if err != nil {
+		panic(errors.New("Please use 'make build' to compile and install"))
+	}
 }
 
 // ServerName is the name used to send to clients as a way
