@@ -1,6 +1,6 @@
 # Terraform Language Server
 
-Experimental version of [Terraform](https://www.terraform.io) Language Server.
+Experimental version of [Terraform](https://www.terraform.io) language server.
 
 ## What is LSP
 
@@ -22,14 +22,15 @@ This is not an officially supported HashiCorp product.
 
 ## Installation
 
-```
-go install .
-```
-
-This should produce a binary called `terraform-ls` in `$GOBIN/terraform-ls`.
-
-Putting `$GOBIN` in your `$PATH` may save you from having to specify
-absolute path to the binary.
+1. [Download for the latest version](https://github.com/hashicorp/terraform-ls/releases/latest)
+  of the language server relevant for your operating system and architecture.
+2. The language server is distributed as a single binary.
+  Install it by unzipping it and moving it to a directory
+  included in your system's `PATH`.
+3. You can verify integrity by comparing the SHA256 checksums
+  which are part of the release (called `terraform-ls_<VERSION>_SHA256SUMS`).
+4. Check that you have installed the server correctly via `terraform-ls -v`.
+  You should see the latest version printed to your terminal.
 
 ## Usage
 
