@@ -19,7 +19,7 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v1
         with: # Ideally this should be picked up from .go-version rather than hard-coded
-          go-version: 1.13.8
+          go-version: 1.14.1
       -
         name: Release
         uses: goreleaser/goreleaser-action@v1
