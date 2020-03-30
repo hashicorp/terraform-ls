@@ -104,14 +104,15 @@ func (ls *langServer) StartTCP(address string) error {
 
 	select {
 	case <-ls.srvCtx.Done():
-		ls.logger.Println("Shutting down TCP server ...")
+		ls.logger.Printf("Stopping TCP server (pid %d) ...", os.Getpid())
 		err = lst.Close()
 		if err != nil {
-			ls.logger.Printf("TCP server failed to shutdown: %s", err)
+			ls.logger.Printf("TCP server (pid %d) failed to stop: %s", os.Getpid(), err)
 			return err
 		}
 	}
 
+	ls.logger.Printf("TCP server (pid %d) stopped.", os.Getpid())
 	return nil
 }
 
