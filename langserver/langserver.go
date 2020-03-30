@@ -74,11 +74,11 @@ func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) erro
 
 	select {
 	case <-ctx.Done():
-		ls.logger.Println("Stopping server ...")
+		ls.logger.Printf("Stopping server (pid %d) ...", os.Getpid())
 		srv.Stop()
 	}
 
-	ls.logger.Println("Server stopped.")
+	ls.logger.Printf("Server (pid %d) stopped.", os.Getpid())
 	return nil
 }
 

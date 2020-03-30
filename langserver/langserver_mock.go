@@ -80,12 +80,14 @@ func (lsm *langServerMock) StopFuncCalled() bool {
 //
 // TODO: Explore whether we could leverage jrpc2's server.Local
 func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
+	lsm.logger.Println("Starting mock server ...")
+
 	srv, err := lsm.srv.startServer(lsm.srvStdin, lsm.srvStdout)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	lsm.rpcSrv = srv
-	lsm.logger.Printf("Starting server (pid %d) ...", os.Getpid())
 
 	go func() {
 		lsm.rpcSrv.Wait()
