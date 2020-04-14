@@ -42,7 +42,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 }
 
 func TestEOF(t *testing.T) {
-	ms := newMockService(validTfMockCalls())
+	ms := newMockSession(validTfMockCalls())
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
 	defer stop()

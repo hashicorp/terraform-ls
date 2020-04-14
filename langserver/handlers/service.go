@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	"github.com/hashicorp/terraform-ls/langserver/svcctl"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -25,8 +25,8 @@ type service struct {
 
 	srvCtx context.Context
 
-	svcCtx      context.Context
-	svcStopFunc context.CancelFunc
+	sessCtx     context.Context
+	stopSession context.CancelFunc
 
 	ss           *schema.Storage
 	executorFunc func(ctx context.Context, execPath string) *exec.Executor
@@ -34,13 +34,13 @@ type service struct {
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
 
-func NewService(srvCtx context.Context) svcctl.Service {
-	svcCtx, stopSvc := context.WithCancel(srvCtx)
+func NewSession(srvCtx context.Context) session.Session {
+	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
 		logger:       discardLogs,
 		srvCtx:       srvCtx,
-		svcCtx:       svcCtx,
-		svcStopFunc:  stopSvc,
+		sessCtx:      sessCtx,
+		stopSession:  stopSession,
 		executorFunc: exec.NewExecutor,
 		ss:           schema.NewStorage(),
 	}
@@ -53,13 +53,13 @@ func (svc *service) SetLogger(logger *log.Logger) {
 // Assigner builds out the jrpc2.Map according to the LSP protocol
 // and passes related dependencies to handlers via context
 func (svc *service) Assigner() (jrpc2.Assigner, error) {
-	svc.logger.Println("Preparing new service ...")
+	svc.logger.Println("Preparing new session ...")
 
-	svcCtl := svcctl.NewServiceController(svc.svcStopFunc)
+	session := session.NewSession(svc.stopSession)
 
-	err := svcCtl.Prepare()
+	err := session.Prepare()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to prepare service: %w", err)
+		return nil, fmt.Errorf("Unable to prepare session: %w", err)
 	}
 
 	fs := filesystem.NewFilesystem()
@@ -71,7 +71,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.Initialize(req)
+			err := session.Initialize(req)
 			if err != nil {
 				return nil, err
 			}
@@ -83,10 +83,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			// We intentionally pass service context here to make executor cancellable
-			// on service shutdown, rather than response delivery or request cancellation
+			// We intentionally pass session context here to make executor cancellable
+			// on session shutdown, rather than response delivery or request cancellation
 			// as some operations may run in isolated goroutines
-			tf := svc.executorFunc(svc.svcCtx, tfPath)
+			tf := svc.executorFunc(svc.sessCtx, tfPath)
 
 			// Log path is set via CLI flag, hence in the server context
 			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
@@ -101,7 +101,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, lh.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.ConfirmInitialization(req)
+			err := session.ConfirmInitialization(req)
 			if err != nil {
 				return nil, err
 			}
@@ -110,7 +110,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.CheckInitializationIsConfirmed()
+			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -118,7 +118,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.CheckInitializationIsConfirmed()
+			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -126,7 +126,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.CheckInitializationIsConfirmed()
+			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -134,7 +134,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, TextDocumentDidClose)
 		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.CheckInitializationIsConfirmed()
+			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -147,7 +147,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
 		"shutdown": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.Shutdown(req)
+			err := session.Shutdown(req)
 			if err != nil {
 				return nil, err
 			}
@@ -155,17 +155,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			return handle(ctx, req, Shutdown)
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.Exit()
+			err := session.Exit()
 			if err != nil {
 				return nil, err
 			}
 
-			svc.svcStopFunc()
+			svc.stopSession()
 
 			return nil, nil
 		},
 		"$/cancelRequest": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
-			err := svcCtl.CheckInitializationIsConfirmed()
+			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
@@ -179,16 +179,16 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 func (svc *service) Finish(status jrpc2.ServerStatus) {
 	if status.Closed() || status.Err != nil {
-		svc.logger.Printf("Service stopped unexpectedly (err: %v)", status.Err)
+		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}
 
-	svc.logger.Println("Stopping schema watcher for service ...")
+	svc.logger.Println("Stopping schema watcher for session ...")
 	err := svc.ss.StopWatching()
 	if err != nil {
-		svc.logger.Println("Unable to stop schema watcher for service:", err)
+		svc.logger.Println("Unable to stop schema watcher for session:", err)
 	}
 
-	svc.svcStopFunc()
+	svc.stopSession()
 }
 
 // convertMap is a helper function allowing us to omit the jrpc2.Func

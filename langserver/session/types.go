@@ -1,4 +1,4 @@
-package svcctl
+package session
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"github.com/creachadair/jrpc2"
 )
 
-type Service interface {
+type Session interface {
 	Assigner() (jrpc2.Assigner, error)
 	Finish(jrpc2.ServerStatus)
 	SetLogger(*log.Logger)
 }
 
-type ServiceFactory func(context.Context) Service
+type SessionFactory func(context.Context) Session

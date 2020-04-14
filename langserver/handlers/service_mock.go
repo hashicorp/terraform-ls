@@ -5,25 +5,25 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	"github.com/hashicorp/terraform-ls/langserver/svcctl"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
-type mockService struct {
+type mockSession struct {
 	mid exec.MockItemDispenser
 
 	stopFunc       func()
 	stopFuncCalled bool
 }
 
-func (ms *mockService) new(srvCtx context.Context) svcctl.Service {
-	svcCtx, stopSvc := context.WithCancel(srvCtx)
-	ms.stopFunc = stopSvc
+func (ms *mockSession) new(srvCtx context.Context) session.Session {
+	sessCtx, stopSession := context.WithCancel(srvCtx)
+	ms.stopFunc = stopSession
 
 	svc := &service{
 		logger:      discardLogs,
 		srvCtx:      srvCtx,
-		svcCtx:      svcCtx,
-		svcStopFunc: ms.stop,
+		sessCtx:     sessCtx,
+		stopSession: ms.stop,
 		executorFunc: func(context.Context, string) *exec.Executor {
 			return exec.MockExecutor(ms.mid)
 		},
@@ -33,19 +33,19 @@ func (ms *mockService) new(srvCtx context.Context) svcctl.Service {
 	return svc
 }
 
-func (ms *mockService) stop() {
+func (ms *mockSession) stop() {
 	ms.stopFunc()
 	ms.stopFuncCalled = true
 }
 
-func (ms *mockService) StopFuncCalled() bool {
+func (ms *mockSession) StopFuncCalled() bool {
 	return ms.stopFuncCalled
 }
 
-func newMockService(mid exec.MockItemDispenser) *mockService {
-	return &mockService{mid: mid}
+func newMockSession(mid exec.MockItemDispenser) *mockSession {
+	return &mockSession{mid: mid}
 }
 
-func NewMock(mid exec.MockItemDispenser) svcctl.ServiceFactory {
-	return newMockService(mid).new
+func NewMock(mid exec.MockItemDispenser) session.SessionFactory {
+	return newMockSession(mid).new
 }

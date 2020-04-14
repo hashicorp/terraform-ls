@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/langserver"
-	"github.com/hashicorp/terraform-ls/langserver/errors"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
@@ -21,5 +21,5 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {\n\n}\n",
 			"uri": "file:///var/main.tf"
 		}
-	}`}, errors.ServerNotInitialized.Err())
+	}`}, session.SessionNotInitialized.Err())
 }

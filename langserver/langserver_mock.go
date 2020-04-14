@@ -15,7 +15,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/langserver/svcctl"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 type langServerMock struct {
@@ -36,7 +36,7 @@ type langServerMock struct {
 	clientStdout io.WriteCloser
 }
 
-func NewLangServerMock(t *testing.T, sf svcctl.ServiceFactory) *langServerMock {
+func NewLangServerMock(t *testing.T, sf session.SessionFactory) *langServerMock {
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
@@ -55,7 +55,7 @@ func NewLangServerMock(t *testing.T, sf svcctl.ServiceFactory) *langServerMock {
 		clientStdout: stdinWriter,
 	}
 
-	lsm.srv = NewLangServer(srvCtx, func(srvCtx context.Context) svcctl.Service {
+	lsm.srv = NewLangServer(srvCtx, func(srvCtx context.Context) session.Session {
 		return sf(srvCtx)
 	})
 	if testing.Verbose() {

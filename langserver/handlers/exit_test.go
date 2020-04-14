@@ -7,7 +7,7 @@ import (
 )
 
 func TestExit(t *testing.T) {
-	ms := newMockService(nil)
+	ms := newMockSession(nil)
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
 	defer stop()

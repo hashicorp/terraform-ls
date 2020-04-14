@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/langserver"
-	"github.com/hashicorp/terraform-ls/langserver/errors"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 func TestCompletion_withoutInitialization(t *testing.T) {
@@ -23,7 +23,7 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`}, errors.ServerNotInitialized.Err())
+		}`}, session.SessionNotInitialized.Err())
 }
 
 func TestCompletion_withValidData(t *testing.T) {

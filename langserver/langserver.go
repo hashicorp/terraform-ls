@@ -12,17 +12,17 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/creachadair/jrpc2/server"
-	"github.com/hashicorp/terraform-ls/langserver/svcctl"
+	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 type langServer struct {
 	srvCtx     context.Context
 	logger     *log.Logger
 	srvOptions *jrpc2.ServerOptions
-	sf         svcctl.ServiceFactory
+	newSession session.SessionFactory
 }
 
-func NewLangServer(srvCtx context.Context, sf svcctl.ServiceFactory) *langServer {
+func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServer {
 	opts := &jrpc2.ServerOptions{
 		AllowPush: true,
 	}
@@ -31,7 +31,7 @@ func NewLangServer(srvCtx context.Context, sf svcctl.ServiceFactory) *langServer
 		srvCtx:     srvCtx,
 		logger:     log.New(ioutil.Discard, "", 0),
 		srvOptions: opts,
-		sf:         sf,
+		newSession: sf,
 	}
 }
 
@@ -42,7 +42,7 @@ func (ls *langServer) SetLogger(logger *log.Logger) {
 }
 
 func (ls *langServer) newService() server.Service {
-	svc := ls.sf(ls.srvCtx)
+	svc := ls.newSession(ls.srvCtx)
 	svc.SetLogger(ls.logger)
 	return svc
 }
