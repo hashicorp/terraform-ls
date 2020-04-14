@@ -150,6 +150,50 @@ func TestFile_BlockAtPosition(t *testing.T) {
 	}
 }
 
+func TestFile_diff(t *testing.T) {
+	targetCfg := []byte(`
+provider "aws" {
+  first          = "test"
+  very_long_attr = "xyz"
+}`)
+	fsFile := filesystem.NewFile("/tmp/test.tf", []byte(`
+provider  "aws" {
+  first = "test"
+  very_long_attr = "xyz"
+}`))
+	f := NewFile(fsFile)
+	changes, err := f.Diff(targetCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var expectedChanges filesystem.FileChanges
+	expectedChanges = append(expectedChanges, &fileChange{
+		newText: []byte(targetCfg),
+		rng: hcl.Range{
+			Filename: "test.tf",
+			Start: hcl.Pos{
+				Column: 1,
+				Line:   1,
+				Byte:   0,
+			},
+			End: hcl.Pos{
+				Column: 2,
+				Line:   5,
+				Byte:   62,
+			},
+		},
+	})
+
+	opts := cmp.Options{
+		cmp.AllowUnexported(fileChange{}),
+	}
+
+	if diff := cmp.Diff(expectedChanges, changes, opts...); diff != "" {
+		t.Fatalf("Changes don't match: %s", diff)
+	}
+}
+
 type testPosition struct {
 	filesystem.FileHandler
 	pos hcl.Pos

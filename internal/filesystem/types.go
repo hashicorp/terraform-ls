@@ -18,6 +18,7 @@ type FilePosition interface {
 
 type FileChange interface {
 	Text() string
+	Range() hcl.Range
 }
 
 type VersionedFileHandler interface {

@@ -1,6 +1,9 @@
 package hcl
 
 import (
+	"fmt"
+
+	"github.com/hashicorp/hcl/v2"
 	hcllib "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -8,6 +11,7 @@ import (
 
 type File interface {
 	BlockAtPosition(filesystem.FilePosition) (*hcllib.Block, hcllib.Pos, error)
+	Diff([]byte) (filesystem.FileChanges, error)
 }
 
 type file struct {
@@ -43,6 +47,36 @@ func (f *file) BlockAtPosition(filePos filesystem.FilePosition) (*hcllib.Block, 
 	}
 
 	return b, pos, nil
+}
+
+func (f *file) Diff(target []byte) (filesystem.FileChanges, error) {
+	var changes filesystem.FileChanges
+
+	ast, _ := f.ast()
+	body, ok := ast.Body.(*hclsyntax.Body)
+	if !ok {
+		return nil, fmt.Errorf("invalid configuration format: %T", ast.Body)
+	}
+
+	changes = append(changes, &fileChange{
+		newText: target,
+		rng:     body.Range(),
+	})
+
+	return changes, nil
+}
+
+type fileChange struct {
+	newText []byte
+	rng     hcl.Range
+}
+
+func (ch *fileChange) Text() string {
+	return string(ch.newText)
+}
+
+func (ch *fileChange) Range() hcl.Range {
+	return ch.rng
 }
 
 func (f *file) blockAtPosition(pos hcllib.Pos) (*hcllib.Block, error) {
