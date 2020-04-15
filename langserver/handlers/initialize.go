@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	fs "github.com/hashicorp/terraform-ls/internal/filesystem"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -25,12 +25,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		},
 	}
 
-	uri := fs.URI(params.RootURI)
-	if !uri.Valid() {
+	fh := ilsp.FileHandler(params.RootURI)
+	if !fh.Valid() {
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
-	rootURI := uri.FullPath()
+	rootURI := fh.FullPath()
 
 	if rootURI == "" {
 		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +

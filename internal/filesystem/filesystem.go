@@ -4,9 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"sync"
-
-	"github.com/hashicorp/hcl/v2"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type fsystem struct {
@@ -14,14 +11,6 @@ type fsystem struct {
 
 	logger *log.Logger
 	dirs   map[string]*dir
-}
-
-type Filesystem interface {
-	Open(lsp.TextDocumentItem) error
-	Change(lsp.VersionedTextDocumentIdentifier, []lsp.TextDocumentContentChangeEvent) error
-	Close(lsp.TextDocumentIdentifier) error
-	URI(lsp.DocumentURI) URI
-	HclBlockAtDocPosition(lsp.TextDocumentPositionParams) (*hcl.Block, hcl.Pos, error)
 }
 
 func NewFilesystem() *fsystem {
@@ -35,41 +24,32 @@ func (fs *fsystem) SetLogger(logger *log.Logger) {
 	fs.logger = logger
 }
 
-func (fs *fsystem) Open(doc lsp.TextDocumentItem) error {
+func (fs *fsystem) Open(file File) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	u := URI(doc.URI)
-	s := []byte(doc.Text)
-
-	if !u.Valid() {
-		return &InvalidURIErr{URI: u}
-	}
-
-	fullName, dn, fn := u.PathParts()
-	d, ok := fs.dirs[dn]
+	d, ok := fs.dirs[file.Dir()]
 	if !ok {
 		d = newDir()
-		fs.dirs[dn] = d
+		fs.dirs[file.Dir()] = d
 	}
-	f, ok := d.files[fn]
+
+	f, ok := d.files[file.Filename()]
 	if !ok {
-		f = NewFile(fullName, s)
+		f = NewFile(file.FullPath(), file.Text())
 	}
 	f.open = true
-	d.files[fn] = f
+	d.files[file.Filename()] = f
 	return nil
 }
 
-func (fs *fsystem) Change(doc lsp.VersionedTextDocumentIdentifier, changes []lsp.TextDocumentContentChangeEvent) error {
+func (fs *fsystem) Change(fh VersionedFileHandler, changes FileChanges) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	u := URI(doc.URI)
-
-	f := fs.file(u)
+	f := fs.file(fh)
 	if f == nil || !f.open {
-		return &FileNotOpenErr{u}
+		return &FileNotOpenErr{fh}
 	}
 	for _, change := range changes {
 		f.applyChange(change)
@@ -77,54 +57,33 @@ func (fs *fsystem) Change(doc lsp.VersionedTextDocumentIdentifier, changes []lsp
 	return nil
 }
 
-func (fs *fsystem) Close(doc lsp.TextDocumentIdentifier) error {
+func (fs *fsystem) Close(fh FileHandler) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	u := URI(doc.URI)
-
-	f := fs.file(u)
+	f := fs.file(fh)
 	if f == nil || !f.open {
-		return &FileNotOpenErr{u}
+		return &FileNotOpenErr{fh}
 	}
-	_, dn, fn := u.PathParts()
-	delete(fs.dirs[dn].files, fn)
+
+	delete(fs.dirs[fh.Dir()].files, fh.Filename())
+
 	return nil
 }
 
-func (fs *fsystem) URI(uri lsp.DocumentURI) URI {
-	return URI(uri)
-}
-
-func (fs *fsystem) HclBlockAtDocPosition(params lsp.TextDocumentPositionParams) (*hcl.Block, hcl.Pos, error) {
-	u := fs.URI(params.TextDocument.URI)
-	f := fs.file(u)
+func (fs *fsystem) GetFile(fh FileHandler) (File, error) {
+	f := fs.file(fh)
 	if f == nil || !f.open {
-		return nil, hcl.Pos{}, &FileNotOpenErr{u}
+		return nil, &FileNotOpenErr{fh}
 	}
 
-	fs.logger.Printf("Converting LSP position %#v into HCL", params.Position)
-
-	hclPos, err := f.LspPosToHCLPos(params.Position)
-	if err != nil {
-		return nil, hcl.Pos{}, err
-	}
-
-	fs.logger.Printf("Finding HCL block at position %#v", hclPos)
-
-	block, err := f.HclBlockAtPos(hclPos)
-
-	return block, hclPos, err
+	return f, nil
 }
 
-func (fs *fsystem) file(u URI) *file {
-	if !u.Valid() {
-		return nil
-	}
-	_, dn, fn := u.PathParts()
-	d, ok := fs.dirs[dn]
+func (fs *fsystem) file(fh FileHandler) *file {
+	d, ok := fs.dirs[fh.Dir()]
 	if !ok {
 		return nil
 	}
-	return d.files[fn]
+	return d.files[fh.Filename()]
 }

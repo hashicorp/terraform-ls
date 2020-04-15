@@ -42,3 +42,11 @@ func SessionAlreadyDownErr(reqID string) error {
 	return fmt.Errorf("%w: session was already shut down via request %s",
 		code.InvalidRequest.Err(), reqID)
 }
+
+type InvalidURIErr struct {
+	URI string
+}
+
+func (e *InvalidURIErr) Error() string {
+	return fmt.Sprintf("invalid URI: %s", e.URI)
+}

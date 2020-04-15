@@ -4,6 +4,7 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -13,5 +14,6 @@ func TextDocumentDidClose(ctx context.Context, params lsp.DidCloseTextDocumentPa
 		return err
 	}
 
-	return fs.Close(params.TextDocument)
+	fh := ilsp.FileHandler(params.TextDocument.URI)
+	return fs.Close(fh)
 }

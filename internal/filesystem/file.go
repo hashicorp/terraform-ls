@@ -1,11 +1,9 @@
 package filesystem
 
 import (
-	"fmt"
+	"path/filepath"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
-	lsp "github.com/sourcegraph/go-lsp"
+	"github.com/hashicorp/terraform-ls/internal/source"
 	encunicode "golang.org/x/text/encoding/unicode"
 )
 
@@ -18,76 +16,51 @@ type file struct {
 	content  []byte
 	open     bool
 
-	ls   sourceLines
+	ls   source.Lines
 	errs bool
-	ast  *hcl.File
 }
 
 func NewFile(fullPath string, content []byte) *file {
 	return &file{fullPath: fullPath, content: content}
 }
 
-func (f *file) lines() sourceLines {
+const uriPrefix = "file://"
+
+func (f *file) FullPath() string {
+	return f.fullPath
+}
+
+func (f *file) Dir() string {
+	return filepath.Dir(f.FullPath())
+}
+
+func (f *file) Filename() string {
+	return filepath.Base(f.FullPath())
+}
+
+func (f *file) DocumentURI() string {
+	return uriPrefix + f.fullPath
+}
+
+func (f *file) Lines() source.Lines {
 	if f.ls == nil {
-		f.ls = makeSourceLines(f.fullPath, f.content)
+		f.ls = source.MakeSourceLines(f.Filename(), f.content)
 	}
 	return f.ls
 }
 
-func (f *file) HclBlockAtPos(pos hcl.Pos) (*hcl.Block, error) {
-	ast, err := f.hclAST()
-	if err != nil {
-		return nil, err
-	}
-
-	if body, ok := ast.Body.(*hclsyntax.Body); ok {
-		if body.SrcRange.Empty() && pos != hcl.InitialPos {
-			return nil, &InvalidHclPosErr{pos, body.SrcRange}
-		}
-		if !body.SrcRange.Empty() && !body.SrcRange.ContainsPos(pos) {
-			return nil, &InvalidHclPosErr{pos, body.SrcRange}
-		}
-	}
-
-	block := ast.OutermostBlockAtPos(pos)
-	if block == nil {
-		return nil, &NoBlockFoundErr{pos}
-	}
-
-	return block, nil
+func (f *file) Text() []byte {
+	return f.content
 }
 
-func (f *file) LspPosToHCLPos(pos lsp.Position) (hcl.Pos, error) {
-	return f.lines().lspPosToHclPos(pos)
-}
-
-func (f *file) applyChange(ch lsp.TextDocumentContentChangeEvent) error {
-	if ch.Range != nil {
-		return fmt.Errorf("Partial updates are not supported (yet)")
-	}
-
-	newBytes := []byte(ch.Text)
+func (f *file) applyChange(change FileChange) error {
+	newBytes := []byte(change.Text())
 	f.change(newBytes)
 
 	return nil
 }
 
-func (f *file) hclAST() (*hcl.File, error) {
-	if f.ast != nil {
-		return f.ast, nil
-	}
-
-	hf, diags := hclsyntax.ParseConfig(f.content, f.fullPath, hcl.InitialPos)
-	if diags.HasErrors() {
-		return nil, diags
-	}
-	f.ast = hf
-
-	return hf, nil
-}
-
 func (f *file) change(s []byte) {
 	f.content = s
 	f.ls = nil
-	f.ast = nil
 }

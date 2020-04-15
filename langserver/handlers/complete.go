@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/hcl"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -33,7 +35,18 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 
 	h.logger.Printf("Finding block at position %#v", params.TextDocumentPositionParams)
-	hclBlock, hclPos, err := fs.HclBlockAtDocPosition(params.TextDocumentPositionParams)
+
+	file, err := fs.GetFile(ilsp.FileHandler(params.TextDocument.URI))
+	if err != nil {
+		return list, err
+	}
+	hclFile := hcl.NewFile(file)
+	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, file)
+	if err != nil {
+		return list, err
+	}
+
+	hclBlock, hclPos, err := hclFile.BlockAtPosition(fPos)
 	if err != nil {
 		return list, fmt.Errorf("finding config block failed: %s", err)
 	}

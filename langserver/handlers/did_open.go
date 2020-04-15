@@ -4,6 +4,7 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -13,5 +14,6 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 		return err
 	}
 
-	return fs.Open(params.TextDocument)
+	f := ilsp.FileFromDocumentItem(params.TextDocument)
+	return fs.Open(f)
 }

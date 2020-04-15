@@ -11,6 +11,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
@@ -77,11 +78,11 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(logger)
-	fs.Open(lsp.TextDocumentItem{
+	fs.Open(ilsp.FileFromDocumentItem(lsp.TextDocumentItem{
 		URI:     lspUri,
 		Text:    string(content),
 		Version: 0,
-	})
+	}))
 
 	tfPath, err := discovery.LookPath()
 	if err != nil {
@@ -95,7 +96,7 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	ctx := context.Background()
 
-	dir := fs.URI(lspUri).Dir()
+	dir := ilsp.FileHandler(lspUri).Dir()
 
 	tf := exec.NewExecutor(ctx, tfPath)
 	tf.SetWorkdir(dir)
