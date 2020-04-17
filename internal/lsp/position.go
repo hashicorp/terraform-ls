@@ -63,11 +63,10 @@ func byteForLSPColumn(l source.Line, lspCol int) int {
 		return l.Range().Start.Byte
 	}
 
-	// Easy path: if the entire line is ASCII then column counts are equivalent
-	// in LSP vs. HCL aside from zero- vs. one-based counting.
-	if l.IsAllASCII() {
-		return l.Range().Start.Byte + lspCol
-	}
+	// Normally ASCII-only lines could be short-circuited here
+	// but it's not as easy to tell whether a line is ASCII-only
+	// based on column/byte differences as we also scan newlines
+	// and a single line range technically spans 2 lines.
 
 	// If there are non-ASCII characters then we need to edge carefully
 	// along the line while counting UTF-16 code units in our UTF-8 buffer,

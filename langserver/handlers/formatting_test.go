@@ -69,9 +69,9 @@ func TestLangServer_formatting(t *testing.T) {
 				{
 					"range": {
 						"start": { "line": 0, "character": 0 },
-						"end": { "line": 3, "character": 0 }
+						"end": { "line": 1, "character": 0 }
 					},
-					"newText": "provider \"test\" {\n\n}\n"
+					"newText": "provider \"test\" {\n"
 				}
 			]
 		}`)

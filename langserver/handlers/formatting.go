@@ -31,16 +31,12 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	output, err := tf.Format(file.Text())
+	formatted, err := tf.Format(file.Text())
 	if err != nil {
 		return edits, err
 	}
 
-	f := hcl.NewFile(file)
-	changes, err := f.Diff(output)
-	if err != nil {
-		return edits, err
-	}
+	changes := hcl.Diff(file, formatted)
 
 	return ilsp.TextEdits(changes), nil
 }
