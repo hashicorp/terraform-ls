@@ -6,11 +6,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-type BlockType struct {
-	BlockList []Block
-	schema    *tfjson.SchemaBlockType
-}
-
 func (b *BlockType) Schema() *tfjson.SchemaBlockType {
 	return b.schema
 }

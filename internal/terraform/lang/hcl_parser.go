@@ -8,17 +8,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// Block implements an abstraction above HCL block
-// and both tfjson's SchemaBlock & SchemaBlockType
-type Block interface {
-	BlockAtPos(pos hcl.Pos) (Block, bool)
-	Range() hcl.Range
-	PosInBody(pos hcl.Pos) bool
-	PosInAttribute(pos hcl.Pos) bool
-	Attributes() map[string]*Attribute
-	BlockTypes() map[string]*BlockType
-}
-
 // ParseBlock parses HCL configuration based on tfjson's SchemaBlock
 // and keeps hold of all tfjson schema details on block or attribute level
 func ParseBlock(block *hclsyntax.Block, schema *tfjson.SchemaBlock) Block {

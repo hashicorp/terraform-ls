@@ -6,11 +6,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-type Attribute struct {
-	schema       *tfjson.SchemaAttribute
-	hclAttribute *hcl.Attribute
-}
-
 func (a *Attribute) Schema() *tfjson.SchemaAttribute {
 	return a.schema
 }

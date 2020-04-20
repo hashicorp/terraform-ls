@@ -23,13 +23,6 @@ import (
 // (e.g. meta-parameters)
 const parserVersionConstraint = ">= 0.12.0"
 
-type Parser interface {
-	SetLogger(*log.Logger)
-	SetCapabilities(lsp.TextDocumentClientCapabilities)
-	SetSchemaReader(schema.Reader)
-	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
-}
-
 type parser struct {
 	logger *log.Logger
 	caps   lsp.TextDocumentClientCapabilities
