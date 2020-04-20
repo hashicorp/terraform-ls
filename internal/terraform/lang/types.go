@@ -6,14 +6,12 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 // Parser implements a parser which can turn raw HCL block
 // into ConfigBlock with the help of a schema reader
 type Parser interface {
 	SetLogger(*log.Logger)
-	SetCapabilities(lsp.TextDocumentClientCapabilities)
 	SetSchemaReader(schema.Reader)
 	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
 }
@@ -21,7 +19,7 @@ type Parser interface {
 // ConfigBlock implements an abstraction above HCL block
 // which provides any LSP capabilities (e.g. completion)
 type ConfigBlock interface {
-	CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error)
+	CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error)
 	Name() string
 	BlockType() string
 	Labels() []*Label
@@ -53,4 +51,19 @@ type BlockType struct {
 type Attribute struct {
 	schema       *tfjson.SchemaAttribute
 	hclAttribute *hcl.Attribute
+}
+
+// CompletionCandidate represents a list of candidates
+// for completion loosely reflecting lsp.CompletionList
+type CompletionCandidates interface {
+	List() []CompletionCandidate
+	IsComplete() bool
+}
+
+// CompletionCandidate represents a candidate for completion
+// loosely reflecting lsp.CompletionItem
+type CompletionCandidate interface {
+	Label() string
+	Detail() string
+	Snippet(pos hcl.Pos) (hcl.Pos, string)
 }

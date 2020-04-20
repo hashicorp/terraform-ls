@@ -8,12 +8,10 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type resourceBlockFactory struct {
 	logger *log.Logger
-	caps   lsp.TextDocumentClientCapabilities
 
 	schemaReader schema.Reader
 }
@@ -25,7 +23,6 @@ func (f *resourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 
 	return &resourceBlock{
 		logger: f.logger,
-		caps:   f.caps,
 
 		labelSchema: LabelSchema{"type", "name"},
 		hclBlock:    block,
@@ -39,7 +36,6 @@ func (r *resourceBlockFactory) BlockType() string {
 
 type resourceBlock struct {
 	logger *log.Logger
-	caps   lsp.TextDocumentClientCapabilities
 
 	labelSchema LabelSchema
 	labels      []*Label
@@ -80,27 +76,24 @@ func (r *resourceBlock) BlockType() string {
 	return "resource"
 }
 
-func (r *resourceBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error) {
-	list := lsp.CompletionList{}
-
+func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
 	if r.sr == nil {
-		return list, &noSchemaReaderErr{r.BlockType()}
+		return nil, &noSchemaReaderErr{r.BlockType()}
 	}
 
 	cb := &completableBlock{
 		logger: r.logger,
-		caps:   r.caps,
 	}
 
 	var schemaBlock *tfjson.SchemaBlock
 	if r.Type() != "" {
 		rSchema, err := r.sr.ResourceSchema(r.Type())
 		if err != nil {
-			return list, err
+			return nil, err
 		}
 		schemaBlock = rSchema.Block
 	}
 	cb.block = ParseBlock(r.hclBlock, r.Labels(), schemaBlock)
 
-	return cb.completionItemsAtPos(pos)
+	return cb.completionCandidatesAtPos(pos)
 }

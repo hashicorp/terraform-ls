@@ -2,11 +2,9 @@ package lang
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	tfjson "github.com/hashicorp/terraform-json"
-	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -69,11 +67,4 @@ func schemaBlockDetail(blockType *BlockType) string {
 
 	return strings.TrimSpace(fmt.Sprintf("(%s, %s)",
 		requiredText, blockS.NestingMode))
-}
-
-func sortCompletionItems(items []lsp.CompletionItem) {
-	less := func(i, j int) bool {
-		return items[i].Label < items[j].Label
-	}
-	sort.Slice(items, less)
 }

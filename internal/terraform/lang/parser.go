@@ -9,7 +9,6 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 // 0.12.0 first introduced HCL2 which provides
@@ -25,7 +24,6 @@ const parserVersionConstraint = ">= 0.12.0"
 
 type parser struct {
 	logger *log.Logger
-	caps   lsp.TextDocumentClientCapabilities
 
 	schemaReader schema.Reader
 }
@@ -72,10 +70,6 @@ func (p *parser) SetLogger(logger *log.Logger) {
 	p.logger = logger
 }
 
-func (p *parser) SetCapabilities(caps lsp.TextDocumentClientCapabilities) {
-	p.caps = caps
-}
-
 func (p *parser) SetSchemaReader(sr schema.Reader) {
 	p.schemaReader = sr
 }
@@ -85,17 +79,14 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 		"provider": &providerBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
-			caps:         p.caps,
 		},
 		"resource": &resourceBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
-			caps:         p.caps,
 		},
 		"data": &datasourceBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
-			caps:         p.caps,
 		},
 	}
 }

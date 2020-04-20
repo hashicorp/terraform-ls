@@ -7,11 +7,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
-	"github.com/sourcegraph/go-lsp"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
+func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 	attrOnlySchema := &tfjson.SchemaBlock{
 		Attributes: map[string]*tfjson.SchemaAttribute{
 			"first_str": {
@@ -79,18 +78,14 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 			},
 		},
 	}
-	caps := &lsp.TextDocumentClientCapabilities{}
-	caps.Completion.CompletionItem.SnippetSupport = true
-	supportsSnippetsCapability := caps
 
 	testCases := []struct {
 		name string
 		src  string
 		pos  hcl.Pos
 		sb   *tfjson.SchemaBlock
-		caps *lsp.TextDocumentClientCapabilities
 
-		expectedCandidates lsp.CompletionList
+		expectedCandidates []renderedCandidate
 		expectedErr        error
 	}{
 		{
@@ -100,27 +95,29 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 }`,
 			hcl.Pos{Column: 1, Line: 2, Byte: 14},
 			attrOnlySchema,
-			nil,
-			lsp.CompletionList{
-				IsIncomplete: false,
-				Items: []lsp.CompletionItem{
-					{
-						Label:            "first_str",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, string)",
-						InsertTextFormat: lsp.ITFPlainText,
+			[]renderedCandidate{
+				{
+					Label:  "first_str",
+					Detail: "(Optional, string)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: `first_str = "${0:value}"`,
 					},
-					{
-						Label:            "required_bool",
-						Kind:             lsp.CIKField,
-						Detail:           "(Required, bool) test boolean",
-						InsertTextFormat: lsp.ITFPlainText,
+				},
+				{
+					Label:  "required_bool",
+					Detail: "(Required, bool) test boolean",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_bool = ${0:false}",
 					},
-					{
-						Label:            "second_num",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, number) random number",
-						InsertTextFormat: lsp.ITFPlainText,
+				},
+				{
+					Label:  "second_num",
+					Detail: "(Optional, number) random number",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "second_num = ${0:42}",
 					},
 				},
 			},
@@ -133,21 +130,21 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 }`,
 			hcl.Pos{Column: 1, Line: 2, Byte: 14},
 			singleBlockOnlySchema,
-			nil,
-			lsp.CompletionList{
-				IsIncomplete: false,
-				Items: []lsp.CompletionItem{
-					{
-						Label:            "optional_single",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, single)",
-						InsertTextFormat: lsp.ITFPlainText,
+			[]renderedCandidate{
+				{
+					Label:  "optional_single",
+					Detail: "(Optional, single)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "optional_single {\n  ${0}\n}",
 					},
-					{
-						Label:            "required_single",
-						Kind:             lsp.CIKField,
-						Detail:           "(Required, single)",
-						InsertTextFormat: lsp.ITFPlainText,
+				},
+				{
+					Label:  "required_single",
+					Detail: "(Required, single)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_single {\n  ${0}\n}",
 					},
 				},
 			},
@@ -160,27 +157,29 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 }`,
 			hcl.Pos{Column: 1, Line: 2, Byte: 14},
 			listBlockOnlySchema,
-			nil,
-			lsp.CompletionList{
-				IsIncomplete: false,
-				Items: []lsp.CompletionItem{
-					{
-						Label:            "optional_list",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, list)",
-						InsertTextFormat: lsp.ITFPlainText,
+			[]renderedCandidate{
+				{
+					Label:  "optional_list",
+					Detail: "(Optional, list)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "optional_list {\n  ${0}\n}",
 					},
-					{
-						Label:            "required_list",
-						Kind:             lsp.CIKField,
-						Detail:           "(Required, list)",
-						InsertTextFormat: lsp.ITFPlainText,
+				},
+				{
+					Label:  "required_list",
+					Detail: "(Required, list)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_list {\n  ${0}\n}",
 					},
-					{
-						Label:            "undeclared_max1_list",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, list)",
-						InsertTextFormat: lsp.ITFPlainText,
+				},
+				{
+					Label:  "undeclared_max1_list",
+					Detail: "(Optional, list)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "undeclared_max1_list {\n  ${0}\n}",
 					},
 				},
 			},
@@ -193,14 +192,13 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 }`,
 			hcl.Pos{Column: 20, Line: 2, Byte: 33},
 			singleBlockOnlySchema,
-			nil,
-			lsp.CompletionList{
-				Items: []lsp.CompletionItem{
-					{
-						Label:            "one",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, string)",
-						InsertTextFormat: lsp.ITFPlainText,
+			[]renderedCandidate{
+				{
+					Label:  "one",
+					Detail: "(Optional, string)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 20, Byte: 33},
+						Text: `one = "${0:value}"`,
 					},
 				},
 			},
@@ -213,48 +211,29 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 }`,
 			hcl.Pos{Column: 1, Line: 2, Byte: 14},
 			attrOnlySchema,
-			supportsSnippetsCapability,
-			lsp.CompletionList{
-				IsIncomplete: false,
-				Items: []lsp.CompletionItem{
-					{
-						Label:            "first_str",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, string)",
-						InsertTextFormat: lsp.ITFSnippet,
-						TextEdit: &lsp.TextEdit{
-							Range: lsp.Range{
-								Start: lsp.Position{Line: 1, Character: 0},
-								End:   lsp.Position{Line: 1, Character: 0},
-							},
-							NewText: `first_str = "${0:value}"`,
-						},
+			[]renderedCandidate{
+				{
+					Label:  "first_str",
+					Detail: "(Optional, string)",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
+						Text: `first_str = "${0:value}"`,
 					},
-					{
-						Label:            "required_bool",
-						Kind:             lsp.CIKField,
-						Detail:           "(Required, bool) test boolean",
-						InsertTextFormat: lsp.ITFSnippet,
-						TextEdit: &lsp.TextEdit{
-							Range: lsp.Range{
-								Start: lsp.Position{Line: 1, Character: 0},
-								End:   lsp.Position{Line: 1, Character: 0},
-							},
-							NewText: `required_bool = ${0:false}`,
-						},
+				},
+				{
+					Label:  "required_bool",
+					Detail: "(Required, bool) test boolean",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
+						Text: `required_bool = ${0:false}`,
 					},
-					{
-						Label:            "second_num",
-						Kind:             lsp.CIKField,
-						Detail:           "(Optional, number) random number",
-						InsertTextFormat: lsp.ITFSnippet,
-						TextEdit: &lsp.TextEdit{
-							Range: lsp.Range{
-								Start: lsp.Position{Line: 1, Character: 0},
-								End:   lsp.Position{Line: 1, Character: 0},
-							},
-							NewText: `second_num = ${0:42}`,
-						},
+				},
+				{
+					Label:  "second_num",
+					Detail: "(Optional, number) random number",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
+						Text: `second_num = ${0:42}`,
 					},
 				},
 			},
@@ -274,11 +253,7 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 				block:  ParseBlock(block, []*Label{}, tc.sb),
 			}
 
-			if tc.caps != nil {
-				cb.caps = *caps
-			}
-
-			list, err := cb.completionItemsAtPos(tc.pos)
+			list, err := cb.completionCandidatesAtPos(tc.pos)
 			if err != nil {
 				if tc.expectedErr != nil && err.Error() == tc.expectedErr.Error() {
 					return
@@ -290,9 +265,42 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 				t.Fatalf("Expected error: %#v", tc.expectedErr)
 			}
 
-			if diff := cmp.Diff(tc.expectedCandidates, list); diff != "" {
+			rendered := renderCandidates(list, tc.pos)
+
+			if diff := cmp.Diff(tc.expectedCandidates, rendered); diff != "" {
 				t.Fatalf("Completion candidates don't match.\n%s", diff)
 			}
 		})
 	}
+}
+
+func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidate {
+	if list == nil {
+		return []renderedCandidate{}
+	}
+	rendered := make([]renderedCandidate, len(list.List()))
+	for i, c := range list.List() {
+		pos, text := c.Snippet(pos)
+
+		rendered[i] = renderedCandidate{
+			Label:  c.Label(),
+			Detail: c.Detail(),
+			Snippet: renderedSnippet{
+				Pos:  pos,
+				Text: text,
+			},
+		}
+	}
+	return rendered
+}
+
+type renderedCandidate struct {
+	Label   string
+	Detail  string
+	Snippet renderedSnippet
+}
+
+type renderedSnippet struct {
+	Pos  hcl.Pos
+	Text string
 }

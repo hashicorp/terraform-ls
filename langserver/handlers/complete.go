@@ -57,7 +57,6 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, fmt.Errorf("finding compatible parser failed: %w", err)
 	}
 	p.SetLogger(h.logger)
-	p.SetCapabilities(cc.TextDocument)
 	p.SetSchemaReader(sr)
 
 	cfgBlock, err := p.ParseBlockFromHCL(hclBlock)
@@ -65,10 +64,10 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, fmt.Errorf("finding config block failed: %w", err)
 	}
 
-	list, err = cfgBlock.CompletionItemsAtPos(hclPos)
+	candidates, err := cfgBlock.CompletionCandidatesAtPos(hclPos)
 	if err != nil {
 		return list, fmt.Errorf("finding completion items failed: %w", err)
 	}
 
-	return list, nil
+	return ilsp.CompletionList(candidates, fPos.Position(), cc.TextDocument), nil
 }

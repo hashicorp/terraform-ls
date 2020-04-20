@@ -3,10 +3,10 @@ package lang
 import (
 	"fmt"
 	"log"
+	"sort"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type configBlockFactory interface {
@@ -17,23 +17,24 @@ type configBlockFactory interface {
 // for any Block implementation
 type completableBlock struct {
 	logger *log.Logger
-	caps   lsp.TextDocumentClientCapabilities
 
 	block Block
 }
 
-func (cb *completableBlock) completionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error) {
-	list := lsp.CompletionList{}
+func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
+	list := &completeList{
+		candidates: make([]CompletionCandidate, 0),
+	}
 
 	if !cb.block.PosInBody(pos) {
 		// Avoid autocompleting outside of body, for now
 		cb.logger.Println("avoiding completion outside of block body")
-		return list, nil
+		return nil, nil
 	}
 
 	if cb.block.PosInAttribute(pos) {
 		cb.logger.Println("avoiding completion in the middle of existing attribute")
-		return list, nil
+		return nil, nil
 	}
 
 	b, ok := cb.block.BlockAtPos(pos)
@@ -41,78 +42,88 @@ func (cb *completableBlock) completionItemsAtPos(pos hcl.Pos) (lsp.CompletionLis
 		// This should never happen as the completion
 		// should only be called on a block the "pos" points to
 		cb.logger.Printf("block type not found at %#v", pos)
-		return list, nil
+		return nil, nil
 	}
 
 	for name, attr := range b.Attributes() {
 		if attr.IsComputedOnly() || attr.IsDeclared() {
 			continue
 		}
-		list.Items = append(list.Items, cb.completionItemForAttr(name, attr, pos))
+		list.candidates = append(list.candidates, &attributeCandidate{
+			Name: name,
+			Attr: attr,
+			Pos:  pos,
+		})
 	}
 
 	for name, block := range b.BlockTypes() {
 		if block.ReachedMaxItems() {
 			continue
 		}
-		list.Items = append(list.Items, cb.completionItemForNestedBlock(name, block, pos))
+		list.candidates = append(list.candidates, &nestedBlockCandidate{
+			Name:      name,
+			BlockType: block,
+			Pos:       pos,
+		})
 	}
 
-	sortCompletionItems(list.Items)
+	list.Sort()
 
 	return list, nil
 }
 
-func (cb *completableBlock) completionItemForAttr(name string, attr *Attribute, pos hcl.Pos) lsp.CompletionItem {
-	snippetSupport := cb.caps.Completion.CompletionItem.SnippetSupport
-
-	if snippetSupport {
-		return lsp.CompletionItem{
-			Label:            name,
-			Kind:             lsp.CIKField,
-			InsertTextFormat: lsp.ITFSnippet,
-			Detail:           schemaAttributeDetail(attr.Schema()),
-			TextEdit: &lsp.TextEdit{
-				Range: lsp.Range{
-					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-				},
-				NewText: fmt.Sprintf("%s = %s", name, snippetForAttrType(0, attr.Schema().AttributeType)),
-			},
-		}
-	}
-
-	return lsp.CompletionItem{
-		Label:            name,
-		Kind:             lsp.CIKField,
-		InsertTextFormat: lsp.ITFPlainText,
-		Detail:           schemaAttributeDetail(attr.Schema()),
-	}
+type completeList struct {
+	candidates []CompletionCandidate
 }
 
-func (cb *completableBlock) completionItemForNestedBlock(name string, blockType *BlockType, pos hcl.Pos) lsp.CompletionItem {
-	snippetSupport := cb.caps.Completion.CompletionItem.SnippetSupport
-
-	if snippetSupport {
-		return lsp.CompletionItem{
-			Label:            name,
-			Kind:             lsp.CIKField,
-			InsertTextFormat: lsp.ITFSnippet,
-			Detail:           schemaBlockDetail(blockType),
-			TextEdit: &lsp.TextEdit{
-				Range: lsp.Range{
-					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-				},
-				NewText: snippetForNestedBlock(name),
-			},
-		}
+func (l *completeList) Sort() {
+	less := func(i, j int) bool {
+		return l.candidates[i].Label() < l.candidates[j].Label()
 	}
+	sort.Slice(l.candidates, less)
 
-	return lsp.CompletionItem{
-		Label:            name,
-		Kind:             lsp.CIKField,
-		InsertTextFormat: lsp.ITFPlainText,
-		Detail:           schemaBlockDetail(blockType),
-	}
+}
+
+func (l *completeList) List() []CompletionCandidate {
+	return l.candidates
+}
+
+func (l *completeList) IsComplete() bool {
+	return true
+}
+
+type attributeCandidate struct {
+	Name string
+	Attr *Attribute
+	Pos  hcl.Pos
+}
+
+func (c *attributeCandidate) Label() string {
+	return c.Name
+}
+
+func (c *attributeCandidate) Detail() string {
+	return schemaAttributeDetail(c.Attr.Schema())
+}
+
+func (c *attributeCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
+	return pos, fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(0, c.Attr.Schema().AttributeType))
+}
+
+type nestedBlockCandidate struct {
+	Name      string
+	BlockType *BlockType
+	Pos       hcl.Pos
+}
+
+func (c *nestedBlockCandidate) Label() string {
+	return c.Name
+}
+
+func (c *nestedBlockCandidate) Detail() string {
+	return schemaBlockDetail(c.BlockType)
+}
+
+func (c *nestedBlockCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
+	return pos, snippetForNestedBlock(c.Name)
 }
