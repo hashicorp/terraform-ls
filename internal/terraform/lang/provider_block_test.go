@@ -20,16 +20,16 @@ func TestProviderBlock_Name(t *testing.T) {
 			`provider "aws" "extra" {
 }
 `,
-			"",
-			&invalidLabelsErr{"provider", []string{"aws", "extra"}},
+			"aws",
+			nil,
 		},
 		{
 			"invalid config - no labels",
 			`provider {
 }
 `,
-			"",
-			&invalidLabelsErr{"provider", []string{}},
+			"<unknown>",
+			nil,
 		},
 		{
 			"valid config",

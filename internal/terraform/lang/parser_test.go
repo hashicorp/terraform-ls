@@ -38,11 +38,8 @@ func TestParser_ParseBlockFromHCL(t *testing.T) {
 			"error from factory",
 			`provider "currywurst" "extra" {
 }`,
-			"",
-			&invalidLabelsErr{
-				BlockType: "provider",
-				Labels:    []string{"currywurst", "extra"},
-			},
+			"provider",
+			nil,
 		},
 	}
 

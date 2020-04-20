@@ -1,11 +1,12 @@
 package lang
 
 import (
+	"fmt"
 	"log"
-	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -22,16 +23,13 @@ func (f *datasourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error
 		f.logger = discardLog()
 	}
 
-	labels := block.Labels
-	if len(labels) != 2 {
-		return nil, &invalidLabelsErr{f.BlockType(), labels}
-	}
-
 	return &datasourceBlock{
-		hclBlock: block,
-		logger:   f.logger,
-		caps:     f.caps,
-		sr:       f.schemaReader,
+		logger: f.logger,
+		caps:   f.caps,
+
+		labelSchema: LabelSchema{"type", "name"},
+		hclBlock:    block,
+		sr:          f.schemaReader,
 	}, nil
 }
 
@@ -40,18 +38,42 @@ func (r *datasourceBlockFactory) BlockType() string {
 }
 
 type datasourceBlock struct {
-	logger   *log.Logger
-	caps     lsp.TextDocumentClientCapabilities
-	hclBlock *hclsyntax.Block
-	sr       schema.Reader
+	logger *log.Logger
+	caps   lsp.TextDocumentClientCapabilities
+
+	labelSchema LabelSchema
+	labels      []*Label
+	hclBlock    *hclsyntax.Block
+	sr          schema.Reader
 }
 
 func (r *datasourceBlock) Type() string {
-	return r.hclBlock.Labels[0]
+	return r.Labels()[0].Value
 }
 
 func (r *datasourceBlock) Name() string {
-	return strings.Join(r.hclBlock.Labels, ".")
+	firstLabel := r.Labels()[0].Value
+	secondLabel := r.Labels()[1].Value
+
+	if firstLabel == "" && secondLabel == "" {
+		return "<unknown>"
+	}
+	if firstLabel == "" {
+		firstLabel = "<unknown>"
+	}
+	if secondLabel == "" {
+		secondLabel = "<unknown>"
+	}
+
+	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
+}
+
+func (r *datasourceBlock) Labels() []*Label {
+	if r.labels != nil {
+		return r.labels
+	}
+	r.labels = parseLabels(r.BlockType(), r.labelSchema, r.hclBlock.Labels)
+	return r.labels
 }
 
 func (r *datasourceBlock) BlockType() string {
@@ -65,17 +87,20 @@ func (r *datasourceBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList,
 		return list, &noSchemaReaderErr{r.BlockType()}
 	}
 
-	rSchema, err := r.sr.DataSourceSchema(r.Type())
-	if err != nil {
-		return list, err
+	cb := &completableBlock{
+		logger: r.logger,
+		caps:   r.caps,
 	}
 
-	cb := &completableBlock{
-		logger:   r.logger,
-		caps:     r.caps,
-		hclBlock: r.hclBlock,
-		schema:   rSchema.Block,
+	var schemaBlock *tfjson.SchemaBlock
+	if r.Type() != "" {
+		rSchema, err := r.sr.DataSourceSchema(r.Type())
+		if err != nil {
+			return list, err
+		}
+		schemaBlock = rSchema.Block
 	}
+	cb.block = ParseBlock(r.hclBlock, r.Labels(), schemaBlock)
 
 	return cb.completionItemsAtPos(pos)
 }

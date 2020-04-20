@@ -270,16 +270,12 @@ func TestCompletableBlock_CompletionItemsAtPos(t *testing.T) {
 			}
 
 			cb := &completableBlock{
-				logger:   testLogger(),
-				hclBlock: block,
+				logger: testLogger(),
+				block:  ParseBlock(block, []*Label{}, tc.sb),
 			}
 
 			if tc.caps != nil {
 				cb.caps = *caps
-			}
-
-			if tc.sb != nil {
-				cb.schema = tc.sb
 			}
 
 			list, err := cb.completionItemsAtPos(tc.pos)

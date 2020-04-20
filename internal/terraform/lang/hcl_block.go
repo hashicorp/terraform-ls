@@ -7,6 +7,7 @@ import (
 
 type parsedBlock struct {
 	hclBlock      *hclsyntax.Block
+	labels        []*Label
 	AttributesMap map[string]*Attribute
 	BlockTypesMap map[string]*BlockType
 

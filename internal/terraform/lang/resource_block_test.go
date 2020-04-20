@@ -20,24 +20,24 @@ func TestResourceBlock_Name(t *testing.T) {
 			`resource {
 }
 `,
-			"",
-			&invalidLabelsErr{"resource", []string{}},
+			"<unknown>",
+			nil,
 		},
 		{
 			"invalid config - single label",
 			`resource "aws_instance" {
 }
 `,
-			"",
-			&invalidLabelsErr{"resource", []string{"aws_instance"}},
+			"aws_instance.<unknown>",
+			nil,
 		},
 		{
 			"invalid config - three labels",
 			`resource "aws_instance" "name" "extra" {
 }
 `,
-			"",
-			&invalidLabelsErr{"resource", []string{"aws_instance", "name", "extra"}},
+			"aws_instance.name",
+			nil,
 		},
 		{
 			"valid config",

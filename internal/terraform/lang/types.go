@@ -24,6 +24,7 @@ type ConfigBlock interface {
 	CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error)
 	Name() string
 	BlockType() string
+	Labels() []*Label
 }
 
 // Block represents a decoded HCL block (by a Parser)
@@ -35,6 +36,13 @@ type Block interface {
 	PosInAttribute(pos hcl.Pos) bool
 	Attributes() map[string]*Attribute
 	BlockTypes() map[string]*BlockType
+}
+
+type LabelSchema []string
+
+type Label struct {
+	Name  string
+	Value string
 }
 
 type BlockType struct {

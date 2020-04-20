@@ -10,9 +10,10 @@ import (
 
 // ParseBlock parses HCL configuration based on tfjson's SchemaBlock
 // and keeps hold of all tfjson schema details on block or attribute level
-func ParseBlock(block *hclsyntax.Block, schema *tfjson.SchemaBlock) Block {
+func ParseBlock(block *hclsyntax.Block, labels []*Label, schema *tfjson.SchemaBlock) Block {
 	b := &parsedBlock{
 		hclBlock: block,
+		labels:   labels,
 	}
 	if block == nil {
 		return b

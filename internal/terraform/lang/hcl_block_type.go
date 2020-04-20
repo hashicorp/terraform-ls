@@ -61,7 +61,9 @@ func (bt BlockTypes) AddBlock(name string, block *hclsyntax.Block, typeSchema *t
 	}
 
 	if block != nil {
-		bt[name].BlockList = append(bt[name].BlockList, ParseBlock(block, typeSchema.Block))
+		// SDK doesn't support named blocks yet, so we expect no labels here for now
+		labels := make([]*Label, 0)
+		bt[name].BlockList = append(bt[name].BlockList, ParseBlock(block, labels, typeSchema.Block))
 	}
 }
 

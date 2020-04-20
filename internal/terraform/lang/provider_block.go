@@ -5,6 +5,7 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -21,16 +22,13 @@ func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 		f.logger = discardLog()
 	}
 
-	labels := block.Labels
-	if len(labels) != 1 {
-		return nil, &invalidLabelsErr{f.BlockType(), labels}
-	}
-
 	return &providerBlock{
-		hclBlock: block,
-		logger:   f.logger,
-		caps:     f.caps,
-		sr:       f.schemaReader,
+		logger: f.logger,
+		caps:   f.caps,
+
+		labelSchema: LabelSchema{"name"},
+		hclBlock:    block,
+		sr:          f.schemaReader,
 	}, nil
 }
 
@@ -39,14 +37,33 @@ func (f *providerBlockFactory) BlockType() string {
 }
 
 type providerBlock struct {
-	logger   *log.Logger
-	caps     lsp.TextDocumentClientCapabilities
-	hclBlock *hclsyntax.Block
-	sr       schema.Reader
+	logger *log.Logger
+	caps   lsp.TextDocumentClientCapabilities
+
+	labelSchema LabelSchema
+	labels      []*Label
+	hclBlock    *hclsyntax.Block
+	sr          schema.Reader
 }
 
 func (p *providerBlock) Name() string {
-	return p.hclBlock.Labels[0]
+	firstLabel := p.RawName()
+	if firstLabel == "" {
+		return "<unknown>"
+	}
+	return firstLabel
+}
+
+func (p *providerBlock) RawName() string {
+	return p.Labels()[0].Value
+}
+
+func (p *providerBlock) Labels() []*Label {
+	if p.labels != nil {
+		return p.labels
+	}
+	p.labels = parseLabels(p.BlockType(), p.labelSchema, p.hclBlock.Labels)
+	return p.labels
 }
 
 func (p *providerBlock) BlockType() string {
@@ -60,16 +77,20 @@ func (p *providerBlock) CompletionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, e
 		return list, &noSchemaReaderErr{p.BlockType()}
 	}
 
-	pSchema, err := p.sr.ProviderConfigSchema(p.Name())
-	if err != nil {
-		return list, err
+	cb := &completableBlock{
+		logger: p.logger,
+		caps:   p.caps,
 	}
 
-	cb := &completableBlock{
-		logger:   p.logger,
-		caps:     p.caps,
-		hclBlock: p.hclBlock,
-		schema:   pSchema.Block,
+	var schemaBlock *tfjson.SchemaBlock
+	if p.RawName() != "" {
+		pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
+		if err != nil {
+			return list, err
+		}
+		schemaBlock = pSchema.Block
 	}
+	cb.block = ParseBlock(p.hclBlock, p.Labels(), schemaBlock)
+
 	return cb.completionItemsAtPos(pos)
 }

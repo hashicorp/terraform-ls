@@ -16,19 +16,6 @@ func (e *emptyCfgErr) Error() string {
 
 var EmptyConfigErr = &emptyCfgErr{}
 
-type invalidLabelsErr struct {
-	BlockType string
-	Labels    []string
-}
-
-func (e *invalidLabelsErr) Is(target error) bool {
-	return reflect.DeepEqual(e, target)
-}
-
-func (e *invalidLabelsErr) Error() string {
-	return fmt.Sprintf("invalid labels for %s block: %q", e.BlockType, e.Labels)
-}
-
 type unknownBlockTypeErr struct {
 	BlockType string
 }

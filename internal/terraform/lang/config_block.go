@@ -6,7 +6,6 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	tfjson "github.com/hashicorp/terraform-json"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -14,32 +13,30 @@ type configBlockFactory interface {
 	New(*hclsyntax.Block) (ConfigBlock, error)
 }
 
+// completableBlock provides common completion functionality
+// for any Block implementation
 type completableBlock struct {
-	logger   *log.Logger
-	caps     lsp.TextDocumentClientCapabilities
-	hclBlock *hclsyntax.Block
-	schema   *tfjson.SchemaBlock
+	logger *log.Logger
+	caps   lsp.TextDocumentClientCapabilities
+
+	block Block
 }
 
 func (cb *completableBlock) completionItemsAtPos(pos hcl.Pos) (lsp.CompletionList, error) {
 	list := lsp.CompletionList{}
 
-	cb.logger.Printf("block: %#v", cb.hclBlock)
-
-	block := ParseBlock(cb.hclBlock, cb.schema)
-
-	if !block.PosInBody(pos) {
+	if !cb.block.PosInBody(pos) {
 		// Avoid autocompleting outside of body, for now
 		cb.logger.Println("avoiding completion outside of block body")
 		return list, nil
 	}
 
-	if block.PosInAttribute(pos) {
+	if cb.block.PosInAttribute(pos) {
 		cb.logger.Println("avoiding completion in the middle of existing attribute")
 		return list, nil
 	}
 
-	b, ok := block.BlockAtPos(pos)
+	b, ok := cb.block.BlockAtPos(pos)
 	if !ok {
 		// This should never happen as the completion
 		// should only be called on a block the "pos" points to

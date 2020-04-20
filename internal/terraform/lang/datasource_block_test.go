@@ -20,24 +20,24 @@ func TestDatasourceBlock_Name(t *testing.T) {
 			`data {
 }
 `,
-			"",
-			&invalidLabelsErr{"data", []string{}},
+			"<unknown>",
+			nil,
 		},
 		{
 			"invalid config - single label",
 			`data "aws_instance" {
 }
 `,
-			"",
-			&invalidLabelsErr{"data", []string{"aws_instance"}},
+			"aws_instance.<unknown>",
+			nil,
 		},
 		{
 			"invalid config - three labels",
 			`data "aws_instance" "name" "extra" {
 }
 `,
-			"",
-			&invalidLabelsErr{"data", []string{"aws_instance", "name", "extra"}},
+			"aws_instance.name",
+			nil,
 		},
 		{
 			"valid config",
