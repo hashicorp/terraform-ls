@@ -124,21 +124,29 @@ func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error
 	return nil
 }
 
-func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
-	s.logger.Printf("Acquiring semaphore before reading %q provider schema", name)
+func (s *Storage) schema() (*tfjson.ProviderSchemas, error) {
+	s.logger.Println("Acquiring semaphore before reading schema")
 	acquired := s.sem.TryAcquire(1)
 	if !acquired {
-		return nil, fmt.Errorf("schema unavailable temporarily")
+		return nil, fmt.Errorf("schema temporarily unavailable")
 	}
 	defer s.sem.Release(1)
 
+	if s.ps == nil {
+		return nil, &NoSchemaAvailableErr{}
+	}
+	return s.ps, nil
+}
+
+func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
 	s.logger.Printf("Reading %q provider schema", name)
 
-	if s.ps == nil {
-		return nil, &SchemaUnavailableErr{"provider", name}
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
 	}
 
-	schema, ok := s.ps.Schemas[name]
+	schema, ok := ps.Schemas[name]
 	if !ok {
 		return nil, &SchemaUnavailableErr{"provider", name}
 	}
@@ -151,23 +159,17 @@ func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
 }
 
 func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
-	s.logger.Printf("Acquiring semaphore before reading %q resource schema", rType)
-	acquired := s.sem.TryAcquire(1)
-	if !acquired {
-		return nil, fmt.Errorf("schema unavailable temporarily")
-	}
-	defer s.sem.Release(1)
-
 	s.logger.Printf("Reading %q resource schema", rType)
 
-	if s.ps == nil {
-		return nil, &SchemaUnavailableErr{"resource", rType}
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
 	}
 
 	// Vast majority of resources should follow naming convention
 	// of <provider>_resource_name, but this is not enforced
 	// in any way so we have to check all providers
-	for _, schema := range s.ps.Schemas {
+	for _, schema := range ps.Schemas {
 		rSchema, ok := schema.ResourceSchemas[rType]
 		if ok {
 			return rSchema, nil
@@ -178,23 +180,17 @@ func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
 }
 
 func (s *Storage) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
-	s.logger.Printf("Acquiring semaphore before reading %q datasource schema", dsType)
-	acquired := s.sem.TryAcquire(1)
-	if !acquired {
-		return nil, fmt.Errorf("schema unavailable temporarily")
-	}
-	defer s.sem.Release(1)
-
 	s.logger.Printf("Reading %q datasource schema", dsType)
 
-	if s.ps == nil {
-		return nil, &SchemaUnavailableErr{"data", dsType}
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
 	}
 
 	// Vast majority of Datasources should follow naming convention
 	// of <provider>_datasource_name, but this is not enforced
 	// in any way so we have to check all providers
-	for _, schema := range s.ps.Schemas {
+	for _, schema := range ps.Schemas {
 		rSchema, ok := schema.DataSourceSchemas[dsType]
 		if ok {
 			return rSchema, nil

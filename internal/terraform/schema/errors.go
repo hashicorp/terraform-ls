@@ -4,6 +4,12 @@ import (
 	"fmt"
 )
 
+type NoSchemaAvailableErr struct{}
+
+func (e *NoSchemaAvailableErr) Error() string {
+	return fmt.Sprintf("no schema available")
+}
+
 type SchemaUnavailableErr struct {
 	BlockType string
 	FullName  string
