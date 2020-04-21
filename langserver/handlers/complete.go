@@ -48,7 +48,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 
 	hclBlock, hclPos, err := hclFile.BlockAtPosition(fPos)
 	if err != nil {
-		return list, fmt.Errorf("finding config block failed: %s", err)
+		return list, fmt.Errorf("finding HCL block failed: %s", err)
 	}
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
 
@@ -63,6 +63,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	if err != nil {
 		return list, fmt.Errorf("finding config block failed: %w", err)
 	}
+	h.logger.Printf("Configuration block %q parsed", cfgBlock.BlockType())
 
 	candidates, err := cfgBlock.CompletionCandidatesAtPos(hclPos)
 	if err != nil {

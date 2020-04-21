@@ -28,26 +28,11 @@ func TestFile_BlockAtPosition(t *testing.T) {
 				Column: 1,
 				Byte:   0,
 			},
-			hcl.Diagnostics{
-				&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  "Argument or block definition required",
-					Detail:   "An argument or block definition is required here.",
-					Subject: &hcl.Range{
-						Start: hcl.Pos{
-							Byte:   0,
-							Column: 1,
-							Line:   1,
-						},
-						End: hcl.Pos{
-							Byte:   3,
-							Column: 4,
-							Line:   1,
-						},
-					},
-				},
+			nil, // Expect errors to be ignored
+			&hcl.Block{
+				Type:   "provider",
+				Labels: []string{"aws"},
 			},
-			nil,
 		},
 		{
 			"valid config and position",

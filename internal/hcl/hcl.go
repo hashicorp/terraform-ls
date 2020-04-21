@@ -28,13 +28,10 @@ func (f *file) ast() (*hcllib.File, error) {
 		return f.f, nil
 	}
 
-	hf, diags := hclsyntax.ParseConfig(f.content, f.filename, hcllib.InitialPos)
-	if diags.HasErrors() {
-		return nil, diags
-	}
+	hf, err := hclsyntax.ParseConfig(f.content, f.filename, hcllib.InitialPos)
 	f.f = hf
 
-	return hf, nil
+	return f.f, err
 }
 
 func (f *file) BlockAtPosition(filePos filesystem.FilePosition) (*hcllib.Block, hcllib.Pos, error) {
@@ -49,10 +46,7 @@ func (f *file) BlockAtPosition(filePos filesystem.FilePosition) (*hcllib.Block, 
 }
 
 func (f *file) blockAtPosition(pos hcllib.Pos) (*hcllib.Block, error) {
-	ast, err := f.ast()
-	if err != nil {
-		return nil, err
-	}
+	ast, _ := f.ast()
 
 	if body, ok := ast.Body.(*hclsyntax.Body); ok {
 		if body.SrcRange.Empty() && pos != hcllib.InitialPos {
