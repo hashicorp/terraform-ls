@@ -161,6 +161,26 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{},
 			errors.New("error getting schema"),
 		},
+		{
+			"provider names",
+			`provider "" {
+
+}`,
+			simpleSchema,
+			nil,
+			hcl.Pos{Line: 1, Column: 9, Byte: 10},
+			[]renderedCandidate{
+				{
+					Label:  "custom",
+					Detail: "provider",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
+						Text: "custom",
+					},
+				},
+			},
+			nil,
+		},
 	}
 
 	for i, tc := range testCases {

@@ -49,6 +49,27 @@ func (b *parsedBlock) Range() hcl.Range {
 	return b.hclBlock.Range()
 }
 
+func (b *parsedBlock) PosInLabels(pos hcl.Pos) bool {
+	for _, rng := range b.hclBlock.LabelRanges {
+		if rng.ContainsPos(pos) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (b *parsedBlock) LabelAtPos(pos hcl.Pos) (*Label, bool) {
+	for i, rng := range b.hclBlock.LabelRanges {
+		if rng.ContainsPos(pos) {
+			// TODO: Guard against crashes when user sets label where we don't expect it
+			return b.labels[i], true
+		}
+	}
+
+	return nil, false
+}
+
 func (b *parsedBlock) PosInBody(pos hcl.Pos) bool {
 	for _, blockType := range b.BlockTypesMap {
 		for _, b := range blockType.BlockList {

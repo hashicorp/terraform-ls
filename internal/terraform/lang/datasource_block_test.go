@@ -170,6 +170,25 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{},
 			errors.New("error getting schema"),
 		},
+		{
+			"datasource names",
+			`data "" "" {
+}`,
+			simpleSchema,
+			nil,
+			hcl.Pos{Line: 1, Column: 5, Byte: 6},
+			[]renderedCandidate{
+				{
+					Label:  "custom_ds",
+					Detail: "custom",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 1, Column: 5, Byte: 6},
+						Text: "custom_ds",
+					},
+				},
+			},
+			nil,
+		},
 	}
 
 	for i, tc := range testCases {
