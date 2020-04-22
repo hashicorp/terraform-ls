@@ -2,6 +2,8 @@ package filesystem
 
 import (
 	"testing"
+
+	"github.com/hashicorp/hcl/v2"
 )
 
 func TestFile_ApplyChange_fullUpdate(t *testing.T) {
@@ -22,4 +24,10 @@ type fileChange struct {
 
 func (fc *fileChange) Text() string {
 	return fc.text
+}
+
+func (fc *fileChange) Range() hcl.Range {
+	return hcl.Range{
+		// TODO: Implement partial updates
+	}
 }

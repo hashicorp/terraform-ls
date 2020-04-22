@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
@@ -202,4 +203,10 @@ type testChange struct {
 
 func (ch *testChange) Text() string {
 	return ch.text
+}
+
+func (ch *testChange) Range() hcl.Range {
+	return hcl.Range{
+		// TODO: Implement partial updates
+	}
 }

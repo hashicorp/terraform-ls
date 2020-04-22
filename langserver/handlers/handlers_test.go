@@ -28,7 +28,8 @@ func TestInitalizeAndShutdown(t *testing.T) {
 					"openClose": true,
 					"change": 1
 				},
-				"completionProvider": {}
+				"completionProvider": {},
+				"documentFormattingProvider":true
 			}
 		}
 	}`)
@@ -62,7 +63,8 @@ func TestEOF(t *testing.T) {
 					"openClose": true,
 					"change": 1
 				},
-				"completionProvider": {}
+				"completionProvider": {},
+				"documentFormattingProvider":true
 			}
 		}
 	}`)

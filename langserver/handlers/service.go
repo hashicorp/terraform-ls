@@ -146,6 +146,30 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
+		"textDocument/formatting": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithFilesystem(fs, ctx)
+
+			tfPath, err := discovery.LookPath()
+			if err != nil {
+				return nil, err
+			}
+
+			tf := svc.executorFunc(ctx, tfPath)
+			// Log path is set via CLI flag, hence the server context
+			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
+				tf.SetExecLogPath(path)
+			}
+			tf.SetLogger(svc.logger)
+
+			ctx = lsctx.WithTerraformExecutor(tf, ctx)
+
+			return handle(ctx, req, lh.TextDocumentFormatting)
+		},
 		"shutdown": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.Shutdown(req)
 			if err != nil {

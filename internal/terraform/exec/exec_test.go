@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 	"time"
@@ -43,6 +44,25 @@ func TestExec_Version(t *testing.T) {
 	}
 	if v != "0.12.0" {
 		t.Fatalf("output does not match: %#v", v)
+	}
+}
+
+func TestExec_Format(t *testing.T) {
+	expectedOutput := []byte("formatted config")
+	e := MockExecutor(&MockCall{
+		Args:     []string{"fmt", "-"},
+		Stdout:   string(expectedOutput),
+		ExitCode: 0,
+	})
+	e.SetWorkdir("/tmp")
+	out, err := e.Format([]byte("unformatted"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !bytes.Equal(out, expectedOutput) {
+		t.Fatalf("Expected output: %q\nGiven: %q\n",
+			string(expectedOutput), string(out))
 	}
 }
 

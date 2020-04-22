@@ -20,20 +20,3 @@ func TestMakeSourceLines_success(t *testing.T) {
 			expectedLines, len(lines))
 	}
 }
-
-func TestSourceLine_isAllASCII(t *testing.T) {
-	lines := MakeSourceLines("/test.tf", []byte(`plaintext
-smiley 🙃 here`))
-	if len(lines) != 2 {
-		t.Fatal("Expected exactly 2 lines")
-	}
-
-	if !lines[0].IsAllASCII() {
-		t.Fatalf("Expected first line (%q) to be reported as ASCII",
-			string(lines[0].Bytes()))
-	}
-	if lines[1].IsAllASCII() {
-		t.Fatalf("Expected second line (%q) NOT to be reported as ASCII",
-			string(lines[1].Bytes()))
-	}
-}

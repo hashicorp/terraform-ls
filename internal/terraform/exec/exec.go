@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,6 +33,14 @@ type Executor struct {
 	execLogPath string
 
 	cmdCtxFunc cmdCtxFunc
+}
+
+type command struct {
+	Cmd          *exec.Cmd
+	Context      context.Context
+	CancelFunc   context.CancelFunc
+	StdoutBuffer *bytes.Buffer
+	StderrBuffer *bytes.Buffer
 }
 
 func NewExecutor(ctx context.Context, path string) *Executor {
@@ -66,16 +75,15 @@ func (e *Executor) GetExecPath() string {
 	return e.execPath
 }
 
-func (e *Executor) run(args ...string) ([]byte, error) {
+func (e *Executor) cmd(args ...string) (*command, error) {
 	if e.workDir == "" {
 		return nil, fmt.Errorf("no work directory set")
 	}
 
 	ctx := e.ctx
+	var cancel context.CancelFunc
 	if e.timeout > 0 {
-		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(e.ctx, e.timeout)
-		defer cancel()
 	}
 
 	var outBuf bytes.Buffer
@@ -103,28 +111,44 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	if e.execLogPath != "" {
 		logPath, err := logging.ParseExecLogPath(cmd.Args, e.execLogPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse log path: %w", err)
+			return &command{
+				Cmd:          cmd,
+				Context:      ctx,
+				CancelFunc:   cancel,
+				StdoutBuffer: &outBuf,
+				StderrBuffer: &errBuf,
+			}, fmt.Errorf("failed to parse log path: %w", err)
 		}
 		cmd.Env = append(cmd.Env, "TF_LOG=TRACE")
 		cmd.Env = append(cmd.Env, "TF_LOG_PATH="+logPath)
 
 		e.logger.Printf("Execution will be logged to %s", logPath)
 	}
+	return &command{
+		Cmd:          cmd,
+		Context:      ctx,
+		CancelFunc:   cancel,
+		StdoutBuffer: &outBuf,
+		StderrBuffer: &errBuf,
+	}, nil
+}
 
-	e.logger.Printf("Running %s %q in %q...", e.execPath, args, e.workDir)
-	err := cmd.Run()
+func (e *Executor) waitCmd(command *command) ([]byte, error) {
+	args := command.Cmd.Args
+	e.logger.Printf("Waiting for command to finish ...")
+	err := command.Cmd.Wait()
 	if err != nil {
 		if tErr, ok := err.(*exec.ExitError); ok {
 			exitErr := &ExitError{
 				Err:    tErr,
-				Path:   cmd.Path,
-				Stdout: outBuf.String(),
-				Stderr: errBuf.String(),
+				Path:   command.Cmd.Path,
+				Stdout: command.StdoutBuffer.String(),
+				Stderr: command.StderrBuffer.String(),
 			}
 
-			ctxErr := ctx.Err()
+			ctxErr := command.Context.Err()
 			if errors.Is(ctxErr, context.DeadlineExceeded) {
-				exitErr.CtxErr = ExecTimeoutError(cmd.Args, e.timeout)
+				exitErr.CtxErr = ExecTimeoutError(args, e.timeout)
 			}
 			if errors.Is(ctxErr, context.Canceled) {
 				exitErr.CtxErr = ExecCanceledError(args)
@@ -136,11 +160,71 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 		return nil, err
 	}
 
-	pc := cmd.ProcessState
+	pc := command.Cmd.ProcessState
 	e.logger.Printf("terraform run (%s %q, in %q, pid %d) finished with exit code %d",
 		e.execPath, args, e.workDir, pc.Pid(), pc.ExitCode())
 
-	return outBuf.Bytes(), nil
+	return command.StdoutBuffer.Bytes(), nil
+}
+
+func (e *Executor) runCmd(command *command) ([]byte, error) {
+	args := command.Cmd.Args
+	e.logger.Printf("Starting %s %q in %q...", e.execPath, args, e.workDir)
+	err := command.Cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return e.waitCmd(command)
+}
+
+func (e *Executor) run(args ...string) ([]byte, error) {
+	cmd, err := e.cmd(args...)
+	defer cmd.CancelFunc()
+	if err != nil {
+		return nil, err
+	}
+	return e.runCmd(cmd)
+}
+
+func (e *Executor) Format(input []byte) ([]byte, error) {
+	cmd, err := e.cmd("fmt", "-")
+	if err != nil {
+		return nil, err
+	}
+
+	stdin, err := cmd.Cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cmd.Cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = writeAndClose(stdin, input)
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := e.waitCmd(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to format: %w", err)
+	}
+
+	return out, nil
+}
+
+func writeAndClose(w io.WriteCloser, input []byte) (int, error) {
+	defer w.Close()
+
+	n, err := w.Write(input)
+	if err != nil {
+		return n, err
+	}
+
+	return n, nil
 }
 
 func (e *Executor) Version() (string, error) {
