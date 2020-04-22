@@ -54,3 +54,19 @@ Make sure to read through the [example vim configuration](https://github.com/neo
 " Use <c-space> to trigger completion.
 inoremap <silent><expr> <c-space> coc#refresh()
 ```
+
+## IntelliJ IDE
+
+ - Install [LSP Support plugin](https://plugins.jetbrains.com/plugin/10209-lsp-support)
+ - Open Settings
+ - Go to `Languages & Frameworks → Language Server Protocol → Server Definitions`
+   - Pick `Executable`
+   - set `Extension` to `tf`
+   - set `Path` to `terraform-ls`
+   - set `Args` to `serve`
+ - Confirm by clicking `Apply`
+
+Please note that the since the [Terraform plugin](https://plugins.jetbrains.com/plugin/7808-hashicorp-terraform--hcl-language-support)
+provides overlapping functionality (and more features at the time of writing).
+As a result having both enabled at the same time may result in suboptimal UX,
+such as duplicate completion candidates.
