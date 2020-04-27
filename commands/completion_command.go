@@ -84,7 +84,8 @@ func (c *CompletionCommand) Run(args []string) int {
 		Version: 0,
 	}))
 
-	tfPath, err := discovery.LookPath()
+	d := &discovery.Discovery{}
+	tfPath, err := d.LookPath()
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
