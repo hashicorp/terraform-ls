@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
@@ -15,18 +16,18 @@ func TestInitialize_twice(t *testing.T) {
 
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`})
+	}`, TempDirUri())})
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`}, code.SystemError.Err())
+	}`, TempDirUri())}, code.SystemError.Err())
 }
 
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
@@ -39,11 +40,11 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "processId": 12345,
-	    "rootUri": "file:///tmp"
-	}`}, code.SystemError.Err())
+	    "rootUri": %q
+	}`, TempDirUri())}, code.SystemError.Err())
 }
 
 func TestInitialize_withInvalidRootURI(t *testing.T) {

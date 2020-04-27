@@ -38,7 +38,7 @@ func (f *file) Filename() string {
 	return filepath.Base(f.FullPath())
 }
 
-func (f *file) DocumentURI() string {
+func (f *file) URI() string {
 	return uriPrefix + f.fullPath
 }
 

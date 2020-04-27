@@ -19,8 +19,8 @@ func (p *filePosition) Position() hcl.Pos {
 	return p.pos
 }
 
-func (p *filePosition) DocumentURI() string {
-	return p.fh.DocumentURI()
+func (p *filePosition) URI() string {
+	return p.fh.URI()
 }
 
 func (p *filePosition) FullPath() string {

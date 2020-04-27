@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -15,14 +16,14 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
 			"text": "provider \"github\" {\n\n}\n",
-			"uri": "file:///var/main.tf"
+			"uri": "%s/main.tf"
 		}
-	}`}, session.SessionNotInitialized.Err())
+	}`, TempDirUri())}, session.SessionNotInitialized.Err())
 }
 
 func TestLangServer_formatting(t *testing.T) {
@@ -37,32 +38,32 @@ func TestLangServer_formatting(t *testing.T) {
 
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`})
+	}`, TempDirUri())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
 	})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
 			"text": "provider  \"test\"   {\n\n}\n",
-			"uri": "file:///tmp/main.tf"
+			"uri": "%s/main.tf"
 		}
-	}`})
+	}`, TempDirUri())})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
-				"uri": "file:///tmp/main.tf"
+				"uri": "%s/main.tf"
 			}
-		}`}, `{
+		}`, TempDirUri())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [

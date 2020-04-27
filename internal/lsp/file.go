@@ -6,7 +6,7 @@ import (
 )
 
 type File interface {
-	DocumentURI() string
+	URI() string
 	FullPath() string
 	Dir() string
 	Filename() string
@@ -19,8 +19,8 @@ type file struct {
 	text []byte
 }
 
-func (f *file) DocumentURI() string {
-	return f.fh.DocumentURI()
+func (f *file) URI() string {
+	return f.fh.URI()
 }
 
 func (f *file) FullPath() string {

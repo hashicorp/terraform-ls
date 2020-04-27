@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"os"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -53,7 +54,9 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	tf.SetWorkdir(rootURI)
+	// Workdir is not important for version
+	// and schema obtaining is explicit anyway
+	tf.SetWorkdir(os.TempDir())
 
 	tfVersion, err := tf.Version()
 	if err != nil {

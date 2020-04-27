@@ -41,7 +41,11 @@ func (fh FileHandler) Filename() string {
 	return filepath.Base(fh.FullPath())
 }
 
-func (fh FileHandler) DocumentURI() string {
+func (fh FileHandler) DocumentURI() lsp.DocumentURI {
+	return lsp.DocumentURI(fh)
+}
+
+func (fh FileHandler) URI() string {
 	return string(fh)
 }
 
@@ -59,4 +63,8 @@ func VersionedFileHandler(doc lsp.VersionedTextDocumentIdentifier) *versionedFil
 
 func (fh *versionedFileHandler) Version() int {
 	return fh.v
+}
+
+func FileHandlerFromPath(path string) FileHandler {
+	return FileHandler(uriPrefix + filepath.ToSlash(path))
 }
