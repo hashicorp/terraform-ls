@@ -3,34 +3,29 @@ package lsp
 import (
 	"net/url"
 	"path/filepath"
-	"strings"
 
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/sourcegraph/go-lsp"
 )
-
-const uriPrefix = "file://"
 
 type FileHandler string
 
 func (fh FileHandler) Valid() bool {
-	if !strings.HasPrefix(string(fh), uriPrefix) {
-		return false
-	}
-	p := string(fh[len(uriPrefix):])
-	_, err := url.PathUnescape(p)
+	_, err := fh.parsePath()
 	if err != nil {
 		return false
 	}
+
 	return true
 }
 
-func (fh FileHandler) FullPath() string {
-	if !fh.Valid() {
-		panic("invalid uri")
+func (fh FileHandler) parsePath() (string, error) {
+	u, err := url.ParseRequestURI(string(fh))
+	if err != nil {
+		return "", err
 	}
-	p := string(fh[len(uriPrefix):])
-	p, _ = url.PathUnescape(p)
-	return filepath.FromSlash(p)
+
+	return url.PathUnescape(u.Path)
 }
 
 func (fh FileHandler) Dir() string {
@@ -66,5 +61,5 @@ func (fh *versionedFileHandler) Version() int {
 }
 
 func FileHandlerFromPath(path string) FileHandler {
-	return FileHandler(uriPrefix + filepath.ToSlash(path))
+	return FileHandler(filesystem.URIFromPath(path))
 }

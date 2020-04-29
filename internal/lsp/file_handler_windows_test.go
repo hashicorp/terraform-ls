@@ -11,7 +11,7 @@ func TestFileHandler_valid_windows(t *testing.T) {
 		t.Fatalf("Expected %q to be valid", path)
 	}
 
-	expectedDir := `\C:\Users\With Space\tf-test`
+	expectedDir := `C:\Users\With Space\tf-test`
 	if fh.Dir() != expectedDir {
 		t.Fatalf("Expected dir: %q, given: %q",
 			expectedDir, fh.Dir())
@@ -23,7 +23,7 @@ func TestFileHandler_valid_windows(t *testing.T) {
 			expectedFilename, fh.Filename())
 	}
 
-	expectedFullPath := `\C:\Users\With Space\tf-test\file.tf`
+	expectedFullPath := `C:\Users\With Space\tf-test\file.tf`
 	if fh.FullPath() != expectedFullPath {
 		t.Fatalf("Expected full path: %q, given: %q",
 			expectedFullPath, fh.FullPath())
