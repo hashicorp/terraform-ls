@@ -9,5 +9,5 @@ type FileNotOpenErr struct {
 }
 
 func (e *FileNotOpenErr) Error() string {
-	return fmt.Sprintf("file is not open: %s", e.FileHandler.DocumentURI())
+	return fmt.Sprintf("file is not open: %s", e.FileHandler.URI())
 }

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/langserver"
@@ -14,12 +15,12 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
 			"text": "provider \"github\" {\n\n}\n",
-			"uri": "file:///var/main.tf"
+			"uri": "%s/main.tf"
 		}
-	}`}, session.SessionNotInitialized.Err())
+	}`, TempDirUri())}, session.SessionNotInitialized.Err())
 }

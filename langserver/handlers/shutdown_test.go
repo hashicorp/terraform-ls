@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
@@ -14,11 +15,11 @@ func TestShutdown_twice(t *testing.T) {
 
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`})
+	}`, TempDirUri())})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`})
 

@@ -27,7 +27,7 @@ type VersionedFileHandler interface {
 }
 
 type FileHandler interface {
-	DocumentURI() string
+	URI() string
 	FullPath() string
 	Dir() string
 	Filename() string

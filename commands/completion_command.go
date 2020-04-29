@@ -56,7 +56,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	lspUri := lsp.DocumentURI("file://" + path)
+	lspUri := ilsp.FileHandlerFromPath(path).DocumentURI()
 	parts := strings.Split(c.atPos, ":")
 	if len(parts) != 2 {
 		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)\n", c.atPos))

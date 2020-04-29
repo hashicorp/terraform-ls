@@ -24,8 +24,6 @@ func NewFile(fullPath string, content []byte) *file {
 	return &file{fullPath: fullPath, content: content}
 }
 
-const uriPrefix = "file://"
-
 func (f *file) FullPath() string {
 	return f.fullPath
 }
@@ -38,8 +36,8 @@ func (f *file) Filename() string {
 	return filepath.Base(f.FullPath())
 }
 
-func (f *file) DocumentURI() string {
-	return uriPrefix + f.fullPath
+func (f *file) URI() string {
+	return URIFromPath(f.fullPath)
 }
 
 func (f *file) Lines() source.Lines {

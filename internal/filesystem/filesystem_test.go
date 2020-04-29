@@ -178,7 +178,7 @@ type testHandler struct {
 	uri string
 }
 
-func (fh *testHandler) DocumentURI() string {
+func (fh *testHandler) URI() string {
 	return fh.uri
 }
 

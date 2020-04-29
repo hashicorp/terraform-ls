@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/langserver"
 )
@@ -15,11 +17,11 @@ func TestInitalizeAndShutdown(t *testing.T) {
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`}, `{
+	}`, TempDirUri())}, `{
 		"jsonrpc": "2.0",
 		"id": 1,
 		"result": {
@@ -50,11 +52,11 @@ func TestEOF(t *testing.T) {
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "initialize",
-		ReqParams: `{
+		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
-	    "rootUri": "file:///tmp",
+	    "rootUri": %q,
 	    "processId": 12345
-	}`}, `{
+	}`, TempDirUri())}, `{
 		"jsonrpc": "2.0",
 		"id": 1,
 		"result": {
@@ -101,4 +103,8 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func TempDirUri() string {
+	return lsp.FileHandlerFromPath(os.TempDir()).URI()
 }
