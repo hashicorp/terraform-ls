@@ -22,7 +22,11 @@ import (
 // Environment variables to pass through to Terraform
 var passthroughEnvVars = []string{
 	// This allows Terraform to find custom-built providers
-	"HOME", "USER",
+	"HOME", "USER", "USERPROFILE",
+	// This allows Terraform to create crash log in the desired temp directory
+	// os.TempDir would otherwise fall back to C:\Windows on Windows
+	// which has no write permissions for non-admins
+	"TMPDIR", "TMP", "TEMP",
 }
 
 // cmdCtxFunc allows mocking of Terraform in tests while retaining
