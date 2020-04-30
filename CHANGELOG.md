@@ -7,6 +7,7 @@ FEATURES:
 BUG FIXES:
 
  - Fix URI parsing for Windows paths ([#73](https://github.com/hashicorp/terraform-ls/pull/73))
+ - terraform/exec: Make server work under non-admin users on Windows ([#78](https://github.com/hashicorp/terraform-ls/pull/78))
 
 INTERNAL:
 
