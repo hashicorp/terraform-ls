@@ -19,6 +19,16 @@ import (
 	"github.com/hashicorp/terraform-ls/logging"
 )
 
+// Environment variables to pass through to Terraform
+var passthroughEnvVars = []string{
+	// This allows Terraform to find custom-built providers
+	"HOME", "USER", "USERPROFILE",
+	// This allows Terraform to create crash log in the desired temp directory
+	// os.TempDir would otherwise fall back to C:\Windows on Windows
+	// which has no write permissions for non-admins
+	"TMPDIR", "TMP", "TEMP",
+}
+
 // cmdCtxFunc allows mocking of Terraform in tests while retaining
 // ability to pass context for timeout/cancellation
 type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
@@ -100,12 +110,10 @@ func (e *Executor) cmd(args ...string) (*command, error) {
 	// so we don't need to ask checkpoint for upgrades.
 	cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 
-	// This allows Terraform to find custom-built providers
-	if v := os.Getenv("HOME"); v != "" {
-		cmd.Env = append(cmd.Env, "HOME="+v)
-	}
-	if v := os.Getenv("USER"); v != "" {
-		cmd.Env = append(cmd.Env, "USER="+v)
+	for _, key := range passthroughEnvVars {
+		if value := os.Getenv(key); value != "" {
+			cmd.Env = append(cmd.Env, key+"="+value)
+		}
 	}
 
 	if e.execLogPath != "" {
