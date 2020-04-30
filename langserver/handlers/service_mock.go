@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/hashicorp/terraform-ls/langserver/session"
@@ -18,6 +19,7 @@ type mockSession struct {
 func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
+	d := discovery.MockDiscovery{Path: "mock-tf"}
 
 	svc := &service{
 		logger:      discardLogs,
@@ -27,7 +29,8 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		executorFunc: func(context.Context, string) *exec.Executor {
 			return exec.MockExecutor(ms.mid)
 		},
-		ss: schema.MockStorage(nil),
+		tfPath: d.LookPath,
+		ss:     schema.MockStorage(nil),
 	}
 
 	return svc

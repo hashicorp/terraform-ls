@@ -28,6 +28,7 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
+	tfPath       discovery.DiscoveryFunc
 	ss           *schema.Storage
 	executorFunc func(ctx context.Context, execPath string) *exec.Executor
 }
@@ -36,12 +37,14 @@ var discardLogs = log.New(ioutil.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
+	d := &discovery.Discovery{}
 	return &service{
 		logger:       discardLogs,
 		srvCtx:       srvCtx,
 		sessCtx:      sessCtx,
 		stopSession:  stopSession,
 		executorFunc: exec.NewExecutor,
+		tfPath:       d.LookPath,
 		ss:           schema.NewStorage(),
 	}
 }
@@ -78,7 +81,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 
-			tfPath, err := discovery.LookPath()
+			tfPath, err := svc.tfPath()
 			if err != nil {
 				return nil, err
 			}
@@ -154,7 +157,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithFilesystem(fs, ctx)
 
-			tfPath, err := discovery.LookPath()
+			tfPath, err := svc.tfPath()
 			if err != nil {
 				return nil, err
 			}
