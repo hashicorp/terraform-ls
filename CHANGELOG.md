@@ -2,7 +2,8 @@
 
 FEATURES:
 
- - Support for formatting (via `terraform fmt`) ([#51](https://github.com/hashicorp/terraform-ls/pull/51))
+ - Add support for formatting (via `terraform fmt`) ([#51](https://github.com/hashicorp/terraform-ls/pull/51))
+ - Add support for completing labels ([#58](https://github.com/hashicorp/terraform-ls/pull/58))
 
 BUG FIXES:
 
