@@ -89,6 +89,11 @@ func (w *Watcher) AddWorkspace(dir string) error {
 
 	hash, err := fileHashSum(lockPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return &errors.NotInitializedErr{
+				Dir: dir,
+			}
+		}
 		return fmt.Errorf("unable to calculate hash: %w", err)
 	}
 

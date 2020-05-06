@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
+	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -65,7 +66,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	err = supportsTerraform(tfVersion)
 	if err != nil {
-		if uvErr, ok := err.(*errors.UnsupportedTerraformVersion); ok {
+		if uvErr, ok := err.(*tferr.UnsupportedTerraformVersion); ok {
 			lh.logger.Printf("Unsupported terraform version: %s", uvErr)
 			// Which component exactly imposed the constrain may not be relevant
 			// to the user unless they are very familiar with internals of the LS
@@ -101,6 +102,10 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	err = ss.AddWorkspaceForWatching(rootURI)
 	if err != nil {
+		if errors.Is(err, &tferr.NotInitializedErr{}) {
+			return serverCaps, fmt.Errorf("Workspace not initialized. "+
+				"Please run `terraform init` in %s", rootURI)
+		}
 		return serverCaps, err
 	}
 
