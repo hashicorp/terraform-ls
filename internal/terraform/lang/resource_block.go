@@ -81,10 +81,6 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return nil, &noSchemaReaderErr{r.BlockType()}
 	}
 
-	cb := &completableBlock{
-		logger: r.logger,
-	}
-
 	var schemaBlock *tfjson.SchemaBlock
 	if r.Type() != "" {
 		rSchema, err := r.sr.ResourceSchema(r.Type())
@@ -93,7 +89,38 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = rSchema.Block
 	}
-	cb.block = ParseBlock(r.hclBlock, r.Labels(), schemaBlock)
+	block := ParseBlock(r.hclBlock, r.Labels(), schemaBlock)
 
+	if block.PosInLabels(pos) {
+		resources, err := r.sr.Resources()
+		if err != nil {
+			return nil, err
+		}
+		cl := &completableLabels{
+			logger: r.logger,
+			block:  block,
+			labels: labelCandidates{
+				"type": resourceCandidates(resources),
+			},
+		}
+
+		return cl.completionCandidatesAtPos(pos)
+	}
+
+	cb := &completableBlock{
+		logger: r.logger,
+		block:  block,
+	}
 	return cb.completionCandidatesAtPos(pos)
+}
+
+func resourceCandidates(resources []schema.Resource) []CompletionCandidate {
+	candidates := []CompletionCandidate{}
+	for _, r := range resources {
+		candidates = append(candidates, &labelCandidate{
+			label:  r.Name,
+			detail: r.Provider,
+		})
+	}
+	return candidates
 }

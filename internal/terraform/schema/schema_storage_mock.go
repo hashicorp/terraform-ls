@@ -19,8 +19,11 @@ type MockReader struct {
 	ProviderSchemas *tfjson.ProviderSchemas
 
 	ProviderSchemaErr   error
+	ProvidersErr        error
 	ResourceSchemaErr   error
+	ResourcesErr        error
 	DataSourceSchemaErr error
+	DataSourcesErr      error
 }
 
 func (r *MockReader) storage() *Storage {
@@ -33,6 +36,12 @@ func (r *MockReader) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
 	}
 	return r.storage().ProviderConfigSchema(name)
 }
+func (r *MockReader) Providers() ([]string, error) {
+	if r.ProviderSchemaErr != nil {
+		return nil, r.ProviderSchemaErr
+	}
+	return r.storage().Providers()
+}
 
 func (r *MockReader) ResourceSchema(rType string) (*tfjson.Schema, error) {
 	if r.ResourceSchemaErr != nil {
@@ -40,10 +49,22 @@ func (r *MockReader) ResourceSchema(rType string) (*tfjson.Schema, error) {
 	}
 	return r.storage().ResourceSchema(rType)
 }
+func (r *MockReader) Resources() ([]Resource, error) {
+	if r.ResourceSchemaErr != nil {
+		return nil, r.ResourceSchemaErr
+	}
+	return r.storage().Resources()
+}
 
 func (r *MockReader) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
 	if r.DataSourceSchemaErr != nil {
 		return nil, r.DataSourceSchemaErr
 	}
 	return r.storage().DataSourceSchema(dsType)
+}
+func (r *MockReader) DataSources() ([]DataSource, error) {
+	if r.DataSourceSchemaErr != nil {
+		return nil, r.DataSourceSchemaErr
+	}
+	return r.storage().DataSources()
 }

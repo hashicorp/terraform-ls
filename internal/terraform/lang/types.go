@@ -29,7 +29,9 @@ type ConfigBlock interface {
 // which keeps track of the related schema
 type Block interface {
 	BlockAtPos(pos hcl.Pos) (Block, bool)
+	LabelAtPos(pos hcl.Pos) (*Label, bool)
 	Range() hcl.Range
+	PosInLabels(pos hcl.Pos) bool
 	PosInBody(pos hcl.Pos) bool
 	PosInAttribute(pos hcl.Pos) bool
 	Attributes() map[string]*Attribute

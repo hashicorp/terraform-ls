@@ -13,12 +13,44 @@ type configBlockFactory interface {
 	New(*hclsyntax.Block) (ConfigBlock, error)
 }
 
+
+type labelCandidates map[string][]CompletionCandidate
+
+type completableLabels struct {
+	logger *log.Logger
+	block  Block
+	labels labelCandidates
+}
+
+func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
+	list := &completeList{
+		candidates: make([]CompletionCandidate, 0),
+	}
+	l, ok := cl.block.LabelAtPos(pos)
+	if !ok {
+		cl.logger.Printf("label not found at %#v", pos)
+		return list, nil
+	}
+	candidates, ok := cl.labels[l.Name]
+	if !ok {
+		cl.logger.Printf("label %q doesn't have completion candidates", l.Name)
+		return list, nil
+	}
+
+	cl.logger.Printf("completing label %q ...", l.Name)
+	for _, c := range candidates {
+		list.candidates = append(list.candidates, c)
+	}
+	list.Sort()
+
+	return list, nil
+}
+
 // completableBlock provides common completion functionality
 // for any Block implementation
 type completableBlock struct {
 	logger *log.Logger
-
-	block Block
+	block  Block
 }
 
 func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
@@ -27,7 +59,6 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	}
 
 	if !cb.block.PosInBody(pos) {
-		// Avoid autocompleting outside of body, for now
 		cb.logger.Println("avoiding completion outside of block body")
 		return nil, nil
 	}
@@ -37,6 +68,7 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		return nil, nil
 	}
 
+	// Completing the body (attributes and nested blocks)
 	b, ok := cb.block.BlockAtPos(pos)
 	if !ok {
 		// This should never happen as the completion
@@ -90,6 +122,23 @@ func (l *completeList) List() []CompletionCandidate {
 
 func (l *completeList) IsComplete() bool {
 	return true
+}
+
+type labelCandidate struct {
+	label  string
+	detail string
+}
+
+func (c *labelCandidate) Label() string {
+	return c.label
+}
+
+func (c *labelCandidate) Detail() string {
+	return c.detail
+}
+
+func (c *labelCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
+	return pos, c.label
 }
 
 type attributeCandidate struct {

@@ -16,14 +16,27 @@ import (
 
 type Reader interface {
 	ProviderConfigSchema(name string) (*tfjson.Schema, error)
+	Providers() ([]string, error)
 	ResourceSchema(rType string) (*tfjson.Schema, error)
+	Resources() ([]Resource, error)
 	DataSourceSchema(dsType string) (*tfjson.Schema, error)
+	DataSources() ([]DataSource, error)
 }
 
 type Writer interface {
 	ObtainSchemasForWorkspace(*exec.Executor, string) error
 	AddWorkspaceForWatching(string) error
 	StartWatching(*exec.Executor) error
+}
+
+type Resource struct {
+	Name     string
+	Provider string
+}
+
+type DataSource struct {
+	Name     string
+	Provider string
 }
 
 type Storage struct {
@@ -158,6 +171,20 @@ func (s *Storage) ProviderConfigSchema(name string) (*tfjson.Schema, error) {
 	return schema.ConfigSchema, nil
 }
 
+func (s *Storage) Providers() ([]string, error) {
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
+	}
+
+	providers := make([]string, 0)
+	for name, _ := range ps.Schemas {
+		providers = append(providers, name)
+	}
+
+	return providers, nil
+}
+
 func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
 	s.logger.Printf("Reading %q resource schema", rType)
 
@@ -179,6 +206,25 @@ func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
 	return nil, &SchemaUnavailableErr{"resource", rType}
 }
 
+func (s *Storage) Resources() ([]Resource, error) {
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make([]Resource, 0)
+	for provider, schema := range ps.Schemas {
+		for name, _ := range schema.ResourceSchemas {
+			resources = append(resources, Resource{
+				Provider: provider,
+				Name:     name,
+			})
+		}
+	}
+
+	return resources, nil
+}
+
 func (s *Storage) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
 	s.logger.Printf("Reading %q datasource schema", dsType)
 
@@ -198,6 +244,25 @@ func (s *Storage) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
 	}
 
 	return nil, &SchemaUnavailableErr{"data", dsType}
+}
+
+func (s *Storage) DataSources() ([]DataSource, error) {
+	ps, err := s.schema()
+	if err != nil {
+		return nil, err
+	}
+
+	dataSources := make([]DataSource, 0)
+	for provider, schema := range ps.Schemas {
+		for name, _ := range schema.DataSourceSchemas {
+			dataSources = append(dataSources, DataSource{
+				Provider: provider,
+				Name:     name,
+			})
+		}
+	}
+
+	return dataSources, nil
 }
 
 // watcher creates a new Watcher instance

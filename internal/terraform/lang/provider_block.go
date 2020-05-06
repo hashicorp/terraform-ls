@@ -71,10 +71,6 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return nil, &noSchemaReaderErr{p.BlockType()}
 	}
 
-	cb := &completableBlock{
-		logger: p.logger,
-	}
-
 	var schemaBlock *tfjson.SchemaBlock
 	if p.RawName() != "" {
 		pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
@@ -83,7 +79,39 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = pSchema.Block
 	}
-	cb.block = ParseBlock(p.hclBlock, p.Labels(), schemaBlock)
+	block := ParseBlock(p.hclBlock, p.Labels(), schemaBlock)
 
+	if block.PosInLabels(pos) {
+		providers, err := p.sr.Providers()
+		if err != nil {
+			return nil, err
+		}
+
+		cl := &completableLabels{
+			logger: p.logger,
+			block:  block,
+			labels: labelCandidates{
+				"name": providerCandidates(providers),
+			},
+		}
+
+		return cl.completionCandidatesAtPos(pos)
+	}
+
+	cb := &completableBlock{
+		logger: p.logger,
+		block:  block,
+	}
 	return cb.completionCandidatesAtPos(pos)
+}
+
+func providerCandidates(names []string) []CompletionCandidate {
+	candidates := []CompletionCandidate{}
+	for _, name := range names {
+		candidates = append(candidates, &labelCandidate{
+			label:  name,
+			detail: "provider",
+		})
+	}
+	return candidates
 }

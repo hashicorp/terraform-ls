@@ -170,6 +170,26 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{},
 			errors.New("error getting schema"),
 		},
+		{
+			"resource names",
+			`resource "" "" {
+
+}`,
+			simpleSchema,
+			nil,
+			hcl.Pos{Line: 1, Column: 9, Byte: 10},
+			[]renderedCandidate{
+				{
+					Label:  "custom_rs",
+					Detail: "custom",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
+						Text: "custom_rs",
+					},
+				},
+			},
+			nil,
+		},
 	}
 
 	for i, tc := range testCases {
