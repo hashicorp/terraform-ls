@@ -18,7 +18,7 @@ if you experience a bug or have an idea for a feature.
 
 ## Disclaimer
 
-This is not an officially supported HashiCorp product.
+This is not yet an officially supported HashiCorp product, but we intend to officially support it once we ship our initial release of the [VS Code extension](https://github.com/hashicorp/vscode-terraform).
 
 ## Installation
 
