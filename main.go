@@ -3,15 +3,23 @@ package main
 import (
 	"os"
 
-	"github.com/hashicorp/terraform-ls/commands"
-	"github.com/hashicorp/terraform-ls/version"
 	"github.com/mitchellh/cli"
+
+	"github.com/hashicorp/terraform-ls/commands"
+)
+
+var (
+	// These vars will be set by goreleaser.
+	version string = `dev`
+	commit  string = ``
+	date    string = ``
+	builtBy string = ``
 )
 
 func main() {
 	c := &cli.CLI{
 		Name:    "terraform-ls",
-		Version: version.String(),
+		Version: version,
 		Args:    os.Args[1:],
 	}
 
