@@ -30,12 +30,16 @@ jobs:
         env:
           VERSION: v0
       -
+        name: Import PGP key for archive signing
+        run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
+      -
         name: Release
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest
-          args: release --skip-sign
+          args: release
         env:
+          PGP_USER_ID: ${{ secrets.PGP_USER_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}

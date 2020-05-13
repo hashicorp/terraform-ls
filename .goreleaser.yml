@@ -50,5 +50,10 @@ checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
+signs:
+  -
+    args: ["-u", "{{ .Env.PGP_USER_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
+    artifacts: checksum
+
 changelog:
   skip: true
