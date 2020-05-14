@@ -70,3 +70,19 @@ Please note that the since the [Terraform plugin](https://plugins.jetbrains.com/
 provides overlapping functionality (and more features at the time of writing).
 As a result having both enabled at the same time may result in suboptimal UX,
 such as duplicate completion candidates.
+
+## Emacs
+
+ - Install [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
+ - Add the following to your `.emacs`:
+
+```
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection '("/path/to/terraform-ls/terraform-ls" "serve"))
+                  :major-modes '(terraform-mode)
+                  :server-id 'terraform-ls))
+
+(add-hook 'terraform-mode-hook #'lsp)
+```
+
+The last line can instead be `(add-hook 'terraform-mode-hook #'lsp-deferred)` if you prefer the server to lazy load.
