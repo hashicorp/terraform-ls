@@ -66,7 +66,7 @@ inoremap <silent><expr> <c-space> coc#refresh()
    - set `Args` to `serve`
  - Confirm by clicking `Apply`
 
-Please note that the since the [Terraform plugin](https://plugins.jetbrains.com/plugin/7808-hashicorp-terraform--hcl-language-support)
+Please note that the [Terraform plugin](https://plugins.jetbrains.com/plugin/7808-hashicorp-terraform--hcl-language-support)
 provides overlapping functionality (and more features at the time of writing).
 As a result having both enabled at the same time may result in suboptimal UX,
 such as duplicate completion candidates.
