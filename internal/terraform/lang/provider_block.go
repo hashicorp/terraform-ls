@@ -23,10 +23,16 @@ func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 	return &providerBlock{
 		logger: f.logger,
 
-		labelSchema: LabelSchema{"name"},
+		labelSchema: f.LabelSchema(),
 		hclBlock:    block,
 		sr:          f.schemaReader,
 	}, nil
+}
+
+func (f *providerBlockFactory) LabelSchema() LabelSchema {
+	return LabelSchema{
+		Label{Name: "name", IsCompletable: true},
+	}
 }
 
 func (f *providerBlockFactory) BlockType() string {

@@ -22,3 +22,8 @@ type NoBlockFoundErr struct {
 func (e *NoBlockFoundErr) Error() string {
 	return fmt.Sprintf("no block found at %#v", e.AtPos)
 }
+
+func IsNoBlockFoundErr(err error) bool {
+	_, ok := err.(*NoBlockFoundErr)
+	return ok
+}

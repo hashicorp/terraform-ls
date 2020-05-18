@@ -24,10 +24,17 @@ func (f *resourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 	return &resourceBlock{
 		logger: f.logger,
 
-		labelSchema: LabelSchema{"type", "name"},
+		labelSchema: f.LabelSchema(),
 		hclBlock:    block,
 		sr:          f.schemaReader,
 	}, nil
+}
+
+func (f *resourceBlockFactory) LabelSchema() LabelSchema {
+	return LabelSchema{
+		Label{Name: "type", IsCompletable: true},
+		Label{Name: "name", IsCompletable: false},
+	}
 }
 
 func (r *resourceBlockFactory) BlockType() string {

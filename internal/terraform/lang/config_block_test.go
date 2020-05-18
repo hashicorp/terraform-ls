@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -292,6 +293,12 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 		}
 	}
 	return rendered
+}
+
+func sortRenderedCandidates(candidates []renderedCandidate) {
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].Label < candidates[j].Label
+	})
 }
 
 type renderedCandidate struct {

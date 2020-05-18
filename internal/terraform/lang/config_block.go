@@ -11,8 +11,8 @@ import (
 
 type configBlockFactory interface {
 	New(*hclsyntax.Block) (ConfigBlock, error)
+	LabelSchema() LabelSchema
 }
-
 
 type labelCandidates map[string][]CompletionCandidate
 
@@ -118,6 +118,10 @@ func (l *completeList) Sort() {
 
 func (l *completeList) List() []CompletionCandidate {
 	return l.candidates
+}
+
+func (l *completeList) Len() int {
+	return len(l.candidates)
 }
 
 func (l *completeList) IsComplete() bool {

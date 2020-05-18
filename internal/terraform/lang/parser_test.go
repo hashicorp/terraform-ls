@@ -8,9 +8,41 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
+
+func TestParser_BlockTypeCandidates_len(t *testing.T) {
+	p := newParser()
+
+	candidates := p.BlockTypeCandidates()
+	if candidates.Len() < 3 {
+		t.Fatalf("Expected >= 3 candidates, %d given", candidates.Len())
+	}
+}
+
+func TestParser_BlockTypeCandidates_snippet(t *testing.T) {
+	p := newParser()
+
+	list := p.BlockTypeCandidates()
+	rendered := renderCandidates(list, hcl.InitialPos)
+	sortRenderedCandidates(rendered)
+
+	expectedCandidate := renderedCandidate{
+		Label:  "data",
+		Detail: "",
+		Snippet: renderedSnippet{
+			Pos: hcl.InitialPos,
+			Text: `data "${1}" "${2:name}" {
+  ${3}
+}`,
+		},
+	}
+	if diff := cmp.Diff(expectedCandidate, rendered[0]); diff != "" {
+		t.Fatalf("Completion candidate does not match.\n%s", diff)
+	}
+}
 
 func TestParser_ParseBlockFromHCL(t *testing.T) {
 	testCases := []struct {

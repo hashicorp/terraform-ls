@@ -91,6 +91,40 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 	}
 }
 
+func (p *parser) BlockTypeCandidates() CompletionCandidates {
+	bTypes := p.blockTypes()
+
+	list := &completeList{
+		candidates: make([]CompletionCandidate, 0),
+	}
+
+	for name, t := range bTypes {
+		list.candidates = append(list.candidates, &completableBlockType{
+			TypeName:    name,
+			LabelSchema: t.LabelSchema(),
+		})
+	}
+
+	return list
+}
+
+type completableBlockType struct {
+	TypeName    string
+	LabelSchema LabelSchema
+}
+
+func (bt *completableBlockType) Label() string {
+	return bt.TypeName
+}
+
+func (bt *completableBlockType) Snippet(pos hcl.Pos) (hcl.Pos, string) {
+	return pos, snippetForBlock(bt.TypeName, bt.LabelSchema)
+}
+
+func (bt *completableBlockType) Detail() string {
+	return ""
+}
+
 func (p *parser) ParseBlockFromHCL(block *hcl.Block) (ConfigBlock, error) {
 	if block == nil {
 		return nil, EmptyConfigErr
