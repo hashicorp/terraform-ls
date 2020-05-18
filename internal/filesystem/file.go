@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"bytes"
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/source"
@@ -52,13 +53,19 @@ func (f *file) Text() []byte {
 }
 
 func (f *file) applyChange(change FileChange) error {
-	newBytes := []byte(change.Text())
-	f.change(newBytes)
+	// such case, we regard it as full content change
+	if change.Range().End.Column == 0 && change.Range().End.Line == 0 {
+		f.content = []byte(change.Text())
+		f.ls = nil
+		return nil
+	}
+	b := &bytes.Buffer{}
+	b.Grow(len(change.Text()) + len(f.content) - (change.Range().End.Byte - change.Range().Start.Byte))
+	b.Write(f.content[:change.Range().Start.Byte])
+	b.WriteString(change.Text())
+	b.Write(f.content[change.Range().End.Byte:])
 
-	return nil
-}
-
-func (f *file) change(s []byte) {
-	f.content = s
+	f.content = b.Bytes()
 	f.ls = nil
+	return nil
 }

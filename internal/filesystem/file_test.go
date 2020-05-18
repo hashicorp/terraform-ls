@@ -18,6 +18,18 @@ func TestFile_ApplyChange_fullUpdate(t *testing.T) {
 	}
 }
 
+func TestFile_ApplyChange_partialUpdate(t *testing.T) {
+	f := NewFile("file:///test.tf", []byte("hello world"))
+
+	fChange := &fileChange{
+		text: "something else",
+	}
+	err := f.applyChange(fChange)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type fileChange struct {
 	text string
 }

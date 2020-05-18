@@ -1,8 +1,6 @@
 package lsp
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/sourcegraph/go-lsp"
@@ -15,7 +13,15 @@ type fileChange struct {
 
 func FileChange(chEvent lsp.TextDocumentContentChangeEvent, f File) (*fileChange, error) {
 	if chEvent.Range != nil {
-		return nil, fmt.Errorf("Partial updates are not supported (yet)")
+		rng, err := lspRangeToHCL(*chEvent.Range, f)
+		if err != nil {
+			return nil, err
+		}
+
+		return &fileChange{
+			text: chEvent.Text,
+			rng:  *rng,
+		}, nil
 	}
 
 	return &fileChange{
@@ -59,6 +65,24 @@ func hclRangeToLSP(hclRng hcl.Range) lsp.Range {
 			Line:      hclRng.End.Line - 1,
 		},
 	}
+}
+
+func lspRangeToHCL(hclRng lsp.Range, f File) (*hcl.Range, error) {
+	startPos, err := lspPositionToHCL(f.Lines(), hclRng.Start)
+	if err != nil {
+		return nil, err
+	}
+
+	endPos, err := lspPositionToHCL(f.Lines(), hclRng.End)
+	if err != nil {
+		return nil, err
+	}
+
+	return &hcl.Range{
+		Filename: f.Filename(),
+		Start:    startPos,
+		End:      endPos,
+	}, nil
 }
 
 func (fc *fileChange) Text() string {
