@@ -38,7 +38,7 @@ type datasourceBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -64,7 +64,7 @@ func (r *datasourceBlock) Name() string {
 	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
 }
 
-func (r *datasourceBlock) Labels() []*Label {
+func (r *datasourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}

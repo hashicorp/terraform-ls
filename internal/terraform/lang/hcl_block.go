@@ -7,7 +7,7 @@ import (
 
 type parsedBlock struct {
 	hclBlock      *hclsyntax.Block
-	labels        []*Label
+	labels        []*ParsedLabel
 	AttributesMap map[string]*Attribute
 	BlockTypesMap map[string]*BlockType
 
@@ -59,7 +59,7 @@ func (b *parsedBlock) PosInLabels(pos hcl.Pos) bool {
 	return false
 }
 
-func (b *parsedBlock) LabelAtPos(pos hcl.Pos) (*Label, bool) {
+func (b *parsedBlock) LabelAtPos(pos hcl.Pos) (*ParsedLabel, bool) {
 	for i, rng := range b.hclBlock.LabelRanges {
 		if rng.ContainsPos(pos) {
 			// TODO: Guard against crashes when user sets label where we don't expect it

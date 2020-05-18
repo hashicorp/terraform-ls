@@ -250,7 +250,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 
 			cb := &completableBlock{
 				logger: testLogger(),
-				block:  ParseBlock(block, []*Label{}, tc.sb),
+				block:  ParseBlock(block, []*ParsedLabel{}, tc.sb),
 			}
 
 			list, err := cb.completionCandidatesAtPos(tc.pos)

@@ -38,7 +38,7 @@ type resourceBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -64,7 +64,7 @@ func (r *resourceBlock) Name() string {
 	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
 }
 
-func (r *resourceBlock) Labels() []*Label {
+func (r *resourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}

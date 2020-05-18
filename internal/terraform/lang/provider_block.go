@@ -37,7 +37,7 @@ type providerBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -54,7 +54,7 @@ func (p *providerBlock) RawName() string {
 	return p.Labels()[0].Value
 }
 
-func (p *providerBlock) Labels() []*Label {
+func (p *providerBlock) Labels() []*ParsedLabel {
 	if p.labels != nil {
 		return p.labels
 	}
