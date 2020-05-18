@@ -53,6 +53,7 @@ func (f *file) Text() []byte {
 }
 
 func (f *file) applyChange(change FileChange) error {
+	// hcl pos column and line start from 1
 	// such case, we regard it as full content change
 	if change.Range().End.Column == 0 && change.Range().End.Line == 0 {
 		f.content = []byte(change.Text())
