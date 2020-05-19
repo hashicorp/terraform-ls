@@ -2,10 +2,6 @@ package context
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -13,31 +9,29 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
-func WithSignalCancel(ctx context.Context, l *log.Logger, sigs ...os.Signal) (
-	context.Context, context.CancelFunc) {
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, sigs...)
-
-	go func() {
-		select {
-		case sig := <-sigChan:
-			l.Printf("Cancellation signal (%s) received", sig)
-			cancelFunc()
-		case <-ctx.Done():
-		}
-	}()
-
-	f := func() {
-		signal.Stop(sigChan)
-		cancelFunc()
-	}
-
-	return ctx, f
+type contextKey struct {
+	Name string
 }
 
-const ctxFs = "ctxFilesystem"
+func (k *contextKey) String() string {
+	return k.Name
+}
+
+var (
+	ctxFs               = &contextKey{"filesystem"}
+	ctxTerraformExec    = &contextKey{"terraform executor"}
+	ctxClientCapsSetter = &contextKey{"client capabilities setter"}
+	ctxClientCaps       = &contextKey{"client capabilities"}
+	ctxTfSchemaWriter   = &contextKey{"schema writer"}
+	ctxTfSchemaReader   = &contextKey{"schema reader"}
+	ctxTfVersion        = &contextKey{"terraform version"}
+	ctxTfVersionSetter  = &contextKey{"terraform version setter"}
+	ctxTfExecLogPath    = &contextKey{"terraform executor log path"}
+)
+
+func missingContextErr(ctxKey *contextKey) *MissingContextErr {
+	return &MissingContextErr{ctxKey}
+}
 
 func WithFilesystem(fs filesystem.Filesystem, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxFs, fs)
@@ -46,13 +40,11 @@ func WithFilesystem(fs filesystem.Filesystem, ctx context.Context) context.Conte
 func Filesystem(ctx context.Context) (filesystem.Filesystem, error) {
 	fs, ok := ctx.Value(ctxFs).(filesystem.Filesystem)
 	if !ok {
-		return nil, fmt.Errorf("no filesystem")
+		return nil, missingContextErr(ctxFs)
 	}
 
 	return fs, nil
 }
-
-const ctxTerraformExec = "ctxTerraformExec"
 
 func WithTerraformExecutor(tf *exec.Executor, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTerraformExec, tf)
@@ -61,13 +53,11 @@ func WithTerraformExecutor(tf *exec.Executor, ctx context.Context) context.Conte
 func TerraformExecutor(ctx context.Context) (*exec.Executor, error) {
 	tf, ok := ctx.Value(ctxTerraformExec).(*exec.Executor)
 	if !ok {
-		return nil, fmt.Errorf("no terraform executor")
+		return nil, missingContextErr(ctxTerraformExec)
 	}
 
 	return tf, nil
 }
-
-const ctxClientCapsSetter = "ctxClientCapabilitiesSetter"
 
 func WithClientCapabilitiesSetter(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxClientCapsSetter, caps)
@@ -76,14 +66,12 @@ func WithClientCapabilitiesSetter(caps *lsp.ClientCapabilities, ctx context.Cont
 func SetClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) error {
 	cc, ok := ctx.Value(ctxClientCapsSetter).(*lsp.ClientCapabilities)
 	if !ok {
-		return fmt.Errorf("no client capabilities setter")
+		return missingContextErr(ctxClientCapsSetter)
 	}
 
 	*cc = *caps
 	return nil
 }
-
-const ctxClientCaps = "ctxClientCapabilities"
 
 func WithClientCapabilities(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxClientCaps, caps)
@@ -92,13 +80,11 @@ func WithClientCapabilities(caps *lsp.ClientCapabilities, ctx context.Context) c
 func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
 	caps, ok := ctx.Value(ctxClientCaps).(*lsp.ClientCapabilities)
 	if !ok {
-		return lsp.ClientCapabilities{}, fmt.Errorf("no client capabilities")
+		return lsp.ClientCapabilities{}, missingContextErr(ctxClientCaps)
 	}
 
 	return *caps, nil
 }
-
-const ctxTfSchemaWriter = "ctxTerraformSchemaWriter"
 
 func WithTerraformSchemaWriter(s schema.Writer, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfSchemaWriter, s)
@@ -107,13 +93,11 @@ func WithTerraformSchemaWriter(s schema.Writer, ctx context.Context) context.Con
 func TerraformSchemaWriter(ctx context.Context) (schema.Writer, error) {
 	ss, ok := ctx.Value(ctxTfSchemaWriter).(schema.Writer)
 	if !ok {
-		return nil, fmt.Errorf("no terraform schema writer")
+		return nil, missingContextErr(ctxTfSchemaWriter)
 	}
 
 	return ss, nil
 }
-
-const ctxTfSchemaReader = "ctxTerraformSchemaWriter"
 
 func WithTerraformSchemaReader(s schema.Reader, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfSchemaReader, s)
@@ -122,13 +106,11 @@ func WithTerraformSchemaReader(s schema.Reader, ctx context.Context) context.Con
 func TerraformSchemaReader(ctx context.Context) (schema.Reader, error) {
 	ss, ok := ctx.Value(ctxTfSchemaReader).(schema.Reader)
 	if !ok {
-		return nil, fmt.Errorf("no terraform schema reader")
+		return nil, missingContextErr(ctxTfSchemaReader)
 	}
 
 	return ss, nil
 }
-
-const ctxTfVersion = "ctxTerraformVersion"
 
 func WithTerraformVersion(v string, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfVersion, v)
@@ -137,13 +119,11 @@ func WithTerraformVersion(v string, ctx context.Context) context.Context {
 func TerraformVersion(ctx context.Context) (string, error) {
 	tfv, ok := ctx.Value(ctxTfVersion).(string)
 	if !ok {
-		return "", fmt.Errorf("no Terraform version")
+		return "", missingContextErr(ctxTfVersion)
 	}
 
 	return tfv, nil
 }
-
-const ctxTfVersionSetter = "ctxTerraformVersionSetter"
 
 func WithTerraformVersionSetter(v *string, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfVersionSetter, v)
@@ -152,14 +132,12 @@ func WithTerraformVersionSetter(v *string, ctx context.Context) context.Context 
 func SetTerraformVersion(ctx context.Context, v string) error {
 	tfv, ok := ctx.Value(ctxTfVersionSetter).(*string)
 	if !ok {
-		return fmt.Errorf("no Terraform version setter")
+		return missingContextErr(ctxTfVersionSetter)
 	}
 	*tfv = v
 
 	return nil
 }
-
-const ctxTfExecLogPath = "ctxTerraformExecLogPath"
 
 func WithTerraformExecLogPath(path string, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfExecLogPath, path)
