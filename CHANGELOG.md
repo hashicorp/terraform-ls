@@ -1,8 +1,13 @@
 ## 0.2.1 (Unreleased)
 
+BUG FIXES:
+
+ - context: Refactor and fix duplicate key ([#86](https://github.com/hashicorp/terraform-ls/pull/86))
+
 INTERNAL:
 
  - build: Sign archives checksum ([#99](https://github.com/hashicorp/terraform-ls/pull/99))
+ - build: Publish artifacts to releases.hashicorp.com ([#102](https://github.com/hashicorp/terraform-ls/pull/102))
 
 ## 0.2.0 (7 May 2020)
 
