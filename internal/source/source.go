@@ -25,17 +25,30 @@ func (l sourceLine) Bytes() []byte {
 
 func MakeSourceLines(filename string, s []byte) []Line {
 	var ret []Line
-	if len(s) == 0 {
-		return ret
-	}
 
+	lastRng := hcl.Range{
+		Filename: filename,
+		Start:    hcl.InitialPos,
+		End:      hcl.InitialPos,
+	}
 	sc := hcl.NewRangeScanner(s, filename, scanLines)
 	for sc.Scan() {
 		ret = append(ret, sourceLine{
 			content: sc.Bytes(),
 			rng:     sc.Range(),
 		})
+		lastRng = sc.Range()
 	}
+
+	// Account for the last (virtual) user-percieved line
+	ret = append(ret, sourceLine{
+		content: []byte{},
+		rng: hcl.Range{
+			Filename: lastRng.Filename,
+			Start:    lastRng.End,
+			End:      lastRng.End,
+		},
+	})
 
 	return ret
 }
