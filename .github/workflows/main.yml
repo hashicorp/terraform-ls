@@ -30,6 +30,19 @@ jobs:
         env:
           VERSION: v0
       -
+        name: Install hc-releases
+        run: |
+          DOWNLOAD_URL=$(curl -SsL \
+            -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/hashicorp/hc-releases/releases/latest \
+            | jq -r '.assets[] | select(.name | contains("linux_amd64.tgz")) | .url')
+          curl -SsL -o /tmp/hc-releases.tgz \
+            -H "Authorization: token ${{ secrets.CODESIGN_GITHUB_TOKEN }}" \
+            -H "Accept: application/octet-stream" ${DOWNLOAD_URL}
+          tar xzf /tmp/hc-releases.tgz
+          sudo mv hc-releases /usr/bin/hc-releases
+      -
         name: Import PGP key for archive signing
         run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
       -
@@ -40,8 +53,16 @@ jobs:
           args: release
         env:
           PGP_USER_ID: ${{ secrets.PGP_USER_ID }}
+          RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          RELEASE_AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+      -
+        name: Publish released artifacts
+        run: hc-releases publish
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
