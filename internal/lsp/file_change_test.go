@@ -43,8 +43,8 @@ func TestLspRangeToHCL(t *testing.T) {
 		},
 		{
 			Name: "contain 𐐀",
-			// 𐐀 in utf-16 has two character
-			// in utf-8 has four character
+			// 𐐀 in utf-16 has two unit
+			// in utf-8 has four unit
 			Content: "hello 𐐀a𐐀a world",
 			// the range part of "a𐐀a"
 			Range: lsp.Range{
