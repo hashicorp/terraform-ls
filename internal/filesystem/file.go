@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/source"
 	encunicode "golang.org/x/text/encoding/unicode"
 )
@@ -53,20 +54,33 @@ func (f *file) Text() []byte {
 }
 
 func (f *file) applyChange(change FileChange) error {
-	// hcl pos column and line start from 1
-	// such case, we regard it as full content change
-	if change.Range().End.Column == 0 && change.Range().End.Line == 0 {
-		f.content = []byte(change.Text())
-		f.ls = nil
+	// if the range is regarded as nil, we regard it as full content change
+	if rangeIsNil(change.Range()) {
+		f.change([]byte(change.Text()))
 		return nil
 	}
 	b := &bytes.Buffer{}
-	b.Grow(len(change.Text()) + len(f.content) - (change.Range().End.Byte - change.Range().Start.Byte))
+	b.Grow(len(f.content) + diffLen(change))
 	b.Write(f.content[:change.Range().Start.Byte])
 	b.WriteString(change.Text())
 	b.Write(f.content[change.Range().End.Byte:])
 
-	f.content = b.Bytes()
-	f.ls = nil
+	f.change(b.Bytes())
 	return nil
+}
+
+func (f *file) change(s []byte) {
+	f.content = s
+	f.ls = nil
+}
+
+// hcl pos column and line start from 1
+// if the range end position column and line are 0, we regard it is a nil range
+func rangeIsNil(r hcl.Range) bool {
+	return r.End.Column == 0 && r.End.Line == 0
+}
+
+func diffLen(change FileChange) int {
+	rangeLen := change.Range().End.Byte - change.Range().Start.Byte
+	return len(change.Text()) - rangeLen
 }

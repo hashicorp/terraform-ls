@@ -67,13 +67,13 @@ func hclRangeToLSP(hclRng hcl.Range) lsp.Range {
 	}
 }
 
-func lspRangeToHCL(hclRng lsp.Range, f File) (*hcl.Range, error) {
-	startPos, err := lspPositionToHCL(f.Lines(), hclRng.Start)
+func lspRangeToHCL(lspRng lsp.Range, f File) (*hcl.Range, error) {
+	startPos, err := lspPositionToHCL(f.Lines(), lspRng.Start)
 	if err != nil {
 		return nil, err
 	}
 
-	endPos, err := lspPositionToHCL(f.Lines(), hclRng.End)
+	endPos, err := lspPositionToHCL(f.Lines(), lspRng.End)
 	if err != nil {
 		return nil, err
 	}
