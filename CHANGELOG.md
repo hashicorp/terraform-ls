@@ -1,3 +1,9 @@
+## 0.3.0 (Unreleased)
+
+FEATURES:
+
+ - textDocument/complete: Complete first level keywords ([#104](https://github.com/hashicorp/terraform-ls/pull/104))
+
 ## 0.2.1 (19 May 2020)
 
 BUG FIXES:
