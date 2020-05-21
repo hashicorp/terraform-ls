@@ -29,8 +29,8 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		executorFunc: func(context.Context, string) *exec.Executor {
 			return exec.MockExecutor(ms.mid)
 		},
-		tfPath: d.LookPath,
-		ss:     schema.MockStorage(nil),
+		tfDiscoFunc: d.LookPath,
+		ss:          schema.MockStorage(nil),
 	}
 
 	return svc

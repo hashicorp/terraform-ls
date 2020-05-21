@@ -28,7 +28,7 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	tfPath       discovery.DiscoveryFunc
+	tfDiscoFunc  discovery.DiscoveryFunc
 	ss           *schema.Storage
 	executorFunc func(ctx context.Context, execPath string) *exec.Executor
 }
@@ -44,13 +44,17 @@ func NewSession(srvCtx context.Context) session.Session {
 		sessCtx:      sessCtx,
 		stopSession:  stopSession,
 		executorFunc: exec.NewExecutor,
-		tfPath:       d.LookPath,
+		tfDiscoFunc:  d.LookPath,
 		ss:           schema.NewStorage(),
 	}
 }
 
 func (svc *service) SetLogger(logger *log.Logger) {
 	svc.logger = logger
+}
+
+func (svc *service) SetDiscoveryFunc(f discovery.DiscoveryFunc) {
+	svc.tfDiscoFunc = f
 }
 
 // Assigner builds out the jrpc2.Map according to the LSP protocol
@@ -81,7 +85,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 
-			tfPath, err := svc.tfPath()
+			tfPath, err := svc.tfDiscoFunc()
 			if err != nil {
 				return nil, err
 			}
@@ -157,7 +161,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithFilesystem(fs, ctx)
 
-			tfPath, err := svc.tfPath()
+			tfPath, err := svc.tfDiscoFunc()
 			if err != nil {
 				return nil, err
 			}
