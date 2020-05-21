@@ -307,7 +307,7 @@ func TestParseBlock_attributesAndBlockTypes(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			b := ParseBlock(block, []*Label{}, tc.schema)
+			b := ParseBlock(block, []*ParsedLabel{}, tc.schema)
 
 			if diff := cmp.Diff(tc.expectedAttributes, b.Attributes(), opts...); diff != "" {
 				t.Fatalf("Attributes don't match.\n%s", diff)
@@ -471,7 +471,7 @@ func TestBlock_BlockAtPos(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			b := ParseBlock(block, []*Label{}, schema)
+			b := ParseBlock(block, []*ParsedLabel{}, schema)
 			fBlock, _ := b.BlockAtPos(tc.pos)
 			if diff := cmp.Diff(tc.expectedBlock, fBlock, opts...); diff != "" {
 				t.Fatalf("Block doesn't match.\n%s", diff)
@@ -631,7 +631,7 @@ func TestBlock_PosInBody(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			b := ParseBlock(block, []*Label{}, schema)
+			b := ParseBlock(block, []*ParsedLabel{}, schema)
 			isInBody := b.PosInBody(tc.pos)
 			if tc.expected != isInBody {
 				if tc.expected {
@@ -766,7 +766,7 @@ func TestBlock_PosInAttributes(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			b := ParseBlock(block, []*Label{}, schema)
+			b := ParseBlock(block, []*ParsedLabel{}, schema)
 			isInAttribute := b.PosInAttribute(tc.pos)
 			if tc.expected != isInAttribute {
 				if tc.expected {

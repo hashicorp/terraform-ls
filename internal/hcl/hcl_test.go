@@ -111,6 +111,20 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			},
 			nil,
 		},
+		{
+			"valid config and EOF position",
+			`provider "aws" {
+
+}
+`,
+			hcl.Pos{
+				Line:   4,
+				Column: 1,
+				Byte:   20,
+			},
+			&NoBlockFoundErr{AtPos: hcl.Pos{Line: 4, Column: 1, Byte: 20}},
+			nil,
+		},
 	}
 
 	opts := cmp.Options{

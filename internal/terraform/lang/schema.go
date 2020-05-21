@@ -44,6 +44,22 @@ func snippetForNestedBlock(name string) string {
 	return fmt.Sprintf("%s {\n  ${0}\n}", name)
 }
 
+func snippetForBlock(name string, labelSchema LabelSchema) string {
+	bodyPlaceholder := 0
+	labels := make([]string, len(labelSchema))
+	for i, l := range labelSchema {
+		if l.IsCompletable {
+			labels[i] = fmt.Sprintf(`"${%d}"`, i+1)
+		} else {
+			labels[i] = fmt.Sprintf(`"${%d:%s}"`, i+1, l.Name)
+		}
+		bodyPlaceholder = i + 2
+	}
+
+	return fmt.Sprintf("%s %s {\n  ${%d}\n}",
+		name, strings.Join(labels, " "), bodyPlaceholder)
+}
+
 func schemaAttributeDetail(attr *tfjson.SchemaAttribute) string {
 	var requiredText string
 	if attr.Optional {

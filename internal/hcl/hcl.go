@@ -52,8 +52,13 @@ func (f *file) blockAtPosition(pos hcllib.Pos) (*hcllib.Block, error) {
 		if body.SrcRange.Empty() && pos != hcllib.InitialPos {
 			return nil, &InvalidHclPosErr{pos, body.SrcRange}
 		}
-		if !body.SrcRange.Empty() && !body.SrcRange.ContainsPos(pos) {
-			return nil, &InvalidHclPosErr{pos, body.SrcRange}
+		if !body.SrcRange.Empty() {
+			if posIsEqual(body.SrcRange.End, pos) {
+				return nil, &NoBlockFoundErr{pos}
+			}
+			if !body.SrcRange.ContainsPos(pos) {
+				return nil, &InvalidHclPosErr{pos, body.SrcRange}
+			}
 		}
 	}
 
@@ -63,4 +68,10 @@ func (f *file) blockAtPosition(pos hcllib.Pos) (*hcllib.Block, error) {
 	}
 
 	return block, nil
+}
+
+func posIsEqual(a, b hcllib.Pos) bool {
+	return a.Byte == b.Byte &&
+		a.Column == b.Column &&
+		a.Line == b.Line
 }

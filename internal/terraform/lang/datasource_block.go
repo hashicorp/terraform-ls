@@ -24,13 +24,20 @@ func (f *datasourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error
 	return &datasourceBlock{
 		logger: f.logger,
 
-		labelSchema: LabelSchema{"type", "name"},
+		labelSchema: f.LabelSchema(),
 		hclBlock:    block,
 		sr:          f.schemaReader,
 	}, nil
 }
 
-func (r *datasourceBlockFactory) BlockType() string {
+func (f *datasourceBlockFactory) LabelSchema() LabelSchema {
+	return LabelSchema{
+		Label{Name: "type", IsCompletable: true},
+		Label{Name: "name"},
+	}
+}
+
+func (f *datasourceBlockFactory) BlockType() string {
 	return "data"
 }
 
@@ -38,7 +45,7 @@ type datasourceBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -64,7 +71,7 @@ func (r *datasourceBlock) Name() string {
 	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
 }
 
-func (r *datasourceBlock) Labels() []*Label {
+func (r *datasourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}

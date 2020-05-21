@@ -2,6 +2,7 @@ package lang
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -250,7 +251,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 
 			cb := &completableBlock{
 				logger: testLogger(),
-				block:  ParseBlock(block, []*Label{}, tc.sb),
+				block:  ParseBlock(block, []*ParsedLabel{}, tc.sb),
 			}
 
 			list, err := cb.completionCandidatesAtPos(tc.pos)
@@ -292,6 +293,12 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 		}
 	}
 	return rendered
+}
+
+func sortRenderedCandidates(candidates []renderedCandidate) {
+	sort.Slice(candidates, func(i, j int) bool {
+		return candidates[i].Label < candidates[j].Label
+	})
 }
 
 type renderedCandidate struct {

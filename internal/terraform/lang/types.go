@@ -13,6 +13,7 @@ import (
 type Parser interface {
 	SetLogger(*log.Logger)
 	SetSchemaReader(schema.Reader)
+	BlockTypeCandidates() CompletionCandidates
 	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
 }
 
@@ -22,14 +23,14 @@ type ConfigBlock interface {
 	CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error)
 	Name() string
 	BlockType() string
-	Labels() []*Label
+	Labels() []*ParsedLabel
 }
 
 // Block represents a decoded HCL block (by a Parser)
 // which keeps track of the related schema
 type Block interface {
 	BlockAtPos(pos hcl.Pos) (Block, bool)
-	LabelAtPos(pos hcl.Pos) (*Label, bool)
+	LabelAtPos(pos hcl.Pos) (*ParsedLabel, bool)
 	Range() hcl.Range
 	PosInLabels(pos hcl.Pos) bool
 	PosInBody(pos hcl.Pos) bool
@@ -38,9 +39,14 @@ type Block interface {
 	BlockTypes() map[string]*BlockType
 }
 
-type LabelSchema []string
+type LabelSchema []Label
 
 type Label struct {
+	Name          string
+	IsCompletable bool
+}
+
+type ParsedLabel struct {
 	Name  string
 	Value string
 }
@@ -59,6 +65,7 @@ type Attribute struct {
 // for completion loosely reflecting lsp.CompletionList
 type CompletionCandidates interface {
 	List() []CompletionCandidate
+	Len() int
 	IsComplete() bool
 }
 

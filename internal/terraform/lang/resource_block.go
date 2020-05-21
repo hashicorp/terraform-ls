@@ -24,10 +24,17 @@ func (f *resourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 	return &resourceBlock{
 		logger: f.logger,
 
-		labelSchema: LabelSchema{"type", "name"},
+		labelSchema: f.LabelSchema(),
 		hclBlock:    block,
 		sr:          f.schemaReader,
 	}, nil
+}
+
+func (f *resourceBlockFactory) LabelSchema() LabelSchema {
+	return LabelSchema{
+		Label{Name: "type", IsCompletable: true},
+		Label{Name: "name", IsCompletable: false},
+	}
 }
 
 func (r *resourceBlockFactory) BlockType() string {
@@ -38,7 +45,7 @@ type resourceBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -64,7 +71,7 @@ func (r *resourceBlock) Name() string {
 	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
 }
 
-func (r *resourceBlock) Labels() []*Label {
+func (r *resourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}

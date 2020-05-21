@@ -23,10 +23,16 @@ func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 	return &providerBlock{
 		logger: f.logger,
 
-		labelSchema: LabelSchema{"name"},
+		labelSchema: f.LabelSchema(),
 		hclBlock:    block,
 		sr:          f.schemaReader,
 	}, nil
+}
+
+func (f *providerBlockFactory) LabelSchema() LabelSchema {
+	return LabelSchema{
+		Label{Name: "name", IsCompletable: true},
+	}
 }
 
 func (f *providerBlockFactory) BlockType() string {
@@ -37,7 +43,7 @@ type providerBlock struct {
 	logger *log.Logger
 
 	labelSchema LabelSchema
-	labels      []*Label
+	labels      []*ParsedLabel
 	hclBlock    *hclsyntax.Block
 	sr          schema.Reader
 }
@@ -54,7 +60,7 @@ func (p *providerBlock) RawName() string {
 	return p.Labels()[0].Value
 }
 
-func (p *providerBlock) Labels() []*Label {
+func (p *providerBlock) Labels() []*ParsedLabel {
 	if p.labels != nil {
 		return p.labels
 	}
