@@ -40,7 +40,7 @@ func (c *CompletionCommand) flags() *flag.FlagSet {
 func (c *CompletionCommand) Run(args []string) int {
 	f := c.flags()
 	if err := f.Parse(args); err != nil {
-		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s\n", err.Error()))
+		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s", err))
 		return 1
 	}
 
@@ -59,17 +59,17 @@ func (c *CompletionCommand) Run(args []string) int {
 	lspUri := ilsp.FileHandlerFromPath(path).DocumentURI()
 	parts := strings.Split(c.atPos, ":")
 	if len(parts) != 2 {
-		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)\n", c.atPos))
+		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)", c.atPos))
 		return 1
 	}
 	line, err := strconv.Atoi(parts[0])
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Error parsing line: %s (expected number)\n", err))
+		c.Ui.Error(fmt.Sprintf("Error parsing line: %s (expected number)", err))
 		return 1
 	}
 	col, err := strconv.Atoi(parts[1])
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Error parsing column: %s (expected number)\n", err))
+		c.Ui.Error(fmt.Sprintf("Error parsing column: %s (expected number)", err))
 		return 1
 	}
 	lspPos := lsp.Position{Line: line, Character: col}
