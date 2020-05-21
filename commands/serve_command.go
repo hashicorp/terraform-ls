@@ -46,7 +46,7 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 func (c *ServeCommand) Run(args []string) int {
 	f := c.flags()
 	if err := f.Parse(args); err != nil {
-		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s\n", err.Error()))
+		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s", err))
 		return 1
 	}
 
@@ -54,7 +54,7 @@ func (c *ServeCommand) Run(args []string) int {
 	if c.logFilePath != "" {
 		fl, err := logging.NewFileLogger(c.logFilePath)
 		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to setup file logging: %s\n", err.Error()))
+			c.Ui.Error(fmt.Sprintf("Failed to setup file logging: %s", err))
 			return 1
 		}
 		defer fl.Close()
@@ -71,7 +71,7 @@ func (c *ServeCommand) Run(args []string) int {
 	if c.tfExecLogPath != "" {
 		err := logging.ValidateExecLogPath(c.tfExecLogPath)
 		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to setup logging for Terraform: %s\n", err.Error()))
+			c.Ui.Error(fmt.Sprintf("Failed to setup logging for Terraform: %s", err))
 			return 1
 		}
 		ctx = lsctx.WithTerraformExecLogPath(c.tfExecLogPath, ctx)
@@ -110,7 +110,7 @@ func (c *ServeCommand) Run(args []string) int {
 	if c.port != 0 {
 		err := srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))
 		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to start TCP server: %s\n", err))
+			c.Ui.Error(fmt.Sprintf("Failed to start TCP server: %s", err))
 			return 1
 		}
 		return 0
@@ -118,7 +118,7 @@ func (c *ServeCommand) Run(args []string) int {
 
 	err := srv.StartAndWait(os.Stdin, os.Stdout)
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("Failed to start server: %s\n", err))
+		c.Ui.Error(fmt.Sprintf("Failed to start server: %s", err))
 		return 1
 	}
 
