@@ -1,8 +1,8 @@
 package version
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 
 	version "github.com/hashicorp/go-version"
 )

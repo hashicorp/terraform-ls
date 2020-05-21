@@ -178,7 +178,7 @@ func (s *Storage) Providers() ([]string, error) {
 	}
 
 	providers := make([]string, 0)
-	for name, _ := range ps.Schemas {
+	for name := range ps.Schemas {
 		providers = append(providers, name)
 	}
 
@@ -214,7 +214,7 @@ func (s *Storage) Resources() ([]Resource, error) {
 
 	resources := make([]Resource, 0)
 	for provider, schema := range ps.Schemas {
-		for name, _ := range schema.ResourceSchemas {
+		for name := range schema.ResourceSchemas {
 			resources = append(resources, Resource{
 				Provider: provider,
 				Name:     name,
@@ -254,7 +254,7 @@ func (s *Storage) DataSources() ([]DataSource, error) {
 
 	dataSources := make([]DataSource, 0)
 	for provider, schema := range ps.Schemas {
-		for name, _ := range schema.DataSourceSchemas {
+		for name := range schema.DataSourceSchemas {
 			dataSources = append(dataSources, DataSource{
 				Provider: provider,
 				Name:     name,
