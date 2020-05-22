@@ -3,6 +3,7 @@
 FEATURES:
 
  - textDocument/complete: Complete first level keywords ([#104](https://github.com/hashicorp/terraform-ls/pull/104))
+ - Add ability to specify path to Terraform binary ([#109](https://github.com/hashicorp/terraform-ls/pull/109))
 
 ## 0.2.1 (19 May 2020)
 
