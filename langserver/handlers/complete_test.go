@@ -84,19 +84,22 @@ func TestCompletion_withValidData(t *testing.T) {
 					{
 						"label":"anonymous",
 						"kind":5,
-						"detail":"(Optional, number) Desc 1",
+						"detail":"Optional, number",
+						"documentation":"Desc 1",
 						"insertTextFormat":1
 					},
 					{
 						"label":"base_url",
 						"kind":5,
-						"detail":"(Optional, string) Desc 2",
+						"detail":"Optional, string",
+						"documentation":"Desc 2",
 						"insertTextFormat":1
 					},
 					{
 						"label":"individual",
 						"kind":5,
-						"detail":"(Optional, bool) Desc 3",
+						"detail":"Optional, bool",
+						"documentation":"Desc 3",
 						"insertTextFormat":1
 					}
 				]
@@ -115,18 +118,35 @@ var testSchemaOutput = `{
             "anonymous": {
               "type": "number",
               "description": "Desc 1",
+              "description_kind": "plaintext",
               "optional": true
             },
             "base_url": {
               "type": "string",
-              "description": "Desc 2",
+              "description": "Desc **2**",
+              "description_kind": "markdown",
               "optional": true
             },
             "individual": {
               "type": "bool",
-              "description": "Desc 3",
+              "description": "Desc _3_",
+              "description_kind": "markdown",
               "optional": true
             }
+          }
+        }
+      }
+    }
+  },
+  "resource_schemas": {
+    "test_resource_1": {
+      "version": 0,
+      "block": {
+        "description": "Resource 1 description",
+        "description_kind": "markdown",
+        "attributes": {
+          "deprecated_attr": {
+            "deprecated": true
           }
         }
       }

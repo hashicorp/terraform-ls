@@ -26,14 +26,22 @@ func CompletionList(candidates lang.CompletionCandidates, pos hcl.Pos, caps lsp.
 }
 
 func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupport bool) lsp.CompletionItem {
+	// TODO: deprecated / tags?
+
+	doc := ""
+	if c := candidate.Documentation(); c != nil {
+		// TODO: markdown handling
+		doc = c.Value()
+	}
+
 	if snippetSupport {
 		pos, newText := candidate.Snippet(pos)
-
 		return lsp.CompletionItem{
 			Label:            candidate.Label(),
 			Kind:             lsp.CIKField,
 			InsertTextFormat: lsp.ITFSnippet,
 			Detail:           candidate.Detail(),
+			Documentation:    doc,
 			TextEdit: &lsp.TextEdit{
 				Range: lsp.Range{
 					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
@@ -49,5 +57,6 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 		Kind:             lsp.CIKField,
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           candidate.Detail(),
+		Documentation:    doc,
 	}
 }

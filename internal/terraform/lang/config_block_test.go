@@ -98,24 +98,27 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			attrOnlySchema,
 			[]renderedCandidate{
 				{
-					Label:  "first_str",
-					Detail: "(Optional, string)",
+					Label:         "first_str",
+					Detail:        "Optional, string",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: `first_str = "${0:value}"`,
 					},
 				},
 				{
-					Label:  "required_bool",
-					Detail: "(Required, bool) test boolean",
+					Label:         "required_bool",
+					Detail:        "Required, bool",
+					Documentation: "test boolean",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "required_bool = ${0:false}",
 					},
 				},
 				{
-					Label:  "second_num",
-					Detail: "(Optional, number) random number",
+					Label:         "second_num",
+					Detail:        "Optional, number",
+					Documentation: "random number",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "second_num = ${0:42}",
@@ -133,16 +136,18 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			singleBlockOnlySchema,
 			[]renderedCandidate{
 				{
-					Label:  "optional_single",
-					Detail: "(Optional, single)",
+					Label:         "optional_single",
+					Detail:        "Block, single",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "optional_single {\n  ${0}\n}",
 					},
 				},
 				{
-					Label:  "required_single",
-					Detail: "(Required, single)",
+					Label:         "required_single",
+					Detail:        "Block, single, min: 1",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "required_single {\n  ${0}\n}",
@@ -160,24 +165,27 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			listBlockOnlySchema,
 			[]renderedCandidate{
 				{
-					Label:  "optional_list",
-					Detail: "(Optional, list)",
+					Label:         "optional_list",
+					Detail:        "Block, list",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "optional_list {\n  ${0}\n}",
 					},
 				},
 				{
-					Label:  "required_list",
-					Detail: "(Required, list)",
+					Label:         "required_list",
+					Detail:        "Block, list, min: 1",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "required_list {\n  ${0}\n}",
 					},
 				},
 				{
-					Label:  "undeclared_max1_list",
-					Detail: "(Optional, list)",
+					Label:         "undeclared_max1_list",
+					Detail:        "Block, list, max: 1",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
 						Text: "undeclared_max1_list {\n  ${0}\n}",
@@ -195,8 +203,9 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			singleBlockOnlySchema,
 			[]renderedCandidate{
 				{
-					Label:  "one",
-					Detail: "(Optional, string)",
+					Label:         "one",
+					Detail:        "Optional, string",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 20, Byte: 33},
 						Text: `one = "${0:value}"`,
@@ -214,24 +223,27 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			attrOnlySchema,
 			[]renderedCandidate{
 				{
-					Label:  "first_str",
-					Detail: "(Optional, string)",
+					Label:         "first_str",
+					Detail:        "Optional, string",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
 						Text: `first_str = "${0:value}"`,
 					},
 				},
 				{
-					Label:  "required_bool",
-					Detail: "(Required, bool) test boolean",
+					Label:         "required_bool",
+					Detail:        "Required, bool",
+					Documentation: "test boolean",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
 						Text: `required_bool = ${0:false}`,
 					},
 				},
 				{
-					Label:  "second_num",
-					Detail: "(Optional, number) random number",
+					Label:         "second_num",
+					Detail:        "Optional, number",
+					Documentation: "random number",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
 						Text: `second_num = ${0:42}`,
@@ -282,10 +294,15 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 	rendered := make([]renderedCandidate, len(list.List()))
 	for i, c := range list.List() {
 		pos, text := c.Snippet(pos)
+		doc := ""
+		if c.Documentation() != nil {
+			doc = c.Documentation().Value()
+		}
 
 		rendered[i] = renderedCandidate{
-			Label:  c.Label(),
-			Detail: c.Detail(),
+			Label:         c.Label(),
+			Detail:        c.Detail(),
+			Documentation: doc,
 			Snippet: renderedSnippet{
 				Pos:  pos,
 				Text: text,
@@ -302,9 +319,10 @@ func sortRenderedCandidates(candidates []renderedCandidate) {
 }
 
 type renderedCandidate struct {
-	Label   string
-	Detail  string
-	Snippet renderedSnippet
+	Label         string
+	Detail        string
+	Documentation string
+	Snippet       renderedSnippet
 }
 
 type renderedSnippet struct {

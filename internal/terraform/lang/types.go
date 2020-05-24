@@ -5,6 +5,7 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/mdplain"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -74,5 +75,31 @@ type CompletionCandidates interface {
 type CompletionCandidate interface {
 	Label() string
 	Detail() string
+	Documentation() MarkupContent
 	Snippet(pos hcl.Pos) (hcl.Pos, string)
+}
+
+// MarkupContent reflects lsp.MarkupContent
+type MarkupContent interface {
+	// TODO: eventually will need to propapate Kind here once the LSP
+	// protocol types we use support it
+	Value() string
+}
+
+// PlainText represents plain text markup content for the LSP.
+type PlainText string
+
+// Value returns the content itself for the LSP protocol.
+func (m PlainText) Value() string {
+	return string(m)
+}
+
+// Markdown represents markdown formatted markup content for the LSP.
+type Markdown string
+
+// Value returns the content itself for the LSP protocol.
+func (m Markdown) Value() string {
+	// This currently returns plaintext for Markdown, but should be changed once
+	// the protocol types support markdown.
+	return mdplain.Clean(string(m))
 }

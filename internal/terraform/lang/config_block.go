@@ -7,11 +7,13 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type configBlockFactory interface {
 	New(*hclsyntax.Block) (ConfigBlock, error)
 	LabelSchema() LabelSchema
+	Documentation() MarkupContent
 }
 
 type labelCandidates map[string][]CompletionCandidate
@@ -129,8 +131,9 @@ func (l *completeList) IsComplete() bool {
 }
 
 type labelCandidate struct {
-	label  string
-	detail string
+	label         string
+	detail        string
+	documentation MarkupContent
 }
 
 func (c *labelCandidate) Label() string {
@@ -139,6 +142,10 @@ func (c *labelCandidate) Label() string {
 
 func (c *labelCandidate) Detail() string {
 	return c.detail
+}
+
+func (c *labelCandidate) Documentation() MarkupContent {
+	return c.documentation
 }
 
 func (c *labelCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
@@ -156,7 +163,23 @@ func (c *attributeCandidate) Label() string {
 }
 
 func (c *attributeCandidate) Detail() string {
+	if c.Attr == nil {
+		return ""
+	}
 	return schemaAttributeDetail(c.Attr.Schema())
+}
+
+func (c *attributeCandidate) Documentation() MarkupContent {
+	if c.Attr == nil {
+		return PlainText("")
+	}
+	if schema := c.Attr.Schema(); schema != nil {
+		if schema.DescriptionKind == tfjson.SchemaDescriptionKindMarkdown {
+			return Markdown(schema.Description)
+		}
+		return PlainText(schema.Description)
+	}
+	return PlainText("")
 }
 
 func (c *attributeCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
@@ -175,6 +198,16 @@ func (c *nestedBlockCandidate) Label() string {
 
 func (c *nestedBlockCandidate) Detail() string {
 	return schemaBlockDetail(c.BlockType)
+}
+
+func (c *nestedBlockCandidate) Documentation() MarkupContent {
+	if c.BlockType == nil || c.BlockType.Schema() == nil || c.BlockType.Schema().Block == nil {
+		return PlainText("")
+	}
+	if c.BlockType.Schema().Block.DescriptionKind == tfjson.SchemaDescriptionKindMarkdown {
+		return Markdown(c.BlockType.Schema().Block.Description)
+	}
+	return PlainText(c.BlockType.Schema().Block.Description)
 }
 
 func (c *nestedBlockCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {

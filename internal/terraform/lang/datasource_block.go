@@ -41,6 +41,12 @@ func (f *datasourceBlockFactory) BlockType() string {
 	return "data"
 }
 
+func (f *datasourceBlockFactory) Documentation() MarkupContent {
+	return PlainText("A data block requests that Terraform read from a given data source and export the result " +
+		"under the given local name. The name is used to refer to this resource from elsewhere in the same " +
+		"Terraform module, but has no significance outside of the scope of a module.")
+}
+
 type datasourceBlock struct {
 	logger *log.Logger
 
@@ -125,9 +131,15 @@ func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCand
 func dataSourceCandidates(dataSources []schema.DataSource) []CompletionCandidate {
 	candidates := []CompletionCandidate{}
 	for _, ds := range dataSources {
+		var desc MarkupContent = PlainText(ds.Description)
+		if ds.DescriptionKind == tfjson.SchemaDescriptionKindMarkdown {
+			desc = Markdown(ds.Description)
+		}
+
 		candidates = append(candidates, &labelCandidate{
-			label:  ds.Name,
-			detail: ds.Provider,
+			label:         ds.Name,
+			detail:        fmt.Sprintf("Data Source (%s)", ds.Provider),
+			documentation: desc,
 		})
 	}
 	return candidates

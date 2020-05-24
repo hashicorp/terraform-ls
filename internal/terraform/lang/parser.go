@@ -100,8 +100,9 @@ func (p *parser) BlockTypeCandidates() CompletionCandidates {
 
 	for name, t := range bTypes {
 		list.candidates = append(list.candidates, &completableBlockType{
-			TypeName:    name,
-			LabelSchema: t.LabelSchema(),
+			TypeName:      name,
+			LabelSchema:   t.LabelSchema(),
+			documentation: t.Documentation(),
 		})
 	}
 
@@ -109,8 +110,9 @@ func (p *parser) BlockTypeCandidates() CompletionCandidates {
 }
 
 type completableBlockType struct {
-	TypeName    string
-	LabelSchema LabelSchema
+	TypeName      string
+	LabelSchema   LabelSchema
+	documentation MarkupContent
 }
 
 func (bt *completableBlockType) Label() string {
@@ -123,6 +125,10 @@ func (bt *completableBlockType) Snippet(pos hcl.Pos) (hcl.Pos, string) {
 
 func (bt *completableBlockType) Detail() string {
 	return ""
+}
+
+func (bt *completableBlockType) Documentation() MarkupContent {
+	return bt.documentation
 }
 
 func (p *parser) ParseBlockFromHCL(block *hcl.Block) (ConfigBlock, error) {
