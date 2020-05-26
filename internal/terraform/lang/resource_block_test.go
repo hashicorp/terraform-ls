@@ -131,7 +131,7 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:  "attr_optional",
-					Detail: "(Optional, string)",
+					Detail: "Optional, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 30},
 						Text: `attr_optional = "${0:value}"`,
@@ -139,7 +139,7 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 				},
 				{
 					Label:  "attr_required",
-					Detail: "(Required, string)",
+					Detail: "Required, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 30},
 						Text: `attr_required = "${0:value}"`,
@@ -180,8 +180,9 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			hcl.Pos{Line: 1, Column: 9, Byte: 10},
 			[]renderedCandidate{
 				{
-					Label:  "custom_rs",
-					Detail: "custom",
+					Label:         "custom_rs",
+					Detail:        "Resource (custom)",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
 						Text: "custom_rs",

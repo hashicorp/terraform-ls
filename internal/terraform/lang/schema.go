@@ -69,18 +69,21 @@ func schemaAttributeDetail(attr *tfjson.SchemaAttribute) string {
 		requiredText = "Required"
 	}
 
-	return strings.TrimSpace(fmt.Sprintf("(%s, %s) %s",
-		requiredText, attr.AttributeType.FriendlyName(), attr.Description))
+	return strings.TrimSpace(fmt.Sprintf("%s, %s",
+		requiredText, attr.AttributeType.FriendlyName()))
 }
 
 func schemaBlockDetail(blockType *BlockType) string {
 	blockS := blockType.Schema()
 
-	requiredText := "Required"
-	if len(blockType.BlockList) >= int(blockS.MinItems) {
-		requiredText = "Optional"
+	detail := fmt.Sprintf("Block, %s", blockS.NestingMode)
+
+	if blockS.MinItems > 0 {
+		detail += fmt.Sprintf(", min: %d", blockS.MinItems)
+	}
+	if blockS.MaxItems > 0 {
+		detail += fmt.Sprintf(", max: %d", blockS.MaxItems)
 	}
 
-	return strings.TrimSpace(fmt.Sprintf("(%s, %s)",
-		requiredText, blockS.NestingMode))
+	return strings.TrimSpace(detail)
 }

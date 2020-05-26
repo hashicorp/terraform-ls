@@ -9,7 +9,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.3.0
-	github.com/hashicorp/terraform-json v0.4.0
+	github.com/hashicorp/terraform-json v0.5.0
 	github.com/mitchellh/cli v1.0.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/sourcegraph/go-lsp v0.0.0-20200117082640-b19bb38222e2

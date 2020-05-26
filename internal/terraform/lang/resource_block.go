@@ -41,6 +41,12 @@ func (r *resourceBlockFactory) BlockType() string {
 	return "resource"
 }
 
+func (r *resourceBlockFactory) Documentation() MarkupContent {
+	return PlainText("A resource block declares a resource of a given type with a given local name. The name is " +
+		"used to refer to this resource from elsewhere in the same Terraform module, but has no significance " +
+		"outside of the scope of a module.")
+}
+
 type resourceBlock struct {
 	logger *log.Logger
 
@@ -124,9 +130,15 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 func resourceCandidates(resources []schema.Resource) []CompletionCandidate {
 	candidates := []CompletionCandidate{}
 	for _, r := range resources {
+		var desc MarkupContent = PlainText(r.Description)
+		if r.DescriptionKind == tfjson.SchemaDescriptionKindMarkdown {
+			desc = Markdown(r.Description)
+		}
+
 		candidates = append(candidates, &labelCandidate{
-			label:  r.Name,
-			detail: r.Provider,
+			label:         r.Name,
+			detail:        fmt.Sprintf("Resource (%s)", r.Provider),
+			documentation: desc,
 		})
 	}
 	return candidates

@@ -121,16 +121,18 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			hcl.Pos{Line: 2, Column: 1, Byte: 20},
 			[]renderedCandidate{
 				{
-					Label:  "attr_optional",
-					Detail: "(Optional, string)",
+					Label:         "attr_optional",
+					Detail:        "Optional, string",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 20},
 						Text: `attr_optional = "${0:value}"`,
 					},
 				},
 				{
-					Label:  "attr_required",
-					Detail: "(Required, string)",
+					Label:         "attr_required",
+					Detail:        "Required, string",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 20},
 						Text: `attr_required = "${0:value}"`,
@@ -171,8 +173,9 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			hcl.Pos{Line: 1, Column: 9, Byte: 10},
 			[]renderedCandidate{
 				{
-					Label:  "custom",
-					Detail: "provider",
+					Label:         "custom",
+					Detail:        "provider",
+					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
 						Text: "custom",

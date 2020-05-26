@@ -30,13 +30,17 @@ type Writer interface {
 }
 
 type Resource struct {
-	Name     string
-	Provider string
+	Name            string
+	Provider        string
+	Description     string
+	DescriptionKind tfjson.SchemaDescriptionKind
 }
 
 type DataSource struct {
-	Name     string
-	Provider string
+	Name            string
+	Provider        string
+	Description     string
+	DescriptionKind tfjson.SchemaDescriptionKind
 }
 
 type Storage struct {
@@ -186,6 +190,7 @@ func (s *Storage) Providers() ([]string, error) {
 }
 
 func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
+	// TODO: this is going to need to use provider identities, especially in 0.13
 	s.logger.Printf("Reading %q resource schema", rType)
 
 	ps, err := s.schema()
@@ -214,10 +219,11 @@ func (s *Storage) Resources() ([]Resource, error) {
 
 	resources := make([]Resource, 0)
 	for provider, schema := range ps.Schemas {
-		for name := range schema.ResourceSchemas {
+		for name, r := range schema.ResourceSchemas {
 			resources = append(resources, Resource{
-				Provider: provider,
-				Name:     name,
+				Provider:    provider,
+				Name:        name,
+				Description: r.Block.Description,
 			})
 		}
 	}
@@ -254,10 +260,11 @@ func (s *Storage) DataSources() ([]DataSource, error) {
 
 	dataSources := make([]DataSource, 0)
 	for provider, schema := range ps.Schemas {
-		for name := range schema.DataSourceSchemas {
+		for name, d := range schema.DataSourceSchemas {
 			dataSources = append(dataSources, DataSource{
-				Provider: provider,
-				Name:     name,
+				Provider:    provider,
+				Name:        name,
+				Description: d.Block.Description,
 			})
 		}
 	}

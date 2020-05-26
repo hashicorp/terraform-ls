@@ -131,7 +131,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:  "attr_optional",
-					Detail: "(Optional, string)",
+					Detail: "Optional, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 26},
 						Text: `attr_optional = "${0:value}"`,
@@ -139,7 +139,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 				},
 				{
 					Label:  "attr_required",
-					Detail: "(Required, string)",
+					Detail: "Required, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 26},
 						Text: `attr_required = "${0:value}"`,
@@ -180,7 +180,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:  "custom_ds",
-					Detail: "custom",
+					Detail: "Data Source (custom)",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 5, Byte: 6},
 						Text: "custom_ds",
