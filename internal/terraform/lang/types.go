@@ -62,7 +62,7 @@ type Attribute struct {
 	hclAttribute *hcl.Attribute
 }
 
-// CompletionCandidate represents a list of candidates
+// CompletionCandidates represents a list of candidates
 // for completion loosely reflecting lsp.CompletionList
 type CompletionCandidates interface {
 	List() []CompletionCandidate
