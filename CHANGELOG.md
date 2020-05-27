@@ -5,6 +5,7 @@ FEATURES:
  - textDocument/complete: Complete first level keywords ([#104](https://github.com/hashicorp/terraform-ls/pull/104))
  - Add ability to specify path to Terraform binary ([#109](https://github.com/hashicorp/terraform-ls/pull/109))
  - Improve UX of completion items ([#115](https://github.com/hashicorp/terraform-ls/pull/115))
+ - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
 
 ## 0.2.1 (19 May 2020)
 
