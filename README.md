@@ -16,10 +16,6 @@ We encourage you to [browse existing issues](https://github.com/hashicorp/terraf
 and/or [open new issue](https://github.com/hashicorp/terraform-ls/issues/new/choose)
 if you experience a bug or have an idea for a feature.
 
-## Disclaimer
-
-This is not yet an officially supported HashiCorp product, but we intend to officially support it once we ship our initial release of the [VS Code extension](https://github.com/hashicorp/vscode-terraform).
-
 ## Installation
 
 1. [Download for the latest version](https://github.com/hashicorp/terraform-ls/releases/latest)
