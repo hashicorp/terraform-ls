@@ -28,6 +28,10 @@ type langServer struct {
 func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServer {
 	opts := &jrpc2.ServerOptions{
 		AllowPush: true,
+
+		// Disable concurrency to avoid race conditions
+		// between requests concerning the same document
+		Concurrency: 1,
 	}
 
 	return &langServer{
