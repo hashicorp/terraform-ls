@@ -1,5 +1,28 @@
 # HCL Changelog
 
+## v2.5.1 (May 14, 2020)
+
+### Bugs Fixed
+
+* hclwrite: handle legacy dot access of numeric indexes. ([#369](https://github.com/hashicorp/hcl/pull/369))
+* hclwrite: Fix panic for dotted full splat (`foo.*`) ([#374](https://github.com/hashicorp/hcl/pull/374))
+
+## v2.5.0 (May 6, 2020)
+
+### Enhancements
+
+* hclwrite: Generate multi-line objects and maps. ([#372](https://github.com/hashicorp/hcl/pull/372))
+
+## v2.4.0 (Apr 13, 2020)
+
+### Enhancements
+
+* The Unicode data tables that HCL uses to produce user-perceived "column" positions in diagnostics and other source ranges are now updated to Unicode 12.0.0, which will cause HCL to produce more accurate column numbers for combining characters introduced to Unicode since Unicode 9.0.0.
+
+### Bugs Fixed
+
+* json: Fix panic when parsing malformed JSON. ([#358](https://github.com/hashicorp/hcl/pull/358))
+
 ## v2.3.0 (Jan 3, 2020)
 
 ### Enhancements
