@@ -34,8 +34,8 @@ github.com/hashicorp/go-multierror v1.0.0 h1:iVjPR7a6H0tWELX5NxNe7bYopibicUzc7uP
 github.com/hashicorp/go-multierror v1.0.0/go.mod h1:dHtQlpGsu+cZNNAkkCN/P3hoUDHhCYQXV3UM06sGGrk=
 github.com/hashicorp/go-version v1.2.0 h1:3vNe/fWF5CBgRIguda1meWhsZHy3m8gCJ5wx+dIzX/E=
 github.com/hashicorp/go-version v1.2.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/hashicorp/hcl/v2 v2.5.1 h1:5ytFZykUu2/4U59ogd2f+XZdi9+6oC/Tv5WzsH6fIDA=
-github.com/hashicorp/hcl/v2 v2.5.1/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
+github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de h1:bCeWhTigOmP9am0cJA+5kaTtA2RFDmnWIRtBIxo+Ydg=
+github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
 github.com/hashicorp/terraform-json v0.5.0 h1:7TV3/F3y7QVSuN4r9BEXqnWqrAyeOtON8f0wvREtyzs=
 github.com/hashicorp/terraform-json v0.5.0/go.mod h1:eAbqb4w0pSlRmdvl8fOyHAi/+8jnkVYN28gJkSJrLhU=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
