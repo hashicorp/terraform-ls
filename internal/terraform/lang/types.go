@@ -4,6 +4,7 @@ import (
 	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
@@ -15,7 +16,7 @@ type Parser interface {
 	SetLogger(*log.Logger)
 	SetSchemaReader(schema.Reader)
 	BlockTypeCandidates() CompletionCandidates
-	ParseBlockFromHCL(*hcl.Block) (ConfigBlock, error)
+	ParseBlockFromTokens(hclsyntax.Tokens) (ConfigBlock, error)
 }
 
 // ConfigBlock implements an abstraction above HCL block

@@ -11,7 +11,7 @@ import (
 )
 
 type configBlockFactory interface {
-	New(*hclsyntax.Block) (ConfigBlock, error)
+	New(hclsyntax.Tokens) (ConfigBlock, error)
 	LabelSchema() LabelSchema
 	Documentation() MarkupContent
 }
