@@ -18,7 +18,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			TextDocumentSync: &lsp.TextDocumentSyncOptionsOrKind{
 				Options: &lsp.TextDocumentSyncOptions{
 					OpenClose: true,
-					Change:    lsp.TDSKFull,
+					Change:    lsp.TDSKIncremental,
 				},
 			},
 			CompletionProvider: &lsp.CompletionOptions{

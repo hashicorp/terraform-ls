@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
@@ -12,7 +11,7 @@ func TestFilesystem_Change_notOpen(t *testing.T) {
 	fs := NewFilesystem()
 
 	var changes FileChanges
-	changes = append(changes, &testChange{})
+	changes = append(changes, &fileChange{})
 	h := &testHandler{"file:///doesnotexist"}
 
 	err := fs.Change(h, changes)
@@ -41,7 +40,7 @@ func TestFilesystem_Change_closed(t *testing.T) {
 	}
 
 	var changes FileChanges
-	changes = append(changes, &testChange{})
+	changes = append(changes, &fileChange{})
 	err = fs.Change(fh, changes)
 
 	expectedErr := &FileNotOpenErr{fh}
@@ -105,10 +104,10 @@ func TestFilesystem_Change_multipleChanges(t *testing.T) {
 	})
 
 	var changes FileChanges
-	changes = append(changes, &testChange{text: "ahoy"})
-	changes = append(changes, &testChange{text: ""})
-	changes = append(changes, &testChange{text: "quick brown fox jumped over\nthe lazy dog"})
-	changes = append(changes, &testChange{text: "bye"})
+	changes = append(changes, &fileChange{text: "ahoy"})
+	changes = append(changes, &fileChange{text: ""})
+	changes = append(changes, &fileChange{text: "quick brown fox jumped over\nthe lazy dog"})
+	changes = append(changes, &fileChange{text: "bye"})
 
 	err := fs.Change(fh, changes)
 	if err != nil {
@@ -195,18 +194,4 @@ func (fh *testHandler) Filename() string {
 }
 func (fh *testHandler) Version() int {
 	return 0
-}
-
-type testChange struct {
-	text string
-}
-
-func (ch *testChange) Text() string {
-	return ch.text
-}
-
-func (ch *testChange) Range() hcl.Range {
-	return hcl.Range{
-		// TODO: Implement partial updates
-	}
 }
