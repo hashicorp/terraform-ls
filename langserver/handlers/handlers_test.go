@@ -28,7 +28,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 			"capabilities": {
 				"textDocumentSync": {
 					"openClose": true,
-					"change": 1
+					"change": 2
 				},
 				"completionProvider": {},
 				"documentFormattingProvider":true
@@ -63,7 +63,7 @@ func TestEOF(t *testing.T) {
 			"capabilities": {
 				"textDocumentSync": {
 					"openClose": true,
-					"change": 1
+					"change": 2
 				},
 				"completionProvider": {},
 				"documentFormattingProvider":true
