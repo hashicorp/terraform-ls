@@ -39,6 +39,7 @@ func (fs *fsystem) Open(file File) error {
 		f = NewFile(file.FullPath(), file.Text())
 	}
 	f.open = true
+	f.version = file.Version()
 	d.files[file.Filename()] = f
 	return nil
 }
@@ -54,6 +55,8 @@ func (fs *fsystem) Change(fh VersionedFileHandler, changes FileChanges) error {
 	for _, change := range changes {
 		f.applyChange(change)
 	}
+
+	f.IncrementVersion()
 	return nil
 }
 

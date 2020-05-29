@@ -14,9 +14,10 @@ type File interface {
 }
 
 type file struct {
-	fh   FileHandler
-	ls   source.Lines
-	text []byte
+	fh      FileHandler
+	ls      source.Lines
+	text    []byte
+	version int
 }
 
 func (f *file) URI() string {
@@ -50,9 +51,14 @@ func (f *file) lines() source.Lines {
 	return f.ls
 }
 
+func (f *file) Version() int {
+	return f.version
+}
+
 func FileFromDocumentItem(doc lsp.TextDocumentItem) *file {
 	return &file{
-		fh:   FileHandler(doc.URI),
-		text: []byte(doc.Text),
+		fh:      FileHandler(doc.URI),
+		text:    []byte(doc.Text),
+		version: doc.Version,
 	}
 }

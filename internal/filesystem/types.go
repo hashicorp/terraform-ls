@@ -9,6 +9,7 @@ type File interface {
 	FileHandler
 	Text() []byte
 	Lines() source.Lines
+	Version() int
 }
 
 type FilePosition interface {

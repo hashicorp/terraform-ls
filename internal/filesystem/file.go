@@ -18,8 +18,9 @@ type file struct {
 	content  []byte
 	open     bool
 
-	ls   source.Lines
-	errs bool
+	version int
+	ls      source.Lines
+	errs    bool
 }
 
 func NewFile(fullPath string, content []byte) *file {
@@ -40,6 +41,14 @@ func (f *file) Filename() string {
 
 func (f *file) URI() string {
 	return URIFromPath(f.fullPath)
+}
+
+func (f *file) Version() int {
+	return f.version
+}
+
+func (f *file) IncrementVersion() {
+	f.version += 1
 }
 
 func (f *file) Lines() source.Lines {
