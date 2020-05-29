@@ -47,8 +47,8 @@ func (f *file) Version() int {
 	return f.version
 }
 
-func (f *file) IncrementVersion() {
-	f.version += 1
+func (f *file) SetVersion(version int) {
+	f.version = version
 }
 
 func (f *file) Lines() source.Lines {

@@ -55,8 +55,7 @@ func (fs *fsystem) Change(fh VersionedFileHandler, changes FileChanges) error {
 	for _, change := range changes {
 		f.applyChange(change)
 	}
-
-	f.IncrementVersion()
+	f.SetVersion(fh.Version())
 	return nil
 }
 
