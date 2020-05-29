@@ -10,6 +10,7 @@ FEATURES:
 INTERNAL:
 
  - refactoring(parser): Pass around tokens instead of blocks ([#125](https://github.com/hashicorp/terraform-ls/pull/125))
+ - Support partial updates ([#103](https://github.com/hashicorp/terraform-ls/pull/103))
 
 ## 0.2.1 (19 May 2020)
 
