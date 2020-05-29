@@ -83,8 +83,8 @@ func (f *file) change(s []byte) {
 	f.ls = nil
 }
 
-// hcl pos column and line start from 1
-// if the range end position column and line are 0, we regard it is a nil range
+// HCL column and line indexes start from 1, therefore if the any index
+// contains 0, we assume it is an undefined range
 func rangeIsNil(r hcl.Range) bool {
 	return r.End.Column == 0 && r.End.Line == 0
 }
