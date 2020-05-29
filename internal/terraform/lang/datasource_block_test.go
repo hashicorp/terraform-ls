@@ -58,13 +58,10 @@ func TestDatasourceBlock_Name(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.src))
-			if err != nil {
-				t.Fatal(err)
-			}
+			tokens := lexConfig(t, tc.src)
 
 			pf := &datasourceBlockFactory{logger: log.New(os.Stdout, "", 0)}
-			p, err := pf.New(block)
+			p, err := pf.New(tokens)
 
 			if err != nil {
 				if tc.expectedErr != nil && err.Error() == tc.expectedErr.Error() {
@@ -193,10 +190,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.src))
-			if err != nil {
-				t.Fatal(err)
-			}
+			tokens := lexConfig(t, tc.src)
 
 			pf := &datasourceBlockFactory{
 				logger: log.New(os.Stdout, "", 0),
@@ -205,7 +199,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 					DataSourceSchemaErr: tc.readerErr,
 				},
 			}
-			p, err := pf.New(block)
+			p, err := pf.New(tokens)
 			if err != nil {
 				t.Fatal(err)
 			}

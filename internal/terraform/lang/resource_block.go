@@ -16,7 +16,7 @@ type resourceBlockFactory struct {
 	schemaReader schema.Reader
 }
 
-func (f *resourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) {
+func (f *resourceBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error) {
 	if f.logger == nil {
 		f.logger = discardLog()
 	}
@@ -25,7 +25,7 @@ func (f *resourceBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 		logger: f.logger,
 
 		labelSchema: f.LabelSchema(),
-		hclBlock:    block,
+		tokens:      tokens,
 		sr:          f.schemaReader,
 	}, nil
 }
@@ -52,7 +52,7 @@ type resourceBlock struct {
 
 	labelSchema LabelSchema
 	labels      []*ParsedLabel
-	hclBlock    *hclsyntax.Block
+	tokens      hclsyntax.Tokens
 	sr          schema.Reader
 }
 
@@ -81,7 +81,9 @@ func (r *resourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}
-	r.labels = parseLabels(r.BlockType(), r.labelSchema, r.hclBlock.Labels)
+	labels := ParseLabels(r.tokens, r.labelSchema)
+	r.labels = labels
+
 	return r.labels
 }
 
@@ -102,7 +104,7 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = rSchema.Block
 	}
-	block := ParseBlock(r.hclBlock, r.Labels(), schemaBlock)
+	block := ParseBlock(r.tokens, r.Labels(), schemaBlock)
 
 	if block.PosInLabels(pos) {
 		resources, err := r.sr.Resources()

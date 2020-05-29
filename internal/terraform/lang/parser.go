@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
@@ -131,24 +132,28 @@ func (bt *completableBlockType) Documentation() MarkupContent {
 	return bt.documentation
 }
 
-func (p *parser) ParseBlockFromHCL(block *hcl.Block) (ConfigBlock, error) {
-	if block == nil {
+func (p *parser) ParseBlockFromTokens(tokens hclsyntax.Tokens) (ConfigBlock, error) {
+	if len(tokens) == 0 {
 		return nil, EmptyConfigErr
 	}
+
+	// It is probably excessive to be parsing the whole block just for type
+	// but there is no avoiding it without refactoring the upstream HCL parser
+	// and it should not hurt the performance too much
+	//
+	// We ignore diags as we assume incomplete (invalid) configuration
+	block, _ := hclsyntax.ParseBlockFromTokens(tokens)
+
+	p.logger.Printf("Parsed block type: %q", block.Type)
 
 	f, ok := p.blockTypes()[block.Type]
 	if !ok {
 		return nil, &unknownBlockTypeErr{block.Type}
 	}
 
-	hsBlock, err := AsHCLSyntaxBlock(block)
+	cfgBlock, err := f.New(tokens)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", block.Type, err)
-	}
-
-	cfgBlock, err := f.New(hsBlock)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", hsBlock.Type, err)
 	}
 
 	return cfgBlock, nil

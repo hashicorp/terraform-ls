@@ -15,7 +15,7 @@ type providerBlockFactory struct {
 	schemaReader schema.Reader
 }
 
-func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) {
+func (f *providerBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error) {
 	if f.logger == nil {
 		f.logger = discardLog()
 	}
@@ -24,7 +24,7 @@ func (f *providerBlockFactory) New(block *hclsyntax.Block) (ConfigBlock, error) 
 		logger: f.logger,
 
 		labelSchema: f.LabelSchema(),
-		hclBlock:    block,
+		tokens:      tokens,
 		sr:          f.schemaReader,
 	}, nil
 }
@@ -50,7 +50,7 @@ type providerBlock struct {
 
 	labelSchema LabelSchema
 	labels      []*ParsedLabel
-	hclBlock    *hclsyntax.Block
+	tokens      hclsyntax.Tokens
 	sr          schema.Reader
 }
 
@@ -70,7 +70,10 @@ func (p *providerBlock) Labels() []*ParsedLabel {
 	if p.labels != nil {
 		return p.labels
 	}
-	p.labels = parseLabels(p.BlockType(), p.labelSchema, p.hclBlock.Labels)
+
+	labels := ParseLabels(p.tokens, p.labelSchema)
+	p.labels = labels
+
 	return p.labels
 }
 
@@ -91,7 +94,7 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = pSchema.Block
 	}
-	block := ParseBlock(p.hclBlock, p.Labels(), schemaBlock)
+	block := ParseBlock(p.tokens, p.Labels(), schemaBlock)
 
 	if block.PosInLabels(pos) {
 		providers, err := p.sr.Providers()

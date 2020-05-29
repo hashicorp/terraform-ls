@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	hcl "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -54,7 +55,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	p.SetLogger(h.logger)
 	p.SetSchemaReader(sr)
 
-	hclBlock, hclPos, err := hclFile.BlockAtPosition(fPos)
+	tokens, hclPos, err := hclFile.BlockTokensAtPosition(fPos)
 	if err != nil {
 		if ihcl.IsNoBlockFoundErr(err) {
 			return ilsp.CompletionList(p.BlockTypeCandidates(), fPos.Position(), cc.TextDocument), nil
@@ -64,7 +65,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 
 	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
-	candidates, err := h.completeBlock(p, hclBlock, hclPos)
+	candidates, err := h.completeBlock(p, tokens, hclPos)
 	if err != nil {
 		return list, fmt.Errorf("finding completion items failed: %w", err)
 	}
@@ -72,8 +73,8 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	return ilsp.CompletionList(candidates, fPos.Position(), cc.TextDocument), nil
 }
 
-func (h *logHandler) completeBlock(p lang.Parser, block *hcl.Block, pos hcl.Pos) (lang.CompletionCandidates, error) {
-	cfgBlock, err := p.ParseBlockFromHCL(block)
+func (h *logHandler) completeBlock(p lang.Parser, tokens hclsyntax.Tokens, pos hcl.Pos) (lang.CompletionCandidates, error) {
+	cfgBlock, err := p.ParseBlockFromTokens(tokens)
 	if err != nil {
 		return nil, fmt.Errorf("finding config block failed: %w", err)
 	}

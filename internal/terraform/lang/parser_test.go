@@ -47,7 +47,7 @@ func TestParser_BlockTypeCandidates_snippet(t *testing.T) {
 	}
 }
 
-func TestParser_ParseBlockFromHCL(t *testing.T) {
+func TestParser_ParseBlockFromTokens(t *testing.T) {
 	testCases := []struct {
 		name string
 		cfg  string
@@ -80,10 +80,10 @@ func TestParser_ParseBlockFromHCL(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			hclBlock := parseHclBlock(t, tc.cfg)
+			tokens := lexConfig(t, tc.cfg)
 
 			p := newParser()
-			cfgBlock, err := p.ParseBlockFromHCL(hclBlock)
+			cfgBlock, err := p.ParseBlockFromTokens(tokens)
 			if err != nil {
 				if errors.Is(err, tc.expectedErr) {
 					return
@@ -102,6 +102,15 @@ func TestParser_ParseBlockFromHCL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func lexConfig(t *testing.T, src string) hclsyntax.Tokens {
+	tokens, diags := hclsyntax.LexConfig([]byte(src), "/test.tf", hcl.InitialPos)
+	if diags.HasErrors() {
+		t.Fatal(diags)
+	}
+
+	return tokens
 }
 
 func parseHclBlock(t *testing.T, src string) *hcl.Block {

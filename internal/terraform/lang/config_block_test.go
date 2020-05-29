@@ -256,14 +256,12 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.src))
-			if err != nil {
-				t.Fatal(err)
-			}
+			tokens := lexConfig(t, tc.src)
+			block := ParseBlock(tokens, []*ParsedLabel{}, tc.sb)
 
 			cb := &completableBlock{
 				logger: testLogger(),
-				block:  ParseBlock(block, []*ParsedLabel{}, tc.sb),
+				block:  block,
 			}
 
 			list, err := cb.completionCandidatesAtPos(tc.pos)

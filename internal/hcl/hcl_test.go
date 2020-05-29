@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
@@ -17,8 +18,8 @@ func TestFile_BlockAtPosition(t *testing.T) {
 		content string
 		pos     hcl.Pos
 
-		expectedErr   error
-		expectedBlock *hcl.Block
+		expectedErr    error
+		expectedTokens []hclsyntax.Token
 	}{
 		{
 			"invalid config",
@@ -29,9 +30,31 @@ func TestFile_BlockAtPosition(t *testing.T) {
 				Byte:   0,
 			},
 			nil, // Expect errors to be ignored
-			&hcl.Block{
-				Type:   "provider",
-				Labels: []string{"aws"},
+			[]hclsyntax.Token{
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("provider"),
+				},
+				{
+					Type:  hclsyntax.TokenOQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenQuotedLit,
+					Bytes: []byte("aws"),
+				},
+				{
+					Type:  hclsyntax.TokenCQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenOBrace,
+					Bytes: []byte("{"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
 			},
 		},
 		{
@@ -46,9 +69,43 @@ func TestFile_BlockAtPosition(t *testing.T) {
 				Byte:   17,
 			},
 			nil,
-			&hcl.Block{
-				Type:   "provider",
-				Labels: []string{"aws"},
+			[]hclsyntax.Token{
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("provider"),
+				},
+				{
+					Type:  hclsyntax.TokenOQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenQuotedLit,
+					Bytes: []byte("aws"),
+				},
+				{
+					Type:  hclsyntax.TokenCQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenOBrace,
+					Bytes: []byte("{"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+				{
+					Type:  hclsyntax.TokenCBrace,
+					Bytes: []byte("}"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
 			},
 		},
 		{
@@ -125,11 +182,56 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			&NoBlockFoundErr{AtPos: hcl.Pos{Line: 4, Column: 1, Byte: 20}},
 			nil,
 		},
+		{
+			"valid config with newline near beginning",
+			`
+provider "aws" {
+}`,
+			hcl.Pos{
+				Line:   2,
+				Column: 1,
+				Byte:   1,
+			},
+			nil, // Expect errors to be ignored
+			[]hclsyntax.Token{
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("provider"),
+				},
+				{
+					Type:  hclsyntax.TokenOQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenQuotedLit,
+					Bytes: []byte("aws"),
+				},
+				{
+					Type:  hclsyntax.TokenCQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenOBrace,
+					Bytes: []byte("{"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+				{
+					Type:  hclsyntax.TokenCBrace,
+					Bytes: []byte("}"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+			},
+		},
 	}
 
 	opts := cmp.Options{
-		cmpopts.IgnoreFields(hcl.Block{},
-			"Body", "DefRange", "TypeRange", "LabelRanges"),
+		cmpopts.IgnoreFields(hclsyntax.Token{}, "Range"),
 		cmpopts.IgnoreFields(hcl.Diagnostic{}, "Subject"),
 	}
 
@@ -142,7 +244,7 @@ func TestFile_BlockAtPosition(t *testing.T) {
 				pos:         tc.pos,
 			}
 
-			block, _, err := f.BlockAtPosition(fp)
+			tokens, _, err := f.BlockTokensAtPosition(fp)
 			if err != nil {
 				if tc.expectedErr == nil {
 					t.Fatal(err)
@@ -156,8 +258,8 @@ func TestFile_BlockAtPosition(t *testing.T) {
 				t.Fatalf("Expected error: %s", tc.expectedErr)
 			}
 
-			if diff := cmp.Diff(tc.expectedBlock, block, opts...); diff != "" {
-				t.Fatalf("Unexpected block difference: %s", diff)
+			if diff := cmp.Diff(hclsyntax.Tokens(tc.expectedTokens), tokens, opts...); diff != "" {
+				t.Fatalf("Unexpected token difference: %s", diff)
 			}
 
 		})

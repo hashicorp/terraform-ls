@@ -8,9 +8,16 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// ParseBlock parses HCL configuration based on tfjson's SchemaBlock
+// ParseBlock parses HCL block's tokens based on tfjson's SchemaBlock
 // and keeps hold of all tfjson schema details on block or attribute level
-func ParseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.SchemaBlock) Block {
+func ParseBlock(tokens hclsyntax.Tokens, labels []*ParsedLabel, schema *tfjson.SchemaBlock) (Block) {
+	// We ignore diags as we assume incomplete (invalid) configuration
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(tokens)
+
+	return parseBlock(hclBlock, labels, schema)
+}
+
+func parseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.SchemaBlock) Block {
 	b := &parsedBlock{
 		hclBlock: block,
 		labels:   labels,
@@ -31,6 +38,32 @@ func ParseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.Sc
 	b.BlockTypesMap, b.unknownBlocks = parseBlockTypes(body.Blocks, schema.NestedBlocks)
 
 	return b
+}
+
+// ParseLabels parses HCL block's tokens based on LabelSchema,
+// returning labels as a slice of *ParsedLabel
+func ParseLabels(tokens hclsyntax.Tokens, schema LabelSchema) ([]*ParsedLabel) {
+	// We ignore diags as we assume incomplete (invalid) configuration
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(tokens)
+
+	return parseLabels(hclBlock.Type, schema, hclBlock.Labels)
+}
+
+func parseLabels(blockType string, schema LabelSchema, parsed []string) []*ParsedLabel {
+	labels := make([]*ParsedLabel, len(schema))
+
+	for i, l := range schema {
+		var value string
+		if len(parsed)-1 >= i {
+			value = parsed[i]
+		}
+		labels[i] = &ParsedLabel{
+			Name:  l.Name,
+			Value: value,
+		}
+	}
+
+	return labels
 }
 
 func AsHCLSyntaxBlock(block *hcl.Block) (*hclsyntax.Block, error) {
