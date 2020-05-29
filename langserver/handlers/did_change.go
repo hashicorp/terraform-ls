@@ -49,6 +49,8 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 	return fs.Change(fh, changes)
 }
 
+// TODO: Revisit after https://github.com/hashicorp/terraform-ls/issues/118 is addressed
+// Then we could switch back to upstream go-lsp
 type DidChangeTextDocumentParams struct {
 	TextDocument   VersionedTextDocumentIdentifier      `json:"textDocument"`
 	ContentChanges []lsp.TextDocumentContentChangeEvent `json:"contentChanges"`
