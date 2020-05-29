@@ -81,7 +81,7 @@ func (r *resourceBlock) Labels() []*ParsedLabel {
 	if r.labels != nil {
 		return r.labels
 	}
-	labels, _ := ParseLabels(r.tokens, r.labelSchema)
+	labels := ParseLabels(r.tokens, r.labelSchema)
 	r.labels = labels
 
 	return r.labels
@@ -104,10 +104,7 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = rSchema.Block
 	}
-	block, err := ParseBlock(r.tokens, r.Labels(), schemaBlock)
-	if err != nil {
-		return nil, err
-	}
+	block := ParseBlock(r.tokens, r.Labels(), schemaBlock)
 
 	if block.PosInLabels(pos) {
 		resources, err := r.sr.Resources()

@@ -140,6 +140,8 @@ func (p *parser) ParseBlockFromTokens(tokens hclsyntax.Tokens) (ConfigBlock, err
 	// It is probably excessive to be parsing the whole block just for type
 	// but there is no avoiding it without refactoring the upstream HCL parser
 	// and it should not hurt the performance too much
+	//
+	// We ignore diags as we assume incomplete (invalid) configuration
 	block, _ := hclsyntax.ParseBlockFromTokens(tokens)
 
 	p.logger.Printf("Parsed block type: %q", block.Type)

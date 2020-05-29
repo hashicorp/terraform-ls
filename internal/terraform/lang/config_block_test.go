@@ -257,10 +257,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.src)
-			block, err := ParseBlock(tokens, []*ParsedLabel{}, tc.sb)
-			if err != nil {
-				t.Fatal(err)
-			}
+			block := ParseBlock(tokens, []*ParsedLabel{}, tc.sb)
 
 			cb := &completableBlock{
 				logger: testLogger(),

@@ -304,10 +304,7 @@ func TestParseBlock_attributesAndBlockTypes(t *testing.T) {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.cfg)
 
-			b, err := ParseBlock(tokens, []*ParsedLabel{}, tc.schema)
-			if err != nil {
-				t.Fatal(err)
-			}
+			b := ParseBlock(tokens, []*ParsedLabel{}, tc.schema)
 
 			if diff := cmp.Diff(tc.expectedAttributes, b.Attributes(), opts...); diff != "" {
 				t.Fatalf("Attributes don't match.\n%s", diff)
@@ -467,10 +464,7 @@ func TestBlock_BlockAtPos(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.cfg)
-			b, err := ParseBlock(tokens, []*ParsedLabel{}, schema)
-			if err != nil {
-				t.Fatal(err)
-			}
+			b := ParseBlock(tokens, []*ParsedLabel{}, schema)
 
 			fBlock, _ := b.BlockAtPos(tc.pos)
 			if diff := cmp.Diff(tc.expectedBlock, fBlock, opts...); diff != "" {
@@ -627,10 +621,7 @@ func TestBlock_PosInBody(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.cfg)
-			b, err := ParseBlock(tokens, []*ParsedLabel{}, schema)
-			if err != nil {
-				t.Fatal(err)
-			}
+			b := ParseBlock(tokens, []*ParsedLabel{}, schema)
 
 			isInBody := b.PosInBody(tc.pos)
 			if tc.expected != isInBody {
@@ -762,10 +753,7 @@ func TestBlock_PosInAttributes(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.cfg)
-			b, err := ParseBlock(tokens, []*ParsedLabel{}, schema)
-			if err != nil {
-				t.Fatal(err)
-			}
+			b := ParseBlock(tokens, []*ParsedLabel{}, schema)
 
 			isInAttribute := b.PosInAttribute(tc.pos)
 			if tc.expected != isInAttribute {

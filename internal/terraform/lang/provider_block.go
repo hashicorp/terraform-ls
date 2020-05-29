@@ -70,7 +70,8 @@ func (p *providerBlock) Labels() []*ParsedLabel {
 	if p.labels != nil {
 		return p.labels
 	}
-	labels, _ := ParseLabels(p.tokens, p.labelSchema)
+
+	labels := ParseLabels(p.tokens, p.labelSchema)
 	p.labels = labels
 
 	return p.labels
@@ -93,10 +94,7 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 		schemaBlock = pSchema.Block
 	}
-	block, err := ParseBlock(p.tokens, p.Labels(), schemaBlock)
-	if err != nil {
-		return nil, err
-	}
+	block := ParseBlock(p.tokens, p.Labels(), schemaBlock)
 
 	if block.PosInLabels(pos) {
 		providers, err := p.sr.Providers()
