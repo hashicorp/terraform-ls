@@ -32,14 +32,18 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
-	// old version change, just skip
 	if p.TextDocument.Version <= f.Version() {
-		return fmt.Errorf("skip old version %d change: %#v, current file version %d", p.TextDocument.Version, params, f.Version())
+		fs.Close(fh)
+		return fmt.Errorf("Old version (%d) received, current version is %d. "+
+			"Unable to update %s. This is likely a bug, please report it.",
+			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
 	}
 
-	// missing version
 	if p.TextDocument.Version > f.Version()+1 {
-		return fmt.Errorf("missing version %d change: %#v, current file version %d", p.TextDocument.Version, params, f.Version())
+		fs.Close(fh)
+		return fmt.Errorf("New version (%d) received, current version is %d. "+
+			"Unable to update %s. This is likely a bug, please report it.",
+			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
 	}
 
 	changes, err := ilsp.FileChanges(params.ContentChanges, f)
