@@ -7,6 +7,10 @@ FEATURES:
  - Improve UX of completion items ([#115](https://github.com/hashicorp/terraform-ls/pull/115))
  - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
 
+INTERNAL:
+
+ - refactoring(parser): Pass around tokens instead of blocks ([#125](https://github.com/hashicorp/terraform-ls/pull/125))
+
 ## 0.2.1 (19 May 2020)
 
 BUG FIXES:
