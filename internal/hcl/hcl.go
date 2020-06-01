@@ -11,6 +11,7 @@ import (
 
 type File interface {
 	BlockTokensAtPosition(hcl.Pos) (hclsyntax.Tokens, error)
+	TokenAtPosition(hcl.Pos) (hclsyntax.Token, error)
 }
 
 type file struct {
@@ -85,6 +86,18 @@ func (f *file) BlockTokensAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
 	}
 
 	return pf.Tokens, &NoBlockFoundErr{pos}
+}
+
+func (f *file) TokenAtPosition(pos hcllib.Pos) (hclsyntax.Token, error) {
+	pf, _ := f.parse()
+
+	for _, t := range pf.Tokens {
+		if rangeContainsOffset(t.Range, pos.Byte) {
+			return t, nil
+		}
+	}
+
+	return hclsyntax.Token{}, &NoTokenFoundErr{pos}
 }
 
 func tokensInRange(tokens hclsyntax.Tokens, rng hcllib.Range) hclsyntax.Tokens {
