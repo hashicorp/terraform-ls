@@ -3,15 +3,15 @@ package main
 import (
 	"os"
 
-	"github.com/hashicorp/terraform-ls/commands"
-	"github.com/hashicorp/terraform-ls/version"
 	"github.com/mitchellh/cli"
+
+	"github.com/hashicorp/terraform-ls/commands"
 )
 
 func main() {
 	c := &cli.CLI{
 		Name:    "terraform-ls",
-		Version: version.String(),
+		Version: VersionString(),
 		Args:    os.Args[1:],
 	}
 
