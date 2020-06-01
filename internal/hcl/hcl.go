@@ -10,7 +10,7 @@ import (
 )
 
 type File interface {
-	BlockTokensAtPosition(filesystem.FilePosition) (hclsyntax.Tokens, hcllib.Pos, error)
+	BlockTokensAtPosition(hcl.Pos) (hclsyntax.Tokens, error)
 }
 
 type file struct {
@@ -59,18 +59,7 @@ func (f *file) parse() (*parsedFile, error) {
 	return f.pf, nil
 }
 
-func (f *file) BlockTokensAtPosition(filePos filesystem.FilePosition) (hclsyntax.Tokens, hcllib.Pos, error) {
-	pos := filePos.Position()
-
-	b, err := f.blockAtPosition(pos)
-	if err != nil {
-		return hclsyntax.Tokens{}, pos, err
-	}
-
-	return b, pos, nil
-}
-
-func (f *file) blockAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
+func (f *file) BlockTokensAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
 	pf, _ := f.parse()
 
 	body, ok := pf.Body.(*hclsyntax.Body)

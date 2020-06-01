@@ -48,6 +48,8 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
+	pos := fPos.Position()
+
 	p, err := lang.FindCompatibleParser(tfVersion)
 	if err != nil {
 		return list, fmt.Errorf("finding compatible parser failed: %w", err)
@@ -55,17 +57,17 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	p.SetLogger(h.logger)
 	p.SetSchemaReader(sr)
 
-	tokens, hclPos, err := hclFile.BlockTokensAtPosition(fPos)
+	tokens, err := hclFile.BlockTokensAtPosition(pos)
 	if err != nil {
 		if ihcl.IsNoBlockFoundErr(err) {
-			return ilsp.CompletionList(p.BlockTypeCandidates(), fPos.Position(), cc.TextDocument), nil
+			return ilsp.CompletionList(p.BlockTypeCandidates(tokens, pos), cc.TextDocument), nil
 		}
 
 		return list, fmt.Errorf("finding HCL block failed: %#v", err)
 	}
 
-	h.logger.Printf("HCL block found at HCL pos %#v", hclPos)
-	candidates, err := h.completeBlock(p, tokens, hclPos)
+	h.logger.Printf("HCL block found at HCL pos %#v", pos)
+	candidates, err := h.completeBlock(p, tokens, pos)
 	if err != nil {
 		return list, fmt.Errorf("finding completion items failed: %w", err)
 	}

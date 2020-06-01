@@ -239,12 +239,8 @@ provider "aws" {
 		t.Run(fmt.Sprintf("%d-%s", i+1, tc.name), func(t *testing.T) {
 			fsFile := filesystem.NewFile("test.tf", []byte(tc.content))
 			f := NewFile(fsFile)
-			fp := &testPosition{
-				FileHandler: fsFile,
-				pos:         tc.pos,
-			}
 
-			tokens, _, err := f.BlockTokensAtPosition(fp)
+			tokens, err := f.BlockTokensAtPosition(tc.pos)
 			if err != nil {
 				if tc.expectedErr == nil {
 					t.Fatal(err)
