@@ -72,7 +72,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, fmt.Errorf("finding completion items failed: %w", err)
 	}
 
-	return ilsp.CompletionList(candidates, fPos.Position(), cc.TextDocument), nil
+	return ilsp.CompletionList(candidates, cc.TextDocument), nil
 }
 
 func (h *logHandler) completeBlock(p lang.Parser, tokens hclsyntax.Tokens, pos hcl.Pos) (lang.CompletionCandidates, error) {

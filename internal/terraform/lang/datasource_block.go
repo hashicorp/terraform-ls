@@ -96,17 +96,8 @@ func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCand
 		return nil, &noSchemaReaderErr{r.BlockType()}
 	}
 
-	var schemaBlock *tfjson.SchemaBlock
-	if r.Type() != "" {
-		rSchema, err := r.sr.DataSourceSchema(r.Type())
-		if err != nil {
-			return nil, err
-		}
-		schemaBlock = rSchema.Block
-	}
-	block := ParseBlock(r.tokens, r.Labels(), schemaBlock)
-
-	if block.PosInLabels(pos) {
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(r.tokens)
+	if PosInLabels(hclBlock, pos) {
 		dataSources, err := r.sr.DataSources()
 		if err != nil {
 			return nil, err
@@ -114,23 +105,29 @@ func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCand
 
 		cl := &completableLabels{
 			logger: r.logger,
-			block:  block,
+			block:  ParseBlock(hclBlock, r.Labels(), nil),
+			tokens: r.tokens,
 			labels: labelCandidates{
-				"type": dataSourceCandidates(dataSources),
+				"type": dataSourceCandidates(dataSources, pos),
 			},
 		}
 
 		return cl.completionCandidatesAtPos(pos)
 	}
 
+	rSchema, err := r.sr.DataSourceSchema(r.Type())
+	if err != nil {
+		return nil, err
+	}
 	cb := &completableBlock{
 		logger: r.logger,
-		block:  block,
+		block:  ParseBlock(hclBlock, r.Labels(), rSchema.Block),
+		tokens: r.tokens,
 	}
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func dataSourceCandidates(dataSources []schema.DataSource) []CompletionCandidate {
+func dataSourceCandidates(dataSources []schema.DataSource, pos hcl.Pos) []CompletionCandidate {
 	candidates := []CompletionCandidate{}
 	for _, ds := range dataSources {
 		var desc MarkupContent = PlainText(ds.Description)
@@ -142,6 +139,7 @@ func dataSourceCandidates(dataSources []schema.DataSource) []CompletionCandidate
 			label:         ds.Name,
 			detail:        fmt.Sprintf("Data Source (%s)", ds.Provider),
 			documentation: desc,
+			pos:           pos,
 		})
 	}
 	return candidates

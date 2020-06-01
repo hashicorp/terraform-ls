@@ -5,7 +5,6 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -86,17 +85,8 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return nil, &noSchemaReaderErr{p.BlockType()}
 	}
 
-	var schemaBlock *tfjson.SchemaBlock
-	if p.RawName() != "" {
-		pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
-		if err != nil {
-			return nil, err
-		}
-		schemaBlock = pSchema.Block
-	}
-	block := ParseBlock(p.tokens, p.Labels(), schemaBlock)
-
-	if block.PosInLabels(pos) {
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(p.tokens)
+	if PosInLabels(hclBlock, pos) {
 		providers, err := p.sr.Providers()
 		if err != nil {
 			return nil, err
@@ -104,28 +94,35 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 
 		cl := &completableLabels{
 			logger: p.logger,
-			block:  block,
+			block:  ParseBlock(hclBlock, p.Labels(), nil),
+			tokens: p.tokens,
 			labels: labelCandidates{
-				"name": providerCandidates(providers),
+				"name": providerCandidates(providers, pos),
 			},
 		}
 
 		return cl.completionCandidatesAtPos(pos)
 	}
 
+	pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
+	if err != nil {
+		return nil, err
+	}
 	cb := &completableBlock{
 		logger: p.logger,
-		block:  block,
+		block:  ParseBlock(hclBlock, p.Labels(), pSchema.Block),
+		tokens: p.tokens,
 	}
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func providerCandidates(names []string) []CompletionCandidate {
+func providerCandidates(names []string, pos hcl.Pos) []CompletionCandidate {
 	candidates := []CompletionCandidate{}
 	for _, name := range names {
 		candidates = append(candidates, &labelCandidate{
 			label:  name,
 			detail: "provider",
+			pos:    pos,
 		})
 	}
 	return candidates

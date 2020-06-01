@@ -16,7 +16,16 @@ import (
 func TestParser_BlockTypeCandidates_len(t *testing.T) {
 	p := newParser()
 
-	candidates := p.BlockTypeCandidates()
+	content := `
+provider "aws" {
+}`
+	pos := hcl.Pos{
+		Line:   1,
+		Column: 1,
+		Byte:   0,
+	}
+	tokens := lexConfig(t, content)
+	candidates := p.BlockTypeCandidates(tokens, pos)
 	if candidates.Len() < 3 {
 		t.Fatalf("Expected >= 3 candidates, %d given", candidates.Len())
 	}
@@ -25,7 +34,16 @@ func TestParser_BlockTypeCandidates_len(t *testing.T) {
 func TestParser_BlockTypeCandidates_snippet(t *testing.T) {
 	p := newParser()
 
-	list := p.BlockTypeCandidates()
+	content := `
+provider "aws" {
+}`
+	pos := hcl.Pos{
+		Line:   1,
+		Column: 1,
+		Byte:   0,
+	}
+	tokens := lexConfig(t, content)
+	list := p.BlockTypeCandidates(tokens, pos)
 	rendered := renderCandidates(list, hcl.InitialPos)
 	sortRenderedCandidates(rendered)
 

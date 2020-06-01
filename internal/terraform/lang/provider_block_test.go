@@ -139,17 +139,6 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 		},
 		{
-			"missing type doesn't error",
-			`provider "" {
-
-}`,
-			simpleSchema,
-			nil,
-			hcl.Pos{Line: 2, Column: 1, Byte: 14},
-			[]renderedCandidate{},
-			nil,
-		},
-		{
 			"schema reader error",
 			`provider "custom" {
 

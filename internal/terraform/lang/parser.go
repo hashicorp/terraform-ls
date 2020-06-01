@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
@@ -92,18 +93,24 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 	}
 }
 
-func (p *parser) BlockTypeCandidates() CompletionCandidates {
+func (p *parser) BlockTypeCandidates(tokens hclsyntax.Tokens, pos hcl.Pos) CompletionCandidates {
 	bTypes := p.blockTypes()
 
 	list := &completeList{
 		candidates: make([]CompletionCandidate, 0),
 	}
 
+	prefix := wordBeforePos(tokens, pos)
 	for name, t := range bTypes {
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
 		list.candidates = append(list.candidates, &completableBlockType{
 			TypeName:      name,
 			LabelSchema:   t.LabelSchema(),
 			documentation: t.Documentation(),
+			prefix:        prefix,
+			pos:           pos,
 		})
 	}
 
@@ -114,14 +121,16 @@ type completableBlockType struct {
 	TypeName      string
 	LabelSchema   LabelSchema
 	documentation MarkupContent
+	prefix        string
+	pos           hcl.Pos
 }
 
 func (bt *completableBlockType) Label() string {
 	return bt.TypeName
 }
 
-func (bt *completableBlockType) Snippet(pos hcl.Pos) (hcl.Pos, string) {
-	return pos, snippetForBlock(bt.TypeName, bt.LabelSchema)
+func (bt *completableBlockType) Snippet() string {
+	return snippetForBlock(bt.TypeName, bt.LabelSchema)
 }
 
 func (bt *completableBlockType) Detail() string {
@@ -130,6 +139,20 @@ func (bt *completableBlockType) Detail() string {
 
 func (bt *completableBlockType) Documentation() MarkupContent {
 	return bt.documentation
+}
+
+func (bt *completableBlockType) SetPrefix(prefix string) {
+	bt.prefix = prefix
+}
+
+func (bt *completableBlockType) PrefixRange() hcl.Range {
+	return hcl.Range{
+		Start: hcl.Pos{
+			Line:   bt.pos.Line,
+			Column: bt.pos.Column - len(bt.prefix),
+		},
+		End: bt.pos,
+	}
 }
 
 func (p *parser) ParseBlockFromTokens(tokens hclsyntax.Tokens) (ConfigBlock, error) {

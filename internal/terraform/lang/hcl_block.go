@@ -50,18 +50,12 @@ func (b *parsedBlock) Range() hcl.Range {
 }
 
 func (b *parsedBlock) PosInLabels(pos hcl.Pos) bool {
-	for _, rng := range b.hclBlock.LabelRanges {
-		if rng.ContainsPos(pos) {
-			return true
-		}
-	}
-
-	return false
+	return PosInLabels(b.hclBlock, pos)
 }
 
 func (b *parsedBlock) LabelAtPos(pos hcl.Pos) (*ParsedLabel, bool) {
 	for i, rng := range b.hclBlock.LabelRanges {
-		if rng.ContainsPos(pos) {
+		if rangeContainsOffset(rng, pos.Byte) {
 			// TODO: Guard against crashes when user sets label where we don't expect it
 			return b.labels[i], true
 		}
@@ -104,11 +98,8 @@ func (b *parsedBlock) PosInAttribute(pos hcl.Pos) bool {
 			continue
 		}
 
-		attrRange := attr.Range()
 		// Account for the last character
-		attrRange.End.Byte += 1
-
-		if attrRange.ContainsPos(pos) {
+		if rangeContainsOffset(attr.Range(), pos.Byte) {
 			return true
 		}
 	}
@@ -124,12 +115,8 @@ func (b *parsedBlock) PosInAttribute(pos hcl.Pos) bool {
 	// but we do it anyway, for "correctness"
 
 	for _, attr := range b.unknownAttributes {
-		attrRange := attr.Range()
-
 		// Account for the last character
-		attrRange.End.Byte += 1
-
-		if attrRange.ContainsPos(pos) {
+		if rangeContainsOffset(attr.Range(), pos.Byte) {
 			return true
 		}
 	}

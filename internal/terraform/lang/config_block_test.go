@@ -257,11 +257,15 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
 			tokens := lexConfig(t, tc.src)
-			block := ParseBlock(tokens, []*ParsedLabel{}, tc.sb)
+			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.src))
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			cb := &completableBlock{
 				logger: testLogger(),
-				block:  block,
+				block:  ParseBlock(block, []*ParsedLabel{}, tc.sb),
+				tokens: tokens,
 			}
 
 			list, err := cb.completionCandidatesAtPos(tc.pos)
@@ -291,7 +295,7 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 	}
 	rendered := make([]renderedCandidate, len(list.List()))
 	for i, c := range list.List() {
-		pos, text := c.Snippet(pos)
+		text := c.Snippet()
 		doc := ""
 		if c.Documentation() != nil {
 			doc = c.Documentation().Value()

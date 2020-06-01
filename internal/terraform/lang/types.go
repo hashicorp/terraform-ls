@@ -15,7 +15,7 @@ import (
 type Parser interface {
 	SetLogger(*log.Logger)
 	SetSchemaReader(schema.Reader)
-	BlockTypeCandidates() CompletionCandidates
+	BlockTypeCandidates(hclsyntax.Tokens, hcl.Pos) CompletionCandidates
 	ParseBlockFromTokens(hclsyntax.Tokens) (ConfigBlock, error)
 }
 
@@ -77,7 +77,9 @@ type CompletionCandidate interface {
 	Label() string
 	Detail() string
 	Documentation() MarkupContent
-	Snippet(pos hcl.Pos) (hcl.Pos, string)
+	Snippet() string
+	SetPrefix(string)
+	PrefixRange() hcl.Range
 }
 
 // MarkupContent reflects lsp.MarkupContent

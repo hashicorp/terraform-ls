@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -21,6 +22,7 @@ type labelCandidates map[string][]CompletionCandidate
 type completableLabels struct {
 	logger *log.Logger
 	block  Block
+	tokens hclsyntax.Tokens
 	labels labelCandidates
 }
 
@@ -40,7 +42,12 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 	}
 
 	cl.logger.Printf("completing label %q ...", l.Name)
+	prefix := wordBeforePos(cl.tokens, pos)
 	for _, c := range candidates {
+		if !strings.HasPrefix(c.Label(), prefix) {
+			continue
+		}
+		c.SetPrefix(prefix)
 		list.candidates = append(list.candidates, c)
 	}
 	list.Sort()
@@ -53,6 +60,7 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 type completableBlock struct {
 	logger *log.Logger
 	block  Block
+	tokens hclsyntax.Tokens
 }
 
 func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
@@ -79,18 +87,26 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		return nil, nil
 	}
 
+	prefix := wordBeforePos(cb.tokens, pos)
 	for name, attr := range b.Attributes() {
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
 		if attr.IsComputedOnly() || attr.IsDeclared() {
 			continue
 		}
 		list.candidates = append(list.candidates, &attributeCandidate{
-			Name: name,
-			Attr: attr,
-			Pos:  pos,
+			Name:   name,
+			Attr:   attr,
+			Pos:    pos,
+			Prefix: prefix,
 		})
 	}
 
 	for name, block := range b.BlockTypes() {
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
 		if block.ReachedMaxItems() {
 			continue
 		}
@@ -98,6 +114,7 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 			Name:      name,
 			BlockType: block,
 			Pos:       pos,
+			Prefix:    prefix,
 		})
 	}
 
@@ -115,7 +132,6 @@ func (l *completeList) Sort() {
 		return l.candidates[i].Label() < l.candidates[j].Label()
 	}
 	sort.Slice(l.candidates, less)
-
 }
 
 func (l *completeList) List() []CompletionCandidate {
@@ -134,6 +150,8 @@ type labelCandidate struct {
 	label         string
 	detail        string
 	documentation MarkupContent
+	pos           hcl.Pos
+	prefix        string
 }
 
 func (c *labelCandidate) Label() string {
@@ -148,14 +166,29 @@ func (c *labelCandidate) Documentation() MarkupContent {
 	return c.documentation
 }
 
-func (c *labelCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
-	return pos, c.label
+func (c *labelCandidate) Snippet() string {
+	return c.label
+}
+
+func (c *labelCandidate) SetPrefix(prefix string) {
+	c.prefix = prefix
+}
+
+func (c *labelCandidate) PrefixRange() hcl.Range {
+	return hcl.Range{
+		Start: hcl.Pos{
+			Line:   c.pos.Line,
+			Column: c.pos.Column - len(c.prefix),
+		},
+		End: c.pos,
+	}
 }
 
 type attributeCandidate struct {
-	Name string
-	Attr *Attribute
-	Pos  hcl.Pos
+	Name   string
+	Attr   *Attribute
+	Pos    hcl.Pos
+	Prefix string
 }
 
 func (c *attributeCandidate) Label() string {
@@ -182,14 +215,29 @@ func (c *attributeCandidate) Documentation() MarkupContent {
 	return PlainText("")
 }
 
-func (c *attributeCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
-	return pos, fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(0, c.Attr.Schema().AttributeType))
+func (c *attributeCandidate) Snippet() string {
+	return fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(0, c.Attr.Schema().AttributeType))
+}
+
+func (c *attributeCandidate) SetPrefix(prefix string) {
+	c.Prefix = prefix
+}
+
+func (c *attributeCandidate) PrefixRange() hcl.Range {
+	return hcl.Range{
+		Start: hcl.Pos{
+			Line:   c.Pos.Line,
+			Column: c.Pos.Column - len(c.Prefix),
+		},
+		End: c.Pos,
+	}
 }
 
 type nestedBlockCandidate struct {
 	Name      string
 	BlockType *BlockType
 	Pos       hcl.Pos
+	Prefix    string
 }
 
 func (c *nestedBlockCandidate) Label() string {
@@ -210,6 +258,20 @@ func (c *nestedBlockCandidate) Documentation() MarkupContent {
 	return PlainText(c.BlockType.Schema().Block.Description)
 }
 
-func (c *nestedBlockCandidate) Snippet(pos hcl.Pos) (hcl.Pos, string) {
-	return pos, snippetForNestedBlock(c.Name)
+func (c *nestedBlockCandidate) Snippet() string {
+	return snippetForNestedBlock(c.Name)
+}
+
+func (c *nestedBlockCandidate) SetPrefix(prefix string) {
+	c.Prefix = prefix
+}
+
+func (c *nestedBlockCandidate) PrefixRange() hcl.Range {
+	return hcl.Range{
+		Start: hcl.Pos{
+			Line:   c.Pos.Line,
+			Column: c.Pos.Column - len(c.Prefix),
+		},
+		End: c.Pos,
+	}
 }

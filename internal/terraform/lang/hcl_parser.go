@@ -8,16 +8,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// ParseBlock parses HCL block's tokens based on tfjson's SchemaBlock
-// and keeps hold of all tfjson schema details on block or attribute level
-func ParseBlock(tokens hclsyntax.Tokens, labels []*ParsedLabel, schema *tfjson.SchemaBlock) (Block) {
-	// We ignore diags as we assume incomplete (invalid) configuration
-	hclBlock, _ := hclsyntax.ParseBlockFromTokens(tokens)
-
-	return parseBlock(hclBlock, labels, schema)
-}
-
-func parseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.SchemaBlock) Block {
+func ParseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.SchemaBlock) Block {
 	b := &parsedBlock{
 		hclBlock: block,
 		labels:   labels,
@@ -42,7 +33,7 @@ func parseBlock(block *hclsyntax.Block, labels []*ParsedLabel, schema *tfjson.Sc
 
 // ParseLabels parses HCL block's tokens based on LabelSchema,
 // returning labels as a slice of *ParsedLabel
-func ParseLabels(tokens hclsyntax.Tokens, schema LabelSchema) ([]*ParsedLabel) {
+func ParseLabels(tokens hclsyntax.Tokens, schema LabelSchema) []*ParsedLabel {
 	// We ignore diags as we assume incomplete (invalid) configuration
 	hclBlock, _ := hclsyntax.ParseBlockFromTokens(tokens)
 

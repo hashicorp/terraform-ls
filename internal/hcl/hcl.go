@@ -71,7 +71,7 @@ func (f *file) BlockTokensAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
 	}
 	if !body.SrcRange.Empty() {
 		if posIsEqual(body.SrcRange.End, pos) {
-			return hclsyntax.Tokens{}, &NoBlockFoundErr{pos}
+			return pf.Tokens, &NoBlockFoundErr{pos}
 		}
 		if !body.SrcRange.ContainsPos(pos) {
 			return hclsyntax.Tokens{}, &InvalidHclPosErr{pos, body.SrcRange}
@@ -79,13 +79,12 @@ func (f *file) BlockTokensAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
 	}
 
 	for _, block := range body.Blocks {
-		wholeRange := hcllib.RangeBetween(block.TypeRange, block.CloseBraceRange)
-		if wholeRange.ContainsPos(pos) {
-			return definitionTokens(tokensInRange(f.pf.Tokens, block.Range())), nil
+		if block.Range().ContainsPos(pos) {
+			return definitionTokens(tokensInRange(pf.Tokens, block.Range())), nil
 		}
 	}
 
-	return nil, &NoBlockFoundErr{pos}
+	return pf.Tokens, &NoBlockFoundErr{pos}
 }
 
 func tokensInRange(tokens hclsyntax.Tokens, rng hcllib.Range) hclsyntax.Tokens {

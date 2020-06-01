@@ -1,12 +1,11 @@
 package lsp
 
 import (
-	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func CompletionList(candidates lang.CompletionCandidates, pos hcl.Pos, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
+func CompletionList(candidates lang.CompletionCandidates, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
 	snippetSupport := caps.Completion.CompletionItem.SnippetSupport
 	list := lsp.CompletionList{}
 
@@ -19,13 +18,13 @@ func CompletionList(candidates lang.CompletionCandidates, pos hcl.Pos, caps lsp.
 	list.IsIncomplete = !candidates.IsComplete()
 	list.Items = make([]lsp.CompletionItem, len(cList))
 	for i, c := range cList {
-		list.Items[i] = CompletionItem(c, pos, snippetSupport)
+		list.Items[i] = CompletionItem(c, snippetSupport)
 	}
 
 	return list
 }
 
-func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupport bool) lsp.CompletionItem {
+func CompletionItem(candidate lang.CompletionCandidate, snippetSupport bool) lsp.CompletionItem {
 	// TODO: deprecated / tags?
 
 	doc := ""
@@ -34,8 +33,8 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 		doc = c.Value()
 	}
 
+	r := candidate.PrefixRange()
 	if snippetSupport {
-		pos, newText := candidate.Snippet(pos)
 		return lsp.CompletionItem{
 			Label:            candidate.Label(),
 			Kind:             lsp.CIKField,
@@ -44,10 +43,10 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 			Documentation:    doc,
 			TextEdit: &lsp.TextEdit{
 				Range: lsp.Range{
-					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+					Start: lsp.Position{Line: r.Start.Line - 1, Character: r.Start.Column - 1},
+					End:   lsp.Position{Line: r.End.Line - 1, Character: r.End.Column - 1},
 				},
-				NewText: newText,
+				NewText: candidate.Snippet(),
 			},
 		}
 	}
@@ -58,5 +57,12 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           candidate.Detail(),
 		Documentation:    doc,
+		TextEdit: &lsp.TextEdit{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: r.Start.Line - 1, Character: r.Start.Column - 1},
+				End:   lsp.Position{Line: r.End.Line - 1, Character: r.End.Column - 1},
+			},
+			NewText: candidate.Label(),
+		},
 	}
 }

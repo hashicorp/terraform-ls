@@ -146,17 +146,6 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 		},
 		{
-			"missing type doesn't error",
-			`resource "" "" {
-
-}`,
-			simpleSchema,
-			nil,
-			hcl.Pos{Line: 2, Column: 1, Byte: 17},
-			[]renderedCandidate{},
-			nil,
-		},
-		{
 			"schema reader error",
 			`resource "custom_rs" "name" {
 

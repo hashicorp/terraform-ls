@@ -146,17 +146,6 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 		},
 		{
-			"missing type doesn't error",
-			`data "" "" {
-
-}`,
-			simpleSchema,
-			nil,
-			hcl.Pos{Line: 2, Column: 1, Byte: 13},
-			[]renderedCandidate{},
-			nil,
-		},
-		{
 			"schema reader error",
 			`data "custom_ds" "name" {
 

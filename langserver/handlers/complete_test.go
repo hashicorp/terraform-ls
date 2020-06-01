@@ -86,21 +86,60 @@ func TestCompletion_withValidData(t *testing.T) {
 						"kind":5,
 						"detail":"Optional, number",
 						"documentation":"Desc 1",
-						"insertTextFormat":1
+						"insertTextFormat":1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1, 
+									"character": 0
+								},
+								"end": {
+									"line": 1, 
+									"character": 0
+								}
+							},
+							"newText": "anonymous"
+						}
 					},
 					{
 						"label":"base_url",
 						"kind":5,
 						"detail":"Optional, string",
 						"documentation":"Desc 2",
-						"insertTextFormat":1
+						"insertTextFormat":1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1, 
+									"character": 0
+								},
+								"end": {
+									"line": 1, 
+									"character": 0
+								}
+							},
+							"newText": "base_url"
+						}
 					},
 					{
 						"label":"individual",
 						"kind":5,
 						"detail":"Optional, bool",
 						"documentation":"Desc 3",
-						"insertTextFormat":1
+						"insertTextFormat":1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1, 
+									"character": 0
+								},
+								"end": {
+									"line": 1, 
+									"character": 0
+								}
+							},
+							"newText": "individual"
+						}
 					}
 				]
 			}
