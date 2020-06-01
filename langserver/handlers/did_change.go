@@ -32,16 +32,10 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
+	// Versions don't have to be consecutive, but they must be increasing
 	if p.TextDocument.Version <= f.Version() {
 		fs.Close(fh)
 		return fmt.Errorf("Old version (%d) received, current version is %d. "+
-			"Unable to update %s. This is likely a bug, please report it.",
-			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
-	}
-
-	if p.TextDocument.Version > f.Version()+1 {
-		fs.Close(fh)
-		return fmt.Errorf("New version (%d) received, current version is %d. "+
 			"Unable to update %s. This is likely a bug, please report it.",
 			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
 	}
