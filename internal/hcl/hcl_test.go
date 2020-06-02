@@ -129,7 +129,7 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			},
 			&InvalidHclPosErr{
 				Pos:     hcl.Pos{Line: -42, Column: -3, Byte: -46},
-				InRange: hcl.Range{Filename: "test.tf", Start: hcl.InitialPos, End: hcl.InitialPos},
+				InRange: hcl.Range{Filename: "/test.tf", Start: hcl.InitialPos, End: hcl.InitialPos},
 			},
 			nil,
 		},
@@ -143,7 +143,7 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			},
 			&InvalidHclPosErr{
 				Pos:     hcl.Pos{Line: 42, Column: 3, Byte: 46},
-				InRange: hcl.Range{Filename: "test.tf", Start: hcl.InitialPos, End: hcl.InitialPos},
+				InRange: hcl.Range{Filename: "/test.tf", Start: hcl.InitialPos, End: hcl.InitialPos},
 			},
 			nil,
 		},
@@ -161,7 +161,7 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			&InvalidHclPosErr{
 				Pos: hcl.Pos{Line: 42, Column: 3, Byte: 46},
 				InRange: hcl.Range{
-					Filename: "test.tf",
+					Filename: "/test.tf",
 					Start:    hcl.InitialPos,
 					End:      hcl.Pos{Column: 1, Line: 4, Byte: 20},
 				},
@@ -237,10 +237,9 @@ provider "aws" {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i+1, tc.name), func(t *testing.T) {
-			fsFile := filesystem.NewFile("test.tf", []byte(tc.content))
-			f := NewFile(fsFile)
+			f := NewTestFile([]byte(tc.content))
 
-			tokens, err := f.BlockTokensAtPosition(tc.pos)
+			tBlock, err := f.BlockAtPosition(tc.pos)
 			if err != nil {
 				if tc.expectedErr == nil {
 					t.Fatal(err)
@@ -254,7 +253,7 @@ provider "aws" {
 				t.Fatalf("Expected error: %s", tc.expectedErr)
 			}
 
-			if diff := cmp.Diff(hclsyntax.Tokens(tc.expectedTokens), tokens, opts...); diff != "" {
+			if diff := cmp.Diff(hclsyntax.Tokens(tc.expectedTokens), tBlock.Tokens(), opts...); diff != "" {
 				t.Fatalf("Unexpected token difference: %s", diff)
 			}
 

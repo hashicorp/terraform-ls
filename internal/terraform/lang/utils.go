@@ -18,24 +18,22 @@ func PosInLabels(b *hclsyntax.Block, pos hcl.Pos) bool {
 	return false
 }
 
-func wordBeforePos(tokens hclsyntax.Tokens, pos hcl.Pos) string {
-	switch token := tokenAtPos(tokens, pos); token.Type {
-	case hclsyntax.TokenIdent, hclsyntax.TokenQuotedLit, hclsyntax.TokenStringLit:
-		return string(token.Bytes[:pos.Byte-token.Range.Start.Byte])
-	default:
+func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) string {
+	token, err := looker.TokenAtPosition(pos)
+	if err != nil {
 		return ""
 	}
+
+	switch token.Type {
+	case hclsyntax.TokenIdent, hclsyntax.TokenQuotedLit, hclsyntax.TokenStringLit:
+		return string(token.Bytes[:pos.Byte-token.Range.Start.Byte])
+	}
+
+	return ""
 }
 
-func tokenAtPos(tokens hclsyntax.Tokens, pos hcl.Pos) hclsyntax.Token {
-	for _, t := range tokens {
-		if rangeContainsOffset(t.Range, pos.Byte) {
-			return t
-		}
-	}
-	return hclsyntax.Token{
-		Type: hclsyntax.TokenNil,
-	}
+type TokenAtPosLooker interface {
+	TokenAtPosition(hcl.Pos) (hclsyntax.Token, error)
 }
 
 // rangeContainsOffset is a reimplementation of hcl.Range.ContainsOffset

@@ -5,6 +5,7 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -14,7 +15,7 @@ type providerBlockFactory struct {
 	schemaReader schema.Reader
 }
 
-func (f *providerBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error) {
+func (f *providerBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
 	if f.logger == nil {
 		f.logger = discardLog()
 	}
@@ -23,7 +24,7 @@ func (f *providerBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error)
 		logger: f.logger,
 
 		labelSchema: f.LabelSchema(),
-		tokens:      tokens,
+		tBlock:      tBlock,
 		sr:          f.schemaReader,
 	}, nil
 }
@@ -49,7 +50,7 @@ type providerBlock struct {
 
 	labelSchema LabelSchema
 	labels      []*ParsedLabel
-	tokens      hclsyntax.Tokens
+	tBlock      ihcl.TokenizedBlock
 	sr          schema.Reader
 }
 
@@ -70,7 +71,7 @@ func (p *providerBlock) Labels() []*ParsedLabel {
 		return p.labels
 	}
 
-	labels := ParseLabels(p.tokens, p.labelSchema)
+	labels := ParseLabels(p.tBlock, p.labelSchema)
 	p.labels = labels
 
 	return p.labels
@@ -85,7 +86,7 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return nil, &noSchemaReaderErr{p.BlockType()}
 	}
 
-	hclBlock, _ := hclsyntax.ParseBlockFromTokens(p.tokens)
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(p.tBlock.Tokens())
 	if PosInLabels(hclBlock, pos) {
 		providers, err := p.sr.Providers()
 		if err != nil {
@@ -93,11 +94,11 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		}
 
 		cl := &completableLabels{
-			logger: p.logger,
-			block:  ParseBlock(hclBlock, p.Labels(), nil),
-			tokens: p.tokens,
+			logger:       p.logger,
+			parsedLabels: p.Labels(),
+			tBlock:       p.tBlock,
 			labels: labelCandidates{
-				"name": providerCandidates(providers, pos),
+				"name": providerCandidates(providers),
 			},
 		}
 
@@ -110,19 +111,18 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 	}
 	cb := &completableBlock{
 		logger: p.logger,
-		block:  ParseBlock(hclBlock, p.Labels(), pSchema.Block),
-		tokens: p.tokens,
+		schema: pSchema.Block,
+		tBlock: p.tBlock,
 	}
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func providerCandidates(names []string, pos hcl.Pos) []CompletionCandidate {
-	candidates := []CompletionCandidate{}
+func providerCandidates(names []string) []*labelCandidate {
+	candidates := []*labelCandidate{}
 	for _, name := range names {
 		candidates = append(candidates, &labelCandidate{
 			label:  name,
 			detail: "provider",
-			pos:    pos,
 		})
 	}
 	return candidates

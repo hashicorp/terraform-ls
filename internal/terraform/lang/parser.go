@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
@@ -93,14 +94,32 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 	}
 }
 
-func (p *parser) BlockTypeCandidates(tokens hclsyntax.Tokens, pos hcl.Pos) CompletionCandidates {
+func (p *parser) CompletionCandidatesAtPos(file ihcl.TokenizedFile, pos hcl.Pos) (CompletionCandidates, error) {
+	if !file.PosInBlock(pos) {
+		return p.BlockTypeCandidates(file, pos), nil
+	}
+
+	block, err := file.BlockAtPosition(pos)
+	if err != nil {
+		return nil, fmt.Errorf("finding HCL block failed: %#v", err)
+	}
+
+	cfgBlock, err := p.ParseBlockFromTokens(block)
+	if err != nil {
+		return nil, fmt.Errorf("finding config block failed: %w", err)
+	}
+
+	return cfgBlock.CompletionCandidatesAtPos(pos)
+}
+
+func (p *parser) BlockTypeCandidates(file ihcl.TokenizedFile, pos hcl.Pos) CompletionCandidates {
 	bTypes := p.blockTypes()
 
 	list := &completeList{
 		candidates: make([]CompletionCandidate, 0),
 	}
 
-	prefix := wordBeforePos(tokens, pos)
+	prefix := prefixAtPos(file, pos)
 	for name, t := range bTypes {
 		if !strings.HasPrefix(name, prefix) {
 			continue
@@ -110,7 +129,6 @@ func (p *parser) BlockTypeCandidates(tokens hclsyntax.Tokens, pos hcl.Pos) Compl
 			LabelSchema:   t.LabelSchema(),
 			documentation: t.Documentation(),
 			prefix:        prefix,
-			pos:           pos,
 		})
 	}
 
@@ -122,15 +140,19 @@ type completableBlockType struct {
 	LabelSchema   LabelSchema
 	documentation MarkupContent
 	prefix        string
-	pos           hcl.Pos
 }
 
 func (bt *completableBlockType) Label() string {
 	return bt.TypeName
 }
 
+func (bt *completableBlockType) PlainText() string {
+	return strings.TrimPrefix(bt.TypeName, bt.prefix)
+}
+
 func (bt *completableBlockType) Snippet() string {
-	return snippetForBlock(bt.TypeName, bt.LabelSchema)
+	typeName := strings.TrimPrefix(bt.TypeName, bt.prefix)
+	return snippetForBlock(typeName, bt.LabelSchema)
 }
 
 func (bt *completableBlockType) Detail() string {
@@ -141,31 +163,13 @@ func (bt *completableBlockType) Documentation() MarkupContent {
 	return bt.documentation
 }
 
-func (bt *completableBlockType) SetPrefix(prefix string) {
-	bt.prefix = prefix
-}
-
-func (bt *completableBlockType) PrefixRange() hcl.Range {
-	return hcl.Range{
-		Start: hcl.Pos{
-			Line:   bt.pos.Line,
-			Column: bt.pos.Column - len(bt.prefix),
-		},
-		End: bt.pos,
-	}
-}
-
-func (p *parser) ParseBlockFromTokens(tokens hclsyntax.Tokens) (ConfigBlock, error) {
-	if len(tokens) == 0 {
-		return nil, EmptyConfigErr
-	}
-
+func (p *parser) ParseBlockFromTokens(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
 	// It is probably excessive to be parsing the whole block just for type
 	// but there is no avoiding it without refactoring the upstream HCL parser
 	// and it should not hurt the performance too much
 	//
 	// We ignore diags as we assume incomplete (invalid) configuration
-	block, _ := hclsyntax.ParseBlockFromTokens(tokens)
+	block, _ := hclsyntax.ParseBlockFromTokens(tBlock.Tokens())
 
 	p.logger.Printf("Parsed block type: %q", block.Type)
 
@@ -174,7 +178,7 @@ func (p *parser) ParseBlockFromTokens(tokens hclsyntax.Tokens) (ConfigBlock, err
 		return nil, &unknownBlockTypeErr{block.Type}
 	}
 
-	cfgBlock, err := f.New(tokens)
+	cfgBlock, err := f.New(tBlock)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", block.Type, err)
 	}

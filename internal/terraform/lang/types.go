@@ -4,8 +4,8 @@ import (
 	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
@@ -15,8 +15,8 @@ import (
 type Parser interface {
 	SetLogger(*log.Logger)
 	SetSchemaReader(schema.Reader)
-	BlockTypeCandidates(hclsyntax.Tokens, hcl.Pos) CompletionCandidates
-	ParseBlockFromTokens(hclsyntax.Tokens) (ConfigBlock, error)
+	BlockTypeCandidates(ihcl.TokenizedFile, hcl.Pos) CompletionCandidates
+	CompletionCandidatesAtPos(ihcl.TokenizedFile, hcl.Pos) (CompletionCandidates, error)
 }
 
 // ConfigBlock implements an abstraction above HCL block
@@ -32,9 +32,7 @@ type ConfigBlock interface {
 // which keeps track of the related schema
 type Block interface {
 	BlockAtPos(pos hcl.Pos) (Block, bool)
-	LabelAtPos(pos hcl.Pos) (*ParsedLabel, bool)
 	Range() hcl.Range
-	PosInLabels(pos hcl.Pos) bool
 	PosInBody(pos hcl.Pos) bool
 	PosInAttribute(pos hcl.Pos) bool
 	Attributes() map[string]*Attribute
@@ -51,6 +49,7 @@ type Label struct {
 type ParsedLabel struct {
 	Name  string
 	Value string
+	Range hcl.Range
 }
 
 type BlockType struct {
@@ -78,8 +77,7 @@ type CompletionCandidate interface {
 	Detail() string
 	Documentation() MarkupContent
 	Snippet() string
-	SetPrefix(string)
-	PrefixRange() hcl.Range
+	PlainText() string
 }
 
 // MarkupContent reflects lsp.MarkupContent

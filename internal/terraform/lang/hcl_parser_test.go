@@ -23,13 +23,6 @@ func TestParseBlock_attributesAndBlockTypes(t *testing.T) {
 		expectedBlockTypes map[string]*BlockType
 	}{
 		{
-			"empty cfg, nil schema",
-			"",
-			nil,
-			nil,
-			nil,
-		},
-		{
 			"empty block, nil schema",
 			`myblock {}`,
 			nil,
@@ -302,12 +295,9 @@ func TestParseBlock_attributesAndBlockTypes(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.cfg))
-			if err != nil {
-				t.Fatal(err)
-			}
+			tBlock := newTestBlock(t, tc.cfg)
 
-			b := ParseBlock(block, []*ParsedLabel{}, tc.schema)
+			b := ParseBlock(tBlock, tc.schema)
 
 			if diff := cmp.Diff(tc.expectedAttributes, b.Attributes(), opts...); diff != "" {
 				t.Fatalf("Attributes don't match.\n%s", diff)
@@ -466,11 +456,8 @@ func TestBlock_BlockAtPos(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.cfg))
-			if err != nil {
-				t.Fatal(err)
-			}
-			b := ParseBlock(block, []*ParsedLabel{}, schema)
+			tBlock := newTestBlock(t, tc.cfg)
+			b := ParseBlock(tBlock, schema)
 
 			fBlock, _ := b.BlockAtPos(tc.pos)
 			if diff := cmp.Diff(tc.expectedBlock, fBlock, opts...); diff != "" {
@@ -626,11 +613,8 @@ func TestBlock_PosInBody(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.cfg))
-			if err != nil {
-				t.Fatal(err)
-			}
-			b := ParseBlock(block, []*ParsedLabel{}, schema)
+			tBlock := newTestBlock(t, tc.cfg)
+			b := ParseBlock(tBlock, schema)
 
 			isInBody := b.PosInBody(tc.pos)
 			if tc.expected != isInBody {
@@ -761,11 +745,8 @@ func TestBlock_PosInAttributes(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			block, err := AsHCLSyntaxBlock(parseHclBlock(t, tc.cfg))
-			if err != nil {
-				t.Fatal(err)
-			}
-			b := ParseBlock(block, []*ParsedLabel{}, schema)
+			tBlock := newTestBlock(t, tc.cfg)
+			b := ParseBlock(tBlock, schema)
 
 			isInAttribute := b.PosInAttribute(tc.pos)
 			if tc.expected != isInAttribute {

@@ -7,7 +7,6 @@ import (
 
 type parsedBlock struct {
 	hclBlock      *hclsyntax.Block
-	labels        []*ParsedLabel
 	AttributesMap map[string]*Attribute
 	BlockTypesMap map[string]*BlockType
 
@@ -47,21 +46,6 @@ func (b *parsedBlock) BlockAtPos(pos hcl.Pos) (Block, bool) {
 
 func (b *parsedBlock) Range() hcl.Range {
 	return b.hclBlock.Range()
-}
-
-func (b *parsedBlock) PosInLabels(pos hcl.Pos) bool {
-	return PosInLabels(b.hclBlock, pos)
-}
-
-func (b *parsedBlock) LabelAtPos(pos hcl.Pos) (*ParsedLabel, bool) {
-	for i, rng := range b.hclBlock.LabelRanges {
-		if rangeContainsOffset(rng, pos.Byte) {
-			// TODO: Guard against crashes when user sets label where we don't expect it
-			return b.labels[i], true
-		}
-	}
-
-	return nil, false
 }
 
 func (b *parsedBlock) PosInBody(pos hcl.Pos) bool {
