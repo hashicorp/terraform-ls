@@ -6,6 +6,7 @@ FEATURES:
  - Add ability to specify path to Terraform binary ([#109](https://github.com/hashicorp/terraform-ls/pull/109))
  - Improve UX of completion items ([#115](https://github.com/hashicorp/terraform-ls/pull/115))
  - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
+ - Add support for autocomplete based on a prefix ([#119](https://github.com/hashicorp/terraform-ls/pull/119))
 
 INTERNAL:
 
