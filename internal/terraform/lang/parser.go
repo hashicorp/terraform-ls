@@ -14,6 +14,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
+// defaultMaxCompletionCandidates is the maximum number of candidates
+// to send in one completion response (with isIncomplete = true)
+var defaultMaxCompletionCandidates = 100
+
 // 0.12.0 first introduced HCL2 which provides
 // more convenient/cleaner parsing
 //
@@ -28,6 +32,7 @@ const parserVersionConstraint = ">= 0.12.0"
 type parser struct {
 	logger *log.Logger
 
+	maxCandidates int
 	schemaReader schema.Reader
 }
 
@@ -66,6 +71,7 @@ func FindCompatibleParser(v string) (Parser, error) {
 func newParser() *parser {
 	return &parser{
 		logger: log.New(ioutil.Discard, "", 0),
+		maxCandidates: defaultMaxCompletionCandidates,
 	}
 }
 
@@ -115,12 +121,16 @@ func (p *parser) CompletionCandidatesAtPos(file ihcl.TokenizedFile, pos hcl.Pos)
 func (p *parser) BlockTypeCandidates(file ihcl.TokenizedFile, pos hcl.Pos) CompletionCandidates {
 	bTypes := p.blockTypes()
 
-	list := &completeList{
+	list := &candidateList{
 		candidates: make([]CompletionCandidate, 0),
 	}
 
 	prefix := prefixAtPos(file, pos)
 	for name, t := range bTypes {
+		if len(list.candidates) >= p.maxCandidates {
+			list.isIncomplete = true
+			break
+		}
 		if !strings.HasPrefix(name, prefix) {
 			continue
 		}

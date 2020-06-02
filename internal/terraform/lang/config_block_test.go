@@ -286,6 +286,79 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 	}
 }
 
+func TestCompletableLabels_CompletionCandidatesAtPos_overLimit(t *testing.T) {
+	tBlock := newTestBlock(t, `provider "" {
+}`)
+
+	cl := &completableLabels{
+		logger:       testLogger(),
+		parsedLabels: []*ParsedLabel{
+			{Name: "type", Range: hcl.Range{
+				Filename: "/test.tf",
+				Start: hcl.Pos{Line: 1, Column: 10, Byte: 9},
+				End: hcl.Pos{Line: 1, Column: 12, Byte: 11},
+			}},
+		},
+		tBlock:       tBlock,
+		labels:       map[string][]*labelCandidate{
+			"type": []*labelCandidate{
+				{label: "aaa"},
+				{label: "bbb"},
+				{label: "ccc"},
+			},
+		},
+		maxCandidates: 1,
+	}
+	c, err := cl.completionCandidatesAtPos(hcl.Pos{Line: 1, Column: 11, Byte: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c.Len() != 1 {
+		t.Fatalf("Expected exactly 1 candidate, %d given", c.Len())
+	}
+
+	if c.IsComplete() {
+		t.Fatalf("Expected list of 3 with maxCandidates=1 to be incomplete")
+	}
+}
+
+func TestCompletableLabels_CompletionCandidatesAtPos_matchingLimit(t *testing.T) {
+	tBlock := newTestBlock(t, `provider "" {
+}`)
+
+	cl := &completableLabels{
+		logger:       testLogger(),
+		parsedLabels: []*ParsedLabel{
+			{Name: "type", Range: hcl.Range{
+				Filename: "/test.tf",
+				Start: hcl.Pos{Line: 1, Column: 10, Byte: 9},
+				End: hcl.Pos{Line: 1, Column: 12, Byte: 11},
+			}},
+		},
+		tBlock:       tBlock,
+		labels:       map[string][]*labelCandidate{
+			"type": []*labelCandidate{
+				{label: "aaa"},
+				{label: "bbb"},
+			},
+		},
+		maxCandidates: 2,
+	}
+	c, err := cl.completionCandidatesAtPos(hcl.Pos{Line: 1, Column: 11, Byte: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c.Len() != 2 {
+		t.Fatalf("Expected exactly 2 candidates, %d given", c.Len())
+	}
+
+	if !c.IsComplete() {
+		t.Fatalf("Expected list of 2 with maxCandidates=2 to be complete")
+	}
+}
+
 func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidate {
 	if list == nil {
 		return []renderedCandidate{}
