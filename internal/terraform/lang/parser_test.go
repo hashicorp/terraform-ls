@@ -11,12 +11,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 )
 
 func TestParser_BlockTypeCandidates_len(t *testing.T) {
 	p := newParser()
 
-	candidates := p.BlockTypeCandidates()
+	content := `
+provider "aws" {
+}`
+	pos := hcl.Pos{
+		Line:   1,
+		Column: 1,
+		Byte:   0,
+	}
+	tFile := ihcl.NewTestFile([]byte(content))
+	candidates := p.BlockTypeCandidates(tFile, pos)
 	if candidates.Len() < 3 {
 		t.Fatalf("Expected >= 3 candidates, %d given", candidates.Len())
 	}
@@ -25,7 +35,16 @@ func TestParser_BlockTypeCandidates_len(t *testing.T) {
 func TestParser_BlockTypeCandidates_snippet(t *testing.T) {
 	p := newParser()
 
-	list := p.BlockTypeCandidates()
+	content := `
+provider "aws" {
+}`
+	pos := hcl.Pos{
+		Line:   1,
+		Column: 1,
+		Byte:   0,
+	}
+	tFile := ihcl.NewTestFile([]byte(content))
+	list := p.BlockTypeCandidates(tFile, pos)
 	rendered := renderCandidates(list, hcl.InitialPos)
 	sortRenderedCandidates(rendered)
 
@@ -80,10 +99,10 @@ func TestParser_ParseBlockFromTokens(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			tokens := lexConfig(t, tc.cfg)
+			tBlock := newTestBlock(t, tc.cfg)
 
 			p := newParser()
-			cfgBlock, err := p.ParseBlockFromTokens(tokens)
+			cfgBlock, err := p.ParseBlockFromTokens(tBlock)
 			if err != nil {
 				if errors.Is(err, tc.expectedErr) {
 					return
@@ -104,13 +123,12 @@ func TestParser_ParseBlockFromTokens(t *testing.T) {
 	}
 }
 
-func lexConfig(t *testing.T, src string) hclsyntax.Tokens {
-	tokens, diags := hclsyntax.LexConfig([]byte(src), "/test.tf", hcl.InitialPos)
-	if diags.HasErrors() {
-		t.Fatal(diags)
+func newTestBlock(t *testing.T, src string) ihcl.TokenizedBlock {
+	b, err := ihcl.NewTestBlock([]byte(src))
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	return tokens
+	return b
 }
 
 func parseHclBlock(t *testing.T, src string) *hcl.Block {

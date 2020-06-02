@@ -256,12 +256,13 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			tokens := lexConfig(t, tc.src)
-			block := ParseBlock(tokens, []*ParsedLabel{}, tc.sb)
+			tBlock := newTestBlock(t, tc.src)
 
 			cb := &completableBlock{
-				logger: testLogger(),
-				block:  block,
+				logger:       testLogger(),
+				parsedLabels: []*ParsedLabel{},
+				schema:       tc.sb,
+				tBlock:       tBlock,
 			}
 
 			list, err := cb.completionCandidatesAtPos(tc.pos)
@@ -291,7 +292,7 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 	}
 	rendered := make([]renderedCandidate, len(list.List()))
 	for i, c := range list.List() {
-		pos, text := c.Snippet(pos)
+		text := c.Snippet()
 		doc := ""
 		if c.Documentation() != nil {
 			doc = c.Documentation().Value()

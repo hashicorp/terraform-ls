@@ -51,10 +51,10 @@ func TestProviderBlock_Name(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			tokens := lexConfig(t, tc.src)
+			tBlock := newTestBlock(t, tc.src)
 
 			pf := &providerBlockFactory{logger: log.New(os.Stdout, "", 0)}
-			p, err := pf.New(tokens)
+			p, err := pf.New(tBlock)
 
 			if err != nil {
 				if tc.expectedErr != nil && err.Error() == tc.expectedErr.Error() {
@@ -139,15 +139,14 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 		},
 		{
-			"missing type doesn't error",
+			"missing type",
 			`provider "" {
-
 }`,
 			simpleSchema,
 			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 14},
 			[]renderedCandidate{},
-			nil,
+			&schema.SchemaUnavailableErr{BlockType: "provider", FullName: ""},
 		},
 		{
 			"schema reader error",
@@ -185,7 +184,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			tokens := lexConfig(t, tc.src)
+			tBlock := newTestBlock(t, tc.src)
 
 			pf := &providerBlockFactory{
 				logger: log.New(os.Stdout, "", 0),
@@ -194,7 +193,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 					ProviderSchemaErr: tc.readerErr,
 				},
 			}
-			p, err := pf.New(tokens)
+			p, err := pf.New(tBlock)
 			if err != nil {
 				t.Fatal(err)
 			}

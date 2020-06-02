@@ -5,7 +5,7 @@ import (
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	tfjson "github.com/hashicorp/terraform-json"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -15,7 +15,7 @@ type providerBlockFactory struct {
 	schemaReader schema.Reader
 }
 
-func (f *providerBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error) {
+func (f *providerBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
 	if f.logger == nil {
 		f.logger = discardLog()
 	}
@@ -24,7 +24,7 @@ func (f *providerBlockFactory) New(tokens hclsyntax.Tokens) (ConfigBlock, error)
 		logger: f.logger,
 
 		labelSchema: f.LabelSchema(),
-		tokens:      tokens,
+		tBlock:      tBlock,
 		sr:          f.schemaReader,
 	}, nil
 }
@@ -50,7 +50,7 @@ type providerBlock struct {
 
 	labelSchema LabelSchema
 	labels      []*ParsedLabel
-	tokens      hclsyntax.Tokens
+	tBlock      ihcl.TokenizedBlock
 	sr          schema.Reader
 }
 
@@ -71,7 +71,7 @@ func (p *providerBlock) Labels() []*ParsedLabel {
 		return p.labels
 	}
 
-	labels := ParseLabels(p.tokens, p.labelSchema)
+	labels := ParseLabels(p.tBlock, p.labelSchema)
 	p.labels = labels
 
 	return p.labels
@@ -86,25 +86,17 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return nil, &noSchemaReaderErr{p.BlockType()}
 	}
 
-	var schemaBlock *tfjson.SchemaBlock
-	if p.RawName() != "" {
-		pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
-		if err != nil {
-			return nil, err
-		}
-		schemaBlock = pSchema.Block
-	}
-	block := ParseBlock(p.tokens, p.Labels(), schemaBlock)
-
-	if block.PosInLabels(pos) {
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(p.tBlock.Tokens())
+	if PosInLabels(hclBlock, pos) {
 		providers, err := p.sr.Providers()
 		if err != nil {
 			return nil, err
 		}
 
 		cl := &completableLabels{
-			logger: p.logger,
-			block:  block,
+			logger:       p.logger,
+			parsedLabels: p.Labels(),
+			tBlock:       p.tBlock,
 			labels: labelCandidates{
 				"name": providerCandidates(providers),
 			},
@@ -113,15 +105,20 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return cl.completionCandidatesAtPos(pos)
 	}
 
+	pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
+	if err != nil {
+		return nil, err
+	}
 	cb := &completableBlock{
 		logger: p.logger,
-		block:  block,
+		schema: pSchema.Block,
+		tBlock: p.tBlock,
 	}
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func providerCandidates(names []string) []CompletionCandidate {
-	candidates := []CompletionCandidate{}
+func providerCandidates(names []string) []*labelCandidate {
+	candidates := []*labelCandidate{}
 	for _, name := range names {
 		candidates = append(candidates, &labelCandidate{
 			label:  name,

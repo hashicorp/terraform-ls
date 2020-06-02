@@ -27,3 +27,11 @@ func IsNoBlockFoundErr(err error) bool {
 	_, ok := err.(*NoBlockFoundErr)
 	return ok
 }
+
+type NoTokenFoundErr struct {
+	AtPos hcllib.Pos
+}
+
+func (e *NoTokenFoundErr) Error() string {
+	return fmt.Sprintf("no token found at %#v", e.AtPos)
+}

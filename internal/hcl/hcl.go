@@ -9,10 +9,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
-type File interface {
-	BlockTokensAtPosition(filesystem.FilePosition) (hclsyntax.Tokens, hcllib.Pos, error)
-}
-
 type file struct {
 	filename string
 	content  []byte
@@ -24,11 +20,41 @@ type parsedFile struct {
 	Tokens hclsyntax.Tokens
 }
 
-func NewFile(f filesystem.File) File {
+type parsedBlock struct {
+	tokens hclsyntax.Tokens
+}
+
+func (pb *parsedBlock) Tokens() hclsyntax.Tokens {
+	return pb.tokens
+}
+
+func (pb *parsedBlock) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {
+	for _, t := range pb.tokens {
+		if rangeContainsOffset(t.Range, pos.Byte) {
+			return t, nil
+		}
+	}
+
+	return hclsyntax.Token{}, &NoTokenFoundErr{pos}
+}
+
+func NewFile(f filesystem.File) TokenizedFile {
 	return &file{
 		filename: f.Filename(),
 		content:  []byte(f.Text()),
 	}
+}
+
+func NewTestFile(b []byte) TokenizedFile {
+	return &file{
+		filename: "/test.tf",
+		content:  b,
+	}
+}
+
+func NewTestBlock(b []byte) (TokenizedBlock, error) {
+	f := NewTestFile(b)
+	return f.BlockAtPosition(hcllib.InitialPos)
 }
 
 func (f *file) parse() (*parsedFile, error) {
@@ -59,44 +85,54 @@ func (f *file) parse() (*parsedFile, error) {
 	return f.pf, nil
 }
 
-func (f *file) BlockTokensAtPosition(filePos filesystem.FilePosition) (hclsyntax.Tokens, hcllib.Pos, error) {
-	pos := filePos.Position()
-
-	b, err := f.blockAtPosition(pos)
-	if err != nil {
-		return hclsyntax.Tokens{}, pos, err
+func (f *file) PosInBlock(pos hcl.Pos) bool {
+	_, err := f.BlockAtPosition(pos)
+	if IsNoBlockFoundErr(err) {
+		return false
 	}
 
-	return b, pos, nil
+	return true
 }
 
-func (f *file) blockAtPosition(pos hcllib.Pos) (hclsyntax.Tokens, error) {
+func (f *file) BlockAtPosition(pos hcllib.Pos) (TokenizedBlock, error) {
 	pf, _ := f.parse()
 
 	body, ok := pf.Body.(*hclsyntax.Body)
 	if !ok {
-		return hclsyntax.Tokens{}, fmt.Errorf("unexpected body type (%T)", body)
+		return nil, fmt.Errorf("unexpected body type (%T)", body)
 	}
 	if body.SrcRange.Empty() && pos != hcllib.InitialPos {
-		return hclsyntax.Tokens{}, &InvalidHclPosErr{pos, body.SrcRange}
+		return nil, &InvalidHclPosErr{pos, body.SrcRange}
 	}
 	if !body.SrcRange.Empty() {
 		if posIsEqual(body.SrcRange.End, pos) {
-			return hclsyntax.Tokens{}, &NoBlockFoundErr{pos}
+			return nil, &NoBlockFoundErr{pos}
 		}
 		if !body.SrcRange.ContainsPos(pos) {
-			return hclsyntax.Tokens{}, &InvalidHclPosErr{pos, body.SrcRange}
+			return nil, &InvalidHclPosErr{pos, body.SrcRange}
 		}
 	}
 
 	for _, block := range body.Blocks {
-		wholeRange := hcllib.RangeBetween(block.TypeRange, block.CloseBraceRange)
-		if wholeRange.ContainsPos(pos) {
-			return definitionTokens(tokensInRange(f.pf.Tokens, block.Range())), nil
+		if block.Range().ContainsPos(pos) {
+			dt := definitionTokens(tokensInRange(pf.Tokens, block.Range()))
+			return &parsedBlock{dt}, nil
 		}
 	}
 
 	return nil, &NoBlockFoundErr{pos}
+}
+
+func (f *file) TokenAtPosition(pos hcllib.Pos) (hclsyntax.Token, error) {
+	pf, _ := f.parse()
+
+	for _, t := range pf.Tokens {
+		if rangeContainsOffset(t.Range, pos.Byte) {
+			return t, nil
+		}
+	}
+
+	return hclsyntax.Token{}, &NoTokenFoundErr{pos}
 }
 
 func tokensInRange(tokens hclsyntax.Tokens, rng hcllib.Range) hclsyntax.Tokens {

@@ -35,7 +35,6 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 	}
 
 	if snippetSupport {
-		pos, newText := candidate.Snippet(pos)
 		return lsp.CompletionItem{
 			Label:            candidate.Label(),
 			Kind:             lsp.CIKField,
@@ -47,7 +46,7 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
 				},
-				NewText: newText,
+				NewText: candidate.Snippet(),
 			},
 		}
 	}
@@ -58,5 +57,12 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           candidate.Detail(),
 		Documentation:    doc,
+		TextEdit: &lsp.TextEdit{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+				End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
+			},
+			NewText: candidate.PlainText(),
+		},
 	}
 }
