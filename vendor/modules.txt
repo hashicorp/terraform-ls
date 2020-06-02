@@ -10,7 +10,7 @@ github.com/apparentlymart/go-textseg/v12/textseg
 github.com/armon/go-radix
 # github.com/bgentry/speakeasy v0.1.0
 github.com/bgentry/speakeasy
-# github.com/creachadair/jrpc2 v0.7.0
+# github.com/creachadair/jrpc2 v0.8.1
 github.com/creachadair/jrpc2
 github.com/creachadair/jrpc2/channel
 github.com/creachadair/jrpc2/code

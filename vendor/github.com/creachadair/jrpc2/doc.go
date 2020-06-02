@@ -119,7 +119,7 @@ sends them to the server, but the server does not reply.
 
 A jrpc2.Client supports sending notifications as follows:
 
-   err := cli.Notify(ctx, "Alert", map[string]string{
+   err := cli.Notify(ctx, "Alert", handler.Obj{
       "message": "A fire is burning!",
    })
 
