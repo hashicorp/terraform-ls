@@ -7,6 +7,7 @@ FEATURES:
  - Improve UX of completion items ([#115](https://github.com/hashicorp/terraform-ls/pull/115))
  - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
  - Add support for autocomplete based on a prefix ([#119](https://github.com/hashicorp/terraform-ls/pull/119))
+ - textDocument/complete: Use isIncomplete for >100 items ([#132](https://github.com/hashicorp/terraform-ls/pull/132))
 
 INTERNAL:
 
