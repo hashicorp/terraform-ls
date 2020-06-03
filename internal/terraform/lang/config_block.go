@@ -21,13 +21,21 @@ type labelCandidates map[string][]*labelCandidate
 
 type completableLabels struct {
 	logger       *log.Logger
+	maxCandidates int
 	parsedLabels []*ParsedLabel
 	tBlock       ihcl.TokenizedBlock
 	labels       labelCandidates
 }
 
+func (cl *completableLabels) maxCompletionCandidates() int {
+	if cl.maxCandidates > 0 {
+		return cl.maxCandidates
+	}
+	return defaultMaxCompletionCandidates
+}
+
 func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
-	list := &completeList{
+	list := &candidateList{
 		candidates: make([]CompletionCandidate, 0),
 	}
 	l, ok := LabelAtPos(cl.parsedLabels, pos)
@@ -46,6 +54,10 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 	prefix := prefixAtPos(cl.tBlock, pos)
 
 	for _, c := range candidates {
+		if len(list.candidates) >= cl.maxCompletionCandidates() {
+			list.isIncomplete = true
+			break
+		}
 		if !strings.HasPrefix(c.Label(), prefix) {
 			continue
 		}
@@ -61,13 +73,21 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 // for any Block implementation
 type completableBlock struct {
 	logger       *log.Logger
+	maxCandidates int
 	parsedLabels []*ParsedLabel
 	tBlock       ihcl.TokenizedBlock
 	schema       *tfjson.SchemaBlock
 }
 
+func (cl *completableBlock) maxCompletionCandidates() int {
+	if cl.maxCandidates > 0 {
+		return cl.maxCandidates
+	}
+	return defaultMaxCompletionCandidates
+}
+
 func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
-	list := &completeList{
+	list := &candidateList{
 		candidates: make([]CompletionCandidate, 0),
 	}
 
@@ -95,6 +115,10 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	prefix := prefixAtPos(cb.tBlock, pos)
 
 	for name, attr := range b.Attributes() {
+		if len(list.candidates) >= cb.maxCompletionCandidates() {
+			list.isIncomplete = true
+			break
+		}
 		if !strings.HasPrefix(name, prefix) {
 			continue
 		}
@@ -109,6 +133,10 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	}
 
 	for name, block := range b.BlockTypes() {
+		if len(list.candidates) >= cb.maxCompletionCandidates() {
+			list.isIncomplete = true
+			break
+		}
 		if !strings.HasPrefix(name, prefix) {
 			continue
 		}
@@ -127,27 +155,28 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	return list, nil
 }
 
-type completeList struct {
-	candidates []CompletionCandidate
+type candidateList struct {
+	candidates   []CompletionCandidate
+	isIncomplete bool
 }
 
-func (l *completeList) Sort() {
+func (l *candidateList) Sort() {
 	less := func(i, j int) bool {
 		return l.candidates[i].Label() < l.candidates[j].Label()
 	}
 	sort.Slice(l.candidates, less)
 }
 
-func (l *completeList) List() []CompletionCandidate {
+func (l *candidateList) List() []CompletionCandidate {
 	return l.candidates
 }
 
-func (l *completeList) Len() int {
+func (l *candidateList) Len() int {
 	return len(l.candidates)
 }
 
-func (l *completeList) IsComplete() bool {
-	return true
+func (l *candidateList) IsComplete() bool {
+	return !l.isIncomplete
 }
 
 type labelCandidate struct {
