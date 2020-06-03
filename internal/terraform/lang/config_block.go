@@ -20,11 +20,11 @@ type configBlockFactory interface {
 type labelCandidates map[string][]*labelCandidate
 
 type completableLabels struct {
-	logger       *log.Logger
+	logger        *log.Logger
 	maxCandidates int
-	parsedLabels []*ParsedLabel
-	tBlock       ihcl.TokenizedBlock
-	labels       labelCandidates
+	parsedLabels  []*ParsedLabel
+	tBlock        ihcl.TokenizedBlock
+	labels        labelCandidates
 }
 
 func (cl *completableLabels) maxCompletionCandidates() int {
@@ -51,7 +51,7 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 
 	cl.logger.Printf("completing label %q ...", l.Name)
 
-	prefix := prefixAtPos(cl.tBlock, pos)
+	prefix, prefixRng := prefixAtPos(cl.tBlock, pos)
 
 	for _, c := range candidates {
 		if len(list.candidates) >= cl.maxCompletionCandidates() {
@@ -61,7 +61,7 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 		if !strings.HasPrefix(c.Label(), prefix) {
 			continue
 		}
-		c.prefix = prefix
+		c.prefixRng = prefixRng
 		list.candidates = append(list.candidates, c)
 	}
 	list.Sort()
@@ -72,11 +72,11 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 // completableBlock provides common completion functionality
 // for any Block implementation
 type completableBlock struct {
-	logger       *log.Logger
+	logger        *log.Logger
 	maxCandidates int
-	parsedLabels []*ParsedLabel
-	tBlock       ihcl.TokenizedBlock
-	schema       *tfjson.SchemaBlock
+	parsedLabels  []*ParsedLabel
+	tBlock        ihcl.TokenizedBlock
+	schema        *tfjson.SchemaBlock
 }
 
 func (cl *completableBlock) maxCompletionCandidates() int {
@@ -94,12 +94,8 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	block := ParseBlock(cb.tBlock, cb.schema)
 
 	if !block.PosInBody(pos) {
+		// TODO: Allow this (requires access to the parser/all block types here)
 		cb.logger.Println("avoiding completion outside of block body")
-		return nil, nil
-	}
-
-	if block.PosInAttribute(pos) {
-		cb.logger.Println("avoiding completion in the middle of existing attribute")
 		return nil, nil
 	}
 
@@ -112,7 +108,8 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		return nil, nil
 	}
 
-	prefix := prefixAtPos(cb.tBlock, pos)
+	prefix, prefixRng := prefixAtPos(cb.tBlock, pos)
+	cb.logger.Printf("completing block: %#v, %#v", prefix, prefixRng)
 
 	for name, attr := range b.Attributes() {
 		if len(list.candidates) >= cb.maxCompletionCandidates() {
@@ -126,9 +123,9 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 			continue
 		}
 		list.candidates = append(list.candidates, &attributeCandidate{
-			Name:   name,
-			Attr:   attr,
-			Prefix: prefix,
+			Name:        name,
+			Attr:        attr,
+			PrefixRange: prefixRng,
 		})
 	}
 
@@ -143,11 +140,15 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		if block.ReachedMaxItems() {
 			continue
 		}
-		list.candidates = append(list.candidates, &nestedBlockCandidate{
+
+		nbc := &nestedBlockCandidate{
 			Name:      name,
 			BlockType: block,
-			Prefix:    prefix,
-		})
+		}
+		if prefixRng != nil {
+			nbc.PrefixRange = prefixRng
+		}
+		list.candidates = append(list.candidates, nbc)
 	}
 
 	list.Sort()
@@ -183,7 +184,7 @@ type labelCandidate struct {
 	label         string
 	detail        string
 	documentation MarkupContent
-	prefix        string
+	prefixRng     *hcl.Range
 }
 
 func (c *labelCandidate) Label() string {
@@ -198,18 +199,21 @@ func (c *labelCandidate) Documentation() MarkupContent {
 	return c.documentation
 }
 
-func (c *labelCandidate) Snippet() string {
+func (c *labelCandidate) Snippet() TextEdit {
 	return c.PlainText()
 }
 
-func (c *labelCandidate) PlainText() string {
-	return strings.TrimPrefix(c.label, c.prefix)
+func (c *labelCandidate) PlainText() TextEdit {
+	return &textEdit{
+		newText: c.label,
+		rng:     c.prefixRng,
+	}
 }
 
 type attributeCandidate struct {
-	Name   string
-	Attr   *Attribute
-	Prefix string
+	Name        string
+	Attr        *Attribute
+	PrefixRange *hcl.Range
 }
 
 func (c *attributeCandidate) Label() string {
@@ -236,19 +240,24 @@ func (c *attributeCandidate) Documentation() MarkupContent {
 	return PlainText("")
 }
 
-func (c *attributeCandidate) Snippet() string {
-	name := strings.TrimPrefix(c.Name, c.Prefix)
-	return fmt.Sprintf("%s = %s", name, snippetForAttrType(0, c.Attr.Schema().AttributeType))
+func (c *attributeCandidate) Snippet() TextEdit {
+	return &textEdit{
+		newText: fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(0, c.Attr.Schema().AttributeType)),
+		rng:     c.PrefixRange,
+	}
 }
 
-func (c *attributeCandidate) PlainText() string {
-	return strings.TrimPrefix(c.Name, c.Prefix)
+func (c *attributeCandidate) PlainText() TextEdit {
+	return &textEdit{
+		newText: c.Name,
+		rng:     c.PrefixRange,
+	}
 }
 
 type nestedBlockCandidate struct {
-	Name      string
-	BlockType *BlockType
-	Prefix    string
+	Name        string
+	BlockType   *BlockType
+	PrefixRange *hcl.Range
 }
 
 func (c *nestedBlockCandidate) Label() string {
@@ -269,11 +278,16 @@ func (c *nestedBlockCandidate) Documentation() MarkupContent {
 	return PlainText(c.BlockType.Schema().Block.Description)
 }
 
-func (c *nestedBlockCandidate) Snippet() string {
-	name := strings.TrimPrefix(c.Name, c.Prefix)
-	return snippetForNestedBlock(name)
+func (c *nestedBlockCandidate) Snippet() TextEdit {
+	return &textEdit{
+		newText: snippetForNestedBlock(c.Name),
+		rng:     c.PrefixRange,
+	}
 }
 
-func (c *nestedBlockCandidate) PlainText() string {
-	return strings.TrimPrefix(c.Name, c.Prefix)
+func (c *nestedBlockCandidate) PlainText() TextEdit {
+	return &textEdit{
+		newText: c.Name,
+		rng:     c.PrefixRange,
+	}
 }

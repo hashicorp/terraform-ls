@@ -18,18 +18,18 @@ func PosInLabels(b *hclsyntax.Block, pos hcl.Pos) bool {
 	return false
 }
 
-func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) string {
+func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) (string, *hcl.Range) {
 	token, err := looker.TokenAtPosition(pos)
 	if err != nil {
-		return ""
+		return "", nil
 	}
 
 	switch token.Type {
 	case hclsyntax.TokenIdent, hclsyntax.TokenQuotedLit, hclsyntax.TokenStringLit:
-		return string(token.Bytes[:pos.Byte-token.Range.Start.Byte])
+		return string(token.Bytes[:pos.Byte-token.Range.Start.Byte]), token.Range.Ptr()
 	}
 
-	return ""
+	return "", nil
 }
 
 type TokenAtPosLooker interface {

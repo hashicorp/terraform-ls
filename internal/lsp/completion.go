@@ -41,13 +41,7 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 			InsertTextFormat: lsp.ITFSnippet,
 			Detail:           candidate.Detail(),
 			Documentation:    doc,
-			TextEdit: &lsp.TextEdit{
-				Range: lsp.Range{
-					Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-					End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-				},
-				NewText: candidate.Snippet(),
-			},
+			TextEdit: textEdit(candidate.Snippet(), pos),
 		}
 	}
 
@@ -57,12 +51,21 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           candidate.Detail(),
 		Documentation:    doc,
-		TextEdit: &lsp.TextEdit{
-			Range: lsp.Range{
-				Start: lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-				End:   lsp.Position{Line: pos.Line - 1, Character: pos.Column - 1},
-			},
-			NewText: candidate.PlainText(),
-		},
+		TextEdit: textEdit(candidate.PlainText(), pos),
 	}
+}
+
+func textEdit(te lang.TextEdit, pos hcl.Pos) *lsp.TextEdit {
+	rng := te.Range()
+	if rng == nil {
+		rng = &hcl.Range{
+			Start: pos,
+			End: pos,
+		}
+	}
+
+	return &lsp.TextEdit{
+			NewText: te.NewText(),
+			Range: hclRangeToLSP(*rng),
+		}
 }
