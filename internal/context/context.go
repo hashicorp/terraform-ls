@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -27,6 +28,7 @@ var (
 	ctxTfVersion        = &contextKey{"terraform version"}
 	ctxTfVersionSetter  = &contextKey{"terraform version setter"}
 	ctxTfExecLogPath    = &contextKey{"terraform executor log path"}
+	ctxTfExecTimeout    = &contextKey{"terraform execution timeout"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -145,5 +147,14 @@ func WithTerraformExecLogPath(path string, ctx context.Context) context.Context 
 
 func TerraformExecLogPath(ctx context.Context) (string, bool) {
 	path, ok := ctx.Value(ctxTfExecLogPath).(string)
+	return path, ok
+}
+
+func WithTerraformExecTimeout(timeout time.Duration, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfExecTimeout, timeout)
+}
+
+func TerraformExecTimeout(ctx context.Context) (time.Duration, bool) {
+	path, ok := ctx.Value(ctxTfExecTimeout).(time.Duration)
 	return path, ok
 }

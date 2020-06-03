@@ -99,6 +99,12 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
 				tf.SetExecLogPath(path)
 			}
+
+			// Timeout is set via CLI flag, hence in the server context
+			if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
+				tf.SetTimeout(timeout)
+			}
+
 			tf.SetLogger(svc.logger)
 
 			ctx = lsctx.WithTerraformExecutor(tf, ctx)

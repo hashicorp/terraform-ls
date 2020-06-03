@@ -19,6 +19,8 @@ import (
 	"github.com/hashicorp/terraform-ls/logging"
 )
 
+var defaultExecTimeout = 30 * time.Second
+
 // Environment variables to pass through to Terraform
 var passthroughEnvVars = []string{
 	// This allows Terraform to find custom-built providers
@@ -56,7 +58,7 @@ type command struct {
 func NewExecutor(ctx context.Context, path string) *Executor {
 	return &Executor{
 		ctx:      ctx,
-		timeout:  10 * time.Second,
+		timeout:  defaultExecTimeout,
 		execPath: path,
 		logger:   log.New(ioutil.Discard, "", 0),
 		cmdCtxFunc: func(ctx context.Context, path string, arg ...string) *exec.Cmd {
