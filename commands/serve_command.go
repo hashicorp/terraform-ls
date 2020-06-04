@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/langserver"
@@ -25,6 +26,7 @@ type ServeCommand struct {
 	logFilePath   string
 	tfExecPath    string
 	tfExecLogPath string
+	tfExecTimeout string
 }
 
 func (c *ServeCommand) flags() *flag.FlagSet {
@@ -34,6 +36,7 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.StringVar(&c.logFilePath, "log-file", "", "path to a file to log into with support "+
 		"for variables (e.g. Timestamp, Pid, Ppid) via Go template syntax {{.VarName}}")
 	fs.StringVar(&c.tfExecPath, "tf-exec", "", "path to Terraform binary")
+	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "Overrides Terraform execution timeout (e.g. 30s)")
 	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "path to a file for Terraform executions"+
 		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
 		" syntax {{.VarName}}")
@@ -77,6 +80,16 @@ func (c *ServeCommand) Run(args []string) int {
 		ctx = lsctx.WithTerraformExecLogPath(c.tfExecLogPath, ctx)
 		logger.Printf("Terraform executions will be logged to %s "+
 			"(interpolated at the time of execution)", c.tfExecLogPath)
+	}
+
+	if c.tfExecTimeout != "" {
+		d, err := time.ParseDuration(c.tfExecTimeout)
+		if err != nil {
+			c.Ui.Error(fmt.Sprintf("Failed to parse Terraform timeout: %s", err))
+			return 1
+		}
+		ctx = lsctx.WithTerraformExecTimeout(d, ctx)
+		logger.Printf("Terraform execution timeout set to %s", d)
 	}
 
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
