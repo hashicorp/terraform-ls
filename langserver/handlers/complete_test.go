@@ -17,14 +17,14 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
 		ReqParams: fmt.Sprintf(`{
-			"textDocument": {
-				"uri": "%s/main.tf"
-			},
-			"position": {
-				"character": 0,
-				"line": 1
-			}
-		}`, TempDirUri())}, session.SessionNotInitialized.Err())
+            "textDocument": {
+                "uri": "%s/main.tf"
+            },
+            "position": {
+                "character": 0,
+                "line": 1
+            }
+        }`, TempDirUri())}, session.SessionNotInitialized.Err())
 }
 
 func TestCompletion_withValidData(t *testing.T) {
@@ -46,10 +46,10 @@ func TestCompletion_withValidData(t *testing.T) {
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
-	    "capabilities": {},
-	    "rootUri": %q,
-	    "processId": 12345
-	}`, TempDirUri())})
+        "capabilities": {},
+        "rootUri": %q,
+        "processId": 12345
+    }`, TempDirUri())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -57,93 +57,93 @@ func TestCompletion_withValidData(t *testing.T) {
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
-		"textDocument": {
-			"version": 0,
-			"languageId": "terraform",
-			"text": "provider \"test\" {\n\n}\n",
-			"uri": "%s/main.tf"
-		}
-	}`, TempDirUri())})
+        "textDocument": {
+            "version": 0,
+            "languageId": "terraform",
+            "text": "provider \"test\" {\n\n}\n",
+            "uri": "%s/main.tf"
+        }
+    }`, TempDirUri())})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
 		ReqParams: fmt.Sprintf(`{
-			"textDocument": {
-				"uri": "%s/main.tf"
-			},
-			"position": {
-				"character": 0,
-				"line": 1
-			}
-		}`, TempDirUri())}, `{
-			"jsonrpc": "2.0",
-			"id": 3,
-			"result": {
-				"isIncomplete": false,
-				"items": [
-					{
-						"label":"anonymous",
-						"kind":5,
-						"detail":"Optional, number",
-						"documentation":"Desc 1",
-						"insertTextFormat":1,
-						"textEdit": {
-							"range": {
-								"start": {
-									"line": 1, 
-									"character": 0
-								},
-								"end": {
-									"line": 1, 
-									"character": 0
-								}
-							},
-							"newText": "anonymous"
-						}
-					},
-					{
-						"label":"base_url",
-						"kind":5,
-						"detail":"Optional, string",
-						"documentation":"Desc 2",
-						"insertTextFormat":1,
-						"textEdit": {
-							"range": {
-								"start": {
-									"line": 1, 
-									"character": 0
-								},
-								"end": {
-									"line": 1, 
-									"character": 0
-								}
-							},
-							"newText": "base_url"
-						}
-					},
-					{
-						"label":"individual",
-						"kind":5,
-						"detail":"Optional, bool",
-						"documentation":"Desc 3",
-						"insertTextFormat":1,
-						"textEdit": {
-							"range": {
-								"start": {
-									"line": 1, 
-									"character": 0
-								},
-								"end": {
-									"line": 1, 
-									"character": 0
-								}
-							},
-							"newText": "individual"
-						}
-					}
-				]
-			}
-		}`)
+            "textDocument": {
+                "uri": "%s/main.tf"
+            },
+            "position": {
+                "character": 0,
+                "line": 1
+            }
+        }`, TempDirUri())}, `{
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {
+                "isIncomplete": false,
+                "items": [
+                    {
+                        "label":"anonymous",
+                        "kind":5,
+                        "detail":"Optional, number",
+                        "documentation":"Desc 1",
+                        "insertTextFormat":1,
+                        "textEdit": {
+                            "range": {
+                                "start": {
+                                    "line": 1, 
+                                    "character": 0
+                                },
+                                "end": {
+                                    "line": 1, 
+                                    "character": 0
+                                }
+                            },
+                            "newText": "anonymous"
+                        }
+                    },
+                    {
+                        "label":"base_url",
+                        "kind":5,
+                        "detail":"Optional, string",
+                        "documentation":"Desc 2",
+                        "insertTextFormat":1,
+                        "textEdit": {
+                            "range": {
+                                "start": {
+                                    "line": 1, 
+                                    "character": 0
+                                },
+                                "end": {
+                                    "line": 1, 
+                                    "character": 0
+                                }
+                            },
+                            "newText": "base_url"
+                        }
+                    },
+                    {
+                        "label":"individual",
+                        "kind":5,
+                        "detail":"Optional, bool",
+                        "documentation":"Desc 3",
+                        "insertTextFormat":1,
+                        "textEdit": {
+                            "range": {
+                                "start": {
+                                    "line": 1,
+                                    "character": 0
+                                },
+                                "end": {
+                                    "line": 1,
+                                    "character": 0
+                                }
+                            },
+                            "newText": "individual"
+                        }
+                    }
+                ]
+            }
+        }`)
 }
 
 const testSchemaOutput = `{
