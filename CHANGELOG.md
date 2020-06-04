@@ -8,6 +8,7 @@ FEATURES:
  - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
  - Add support for autocomplete based on a prefix ([#119](https://github.com/hashicorp/terraform-ls/pull/119))
  - textDocument/complete: Use isIncomplete for >100 items ([#132](https://github.com/hashicorp/terraform-ls/pull/132))
+ - textDocument/complete: Pass TextEdit instead of static text ([#133](https://github.com/hashicorp/terraform-ls/pull/133))
 
 INTERNAL:
 
