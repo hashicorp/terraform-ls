@@ -76,8 +76,26 @@ type CompletionCandidate interface {
 	Label() string
 	Detail() string
 	Documentation() MarkupContent
-	Snippet() string
-	PlainText() string
+	Snippet() TextEdit
+	PlainText() TextEdit
+}
+
+type TextEdit interface {
+	Range() *hcl.Range
+	NewText() string
+}
+
+type textEdit struct {
+	newText string
+	rng     *hcl.Range
+}
+
+func (te *textEdit) Range() *hcl.Range {
+	return te.rng
+}
+
+func (te *textEdit) NewText() string {
+	return te.newText
 }
 
 // MarkupContent reflects lsp.MarkupContent

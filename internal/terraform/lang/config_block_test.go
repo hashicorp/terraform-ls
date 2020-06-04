@@ -291,16 +291,16 @@ func TestCompletableLabels_CompletionCandidatesAtPos_overLimit(t *testing.T) {
 }`)
 
 	cl := &completableLabels{
-		logger:       testLogger(),
+		logger: testLogger(),
 		parsedLabels: []*ParsedLabel{
 			{Name: "type", Range: hcl.Range{
 				Filename: "/test.tf",
-				Start: hcl.Pos{Line: 1, Column: 10, Byte: 9},
-				End: hcl.Pos{Line: 1, Column: 12, Byte: 11},
+				Start:    hcl.Pos{Line: 1, Column: 10, Byte: 9},
+				End:      hcl.Pos{Line: 1, Column: 12, Byte: 11},
 			}},
 		},
-		tBlock:       tBlock,
-		labels:       map[string][]*labelCandidate{
+		tBlock: tBlock,
+		labels: map[string][]*labelCandidate{
 			"type": []*labelCandidate{
 				{label: "aaa"},
 				{label: "bbb"},
@@ -328,16 +328,16 @@ func TestCompletableLabels_CompletionCandidatesAtPos_matchingLimit(t *testing.T)
 }`)
 
 	cl := &completableLabels{
-		logger:       testLogger(),
+		logger: testLogger(),
 		parsedLabels: []*ParsedLabel{
 			{Name: "type", Range: hcl.Range{
 				Filename: "/test.tf",
-				Start: hcl.Pos{Line: 1, Column: 10, Byte: 9},
-				End: hcl.Pos{Line: 1, Column: 12, Byte: 11},
+				Start:    hcl.Pos{Line: 1, Column: 10, Byte: 9},
+				End:      hcl.Pos{Line: 1, Column: 12, Byte: 11},
 			}},
 		},
-		tBlock:       tBlock,
-		labels:       map[string][]*labelCandidate{
+		tBlock: tBlock,
+		labels: map[string][]*labelCandidate{
 			"type": []*labelCandidate{
 				{label: "aaa"},
 				{label: "bbb"},
@@ -359,6 +359,62 @@ func TestCompletableLabels_CompletionCandidatesAtPos_matchingLimit(t *testing.T)
 	}
 }
 
+func TestCompletableLabels_CompletionCandidatesAtPos_withPrefix(t *testing.T) {
+	tBlock := newTestBlock(t, `resource "prov_xyz" {
+}`)
+
+	cl := &completableLabels{
+		logger: testLogger(),
+		parsedLabels: []*ParsedLabel{
+			{Name: "type", Range: hcl.Range{
+				Filename: "/test.tf",
+				Start:    hcl.Pos{Line: 1, Column: 10, Byte: 9},
+				End:      hcl.Pos{Line: 1, Column: 20, Byte: 19},
+			}},
+		},
+		tBlock: tBlock,
+		labels: map[string][]*labelCandidate{
+			"type": []*labelCandidate{
+				{label: "prov_aaa"},
+				{label: "prov_bbb"},
+				{label: "ccc"},
+			},
+		},
+	}
+	c, err := cl.completionCandidatesAtPos(hcl.Pos{Line: 1, Column: 16, Byte: 15})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if c.Len() != 2 {
+		t.Fatalf("Expected exactly 2 candidate, %d given", c.Len())
+	}
+
+	candidates := c.List()
+	te := candidates[0].PlainText()
+	expectedTextEdit := &textEdit{
+		newText: "prov_aaa",
+		rng: &hcl.Range{
+			Filename: "/test.tf",
+			Start: hcl.Pos{
+				Line:   1,
+				Column: 11,
+				Byte:   10,
+			},
+			End: hcl.Pos{
+				Line:   1,
+				Column: 19,
+				Byte:   18,
+			},
+		},
+	}
+
+	opts := cmp.AllowUnexported(textEdit{})
+	if diff := cmp.Diff(expectedTextEdit, te, opts); diff != "" {
+		t.Fatalf("Text edit doesn't match: %s", diff)
+	}
+}
+
 func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidate {
 	if list == nil {
 		return []renderedCandidate{}
@@ -377,7 +433,7 @@ func renderCandidates(list CompletionCandidates, pos hcl.Pos) []renderedCandidat
 			Documentation: doc,
 			Snippet: renderedSnippet{
 				Pos:  pos,
-				Text: text,
+				Text: text.NewText(),
 			},
 		}
 	}

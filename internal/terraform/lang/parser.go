@@ -33,7 +33,7 @@ type parser struct {
 	logger *log.Logger
 
 	maxCandidates int
-	schemaReader schema.Reader
+	schemaReader  schema.Reader
 }
 
 func ParserSupportsTerraform(v string) error {
@@ -70,7 +70,7 @@ func FindCompatibleParser(v string) (Parser, error) {
 
 func newParser() *parser {
 	return &parser{
-		logger: log.New(ioutil.Discard, "", 0),
+		logger:        log.New(ioutil.Discard, "", 0),
 		maxCandidates: defaultMaxCompletionCandidates,
 	}
 }
@@ -125,7 +125,7 @@ func (p *parser) BlockTypeCandidates(file ihcl.TokenizedFile, pos hcl.Pos) Compl
 		candidates: make([]CompletionCandidate, 0),
 	}
 
-	prefix := prefixAtPos(file, pos)
+	prefix, prefixRng := prefixAtPos(file, pos)
 	for name, t := range bTypes {
 		if len(list.candidates) >= p.maxCandidates {
 			list.isIncomplete = true
@@ -139,6 +139,7 @@ func (p *parser) BlockTypeCandidates(file ihcl.TokenizedFile, pos hcl.Pos) Compl
 			LabelSchema:   t.LabelSchema(),
 			documentation: t.Documentation(),
 			prefix:        prefix,
+			prefixRng:     prefixRng,
 		})
 	}
 
@@ -150,19 +151,25 @@ type completableBlockType struct {
 	LabelSchema   LabelSchema
 	documentation MarkupContent
 	prefix        string
+	prefixRng     *hcl.Range
 }
 
 func (bt *completableBlockType) Label() string {
 	return bt.TypeName
 }
 
-func (bt *completableBlockType) PlainText() string {
-	return strings.TrimPrefix(bt.TypeName, bt.prefix)
+func (bt *completableBlockType) PlainText() TextEdit {
+	return &textEdit{
+		newText: bt.TypeName,
+		rng:     bt.prefixRng,
+	}
 }
 
-func (bt *completableBlockType) Snippet() string {
-	typeName := strings.TrimPrefix(bt.TypeName, bt.prefix)
-	return snippetForBlock(typeName, bt.LabelSchema)
+func (bt *completableBlockType) Snippet() TextEdit {
+	return &textEdit{
+		newText: snippetForBlock(bt.TypeName, bt.LabelSchema),
+		rng:     bt.prefixRng,
+	}
 }
 
 func (bt *completableBlockType) Detail() string {
