@@ -4,6 +4,7 @@ FEATURES:
 
  - textDocument/complete: Complete first level keywords ([#104](https://github.com/hashicorp/terraform-ls/pull/104))
  - Add ability to specify path to Terraform binary ([#109](https://github.com/hashicorp/terraform-ls/pull/109))
+ - Make Terraform exec timeout configurable ([#134](https://github.com/hashicorp/terraform-ls/pull/134))
 
 ENHANCEMENTS:
 
