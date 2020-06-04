@@ -183,6 +183,19 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
+		"textDocument/hover": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
+			ctx = lsctx.WithClientCapabilities(cc, ctx)
+			ctx = lsctx.WithTerraformVersion(tfVersion, ctx)
+			ctx = lsctx.WithTerraformSchemaReader(svc.ss, ctx)
+
+			return handle(ctx, req, lh.TextDocumentHover)
+		},
 		"shutdown": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.Shutdown(req)
 			if err != nil {

@@ -8,6 +8,10 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+func hoverMarkupFor(cc CompletionCandidate) string {
+	return strings.TrimSpace(fmt.Sprintf("**%s**\n_%s_\n\n%s", cc.Label(), cc.Detail(), cc.Documentation()))
+}
+
 func snippetForAttrType(placeholder int, attrType cty.Type) string {
 	mapSnippet := func(aType cty.Type) string {
 		return fmt.Sprintf("{\n"+`  "${0:key}" = %s`+"\n}",

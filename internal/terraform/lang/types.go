@@ -17,12 +17,14 @@ type Parser interface {
 	SetSchemaReader(schema.Reader)
 	BlockTypeCandidates(ihcl.TokenizedFile, hcl.Pos) CompletionCandidates
 	CompletionCandidatesAtPos(ihcl.TokenizedFile, hcl.Pos) (CompletionCandidates, error)
+	HoverAtPos(ihcl.TokenizedFile, hcl.Pos) (string, error)
 }
 
 // ConfigBlock implements an abstraction above HCL block
 // which provides any LSP capabilities (e.g. completion)
 type ConfigBlock interface {
 	CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error)
+	HoverAtPos(pos hcl.Pos) (string, error)
 	Name() string
 	BlockType() string
 	Labels() []*ParsedLabel
@@ -31,7 +33,7 @@ type ConfigBlock interface {
 // Block represents a decoded HCL block (by a Parser)
 // which keeps track of the related schema
 type Block interface {
-	BlockAtPos(pos hcl.Pos) (Block, bool)
+	BlockAtPos(pos hcl.Pos) (string, Block, bool)
 	Range() hcl.Range
 	PosInBody(pos hcl.Pos) bool
 	PosInAttribute(pos hcl.Pos) bool

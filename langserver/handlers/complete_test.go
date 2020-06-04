@@ -146,7 +146,7 @@ func TestCompletion_withValidData(t *testing.T) {
 		}`)
 }
 
-var testSchemaOutput = `{
+const testSchemaOutput = `{
   "format_version": "0.1",
   "provider_schemas": {
     "test": {
@@ -171,6 +171,21 @@ var testSchemaOutput = `{
               "description": "Desc _3_",
               "description_kind": "markdown",
               "optional": true
+            }
+          },
+          "block_types": {
+            "single_block": {
+              "nesting_mode": "single",
+              "block": {
+                "description": "Single Block",
+                "description_kind": "markdown",
+                "attributes": {
+                  "nested_string": {
+                    "type": "string",
+                    "optional": true
+                  }
+                }
+              }
             }
           }
         }

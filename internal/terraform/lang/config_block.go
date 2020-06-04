@@ -79,6 +79,50 @@ type completableBlock struct {
 	schema        *tfjson.SchemaBlock
 }
 
+func (cb *completableBlock) hoverAtPos(pos hcl.Pos) (string, error) {
+	block := ParseBlock(cb.tBlock, cb.schema)
+
+	if !block.PosInBody(pos) {
+		// TODO: Allow this (requires access to the parser/all block types here)
+		cb.logger.Println("avoiding completion outside of block body")
+		return "", nil
+	}
+
+	// Completing the body (attributes and nested blocks)
+	ty, b, ok := block.BlockAtPos(pos)
+	if !ok {
+		// This should never happen as the completion
+		// should only be called on a block the "pos" points to
+		cb.logger.Printf("block type not found at %#v", pos)
+		return "", nil
+	}
+
+	if bt, ok := block.BlockTypes()[ty]; ok && !b.PosInBody(pos) {
+		return hoverMarkupFor(&nestedBlockCandidate{
+			Name:      ty,
+			BlockType: bt,
+		}), nil
+	}
+
+	ident, _ := identAtPos(cb.tBlock, pos)
+	cb.logger.Printf("hover ident: %#v", ident)
+
+	for name, attr := range b.Attributes() {
+		if name != ident {
+			continue
+		}
+
+		return hoverMarkupFor(&attributeCandidate{
+			Name: name,
+			Attr: attr,
+		}), nil
+	}
+
+	// the nested blocks case should be handled above so we only iterate attributes
+
+	return "", nil
+}
+
 func (cl *completableBlock) maxCompletionCandidates() int {
 	if cl.maxCandidates > 0 {
 		return cl.maxCandidates
@@ -100,7 +144,7 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	}
 
 	// Completing the body (attributes and nested blocks)
-	b, ok := block.BlockAtPos(pos)
+	_, b, ok := block.BlockAtPos(pos)
 	if !ok {
 		// This should never happen as the completion
 		// should only be called on a block the "pos" points to

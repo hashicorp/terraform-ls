@@ -81,6 +81,29 @@ func (p *providerBlock) BlockType() string {
 	return "provider"
 }
 
+func (p *providerBlock) HoverAtPos(pos hcl.Pos) (string, error) {
+	if p.sr == nil {
+		return "", &noSchemaReaderErr{p.BlockType()}
+	}
+
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(p.tBlock.Tokens())
+	if PosInLabels(hclBlock, pos) {
+		// TODO: implement label hover
+		return "", nil
+	}
+
+	pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
+	if err != nil {
+		return "", err
+	}
+	cb := &completableBlock{
+		logger: p.logger,
+		schema: pSchema.Block,
+		tBlock: p.tBlock,
+	}
+	return cb.hoverAtPos(pos)
+}
+
 func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
 	if p.sr == nil {
 		return nil, &noSchemaReaderErr{p.BlockType()}

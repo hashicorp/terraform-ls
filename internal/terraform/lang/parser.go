@@ -100,6 +100,24 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 	}
 }
 
+func (p *parser) HoverAtPos(file ihcl.TokenizedFile, pos hcl.Pos) (string, error) {
+	if !file.PosInBlock(pos) {
+		return "", nil
+	}
+
+	block, err := file.BlockAtPosition(pos)
+	if err != nil {
+		return "", fmt.Errorf("finding HCL block failed: %#v", err)
+	}
+
+	cfgBlock, err := p.ParseBlockFromTokens(block)
+	if err != nil {
+		return "", fmt.Errorf("finding config block failed: %w", err)
+	}
+
+	return cfgBlock.HoverAtPos(pos)
+}
+
 func (p *parser) CompletionCandidatesAtPos(file ihcl.TokenizedFile, pos hcl.Pos) (CompletionCandidates, error) {
 	if !file.PosInBlock(pos) {
 		return p.BlockTypeCandidates(file, pos), nil

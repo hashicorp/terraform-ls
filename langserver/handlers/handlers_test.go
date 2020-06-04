@@ -30,6 +30,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 					"openClose": true,
 					"change": 2
 				},
+				"hoverProvider": true,
 				"completionProvider": {},
 				"documentFormattingProvider":true
 			}
@@ -65,6 +66,7 @@ func TestEOF(t *testing.T) {
 					"openClose": true,
 					"change": 2
 				},
+				"hoverProvider": true,
 				"completionProvider": {},
 				"documentFormattingProvider":true
 			}

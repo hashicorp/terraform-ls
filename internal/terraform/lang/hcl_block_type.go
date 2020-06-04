@@ -10,14 +10,14 @@ func (b *BlockType) Schema() *tfjson.SchemaBlockType {
 	return b.schema
 }
 
-func (b *BlockType) BlockAtPos(pos hcl.Pos) (Block, bool) {
+func (b *BlockType) BlockAtPos(pos hcl.Pos) (string, Block, bool) {
 	for _, block := range b.BlockList {
-		if b, ok := block.BlockAtPos(pos); ok {
-			return b, true
+		if t, b, ok := block.BlockAtPos(pos); ok {
+			return t, b, true
 		}
 	}
 
-	return nil, false
+	return "", nil, false
 }
 
 func (b *BlockType) PosInAttribute(pos hcl.Pos) bool {

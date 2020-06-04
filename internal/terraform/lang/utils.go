@@ -18,7 +18,7 @@ func PosInLabels(b *hclsyntax.Block, pos hcl.Pos) bool {
 	return false
 }
 
-func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) (string, *hcl.Range) {
+func identAtPos(looker TokenAtPosLooker, pos hcl.Pos) (string, *hcl.Range) {
 	token, err := looker.TokenAtPosition(pos)
 	if err != nil {
 		return "", nil
@@ -26,10 +26,18 @@ func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) (string, *hcl.Range) {
 
 	switch token.Type {
 	case hclsyntax.TokenIdent, hclsyntax.TokenQuotedLit, hclsyntax.TokenStringLit:
-		return string(token.Bytes[:pos.Byte-token.Range.Start.Byte]), token.Range.Ptr()
+		return string(token.Bytes), token.Range.Ptr()
 	}
 
 	return "", nil
+}
+
+func prefixAtPos(looker TokenAtPosLooker, pos hcl.Pos) (string, *hcl.Range) {
+	ident, rng := identAtPos(looker, pos)
+	if ident == "" {
+		return ident, rng
+	}
+	return ident[:pos.Byte-rng.Start.Byte], rng
 }
 
 type TokenAtPosLooker interface {

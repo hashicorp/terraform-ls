@@ -94,6 +94,30 @@ func (r *datasourceBlock) BlockType() string {
 	return "data"
 }
 
+func (r *datasourceBlock) HoverAtPos(pos hcl.Pos) (string, error) {
+	if r.sr == nil {
+		return "", &noSchemaReaderErr{r.BlockType()}
+	}
+
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(r.tBlock.Tokens())
+	if PosInLabels(hclBlock, pos) {
+		// TODO: implement label hover
+		return "", nil
+	}
+
+	rSchema, err := r.sr.ResourceSchema(r.Type())
+	if err != nil {
+		return "", err
+	}
+	cb := &completableBlock{
+		logger:       r.logger,
+		parsedLabels: r.Labels(),
+		schema:       rSchema.Block,
+		tBlock:       r.tBlock,
+	}
+	return cb.hoverAtPos(pos)
+}
+
 func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
 	if r.sr == nil {
 		return nil, &noSchemaReaderErr{r.BlockType()}

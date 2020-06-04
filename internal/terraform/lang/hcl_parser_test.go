@@ -459,7 +459,7 @@ func TestBlock_BlockAtPos(t *testing.T) {
 			tBlock := newTestBlock(t, tc.cfg)
 			b := ParseBlock(tBlock, schema)
 
-			fBlock, _ := b.BlockAtPos(tc.pos)
+			_, fBlock, _ := b.BlockAtPos(tc.pos)
 			if diff := cmp.Diff(tc.expectedBlock, fBlock, opts...); diff != "" {
 				t.Fatalf("Block doesn't match.\n%s", diff)
 			}

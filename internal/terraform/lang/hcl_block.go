@@ -22,26 +22,26 @@ func (b *parsedBlock) BlockTypes() map[string]*BlockType {
 	return b.BlockTypesMap
 }
 
-func (b *parsedBlock) BlockAtPos(pos hcl.Pos) (Block, bool) {
+func (b *parsedBlock) BlockAtPos(pos hcl.Pos) (string, Block, bool) {
 	// Check nested blocks first
 	for _, nbt := range b.BlockTypesMap {
-		if b, ok := nbt.BlockAtPos(pos); ok {
-			return b, true
+		if ty, b, ok := nbt.BlockAtPos(pos); ok {
+			return ty, b, true
 		}
 	}
 
 	// Check unknown blocks to prevent false positive below
 	for _, ub := range b.unknownBlocks {
 		if ub.Range().ContainsPos(pos) {
-			return nil, false
+			return ub.Type, nil, false
 		}
 	}
 
 	if b.hclBlock.Range().ContainsPos(pos) {
-		return b, true
+		return b.hclBlock.Type, b, true
 	}
 
-	return nil, false
+	return "", nil, false
 }
 
 func (b *parsedBlock) Range() hcl.Range {
@@ -52,14 +52,14 @@ func (b *parsedBlock) PosInBody(pos hcl.Pos) bool {
 	for _, blockType := range b.BlockTypesMap {
 		for _, b := range blockType.BlockList {
 			if b.Range().ContainsPos(pos) {
-				return b.PosInBody(pos)
+				return true
 			}
 		}
 	}
 
 	for _, ub := range b.unknownBlocks {
 		if ub.Range().ContainsPos(pos) {
-			return posInBodyOfBlock(ub, pos)
+			return true
 		}
 	}
 
