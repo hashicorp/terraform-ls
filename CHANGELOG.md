@@ -4,8 +4,10 @@ FEATURES:
 
  - textDocument/complete: Complete first level keywords ([#104](https://github.com/hashicorp/terraform-ls/pull/104))
  - Add ability to specify path to Terraform binary ([#109](https://github.com/hashicorp/terraform-ls/pull/109))
+
+ENHANCEMENTS:
+
  - Improve UX of completion items ([#115](https://github.com/hashicorp/terraform-ls/pull/115))
- - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
  - Add support for autocomplete based on a prefix ([#119](https://github.com/hashicorp/terraform-ls/pull/119))
  - textDocument/complete: Use isIncomplete for >100 items ([#132](https://github.com/hashicorp/terraform-ls/pull/132))
  - textDocument/complete: Pass TextEdit instead of static text ([#133](https://github.com/hashicorp/terraform-ls/pull/133))
@@ -13,6 +15,7 @@ FEATURES:
 INTERNAL:
 
  - refactoring(parser): Pass around tokens instead of blocks ([#125](https://github.com/hashicorp/terraform-ls/pull/125))
+ - langserver: Make requests sequential ([#120](https://github.com/hashicorp/terraform-ls/pull/120))
  - Support partial updates ([#103](https://github.com/hashicorp/terraform-ls/pull/103))
  - Support simplified building ([#98](https://github.com/hashicorp/terraform-ls/pull/98))
 
