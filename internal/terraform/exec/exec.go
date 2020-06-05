@@ -108,10 +108,8 @@ func (e *Executor) cmd(args ...string) (*command, error) {
 	// so we don't need to ask checkpoint for upgrades.
 	cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 
-	for _, key := range passthroughEnvVars {
-		if value := os.Getenv(key); value != "" {
-			cmd.Env = append(cmd.Env, key+"="+value)
-		}
+	for _, envVar := range passthroughEnvVars {
+		cmd.Env = append(cmd.Env, envVar)
 	}
 
 	if e.execLogPath != "" {
