@@ -1,3 +1,9 @@
+## 0.3.1 (5 June 2020)
+
+BUG FIXES:
+
+ - terraform/exec: Pass through all environment variables ([#139](https://github.com/hashicorp/terraform-ls/pull/139))
+
 ## 0.3.0 (4 June 2020)
 
 FEATURES:
