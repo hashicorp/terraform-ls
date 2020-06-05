@@ -18,7 +18,7 @@ if you experience a bug or have an idea for a feature.
 
 ## Installation
 
-1. [Download for the latest version](https://github.com/hashicorp/terraform-ls/releases/latest)
+1. [Download for the latest version](https://releases.hashicorp.com/terraform-ls/)
   of the language server relevant for your operating system and architecture.
 2. The language server is distributed as a single binary.
   Install it by unzipping it and moving it to a directory
