@@ -1,3 +1,9 @@
+## 0.3.2 (5 June 2020)
+
+BUG FIXES:
+
+ - fix: os.Environ() returns KEY=val, not just keys (fix of a bug that was introduced in 0.3.1) ([#143](https://github.com/hashicorp/terraform-ls/pull/143))
+
 ## 0.3.1 (5 June 2020)
 
 BUG FIXES:
