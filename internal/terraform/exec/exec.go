@@ -21,15 +21,11 @@ import (
 
 var defaultExecTimeout = 30 * time.Second
 
-// Environment variables to pass through to Terraform
-var passthroughEnvVars = []string{
-	// This allows Terraform to find custom-built providers
-	"HOME", "USER", "USERPROFILE",
-	// This allows Terraform to create crash log in the desired temp directory
-	// os.TempDir would otherwise fall back to C:\Windows on Windows
-	// which has no write permissions for non-admins
-	"TMPDIR", "TMP", "TEMP",
-}
+// We pass through all variables, but longer term we'll need to reflect
+// that some variables might be workspace/directory specific
+// and passing through these may be dangerous once the LS
+// starts to execute commands which can mutate the state
+var passthroughEnvVars = os.Environ()
 
 // cmdCtxFunc allows mocking of Terraform in tests while retaining
 // ability to pass context for timeout/cancellation
