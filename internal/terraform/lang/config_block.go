@@ -64,7 +64,7 @@ func (cl *completableLabels) completionCandidatesAtPos(pos hcl.Pos) (CompletionC
 		c.prefixRng = prefixRng
 		list.candidates = append(list.candidates, c)
 	}
-	list.Sort()
+	list.SortAndSetSortText()
 
 	return list, nil
 }
@@ -111,6 +111,13 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 	prefix, prefixRng := prefixAtPos(cb.tBlock, pos)
 	cb.logger.Printf("completing block: %#v, %#v", prefix, prefixRng)
 
+	if prefix == "" {
+		allRequiredFieldCandidate := computeAllRequiredFieldCandidate(prefixRng, b)
+		if !allRequiredFieldCandidate.Empty() {
+			list.candidates = append(list.candidates, allRequiredFieldCandidate)
+		}
+	}
+
 	for name, attr := range b.Attributes() {
 		if len(list.candidates) >= cb.maxCompletionCandidates() {
 			list.isIncomplete = true
@@ -140,20 +147,42 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		if block.ReachedMaxItems() {
 			continue
 		}
-
-		nbc := &nestedBlockCandidate{
-			Name:      name,
-			BlockType: block,
-		}
-		if prefixRng != nil {
-			nbc.PrefixRange = prefixRng
-		}
-		list.candidates = append(list.candidates, nbc)
+		list.candidates = append(list.candidates, &nestedBlockCandidate{
+			Name:        name,
+			BlockType:   block,
+			PrefixRange: prefixRng,
+		})
 	}
-
-	list.Sort()
+	list.SortAndSetSortText()
 
 	return list, nil
+}
+
+func computeAllRequiredFieldCandidate(prefixRng *hcl.Range, b Block) *AllRequiredFieldCandidate {
+	allRequiredFieldCandidate := &AllRequiredFieldCandidate{
+		PrefixRange: prefixRng,
+	}
+	for name, attr := range b.Attributes() {
+		if attr.Schema().Required && !attr.IsDeclared() {
+			allRequiredFieldCandidate.AttrCandidates = append(allRequiredFieldCandidate.AttrCandidates, &attributeCandidate{
+				Name:        name,
+				Attr:        attr,
+				PrefixRange: prefixRng,
+			})
+		}
+	}
+
+	for name, block := range b.BlockTypes() {
+		nbc := &nestedBlockCandidate{
+			Name:        name,
+			BlockType:   block,
+			PrefixRange: prefixRng,
+		}
+		for i := 1; i <= block.MissedMinItems(); i++ {
+			allRequiredFieldCandidate.NestedBlockCandidates = append(allRequiredFieldCandidate.NestedBlockCandidates, nbc)
+		}
+	}
+	return allRequiredFieldCandidate
 }
 
 type candidateList struct {
@@ -161,11 +190,16 @@ type candidateList struct {
 	isIncomplete bool
 }
 
-func (l *candidateList) Sort() {
+func (l *candidateList) SortAndSetSortText() {
 	less := func(i, j int) bool {
-		return l.candidates[i].Label() < l.candidates[j].Label()
+		sortText1 := candidateSortTextPolicy(l.candidates[i])
+		sortText2 := candidateSortTextPolicy(l.candidates[j])
+		return sortText1 < sortText2 || (sortText1 == sortText2 && l.candidates[i].Label() < l.candidates[j].Label())
 	}
 	sort.Slice(l.candidates, less)
+	for i, can := range l.candidates {
+		setCandidateSortText(can, i+1)
+	}
 }
 
 func (l *candidateList) List() []CompletionCandidate {
@@ -185,10 +219,19 @@ type labelCandidate struct {
 	detail        string
 	documentation MarkupContent
 	prefixRng     *hcl.Range
+	sortText      string
+}
+
+func (c *labelCandidate) SortText() string {
+	return c.sortText
 }
 
 func (c *labelCandidate) Label() string {
 	return c.label
+}
+
+func (c *labelCandidate) CompletionItemKind() int {
+	return 5 //lsp.CIKField
 }
 
 func (c *labelCandidate) Detail() string {
@@ -214,6 +257,15 @@ type attributeCandidate struct {
 	Name        string
 	Attr        *Attribute
 	PrefixRange *hcl.Range
+	sortText    string
+}
+
+func (c *attributeCandidate) SortText() string {
+	return c.sortText
+}
+
+func (c *attributeCandidate) CompletionItemKind() int {
+	return 5 // lsp.CIKField
 }
 
 func (c *attributeCandidate) Label() string {
@@ -242,7 +294,7 @@ func (c *attributeCandidate) Documentation() MarkupContent {
 
 func (c *attributeCandidate) Snippet() TextEdit {
 	return &textEdit{
-		newText: fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(0, c.Attr.Schema().AttributeType)),
+		newText: fmt.Sprintf("%s = %s", c.Name, snippetForAttrType(c.Attr.Schema().AttributeType)),
 		rng:     c.PrefixRange,
 	}
 }
@@ -258,10 +310,19 @@ type nestedBlockCandidate struct {
 	Name        string
 	BlockType   *BlockType
 	PrefixRange *hcl.Range
+	sortText    string
+}
+
+func (c *nestedBlockCandidate) SortText() string {
+	return c.sortText
 }
 
 func (c *nestedBlockCandidate) Label() string {
 	return c.Name
+}
+
+func (c *nestedBlockCandidate) CompletionItemKind() int {
+	return 5 // lsp.CIKField
 }
 
 func (c *nestedBlockCandidate) Detail() string {
@@ -288,6 +349,71 @@ func (c *nestedBlockCandidate) Snippet() TextEdit {
 func (c *nestedBlockCandidate) PlainText() TextEdit {
 	return &textEdit{
 		newText: c.Name,
+		rng:     c.PrefixRange,
+	}
+}
+
+type AllRequiredFieldCandidate struct {
+	AttrCandidates        []*attributeCandidate
+	NestedBlockCandidates []*nestedBlockCandidate
+	PrefixRange           *hcl.Range
+	sortText              string
+}
+
+func (c *AllRequiredFieldCandidate) SortText() string {
+	return c.sortText
+}
+
+func (c *AllRequiredFieldCandidate) Label() string {
+	return "Fill Required Fields..."
+}
+
+func (c *AllRequiredFieldCandidate) CompletionItemKind() int {
+	return 4 // lsp.CIKConstructor
+}
+
+func (c *AllRequiredFieldCandidate) Detail() string {
+	return ""
+}
+
+func (c *AllRequiredFieldCandidate) Empty() bool {
+	return len(c.AttrCandidates)+len(c.NestedBlockCandidates) == 0
+}
+
+func (c *AllRequiredFieldCandidate) Documentation() MarkupContent {
+	text := c.PlainText().NewText()
+	text = strings.Join(strings.Split(text, "\n"), "\n\t")
+	return PlainText(fmt.Sprintf("Auto-generated object literal (required fields)\n{\n\t%s\n}", text))
+}
+
+func (c *AllRequiredFieldCandidate) Snippet() TextEdit {
+	var content []string
+	placeHolder := 1
+	for _, attr := range c.AttrCandidates {
+		text, nextPlaceHolder := snippetForAttrTypeWithPlaceholder(placeHolder, attr.Attr.Schema().AttributeType)
+		content = append(content, fmt.Sprintf("%s = %s", attr.Name, text))
+		placeHolder = nextPlaceHolder
+	}
+	for _, nestedBlock := range c.NestedBlockCandidates {
+		content = append(content, "\n"+snippetForNestedBlockWithPlaceholder(placeHolder, nestedBlock.Name))
+		placeHolder++
+	}
+	return &textEdit{
+		newText: strings.Join(content, "\n"),
+		rng:     c.PrefixRange,
+	}
+}
+
+func (c *AllRequiredFieldCandidate) PlainText() TextEdit {
+	var content []string
+	for _, attr := range c.AttrCandidates {
+		content = append(content, fmt.Sprintf("%s = %s", attr.Name, plainTextForAttrType(attr.Attr.Schema().AttributeType)))
+	}
+	for _, nestedBlock := range c.NestedBlockCandidates {
+		content = append(content, "\n"+plainTextForNestedBlock(nestedBlock.Name))
+	}
+	return &textEdit{
+		newText: strings.Join(content, "\n"),
 		rng:     c.PrefixRange,
 	}
 }

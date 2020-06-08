@@ -49,6 +49,13 @@ func (b *BlockType) ReachedMaxItems() bool {
 	return false
 }
 
+func (b *BlockType) MissedMinItems() int {
+	if b.schema.MinItems > 0 && len(b.BlockList) < int(b.schema.MinItems) {
+		return int(b.schema.MinItems) - len(b.BlockList)
+	}
+	return 0
+}
+
 type BlockTypes map[string]*BlockType
 
 func (bt BlockTypes) AddBlock(name string, block *hclsyntax.Block, typeSchema *tfjson.SchemaBlockType) {

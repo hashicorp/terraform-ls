@@ -8,40 +8,87 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func snippetForAttrType(placeholder int, attrType cty.Type) string {
-	mapSnippet := func(aType cty.Type) string {
-		return fmt.Sprintf("{\n"+`  "${0:key}" = %s`+"\n}",
-			snippetForAttrType(1, aType))
+func snippetForAttrType(attrType cty.Type) string {
+	text, _ := snippetForAttrTypeWithPlaceholder(1, attrType)
+	return text
+}
+
+func snippetForAttrTypeWithPlaceholder(placeholder int, attrType cty.Type) (string, int) {
+	mapSnippet := func(placeholder int, aType cty.Type) (string, int) {
+		text, nextPlaceHolder := snippetForAttrTypeWithPlaceholder(placeholder+1, aType)
+		return fmt.Sprintf("{\n"+`  "${%d:key}" = %s`+"\n}",
+			placeholder, text), nextPlaceHolder
+	}
+
+	nextPlaceHolder := placeholder + 1
+	switch attrType {
+	case cty.String:
+		return fmt.Sprintf(`"${%d:value}"`, placeholder), nextPlaceHolder
+	case cty.List(cty.String), cty.Set(cty.String):
+		return fmt.Sprintf(`["${%d:value}"]`, placeholder), nextPlaceHolder
+	case cty.Map(cty.String):
+		return mapSnippet(placeholder, cty.String)
+
+	case cty.Bool:
+		return fmt.Sprintf(`${%d:false}`, placeholder), nextPlaceHolder
+	case cty.List(cty.Bool), cty.Set(cty.Bool):
+		return fmt.Sprintf(`[${%d:false}]`, placeholder), nextPlaceHolder
+	case cty.Map(cty.Bool):
+		return mapSnippet(placeholder, cty.Bool)
+
+	case cty.Number:
+		return fmt.Sprintf(`${%d:0}`, placeholder), nextPlaceHolder
+	case cty.List(cty.Number), cty.Set(cty.Number):
+		return fmt.Sprintf(`[${%d:0}]`, placeholder), nextPlaceHolder
+	case cty.Map(cty.Number):
+		return mapSnippet(placeholder, cty.Number)
+	}
+
+	return "", placeholder
+}
+
+func plainTextForAttrType(attrType cty.Type) string {
+	mapPlainText := func(aType cty.Type) string {
+		return fmt.Sprintf("{\n"+`  "key" = %s`+"\n}",
+			plainTextForAttrType(aType))
 	}
 
 	switch attrType {
 	case cty.String:
-		return fmt.Sprintf(`"${%d:value}"`, placeholder)
+		return `""`
 	case cty.List(cty.String), cty.Set(cty.String):
-		return fmt.Sprintf(`["${%d:value}"]`, placeholder)
+		return fmt.Sprintf(`[""]`)
 	case cty.Map(cty.String):
-		return mapSnippet(cty.String)
+		return mapPlainText(cty.String)
 
 	case cty.Bool:
-		return fmt.Sprintf(`${%d:false}`, placeholder)
+		return `false`
 	case cty.List(cty.Bool), cty.Set(cty.Bool):
-		return fmt.Sprintf(`[${%d:false}]`, placeholder)
+		return `[false]`
 	case cty.Map(cty.Bool):
-		return mapSnippet(cty.Bool)
+		return plainTextForAttrType(cty.Bool)
 
 	case cty.Number:
-		return fmt.Sprintf(`${%d:42}`, placeholder)
+		return `0`
 	case cty.List(cty.Number), cty.Set(cty.Number):
-		return fmt.Sprintf(`[${%d:42}]`, placeholder)
+		return `[0]`
 	case cty.Map(cty.Number):
-		return mapSnippet(cty.Number)
+		return plainTextForAttrType(cty.Number)
 	}
 
 	return ""
 }
 
 func snippetForNestedBlock(name string) string {
-	return fmt.Sprintf("%s {\n  ${0}\n}", name)
+	return snippetForNestedBlockWithPlaceholder(1, name)
+}
+
+func snippetForNestedBlockWithPlaceholder(placeholder int, name string) string {
+	return fmt.Sprintf("%s {\n  ${%d}\n}", name, placeholder)
+}
+
+func plainTextForNestedBlock(name string) string {
+	return fmt.Sprintf("%s {\n  \n}", name)
 }
 
 func snippetForBlock(name string, labelSchema LabelSchema) string {

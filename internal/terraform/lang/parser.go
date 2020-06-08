@@ -152,6 +152,15 @@ type completableBlockType struct {
 	documentation MarkupContent
 	prefix        string
 	prefixRng     *hcl.Range
+	sortText      string
+}
+
+func (bt *completableBlockType) SortText() string {
+	return bt.sortText
+}
+
+func (bt *completableBlockType) CompletionItemKind() int {
+	return 14 //lsp.CIKKeyword
 }
 
 func (bt *completableBlockType) Label() string {

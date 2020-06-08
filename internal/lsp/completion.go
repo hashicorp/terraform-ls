@@ -37,21 +37,23 @@ func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupp
 	if snippetSupport {
 		return lsp.CompletionItem{
 			Label:            candidate.Label(),
-			Kind:             lsp.CIKField,
+			Kind:             lsp.CompletionItemKind(candidate.CompletionItemKind()),
 			InsertTextFormat: lsp.ITFSnippet,
 			Detail:           candidate.Detail(),
 			Documentation:    doc,
 			TextEdit:         textEdit(candidate.Snippet(), pos),
+			SortText:         candidate.SortText(),
 		}
 	}
 
 	return lsp.CompletionItem{
 		Label:            candidate.Label(),
-		Kind:             lsp.CIKField,
+		Kind:             lsp.CompletionItemKind(candidate.CompletionItemKind()),
 		InsertTextFormat: lsp.ITFPlainText,
 		Detail:           candidate.Detail(),
 		Documentation:    doc,
 		TextEdit:         textEdit(candidate.PlainText(), pos),
+		SortText:         candidate.SortText(),
 	}
 }
 

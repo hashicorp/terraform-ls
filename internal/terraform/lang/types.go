@@ -78,6 +78,8 @@ type CompletionCandidate interface {
 	Documentation() MarkupContent
 	Snippet() TextEdit
 	PlainText() TextEdit
+	SortText() string
+	CompletionItemKind() int
 }
 
 type TextEdit interface {
