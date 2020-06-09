@@ -10,7 +10,6 @@ import (
 	"runtime"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 )
 
@@ -23,32 +22,20 @@ type watcher interface {
 	SetLogger(*log.Logger)
 }
 
-func watcherSupportsTerraform(ver *version.Version) error {
-	c, err := version.NewConstraint(
-		"< 0.13.0", // Version 0.13 will likely have a different lock file path
-	)
-	if err != nil {
-		return fmt.Errorf("failed to parse constraint: %w", err)
+func lockFilePaths(dir string) []string {
+	return []string{
+		// Terraform >= v0.13
+		filepath.Join(dir,
+			".terraform",
+			"plugins",
+			"selections.json"),
+		// Terraform <= v0.12
+		filepath.Join(dir,
+			".terraform",
+			"plugins",
+			runtime.GOOS+"_"+runtime.GOARCH,
+			"lock.json"),
 	}
-
-	supported := c.Check(ver)
-	if !supported {
-		return &errors.UnsupportedTerraformVersion{
-			Component:   "plugin watcher",
-			Version:     ver.String(),
-			Constraints: c,
-		}
-	}
-
-	return nil
-}
-
-func lockFilePath(dir string) string {
-	return filepath.Join(dir,
-		".terraform",
-		"plugins",
-		runtime.GOOS+"_"+runtime.GOARCH,
-		"lock.json")
 }
 
 // Watcher is a wrapper around native fsnotify.Watcher
@@ -57,9 +44,9 @@ func lockFilePath(dir string) string {
 // (rather than just events that may not be changing any bytes)
 // and hold knowledge about workspace structure
 type Watcher struct {
-	w      *fsnotify.Watcher
-	files  map[string]*watchedWorkspace
-	logger *log.Logger
+	w         *fsnotify.Watcher
+	lockFiles map[string]*watchedWorkspace
+	logger    *log.Logger
 }
 
 type watchedWorkspace struct {
@@ -73,9 +60,9 @@ func NewWatcher() (*Watcher, error) {
 		return nil, err
 	}
 	return &Watcher{
-		w:      w,
-		files:  make(map[string]*watchedWorkspace, 0),
-		logger: defaultLogger,
+		w:         w,
+		lockFiles: make(map[string]*watchedWorkspace, 0),
+		logger:    defaultLogger,
 	}, nil
 }
 
@@ -84,10 +71,10 @@ func (w *Watcher) SetLogger(logger *log.Logger) {
 }
 
 func (w *Watcher) AddWorkspace(dir string) error {
-	lockPath := lockFilePath(dir)
-	w.logger.Printf("Adding %q for watching...", lockPath)
+	lockPaths := lockFilePaths(dir)
+	w.logger.Printf("Adding %q for watching...", lockPaths)
 
-	hash, err := fileHashSum(lockPath)
+	lockFile, err := findLockFile(lockPaths)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &errors.NotInitializedErr{
@@ -97,12 +84,38 @@ func (w *Watcher) AddWorkspace(dir string) error {
 		return fmt.Errorf("unable to calculate hash: %w", err)
 	}
 
-	w.files[lockPath] = &watchedWorkspace{
-		pluginsLockFileHash: string(hash),
+	w.lockFiles[lockFile.path] = &watchedWorkspace{
+		pluginsLockFileHash: lockFile.hash,
 		dir:                 dir,
 	}
 
-	return w.w.Add(lockPath)
+	return w.w.Add(lockFile.path)
+}
+
+type lockFile struct {
+	path string
+	hash string
+}
+
+func findLockFile(paths []string) (*lockFile, error) {
+	var b []byte
+	var err error
+
+	for _, path := range paths {
+		b, err = fileHashSum(path)
+		if err == nil {
+			return &lockFile{
+				path: path,
+				hash: string(b),
+			}, nil
+		}
+
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+
+	return nil, err
 }
 
 func fileHashSum(path string) ([]byte, error) {
@@ -147,12 +160,12 @@ func (w *Watcher) OnPluginChange(f func(*watchedWorkspace) error) {
 					w.logger.Println("unable to calculate hash:", err)
 				}
 				newHash := string(hash)
-				existingHash := w.files[event.Name].pluginsLockFileHash
+				existingHash := w.lockFiles[event.Name].pluginsLockFileHash
 
 				if newHash != existingHash {
-					w.files[event.Name].pluginsLockFileHash = newHash
+					w.lockFiles[event.Name].pluginsLockFileHash = newHash
 
-					err = f(w.files[event.Name])
+					err = f(w.lockFiles[event.Name])
 					if err != nil {
 						w.logger.Println("error when executing on change:", err)
 					}
