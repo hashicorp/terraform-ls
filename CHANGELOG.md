@@ -1,3 +1,9 @@
+## 0.4.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - terraform: Support 0.13 version ([#149](https://github.com/hashicorp/terraform-ls/pull/149))
+
 ## 0.3.2 (5 June 2020)
 
 BUG FIXES:
