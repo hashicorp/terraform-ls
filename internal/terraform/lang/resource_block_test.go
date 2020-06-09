@@ -127,11 +127,20 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			hcl.Pos{Line: 2, Column: 1, Byte: 30},
 			[]renderedCandidate{
 				{
+					Label:         "Fill Required Fields...",
+					Detail:        "",
+					Documentation: "Auto-generated object literal (required fields)\n{\n\tattr_required = \"\"\n}",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 30},
+						Text: `attr_required = "${1:value}"`,
+					},
+				},
+				{
 					Label:  "attr_optional",
 					Detail: "Optional, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 30},
-						Text: `attr_optional = "${0:value}"`,
+						Text: `attr_optional = "${1:value}"`,
 					},
 				},
 				{
@@ -139,7 +148,7 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 					Detail: "Required, string",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 30},
-						Text: `attr_required = "${0:value}"`,
+						Text: `attr_required = "${1:value}"`,
 					},
 				},
 			},

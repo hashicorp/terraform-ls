@@ -98,12 +98,21 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			attrOnlySchema,
 			[]renderedCandidate{
 				{
+					Label:         "Fill Required Fields...",
+					Detail:        "",
+					Documentation: "Auto-generated object literal (required fields)\n{\n\trequired_bool = false\n}",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: `required_bool = ${1:false}`,
+					},
+				},
+				{
 					Label:         "first_str",
 					Detail:        "Optional, string",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: `first_str = "${0:value}"`,
+						Text: `first_str = "${1:value}"`,
 					},
 				},
 				{
@@ -112,7 +121,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "test boolean",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "required_bool = ${0:false}",
+						Text: "required_bool = ${1:false}",
 					},
 				},
 				{
@@ -121,7 +130,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "random number",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "second_num = ${0:42}",
+						Text: "second_num = ${1:0}",
 					},
 				},
 			},
@@ -136,12 +145,21 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			singleBlockOnlySchema,
 			[]renderedCandidate{
 				{
+					Label:         "Fill Required Fields...",
+					Detail:        "",
+					Documentation: "Auto-generated object literal (required fields)\n{\n\t\n\trequired_single {\n\t  \n\t}\n}",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_single {\n  ${1}\n}\n",
+					},
+				},
+				{
 					Label:         "optional_single",
 					Detail:        "Block, single",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "optional_single {\n  ${0}\n}",
+						Text: "optional_single {\n  ${1}\n}",
 					},
 				},
 				{
@@ -150,7 +168,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "required_single {\n  ${0}\n}",
+						Text: "required_single {\n  ${1}\n}",
 					},
 				},
 			},
@@ -165,12 +183,21 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			listBlockOnlySchema,
 			[]renderedCandidate{
 				{
+					Label:         "Fill Required Fields...",
+					Detail:        "",
+					Documentation: "Auto-generated object literal (required fields)\n{\n\t\n\trequired_list {\n\t  \n\t}\n}",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_list {\n  ${1}\n}\n",
+					},
+				},
+				{
 					Label:         "optional_list",
 					Detail:        "Block, list",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "optional_list {\n  ${0}\n}",
+						Text: "optional_list {\n  ${1}\n}",
 					},
 				},
 				{
@@ -179,7 +206,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "required_list {\n  ${0}\n}",
+						Text: "required_list {\n  ${1}\n}",
 					},
 				},
 				{
@@ -188,7 +215,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
-						Text: "undeclared_max1_list {\n  ${0}\n}",
+						Text: "undeclared_max1_list {\n  ${1}\n}",
 					},
 				},
 			},
@@ -208,7 +235,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 2, Column: 20, Byte: 33},
-						Text: `one = "${0:value}"`,
+						Text: `one = "${1:value}"`,
 					},
 				},
 			},
@@ -223,12 +250,21 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 			attrOnlySchema,
 			[]renderedCandidate{
 				{
+					Label:         "Fill Required Fields...",
+					Detail:        "",
+					Documentation: "Auto-generated object literal (required fields)\n{\n\trequired_bool = false\n}",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 2, Column: 1, Byte: 14},
+						Text: "required_bool = ${1:false}",
+					},
+				},
+				{
 					Label:         "first_str",
 					Detail:        "Optional, string",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
-						Text: `first_str = "${0:value}"`,
+						Text: `first_str = "${1:value}"`,
 					},
 				},
 				{
@@ -237,7 +273,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "test boolean",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
-						Text: `required_bool = ${0:false}`,
+						Text: `required_bool = ${1:false}`,
 					},
 				},
 				{
@@ -246,7 +282,7 @@ func TestCompletableBlock_CompletionCandidatesAtPos(t *testing.T) {
 					Documentation: "random number",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Column: 1, Line: 2, Byte: 14},
-						Text: `second_num = ${0:42}`,
+						Text: `second_num = ${1:0}`,
 					},
 				},
 			},

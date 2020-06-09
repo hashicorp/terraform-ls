@@ -86,6 +86,7 @@ func TestCompletion_withValidData(t *testing.T) {
 						"kind":5,
 						"detail":"Optional, number",
 						"documentation":"Desc 1",
+						"sortText":"00001",
 						"insertTextFormat":1,
 						"textEdit": {
 							"range": {
@@ -106,6 +107,7 @@ func TestCompletion_withValidData(t *testing.T) {
 						"kind":5,
 						"detail":"Optional, string",
 						"documentation":"Desc 2",
+						"sortText":"00002",
 						"insertTextFormat":1,
 						"textEdit": {
 							"range": {
@@ -126,6 +128,7 @@ func TestCompletion_withValidData(t *testing.T) {
 						"kind":5,
 						"detail":"Optional, bool",
 						"documentation":"Desc 3",
+						"sortText":"00003",
 						"insertTextFormat":1,
 						"textEdit": {
 							"range": {

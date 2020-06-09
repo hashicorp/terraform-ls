@@ -395,7 +395,7 @@ func (c *AllRequiredFieldCandidate) Snippet() TextEdit {
 		placeHolder = nextPlaceHolder
 	}
 	for _, nestedBlock := range c.NestedBlockCandidates {
-		content = append(content, "\n"+snippetForNestedBlockWithPlaceholder(placeHolder, nestedBlock.Name))
+		content = append(content, snippetForNestedBlockWithPlaceholder(placeHolder, nestedBlock.Name)+"\n")
 		placeHolder++
 	}
 	return &textEdit{
