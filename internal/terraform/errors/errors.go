@@ -29,6 +29,15 @@ func (utv *UnsupportedTerraformVersion) Error() string {
 	return msg
 }
 
+func (utv *UnsupportedTerraformVersion) Is(err error) bool {
+	te, ok := err.(*UnsupportedTerraformVersion)
+	if !ok {
+		return false
+	}
+
+	return te.Version == utv.Version
+}
+
 type NotInitializedErr struct {
 	Dir string
 }
