@@ -36,7 +36,7 @@ type parser struct {
 	schemaReader  schema.Reader
 }
 
-func ParserSupportsTerraform(v string) error {
+func parserSupportsTerraform(v string) error {
 	rawVer, err := version.NewVersion(v)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func ParserSupportsTerraform(v string) error {
 // FindCompatibleParser finds a parser that is compatible with
 // given Terraform version, so that it parses config accuretly
 func FindCompatibleParser(v string) (Parser, error) {
-	err := ParserSupportsTerraform(v)
+	err := parserSupportsTerraform(v)
 	if err != nil {
 		return nil, err
 	}

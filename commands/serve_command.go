@@ -92,13 +92,8 @@ func (c *ServeCommand) Run(args []string) int {
 		logger.Printf("Terraform execution timeout set to %s", d)
 	}
 
-	srv := langserver.NewLangServer(ctx, handlers.NewSession)
-	srv.SetLogger(logger)
-
 	if c.tfExecPath != "" {
 		path := c.tfExecPath
-
-		logger.Printf("Setting Terraform exec path to %q", path)
 
 		// just some sanity checking here, no need to get too specific otherwise will be complex cross-OS
 		if !filepath.IsAbs(path) {
@@ -115,10 +110,12 @@ func (c *ServeCommand) Run(args []string) int {
 			return 1
 		}
 
-		srv.SetDiscoveryFunc(func() (string, error) {
-			return path, nil
-		})
+		ctx = lsctx.WithTerraformExecPath(path, ctx)
+		logger.Printf("Terraform exec path set to %q", path)
 	}
+
+	srv := langserver.NewLangServer(ctx, handlers.NewSession)
+	srv.SetLogger(logger)
 
 	if c.port != 0 {
 		err := srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))

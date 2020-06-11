@@ -12,17 +12,14 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/creachadair/jrpc2/server"
-
-	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 type langServer struct {
-	srvCtx      context.Context
-	logger      *log.Logger
-	tfDiscoFunc discovery.DiscoveryFunc
-	srvOptions  *jrpc2.ServerOptions
-	newSession  session.SessionFactory
+	srvCtx     context.Context
+	logger     *log.Logger
+	srvOptions *jrpc2.ServerOptions
+	newSession session.SessionFactory
 }
 
 func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServer {
@@ -48,16 +45,9 @@ func (ls *langServer) SetLogger(logger *log.Logger) {
 	ls.logger = logger
 }
 
-func (ls *langServer) SetDiscoveryFunc(f discovery.DiscoveryFunc) {
-	ls.tfDiscoFunc = f
-}
-
 func (ls *langServer) newService() server.Service {
 	svc := ls.newSession(ls.srvCtx)
 	svc.SetLogger(ls.logger)
-	if ls.tfDiscoFunc != nil {
-		svc.SetDiscoveryFunc(ls.tfDiscoFunc)
-	}
 	return svc
 }
 

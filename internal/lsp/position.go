@@ -11,7 +11,7 @@ import (
 )
 
 type filePosition struct {
-	fh  FileHandler
+	fh  *fileHandler
 	pos hcl.Pos
 }
 
@@ -42,7 +42,7 @@ func FilePositionFromDocumentPosition(params lsp.TextDocumentPositionParams, f F
 	}
 
 	return &filePosition{
-		fh:  FileHandler(params.TextDocument.URI),
+		fh:  FileHandlerFromDocumentURI(params.TextDocument.URI),
 		pos: pos,
 	}, nil
 }

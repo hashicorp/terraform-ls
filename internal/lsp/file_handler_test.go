@@ -2,6 +2,8 @@ package lsp
 
 import (
 	"testing"
+
+	"github.com/sourcegraph/go-lsp"
 )
 
 var (
@@ -11,7 +13,7 @@ var (
 
 func TestFileHandler_invalid(t *testing.T) {
 	path := "invalidpath"
-	fh := FileHandler(path)
+	fh := FileHandlerFromDocumentURI(lsp.DocumentURI(path))
 	if fh.Valid() {
 		t.Fatalf("Expected %q to be invalid", path)
 	}

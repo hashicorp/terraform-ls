@@ -9,13 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
-	"github.com/hashicorp/terraform-ls/langserver/handlers"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
 	lsp "github.com/sourcegraph/go-lsp"
@@ -56,7 +53,8 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	lspUri := ilsp.FileHandlerFromPath(path).DocumentURI()
+	fh := ilsp.FileHandlerFromPath(path)
+
 	parts := strings.Split(c.atPos, ":")
 	if len(parts) != 2 {
 		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)", c.atPos))
@@ -79,62 +77,48 @@ func (c *CompletionCommand) Run(args []string) int {
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(logger)
 	fs.Open(ilsp.FileFromDocumentItem(lsp.TextDocumentItem{
-		URI:     lspUri,
+		URI:     fh.DocumentURI(),
 		Text:    string(content),
 		Version: 0,
 	}))
 
-	d := &discovery.Discovery{}
-	tfPath, err := d.LookPath()
+	file, err := fs.GetFile(fh)
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
 
-	ss := schema.NewStorage()
-	ss.SetLogger(logger)
-	ss.SetSynchronous()
-
-	ctx := context.Background()
-
-	dir := ilsp.FileHandler(lspUri).Dir()
-
-	tf := exec.NewExecutor(ctx, tfPath)
-	tf.SetWorkdir(dir)
-	version, err := tf.Version()
-	if err != nil {
-		c.Ui.Error(err.Error())
-		return 1
-	}
-
-	err = ss.ObtainSchemasForWorkspace(tf, dir)
-	if err != nil {
-		c.Ui.Error(err.Error())
-		return 1
-	}
-
-	ctx = lsctx.WithFilesystem(fs, ctx)
-	ctx = lsctx.WithTerraformVersion(version, ctx)
-	ctx = lsctx.WithTerraformExecutor(tf, ctx)
-	ctx = lsctx.WithTerraformSchemaReader(ss, ctx)
-	ctx = lsctx.WithClientCapabilities(&lsp.ClientCapabilities{}, ctx)
-
-	h := handlers.LogHandler(logger)
-	items, err := h.TextDocumentComplete(ctx, lsp.CompletionParams{
-		TextDocumentPositionParams: lsp.TextDocumentPositionParams{
-			TextDocument: lsp.TextDocumentIdentifier{
-				URI: lspUri,
-			},
-			Position: lspPos,
+	hclFile := ihcl.NewFile(file)
+	fPos, err := ilsp.FilePositionFromDocumentPosition(lsp.TextDocumentPositionParams{
+		TextDocument: lsp.TextDocumentIdentifier{
+			URI: fh.DocumentURI(),
 		},
-	})
+		Position: lspPos,
+	}, file)
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
+
+	w, err := rootmodule.NewRootModule(context.Background(), fh.Dir())
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+	p := w.Parser()
+
+	pos := fPos.Position()
+
+	candidates, err := p.CompletionCandidatesAtPos(hclFile, pos)
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
+	cc := &lsp.ClientCapabilities{}
+	items := ilsp.CompletionList(candidates, pos, cc.TextDocument)
 
 	c.Ui.Output(fmt.Sprintf("%#v", items))
-
 	return 0
 }
 
