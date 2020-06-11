@@ -39,6 +39,25 @@ provides overlapping functionality (and more features at the time of writing).
 As a result having both enabled at the same time may result in suboptimal UX,
 such as duplicate completion candidates.
 
+## Vim
+
+ - Install the following plugins:
+   * [async.vim plugin](https://github.com/prabirshrestha/async.vim)
+   * [vim-lsp plugin](https://github.com/prabirshrestha/vim-lsp)
+   * [asyncomplete.vim plugin](https://github.com/prabirshrestha/asyncomplete.vim)
+   * [asyncomplete-lsp.vim plugin](https://github.com/prabirshrestha/asyncomplete-lsp.vim)
+ - Add the following to your `.vimrc`:
+
+```vim
+if executable('terraform-ls')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'terraform-ls',
+        \ 'cmd': {server_info->['terraform-ls', 'serve']},
+        \ 'whitelist': ['terraform'],
+        \ })
+endif
+```
+
 ## NeoVim
 
  - Install the [coc.nvim plugin](https://github.com/neoclide/coc.nvim)
