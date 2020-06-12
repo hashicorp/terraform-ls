@@ -18,7 +18,7 @@ poll "closed_issue_locker" "locker" {
 
 poll "stale_issue_closer" "closer" {
     schedule = "0 3 * * *" # daily
-    labels = ["stale"]
+    labels = ["stale", "waiting-response"]
     no_reply_in_last = "2160h" # 90 days
     max_issues = 500
     sleep_between_issues = "5s"
