@@ -39,7 +39,27 @@ provides overlapping functionality (and more features at the time of writing).
 As a result having both enabled at the same time may result in suboptimal UX,
 such as duplicate completion candidates.
 
-## NeoVim
+## Sublime Text 2
+
+ - Install the [LSP package](https://github.com/sublimelsp/LSP#installation)
+ - Add the following snippet to your _User_ `LSP.sublime-settings` (editable via `Preferences → Package Settings → LSP → Settings` or via the command pallete → `Preferences: LSP Settings`)
+
+```json
+{
+	"clients": {
+		"terraform": {
+			"command": ["terraform-ls", "serve"],
+			"enabled": true,
+			"languageId": "terraform",
+			"scopes": ["source.terraform"],
+			"syntaxes": ["Packages/Terraform/Terraform.sublime-syntax"]
+		}
+	}
+}
+```
+
+## Vim / NeoVim
+### coc.nvim
 
  - Install the [coc.nvim plugin](https://github.com/neoclide/coc.nvim)
  - Add the following snippet to the `coc-setting.json` file (editable via `:CocConfig` in NeoVim)
@@ -68,23 +88,23 @@ Make sure to read through the [example vim configuration](https://github.com/neo
 inoremap <silent><expr> <c-space> coc#refresh()
 ```
 
-## Sublime Text 2
+### vim-lsp
 
- - Install the [LSP package](https://github.com/sublimelsp/LSP#installation)
- - Add the following snippet to your _User_ `LSP.sublime-settings` (editable via `Preferences → Package Settings → LSP → Settings` or via the command pallete → `Preferences: LSP Settings`)
+ - Install the following plugins:
+   * [async.vim plugin](https://github.com/prabirshrestha/async.vim)
+   * [vim-lsp plugin](https://github.com/prabirshrestha/vim-lsp)
+   * [asyncomplete.vim plugin](https://github.com/prabirshrestha/asyncomplete.vim)
+   * [asyncomplete-lsp.vim plugin](https://github.com/prabirshrestha/asyncomplete-lsp.vim)
+ - Add the following to your `.vimrc`:
 
-```json
-{
-	"clients": {
-		"terraform": {
-			"command": ["terraform-ls", "serve"],
-			"enabled": true,
-			"languageId": "terraform",
-			"scopes": ["source.terraform"],
-			"syntaxes": ["Packages/Terraform/Terraform.sublime-syntax"]
-		}
-	}
-}
+```vim
+if executable('terraform-ls')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'terraform-ls',
+        \ 'cmd': {server_info->['terraform-ls', 'serve']},
+        \ 'whitelist': ['terraform'],
+        \ })
+endif
 ```
 
 ## VS Code
