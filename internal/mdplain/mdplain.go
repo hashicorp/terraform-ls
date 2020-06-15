@@ -1,7 +1,6 @@
 package mdplain
 
 import (
-	"fmt"
 	"regexp"
 )
 
@@ -55,18 +54,9 @@ func Clean(markdown string) string {
 	// TODO: maybe use https://github.com/russross/blackfriday/tree/v2, write custom renderer or
 	// generate HTML then process that to plaintext using https://github.com/jaytaylor/html2text
 
-	fmt.Printf("cleaning %q\n", markdown)
-
-	result := markdown
-	before := markdown
-
 	for _, r := range replacements {
-		result = r.re.ReplaceAllString(result, r.sub)
-		if before != result {
-			fmt.Printf("RE: %q, %q to %q\n", r.re, before, result)
-		}
-		before = result
+		markdown = r.re.ReplaceAllString(markdown, r.sub)
 	}
 
-	return string(result)
+	return string(markdown)
 }
