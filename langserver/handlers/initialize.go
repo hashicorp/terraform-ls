@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -54,10 +52,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	err = rmm.AddRootModule(fh.Dir())
 	if err != nil {
-		if errors.Is(err, &tferr.NotInitializedErr{}) {
-			return serverCaps, fmt.Errorf("Directory not initialized. "+
-				"Please run `terraform init` in %s", fh.Dir())
-		}
 		return serverCaps, err
 	}
 
