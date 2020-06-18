@@ -28,13 +28,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 
 	fh := ilsp.FileHandlerFromDirURI(params.RootURI)
-	if !fh.Valid() {
-		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
-	}
-
-	if !fh.IsDir() {
+	if fh.URI() == "" || !fh.IsDir() {
 		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +
 			" Please open a directory.")
+	}
+	if !fh.Valid() {
+		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
 	err := lsctx.SetClientCapabilities(ctx, &params.Capabilities)
