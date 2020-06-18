@@ -42,17 +42,17 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	wm, err := lsctx.RootModuleManager(ctx)
+	rmm, err := lsctx.RootModuleManager(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
 
-	ww, err := lsctx.Watcher(ctx)
+	w, err := lsctx.Watcher(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
 
-	err = wm.AddRootModule(fh.Dir())
+	err = rmm.AddRootModule(fh.Dir())
 	if err != nil {
 		if errors.Is(err, &tferr.NotInitializedErr{}) {
 			return serverCaps, fmt.Errorf("Directory not initialized. "+
@@ -61,12 +61,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	err = ww.AddPaths(wm.PathsToWatch())
+	err = w.AddPaths(rmm.PathsToWatch())
 	if err != nil {
 		return serverCaps, err
 	}
 
-	err = ww.Start()
+	err = w.Start()
 	if err != nil {
 		return serverCaps, err
 	}
