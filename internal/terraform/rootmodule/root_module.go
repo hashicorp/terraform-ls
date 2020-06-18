@@ -81,6 +81,8 @@ func (rm *rootModule) init(ctx context.Context, dir string) error {
 		return err
 	}
 
+	rm.logger.Printf("Terraform version %s found at %s", version, tf.GetExecPath())
+
 	err = schema.SchemaSupportsTerraform(version)
 	if err != nil {
 		return err
