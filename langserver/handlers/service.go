@@ -12,10 +12,8 @@ import (
 	rpch "github.com/creachadair/jrpc2/handler"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/watcher"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 	"github.com/sourcegraph/go-lsp"
 )
@@ -28,33 +26,27 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	tfDiscoFunc  discovery.DiscoveryFunc
-	ss           *schema.Storage
-	executorFunc func(ctx context.Context, execPath string) *exec.Executor
+	ww                   watcher.Watcher
+	newRootModuleManager rootmodule.RootModuleManagerFactory
+	newWatcher           watcher.WatcherFactory
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
-	d := &discovery.Discovery{}
 	return &service{
-		logger:       discardLogs,
-		srvCtx:       srvCtx,
-		sessCtx:      sessCtx,
-		stopSession:  stopSession,
-		executorFunc: exec.NewExecutor,
-		tfDiscoFunc:  d.LookPath,
-		ss:           schema.NewStorage(),
+		logger:               discardLogs,
+		srvCtx:               srvCtx,
+		sessCtx:              sessCtx,
+		stopSession:          stopSession,
+		newRootModuleManager: rootmodule.NewRootModuleManager,
+		newWatcher:           watcher.NewWatcher,
 	}
 }
 
 func (svc *service) SetLogger(logger *log.Logger) {
 	svc.logger = logger
-}
-
-func (svc *service) SetDiscoveryFunc(f discovery.DiscoveryFunc) {
-	svc.tfDiscoFunc = f
 }
 
 // Assigner builds out the jrpc2.Map according to the LSP protocol
@@ -73,8 +65,51 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	fs.SetLogger(svc.logger)
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
-	tfVersion := "0.0.0"
-	svc.ss.SetLogger(svc.logger)
+
+	rmm := svc.newRootModuleManager(svc.sessCtx)
+	rmm.SetLogger(svc.logger)
+
+	// The following is set via CLI flags, hence available in the server context
+	if path, ok := lsctx.TerraformExecPath(svc.srvCtx); ok {
+		rmm.SetTerraformExecPath(path)
+	}
+	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
+		rmm.SetTerraformExecLogPath(path)
+	}
+	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
+		rmm.SetTerraformExecTimeout(timeout)
+	}
+
+	ww, err := svc.newWatcher()
+	if err != nil {
+		return nil, err
+	}
+	svc.ww = ww
+	svc.ww.SetLogger(svc.logger)
+	svc.ww.AddChangeHook(func(file watcher.TrackedFile) error {
+		w, err := rmm.RootModuleByPath(file.Path())
+		if err != nil {
+			return err
+		}
+		if w.IsKnownPluginLockFile(file.Path()) {
+			svc.logger.Printf("detected plugin cache change, updating ...")
+			return w.UpdatePluginCache(file)
+		}
+
+		return nil
+	})
+	svc.ww.AddChangeHook(func(file watcher.TrackedFile) error {
+		rm, err := rmm.RootModuleByPath(file.Path())
+		if err != nil {
+			return err
+		}
+		if rm.IsKnownModuleManifestFile(file.Path()) {
+			svc.logger.Printf("detected module manifest change, updating ...")
+			return rm.UpdateModuleManifest(file)
+		}
+
+		return nil
+	})
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -84,32 +119,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
-
-			tfPath, err := svc.tfDiscoFunc()
-			if err != nil {
-				return nil, err
-			}
-
-			// We intentionally pass session context here to make executor cancellable
-			// on session shutdown, rather than response delivery or request cancellation
-			// as some operations may run in isolated goroutines
-			tf := svc.executorFunc(svc.sessCtx, tfPath)
-
-			// Log path is set via CLI flag, hence in the server context
-			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
-				tf.SetExecLogPath(path)
-			}
-
-			// Timeout is set via CLI flag, hence in the server context
-			if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
-				tf.SetTimeout(timeout)
-			}
-
-			tf.SetLogger(svc.logger)
-
-			ctx = lsctx.WithTerraformExecutor(tf, ctx)
-			ctx = lsctx.WithTerraformVersionSetter(&tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaWriter(svc.ss, ctx)
+			ctx = lsctx.WithWatcher(ww, ctx)
+			ctx = lsctx.WithRootModuleManager(rmm, ctx)
 
 			return handle(ctx, req, lh.Initialize)
 		},
@@ -154,8 +165,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
-			ctx = lsctx.WithTerraformVersion(tfVersion, ctx)
-			ctx = lsctx.WithTerraformSchemaReader(svc.ss, ctx)
+			ctx = lsctx.WithParserFinder(rmm, ctx)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
@@ -166,20 +176,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithFilesystem(fs, ctx)
-
-			tfPath, err := svc.tfDiscoFunc()
-			if err != nil {
-				return nil, err
-			}
-
-			tf := svc.executorFunc(ctx, tfPath)
-			// Log path is set via CLI flag, hence the server context
-			if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
-				tf.SetExecLogPath(path)
-			}
-			tf.SetLogger(svc.logger)
-
-			ctx = lsctx.WithTerraformExecutor(tf, ctx)
+			ctx = lsctx.WithTerraformExecFinder(rmm, ctx)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
@@ -219,10 +216,10 @@ func (svc *service) Finish(status jrpc2.ServerStatus) {
 		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}
 
-	svc.logger.Println("Stopping schema watcher for session ...")
-	err := svc.ss.StopWatching()
+	svc.logger.Println("Stopping watcher for session ...")
+	err := svc.ww.Stop()
 	if err != nil {
-		svc.logger.Println("Unable to stop schema watcher for session:", err)
+		svc.logger.Println("Unable to stop watcher for session:", err)
 	}
 
 	svc.stopSession()
@@ -250,18 +247,4 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
 	}
 	return result, err
-}
-
-func supportsTerraform(tfVersion string) error {
-	err := schema.SchemaSupportsTerraform(tfVersion)
-	if err != nil {
-		return err
-	}
-
-	err = lang.ParserSupportsTerraform(tfVersion)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

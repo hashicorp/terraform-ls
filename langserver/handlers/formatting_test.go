@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 func TestLangServer_formattingWithoutInitialization(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(nil))
+	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -23,16 +24,18 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDirUri())}, session.SessionNotInitialized.Err())
+	}`, TempDir().URI())}, session.SessionNotInitialized.Err())
 }
 
-func TestLangServer_formatting(t *testing.T) {
+func TestLangServer_formatting_basic(t *testing.T) {
 	queue := validTfMockCalls()
 	queue.Q = append(queue.Q, &exec.MockItem{
 		Args:   []string{"fmt", "-"},
 		Stdout: "provider \"test\" {\n\n}\n",
 	})
-	ls := langserver.NewLangServerMock(t, NewMock(queue))
+	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
+		TempDir().Dir(): {TerraformExecQueue: queue},
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -42,7 +45,7 @@ func TestLangServer_formatting(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDirUri())})
+	}`, TempDir().URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -56,14 +59,14 @@ func TestLangServer_formatting(t *testing.T) {
 			"text": "provider  \"test\"   {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDirUri())})
+	}`, TempDir().URI())})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDirUri())}, `{
+		}`, TempDir().URI())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [

@@ -1,10 +1,11 @@
 package lsp
 
 import (
-	"github.com/hashicorp/hcl/v2"
-	"github.com/sourcegraph/go-lsp"
 	"reflect"
 	"testing"
+
+	"github.com/hashicorp/hcl/v2"
+	"github.com/sourcegraph/go-lsp"
 )
 
 func TestLspRangeToHCL(t *testing.T) {
@@ -76,7 +77,7 @@ func TestLspRangeToHCL(t *testing.T) {
 		t.Logf("[DEBUG] Testing %q", v.Name)
 
 		result, err := lspRangeToHCL(v.Range, &file{
-			fh:   "file:///test.tf",
+			fh:   FileHandlerFromDocumentURI(lsp.DocumentURI("file:///test.tf")),
 			text: []byte(v.Content),
 		})
 		if err != nil {

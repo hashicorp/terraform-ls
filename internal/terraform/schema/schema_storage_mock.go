@@ -4,15 +4,16 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func MockStorage(ps *tfjson.ProviderSchemas) *Storage {
-	s := NewStorage()
-	if ps == nil {
-		ps = &tfjson.ProviderSchemas{}
+func MockStorage(ps *tfjson.ProviderSchemas) StorageFactory {
+	return func() *Storage {
+		s := NewStorage()
+		if ps == nil {
+			ps = &tfjson.ProviderSchemas{}
+		}
+		s.ps = ps
+		s.sync = true
+		return s
 	}
-	s.ps = ps
-	s.sync = true
-	s.w = &MockWatcher{}
-	return s
 }
 
 type MockReader struct {
@@ -27,7 +28,7 @@ type MockReader struct {
 }
 
 func (r *MockReader) storage() *Storage {
-	return MockStorage(r.ProviderSchemas)
+	return MockStorage(r.ProviderSchemas)()
 }
 
 func (r *MockReader) ProviderConfigSchema(name string) (*tfjson.Schema, error) {

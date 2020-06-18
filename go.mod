@@ -7,6 +7,7 @@ require (
 	github.com/creachadair/jrpc2 v0.8.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/google/go-cmp v0.4.0
+	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de
 	github.com/hashicorp/terraform-json v0.5.0

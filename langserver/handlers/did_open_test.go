@@ -9,7 +9,7 @@ import (
 )
 
 func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(nil))
+	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -22,5 +22,5 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDirUri())}, session.SessionNotInitialized.Err())
+	}`, TempDir().URI())}, session.SessionNotInitialized.Err())
 }

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/watcher"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -20,15 +20,15 @@ func (k *contextKey) String() string {
 
 var (
 	ctxFs               = &contextKey{"filesystem"}
-	ctxTerraformExec    = &contextKey{"terraform executor"}
 	ctxClientCapsSetter = &contextKey{"client capabilities setter"}
 	ctxClientCaps       = &contextKey{"client capabilities"}
-	ctxTfSchemaWriter   = &contextKey{"schema writer"}
-	ctxTfSchemaReader   = &contextKey{"schema reader"}
-	ctxTfVersion        = &contextKey{"terraform version"}
-	ctxTfVersionSetter  = &contextKey{"terraform version setter"}
+	ctxTfExecPath       = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath    = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout    = &contextKey{"terraform execution timeout"}
+	ctxWatcher          = &contextKey{"watcher"}
+	ctxRootModuleMngr   = &contextKey{"root module manager"}
+	ctxParserFinder     = &contextKey{"parser finder"}
+	ctxTfExecFinder     = &contextKey{"terraform exec finder"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -46,19 +46,6 @@ func Filesystem(ctx context.Context) (filesystem.Filesystem, error) {
 	}
 
 	return fs, nil
-}
-
-func WithTerraformExecutor(tf *exec.Executor, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTerraformExec, tf)
-}
-
-func TerraformExecutor(ctx context.Context) (*exec.Executor, error) {
-	tf, ok := ctx.Value(ctxTerraformExec).(*exec.Executor)
-	if !ok {
-		return nil, missingContextErr(ctxTerraformExec)
-	}
-
-	return tf, nil
 }
 
 func WithClientCapabilitiesSetter(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
@@ -88,59 +75,6 @@ func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
 	return *caps, nil
 }
 
-func WithTerraformSchemaWriter(s schema.Writer, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTfSchemaWriter, s)
-}
-
-func TerraformSchemaWriter(ctx context.Context) (schema.Writer, error) {
-	ss, ok := ctx.Value(ctxTfSchemaWriter).(schema.Writer)
-	if !ok {
-		return nil, missingContextErr(ctxTfSchemaWriter)
-	}
-
-	return ss, nil
-}
-
-func WithTerraformSchemaReader(s schema.Reader, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTfSchemaReader, s)
-}
-
-func TerraformSchemaReader(ctx context.Context) (schema.Reader, error) {
-	ss, ok := ctx.Value(ctxTfSchemaReader).(schema.Reader)
-	if !ok {
-		return nil, missingContextErr(ctxTfSchemaReader)
-	}
-
-	return ss, nil
-}
-
-func WithTerraformVersion(v string, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTfVersion, v)
-}
-
-func TerraformVersion(ctx context.Context) (string, error) {
-	tfv, ok := ctx.Value(ctxTfVersion).(string)
-	if !ok {
-		return "", missingContextErr(ctxTfVersion)
-	}
-
-	return tfv, nil
-}
-
-func WithTerraformVersionSetter(v *string, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTfVersionSetter, v)
-}
-
-func SetTerraformVersion(ctx context.Context, v string) error {
-	tfv, ok := ctx.Value(ctxTfVersionSetter).(*string)
-	if !ok {
-		return missingContextErr(ctxTfVersionSetter)
-	}
-	*tfv = v
-
-	return nil
-}
-
 func WithTerraformExecLogPath(path string, ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxTfExecLogPath, path)
 }
@@ -156,5 +90,62 @@ func WithTerraformExecTimeout(timeout time.Duration, ctx context.Context) contex
 
 func TerraformExecTimeout(ctx context.Context) (time.Duration, bool) {
 	path, ok := ctx.Value(ctxTfExecTimeout).(time.Duration)
+	return path, ok
+}
+
+func WithWatcher(w watcher.Watcher, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxWatcher, w)
+}
+
+func Watcher(ctx context.Context) (watcher.Watcher, error) {
+	w, ok := ctx.Value(ctxWatcher).(watcher.Watcher)
+	if !ok {
+		return nil, missingContextErr(ctxWatcher)
+	}
+	return w, nil
+}
+
+func WithRootModuleManager(wm rootmodule.RootModuleManager, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootModuleMngr, wm)
+}
+
+func RootModuleManager(ctx context.Context) (rootmodule.RootModuleManager, error) {
+	wm, ok := ctx.Value(ctxRootModuleMngr).(rootmodule.RootModuleManager)
+	if !ok {
+		return nil, missingContextErr(ctxRootModuleMngr)
+	}
+	return wm, nil
+}
+
+func WithParserFinder(pf rootmodule.ParserFinder, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxParserFinder, pf)
+}
+
+func ParserFinder(ctx context.Context) (rootmodule.ParserFinder, error) {
+	pf, ok := ctx.Value(ctxParserFinder).(rootmodule.ParserFinder)
+	if !ok {
+		return nil, missingContextErr(ctxParserFinder)
+	}
+	return pf, nil
+}
+
+func WithTerraformExecFinder(tef rootmodule.TerraformExecFinder, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfExecFinder, tef)
+}
+
+func TerraformExecutorFinder(ctx context.Context) (rootmodule.TerraformExecFinder, error) {
+	pf, ok := ctx.Value(ctxTfExecFinder).(rootmodule.TerraformExecFinder)
+	if !ok {
+		return nil, missingContextErr(ctxTfExecFinder)
+	}
+	return pf, nil
+}
+
+func WithTerraformExecPath(path string, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfExecPath, path)
+}
+
+func TerraformExecPath(ctx context.Context) (string, bool) {
+	path, ok := ctx.Value(ctxTfExecPath).(string)
 	return path, ok
 }

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"os"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/hcl"
@@ -18,19 +17,24 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	tf, err := lsctx.TerraformExecutor(ctx)
+	tff, err := lsctx.TerraformExecutorFinder(ctx)
 	if err != nil {
 		return edits, err
 	}
-	// Input is sent to stdin -> no need for a meaningful workdir
-	tf.SetWorkdir(os.TempDir())
 
-	fh := ilsp.FileHandler(params.TextDocument.URI)
+	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
 	file, err := fs.GetFile(fh)
 	if err != nil {
 		return edits, err
 	}
 
+	tf, err := tff.TerraformExecutorForDir(fh.Dir())
+	if err != nil {
+		return edits, err
+	}
+
+	// TODO: This should probably be FormatWithContext()
+	// so it's cancellable on request cancellation
 	formatted, err := tf.Format(file.Text())
 	if err != nil {
 		return edits, err

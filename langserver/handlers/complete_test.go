@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 func TestCompletion_withoutInitialization(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(nil))
+	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -24,19 +25,23 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDirUri())}, session.SessionNotInitialized.Err())
+		}`, TempDir().URI())}, session.SessionNotInitialized.Err())
 }
 
 func TestCompletion_withValidData(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(&exec.MockQueue{
-		Q: []*exec.MockItem{
-			{
-				Args:   []string{"version"},
-				Stdout: "Terraform v0.12.0\n",
-			},
-			{
-				Args:   []string{"providers", "schema", "-json"},
-				Stdout: testSchemaOutput,
+	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
+		TempDir().Dir(): {
+			TerraformExecQueue: &exec.MockQueue{
+				Q: []*exec.MockItem{
+					{
+						Args:   []string{"version"},
+						Stdout: "Terraform v0.12.0\n",
+					},
+					{
+						Args:   []string{"providers", "schema", "-json"},
+						Stdout: testSchemaOutput,
+					},
+				},
 			},
 		},
 	}))
@@ -49,7 +54,7 @@ func TestCompletion_withValidData(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDirUri())})
+	}`, TempDir().URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -63,7 +68,7 @@ func TestCompletion_withValidData(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDirUri())})
+	}`, TempDir().URI())})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -75,7 +80,7 @@ func TestCompletion_withValidData(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDirUri())}, `{
+		}`, TempDir().URI())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {

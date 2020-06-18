@@ -53,8 +53,8 @@ func (e *NotInitializedErr) Is(err error) bool {
 
 func (e *NotInitializedErr) Error() string {
 	if e.Dir != "" {
-		return fmt.Sprintf("workspace %s not initialized", e.Dir)
+		return fmt.Sprintf("directory %s not initialized", e.Dir)
 	}
 
-	return fmt.Sprintf("workspace not initialized")
+	return fmt.Sprintf("directory not initialized")
 }

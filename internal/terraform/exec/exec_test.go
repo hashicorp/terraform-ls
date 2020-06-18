@@ -2,6 +2,7 @@ package exec
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -13,7 +14,7 @@ func TestExec_timeout(t *testing.T) {
 		Args:          []string{"version"},
 		SleepDuration: 100 * time.Millisecond,
 		Stdout:        "Terraform v0.12.0\n",
-	})
+	})(context.Background(), "")
 	e.SetWorkdir(os.TempDir())
 	e.timeout = 1 * time.Millisecond
 
@@ -37,7 +38,7 @@ func TestExec_Version(t *testing.T) {
 		Args:     []string{"version"},
 		Stdout:   "Terraform v0.12.0\n",
 		ExitCode: 0,
-	})
+	})(context.Background(), "")
 	e.SetWorkdir(os.TempDir())
 	v, err := e.Version()
 	if err != nil {
@@ -54,7 +55,7 @@ func TestExec_Format(t *testing.T) {
 		Args:     []string{"fmt", "-"},
 		Stdout:   string(expectedOutput),
 		ExitCode: 0,
-	})
+	})(context.Background(), "")
 	e.SetWorkdir(os.TempDir())
 	out, err := e.Format([]byte("unformatted"))
 	if err != nil {
@@ -72,7 +73,7 @@ func TestExec_ProviderSchemas(t *testing.T) {
 		Args:     []string{"providers", "schema", "-json"},
 		Stdout:   `{"format_version": "0.1"}`,
 		ExitCode: 0,
-	})
+	})(context.Background(), "")
 	e.SetWorkdir(os.TempDir())
 
 	ps, err := e.ProviderSchemas()
