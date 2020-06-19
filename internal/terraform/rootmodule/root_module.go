@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
-	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
@@ -81,6 +80,8 @@ func (rm *rootModule) init(ctx context.Context, dir string) error {
 	if err != nil {
 		return err
 	}
+
+	rm.logger.Printf("Terraform version %s found at %s", version, tf.GetExecPath())
 
 	err = schema.SchemaSupportsTerraform(version)
 	if err != nil {
@@ -153,7 +154,8 @@ func (rm *rootModule) initPluginCache(dir string) error {
 		lf, err = findFile(lockPaths)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return &tferr.NotInitializedErr{Dir: dir}
+				rm.logger.Printf("no plugin cache found: %s", err.Error())
+				return nil
 			}
 
 			return fmt.Errorf("unable to calculate hash: %w", err)
@@ -204,7 +206,7 @@ func (rm *rootModule) initModuleCache(dir string) error {
 	lf, err := newFile(moduleManifestFilePath(dir))
 	if err != nil {
 		if os.IsNotExist(err) {
-			rm.logger.Printf("module lock file not found: %s", err.Error())
+			rm.logger.Printf("no module manifest file found: %s", err.Error())
 			return nil
 		}
 

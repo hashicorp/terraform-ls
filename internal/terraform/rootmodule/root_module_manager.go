@@ -39,20 +39,20 @@ func newRootModuleManager(ctx context.Context) *rootModuleManager {
 }
 
 func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir string) (*rootModule, error) {
-	w := newRootModule(ctx)
+	rm := newRootModule(ctx)
 
-	w.SetLogger(rmm.logger)
+	rm.SetLogger(rmm.logger)
 
 	d := &discovery.Discovery{}
-	w.tfDiscoFunc = d.LookPath
-	w.tfNewExecutor = exec.NewExecutor
-	w.newSchemaStorage = schema.NewStorage
+	rm.tfDiscoFunc = d.LookPath
+	rm.tfNewExecutor = exec.NewExecutor
+	rm.newSchemaStorage = schema.NewStorage
 
-	w.tfExecPath = rmm.tfExecPath
-	w.tfExecTimeout = rmm.tfExecTimeout
-	w.tfExecLogPath = rmm.tfExecLogPath
+	rm.tfExecPath = rmm.tfExecPath
+	rm.tfExecTimeout = rmm.tfExecTimeout
+	rm.tfExecLogPath = rmm.tfExecLogPath
 
-	return w, w.init(ctx, dir)
+	return rm, rm.init(ctx, dir)
 }
 
 func (rmm *rootModuleManager) SetTerraformExecPath(path string) {
@@ -78,15 +78,15 @@ func (rmm *rootModuleManager) AddRootModule(dir string) error {
 
 	_, exists := rmm.rms[dir]
 	if exists {
-		return fmt.Errorf("rootModule %s was already added", dir)
+		return fmt.Errorf("root module %s was already added", dir)
 	}
 
-	w, err := rmm.newRootModule(context.Background(), dir)
+	rm, err := rmm.newRootModule(context.Background(), dir)
 	if err != nil {
 		return err
 	}
 
-	rmm.rms[dir] = w
+	rmm.rms[dir] = rm
 
 	return nil
 }
@@ -119,21 +119,21 @@ func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) 
 }
 
 func (rmm *rootModuleManager) ParserForDir(path string) (lang.Parser, error) {
-	w, err := rmm.RootModuleByPath(path)
+	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.Parser(), nil
+	return rm.Parser(), nil
 }
 
 func (rmm *rootModuleManager) TerraformExecutorForDir(path string) (*exec.Executor, error) {
-	w, err := rmm.RootModuleByPath(path)
+	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return w.TerraformExecutor(), nil
+	return rm.TerraformExecutor(), nil
 }
 
 // rootModuleDirFromPath strips known lock file paths and filenames
