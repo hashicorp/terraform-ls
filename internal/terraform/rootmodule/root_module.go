@@ -71,6 +71,7 @@ func (rm *rootModule) SetLogger(logger *log.Logger) {
 }
 
 func (rm *rootModule) init(ctx context.Context, dir string) error {
+	rm.logger.Printf("initing new root module: %s", dir)
 	tf, err := rm.initTfExecutor(dir)
 	if err != nil {
 		return err

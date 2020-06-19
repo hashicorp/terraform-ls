@@ -24,17 +24,19 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir().URI())}, session.SessionNotInitialized.Err())
+	}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
 }
 
 func TestLangServer_formatting_basic(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitDir(t, tmpDir.Dir())
 	queue := validTfMockCalls()
 	queue.Q = append(queue.Q, &exec.MockItem{
 		Args:   []string{"fmt", "-"},
 		Stdout: "provider \"test\" {\n\n}\n",
 	})
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: queue},
+		tmpDir.Dir(): {TerraformExecQueue: queue},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -45,7 +47,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -59,14 +61,14 @@ func TestLangServer_formatting_basic(t *testing.T) {
 			"text": "provider  \"test\"   {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir().URI())}, `{
+		}`, TempDir(t).URI())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [

@@ -21,6 +21,10 @@ type TerraformExecFinder interface {
 	TerraformExecutorForDir(path string) (*exec.Executor, error)
 }
 
+type RootModuleCandidateFinder interface {
+	RootModuleCandidatesByPath(path string) []string
+}
+
 type RootModuleManager interface {
 	SetLogger(logger *log.Logger)
 	SetTerraformExecPath(path string)
@@ -29,6 +33,7 @@ type RootModuleManager interface {
 	AddRootModule(dir string) error
 	PathsToWatch() []string
 	RootModuleByPath(path string) (RootModule, error)
+	RootModuleCandidatesByPath(path string) []string
 	ParserForDir(path string) (lang.Parser, error)
 	TerraformExecutorForDir(path string) (*exec.Executor, error)
 }

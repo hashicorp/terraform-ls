@@ -12,7 +12,7 @@ import (
 
 func TestInitialize_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: validTfMockCalls()},
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -23,19 +23,21 @@ func TestInitialize_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())}, code.SystemError.Err())
+	}`, TempDir(t).URI())}, code.SystemError.Err())
 }
 
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitDir(t, tmpDir.Dir())
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {
+		tmpDir.Dir(): {
 			TerraformExecQueue: &exec.MockCall{
 				Args:   []string{"version"},
 				Stdout: "Terraform v0.11.0\n",
@@ -51,12 +53,12 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	    "capabilities": {},
 	    "processId": 12345,
 	    "rootUri": %q
-	}`, TempDir().URI())}, code.SystemError.Err())
+	}`, TempDir(t).URI())}, code.SystemError.Err())
 }
 
 func TestInitialize_withInvalidRootURI(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: validTfMockCalls()},
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
 	}))
 	stop := ls.Start(t)
 	defer stop()

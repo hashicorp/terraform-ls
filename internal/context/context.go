@@ -29,6 +29,7 @@ var (
 	ctxRootModuleMngr   = &contextKey{"root module manager"}
 	ctxParserFinder     = &contextKey{"parser finder"}
 	ctxTfExecFinder     = &contextKey{"terraform exec finder"}
+	ctxRootModuleCaFi   = &contextKey{"root module candidate finder"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -148,4 +149,16 @@ func WithTerraformExecPath(path string, ctx context.Context) context.Context {
 func TerraformExecPath(ctx context.Context) (string, bool) {
 	path, ok := ctx.Value(ctxTfExecPath).(string)
 	return path, ok
+}
+
+func WithRootModuleCandidateFinder(rmcf rootmodule.RootModuleCandidateFinder, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootModuleCaFi, rmcf)
+}
+
+func RootModuleCandidateFinder(ctx context.Context) (rootmodule.RootModuleCandidateFinder, error) {
+	cf, ok := ctx.Value(ctxRootModuleCaFi).(rootmodule.RootModuleCandidateFinder)
+	if !ok {
+		return nil, missingContextErr(ctxRootModuleCaFi)
+	}
+	return cf, nil
 }

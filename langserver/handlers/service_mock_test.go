@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"context"
+	"io/ioutil"
+	"log"
+	"os"
+	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
@@ -19,16 +23,27 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
 
+	logger := testLogger()
+	rmmm := rootmodule.NewRootModuleManagerMock(ms.mockRMs)
+
 	svc := &service{
-		logger:               discardLogs,
+		logger:               logger,
 		srvCtx:               srvCtx,
 		sessCtx:              sessCtx,
 		stopSession:          ms.stop,
-		newRootModuleManager: rootmodule.NewRootModuleManagerMock(ms.mockRMs),
+		newRootModuleManager: rmmm,
 		newWatcher:           watcher.MockWatcher(),
 	}
 
 	return svc
+}
+
+func testLogger() *log.Logger {
+	if testing.Verbose() {
+		return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	}
+
+	return log.New(ioutil.Discard, "", 0)
 }
 
 func (ms *mockSession) stop() {

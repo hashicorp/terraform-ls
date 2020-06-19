@@ -11,7 +11,7 @@ import (
 
 func TestShutdown_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: validTfMockCalls()},
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -22,7 +22,7 @@ func TestShutdown_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`})
 

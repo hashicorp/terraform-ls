@@ -119,7 +119,7 @@ func (s *Storage) ObtainSchemasForModule(tf *exec.Executor, dir string) error {
 	go func() {
 		err := s.obtainSchemasForModule(tf, dir)
 		if err != nil {
-			s.logger.Println("error obtaining schemas:", err)
+			s.logger.Printf("error obtaining schemas for %s: %s", dir, err)
 		}
 	}()
 
@@ -140,10 +140,10 @@ func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {
 	start := time.Now()
 	ps, err := tf.ProviderSchemas()
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve schemas: %s", err)
+		return fmt.Errorf("Unable to retrieve schemas for %q: %s", dir, err)
 	}
 	s.ps = ps
-	s.logger.Printf("Schemas retrieved in %s", time.Since(start))
+	s.logger.Printf("Schemas retrieved for %q in %s", dir, time.Since(start))
 	return nil
 }
 

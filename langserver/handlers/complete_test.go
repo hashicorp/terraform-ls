@@ -25,12 +25,15 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDir().URI())}, session.SessionNotInitialized.Err())
+		}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
 }
 
 func TestCompletion_withValidData(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitDir(t, tmpDir.Dir())
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {
+		tmpDir.Dir(): {
 			TerraformExecQueue: &exec.MockQueue{
 				Q: []*exec.MockItem{
 					{
@@ -54,7 +57,7 @@ func TestCompletion_withValidData(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -68,7 +71,7 @@ func TestCompletion_withValidData(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir().URI())})
+	}`, TempDir(t).URI())})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -80,7 +83,7 @@ func TestCompletion_withValidData(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDir().URI())}, `{
+		}`, TempDir(t).URI())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {

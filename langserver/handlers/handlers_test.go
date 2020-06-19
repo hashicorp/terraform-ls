@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/lsp"
@@ -13,7 +14,7 @@ import (
 
 func TestInitalizeAndShutdown(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: validTfMockCalls()},
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -24,7 +25,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())}, `{
+	}`, TempDir(t).URI())}, `{
 		"jsonrpc": "2.0",
 		"id": 1,
 		"result": {
@@ -49,7 +50,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 
 func TestEOF(t *testing.T) {
 	ms := newMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir().Dir(): {TerraformExecQueue: validTfMockCalls()},
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
 	})
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
@@ -61,7 +62,7 @@ func TestEOF(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir().URI())}, `{
+	}`, TempDir(t).URI())}, `{
 		"jsonrpc": "2.0",
 		"id": 1,
 		"result": {
@@ -110,7 +111,30 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TempDir() lsp.FileHandler {
-	tmpDir := os.TempDir()
+func TempDir(t *testing.T) lsp.FileHandler {
+	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
+
+	err := os.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		if os.IsExist(err) {
+			return lsp.FileHandlerFromDirPath(tmpDir)
+		}
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
 	return lsp.FileHandlerFromDirPath(tmpDir)
+}
+
+func InitDir(t *testing.T, dir string) {
+	err := os.Mkdir(filepath.Join(dir, ".terraform"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

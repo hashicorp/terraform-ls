@@ -147,6 +147,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
+			ctx = lsctx.WithRootModuleCandidateFinder(rmm, ctx)
 			return handle(ctx, req, TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {

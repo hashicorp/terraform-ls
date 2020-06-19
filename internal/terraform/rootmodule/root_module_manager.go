@@ -91,28 +91,44 @@ func (rmm *rootModuleManager) AddRootModule(dir string) error {
 	return nil
 }
 
-func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
+func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) []string {
 	path = filepath.Clean(path)
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	if rm, ok := rmm.rms[path]; ok {
+	if _, ok := rmm.rms[path]; ok {
 		rmm.logger.Printf("direct root module lookup succeeded: %s", path)
-		return rm, nil
+		return []string{path}
 	}
 
 	dir := rootModuleDirFromFilePath(path)
-	if rm, ok := rmm.rms[dir]; ok {
+	if _, ok := rmm.rms[dir]; ok {
 		rmm.logger.Printf("dir-based root module lookup succeeded: %s", dir)
-		return rm, nil
+		return []string{dir}
 	}
 
-	for _, rm := range rmm.rms {
-		rmm.logger.Printf("looking up %s in module references", dir)
+	candidates := make([]string, 0)
+	for key, rm := range rmm.rms {
+		rmm.logger.Printf("looking up %s in module references of %s", dir, key)
 		if rm.ReferencesModulePath(dir) {
 			rmm.logger.Printf("module-ref-based root module lookup succeeded: %s", dir)
-			return rm, nil
+			candidates = append(candidates, key)
 		}
+	}
+
+	return candidates
+}
+
+func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
+	candidates := rmm.RootModuleCandidatesByPath(path)
+	if len(candidates) > 0 {
+		firstMatch := candidates[0]
+		rm, ok := rmm.rms[firstMatch]
+		if !ok {
+			return nil, fmt.Errorf("Discovered root module %s not available,"+
+				" this is most likely a bug, please report it", firstMatch)
+		}
+		return rm, nil
 	}
 
 	return nil, &RootModuleNotFoundErr{path}
