@@ -5,6 +5,10 @@ ENHANCEMENTS:
  - terraform: Support 0.13 version ([#149](https://github.com/hashicorp/terraform-ls/pull/149))
  - Treat schema availability as not essential ([#171](https://github.com/hashicorp/terraform-ls/pull/171))
 
+BUG FIXES:
+
+ - fix detection of single file during initialization ([#172](https://github.com/hashicorp/terraform-ls/pull/172))
+
 ## 0.3.2 (5 June 2020)
 
 BUG FIXES:
