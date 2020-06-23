@@ -1,7 +1,7 @@
 # Q3 2020 Roadmap
 
 Each quarter, the team will highlight areas of focus for our work and upcoming research.
-Each bi-weekly release will include necessary tasks that lead to the completion of the stated goals as well as community pull requests, enhancements, and features that are not highlighted in the roadmap. This upcoming calendar quarter (Jul-Sep 2020) we will be prioritizing the following areas of work:
+Each release will include necessary tasks that lead to the completion of the stated goals as well as community pull requests, enhancements, and features that are not highlighted in the roadmap. This upcoming calendar quarter (Jul-Sep 2020) we will be prioritizing the following areas of work:
 
 ## Currently In Progress
 ### Expanded Completion Capabilities
