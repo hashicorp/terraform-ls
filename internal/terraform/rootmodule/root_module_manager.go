@@ -16,7 +16,7 @@ import (
 )
 
 type rootModuleManager struct {
-	rms           map[string]*rootModule
+	rms           []*rootModule
 	tfExecPath    string
 	tfExecTimeout time.Duration
 	tfExecLogPath string
@@ -31,7 +31,7 @@ func NewRootModuleManager(ctx context.Context) RootModuleManager {
 
 func newRootModuleManager(ctx context.Context) *rootModuleManager {
 	rmm := &rootModuleManager{
-		rms:    make(map[string]*rootModule, 0),
+		rms:    make([]*rootModule, 0),
 		logger: defaultLogger,
 	}
 	rmm.newRootModule = rmm.defaultRootModuleFactory
@@ -39,7 +39,7 @@ func newRootModuleManager(ctx context.Context) *rootModuleManager {
 }
 
 func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir string) (*rootModule, error) {
-	rm := newRootModule(ctx)
+	rm := newRootModule(ctx, dir)
 
 	rm.SetLogger(rmm.logger)
 
@@ -52,7 +52,7 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	rm.tfExecTimeout = rmm.tfExecTimeout
 	rm.tfExecLogPath = rmm.tfExecLogPath
 
-	return rm, rm.init(ctx, dir)
+	return rm, rm.init(ctx)
 }
 
 func (rmm *rootModuleManager) SetTerraformExecPath(path string) {
@@ -76,8 +76,7 @@ func (rmm *rootModuleManager) AddRootModule(dir string) error {
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	_, exists := rmm.rms[dir]
-	if exists {
+	if rmm.exists(dir) {
 		return fmt.Errorf("root module %s was already added", dir)
 	}
 
@@ -86,8 +85,26 @@ func (rmm *rootModuleManager) AddRootModule(dir string) error {
 		return err
 	}
 
-	rmm.rms[dir] = rm
+	rmm.rms = append(rmm.rms, rm)
 
+	return nil
+}
+
+func (rmm *rootModuleManager) exists(dir string) bool {
+	for _, rm := range rmm.rms {
+		if rm.Path() == dir {
+			return true
+		}
+	}
+	return false
+}
+
+func (rmm *rootModuleManager) rootModuleByPath(dir string) *rootModule {
+	for _, rm := range rmm.rms {
+		if rm.Path() == dir {
+			return rm
+		}
+	}
 	return nil
 }
 
@@ -96,23 +113,23 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) []string {
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	if _, ok := rmm.rms[path]; ok {
+	if rmm.exists(path) {
 		rmm.logger.Printf("direct root module lookup succeeded: %s", path)
 		return []string{path}
 	}
 
 	dir := rootModuleDirFromFilePath(path)
-	if _, ok := rmm.rms[dir]; ok {
+	if rmm.exists(dir) {
 		rmm.logger.Printf("dir-based root module lookup succeeded: %s", dir)
 		return []string{dir}
 	}
 
 	candidates := make([]string, 0)
-	for key, rm := range rmm.rms {
-		rmm.logger.Printf("looking up %s in module references of %s", dir, key)
+	for _, rm := range rmm.rms {
+		rmm.logger.Printf("looking up %s in module references of %s", dir, rm.Path())
 		if rm.ReferencesModulePath(dir) {
 			rmm.logger.Printf("module-ref-based root module lookup succeeded: %s", dir)
-			candidates = append(candidates, key)
+			candidates = append(candidates, rm.Path())
 		}
 	}
 
@@ -123,12 +140,11 @@ func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) 
 	candidates := rmm.RootModuleCandidatesByPath(path)
 	if len(candidates) > 0 {
 		firstMatch := candidates[0]
-		rm, ok := rmm.rms[firstMatch]
-		if !ok {
+		if !rmm.exists(firstMatch) {
 			return nil, fmt.Errorf("Discovered root module %s not available,"+
 				" this is most likely a bug, please report it", firstMatch)
 		}
-		return rm, nil
+		return rmm.rootModuleByPath(firstMatch), nil
 	}
 
 	return nil, &RootModuleNotFoundErr{path}

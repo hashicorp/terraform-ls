@@ -60,10 +60,10 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	testCases := []struct{
-		name string
-		walkerRoot string
-		lookupPath string
+	testCases := []struct {
+		name               string
+		walkerRoot         string
+		lookupPath         string
 		expectedCandidates []string
 	}{
 		{
@@ -84,7 +84,7 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 		{
 			"lock-file-based lookup",
 			filepath.Join(testData, "single-root-ext-modules-only"),
-			filepath.Join(testData, "single-root-ext-modules-only", 
+			filepath.Join(testData, "single-root-ext-modules-only",
 				".terraform",
 				"modules",
 				"modules.json"),
@@ -498,19 +498,19 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 			TerraformExecQueue: &exec.MockQueue{
 				Q: []*exec.MockItem{
 					{
-						Args: []string{"version"},
+						Args:   []string{"version"},
 						Stdout: "Terraform v0.12.0\n",
 					},
 					{
-						Args: []string{"providers", "schema", "-json"},
+						Args:   []string{"providers", "schema", "-json"},
 						Stdout: "{\"format_version\":\"0.1\"}\n",
 					},
 				},
 			},
-		})
+		}, dir)
 		md := &discovery.MockDiscovery{Path: "tf-mock"}
 		rm.tfDiscoFunc = md.LookPath
-		return rm, rm.init(ctx, dir)
+		return rm, rm.init(ctx)
 	}
 	return rmm
 }

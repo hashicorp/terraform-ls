@@ -27,13 +27,13 @@ func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootMod
 		return nil, fmt.Errorf("unexpected root module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
 	}
 
-	mock := NewRootModuleMock(ctx, rmm)
+	mock := NewRootModuleMock(ctx, rmm, dir)
 	mock.SetLogger(rmf.logger)
-	return mock, mock.init(ctx, dir)
+	return mock, mock.init(ctx)
 }
 
-func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock) (*rootModule) {
-	rm := newRootModule(ctx)
+func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *rootModule {
+	rm := newRootModule(ctx, dir)
 
 	md := &discovery.MockDiscovery{Path: "tf-mock"}
 	rm.tfDiscoFunc = md.LookPath

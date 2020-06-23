@@ -18,6 +18,7 @@ import (
 
 type rootModule struct {
 	ctx                context.Context
+	path               string
 	logger             *log.Logger
 	pluginLockFile     File
 	moduleManifestFile File
@@ -39,9 +40,10 @@ type rootModule struct {
 	moduleMu     *sync.RWMutex
 }
 
-func newRootModule(ctx context.Context) *rootModule {
+func newRootModule(ctx context.Context, dir string) *rootModule {
 	return &rootModule{
 		ctx:      ctx,
+		path:     dir,
 		logger:   defaultLogger,
 		pluginMu: &sync.RWMutex{},
 		moduleMu: &sync.RWMutex{},
@@ -51,7 +53,7 @@ func newRootModule(ctx context.Context) *rootModule {
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
 func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
-	rm := newRootModule(ctx)
+	rm := newRootModule(ctx, dir)
 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
@@ -63,16 +65,16 @@ func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
 		return ss
 	}
 
-	return rm, rm.init(ctx, dir)
+	return rm, rm.init(ctx)
 }
 
 func (rm *rootModule) SetLogger(logger *log.Logger) {
 	rm.logger = logger
 }
 
-func (rm *rootModule) init(ctx context.Context, dir string) error {
-	rm.logger.Printf("initing new root module: %s", dir)
-	tf, err := rm.initTfExecutor(dir)
+func (rm *rootModule) init(ctx context.Context) error {
+	rm.logger.Printf("initing new root module: %s", rm.path)
+	tf, err := rm.initTfExecutor(rm.path)
 	if err != nil {
 		return err
 	}
@@ -106,11 +108,11 @@ func (rm *rootModule) init(ctx context.Context, dir string) error {
 	rm.tfExec = tf
 	rm.tfVersion = version
 
-	err = rm.initPluginCache(dir)
+	err = rm.initPluginCache(rm.path)
 	if err != nil {
 		return fmt.Errorf("plugin initialization failed: %w", err)
 	}
-	err = rm.initModuleCache(dir)
+	err = rm.initModuleCache(rm.path)
 	if err != nil {
 		return err
 	}
@@ -215,6 +217,10 @@ func (rm *rootModule) initModuleCache(dir string) error {
 	}
 
 	return rm.UpdateModuleManifest(lf)
+}
+
+func (rm *rootModule) Path() string {
+	return rm.path
 }
 
 func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
