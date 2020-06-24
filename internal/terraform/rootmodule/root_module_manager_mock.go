@@ -22,29 +22,38 @@ type RootModuleMockFactory struct {
 }
 
 func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootModule, error) {
-	rm, ok := rmf.rmm[dir]
+	rmm, ok := rmf.rmm[dir]
 	if !ok {
 		return nil, fmt.Errorf("unexpected root module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
 	}
 
-	w := newRootModule(ctx)
-	w.SetLogger(rmf.logger)
+	mock := NewRootModuleMock(ctx, rmm, dir)
+	mock.SetLogger(rmf.logger)
+	return mock, mock.init(ctx)
+}
+
+func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *rootModule {
+	rm := newRootModule(ctx, dir)
 
 	md := &discovery.MockDiscovery{Path: "tf-mock"}
-	w.tfDiscoFunc = md.LookPath
+	rm.tfDiscoFunc = md.LookPath
 
 	// For now, until we have better testing strategy to mimic real lock files
-	w.ignorePluginCache = true
+	rm.ignorePluginCache = true
 
-	w.tfNewExecutor = exec.MockExecutor(rm.TerraformExecQueue)
+	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
 
-	if rm.ProviderSchemas == nil {
-		w.newSchemaStorage = schema.MockStorage(rm.ProviderSchemas)
+	if rmm.ProviderSchemas == nil {
+		rm.newSchemaStorage = func() *schema.Storage {
+			ss := schema.NewStorage()
+			ss.SetSynchronous()
+			return ss
+		}
 	} else {
-		w.newSchemaStorage = schema.NewStorage
+		rm.newSchemaStorage = schema.MockStorage(rmm.ProviderSchemas)
 	}
 
-	return w, w.init(ctx, dir)
+	return rm
 }
 
 func NewRootModuleManagerMock(m map[string]*RootModuleMock) RootModuleManagerFactory {

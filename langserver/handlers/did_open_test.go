@@ -22,5 +22,5 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir().URI())}, session.SessionNotInitialized.Err())
+	}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
 }

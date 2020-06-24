@@ -111,6 +111,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil
 	})
 
+	rootDir := ""
+
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.Initialize(req)
@@ -120,6 +122,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 			ctx = lsctx.WithWatcher(ww, ctx)
+			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
 			ctx = lsctx.WithRootModuleManager(rmm, ctx)
 
 			return handle(ctx, req, lh.Initialize)
@@ -147,6 +150,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
+			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
+			ctx = lsctx.WithRootModuleCandidateFinder(rmm, ctx)
 			return handle(ctx, req, TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {

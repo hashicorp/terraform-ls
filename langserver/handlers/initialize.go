@@ -6,6 +6,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -34,7 +35,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
-	err := lsctx.SetClientCapabilities(ctx, &params.Capabilities)
+	err := lsctx.SetRootDirectory(ctx, fh.FullPath())
+	if err != nil {
+		return serverCaps, err
+	}
+
+	err = lsctx.SetClientCapabilities(ctx, &params.Capabilities)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -49,7 +55,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	err = rmm.AddRootModule(fh.Dir())
+	walker := rootmodule.NewWalker()
+	walker.SetLogger(lh.logger)
+	err = walker.WalkInitializedRootModules(fh.Dir(), func(dir string) error {
+		lh.logger.Printf("Adding root module (via %T): %s", rmm, dir)
+		return rmm.AddRootModule(dir)
+	})
 	if err != nil {
 		return serverCaps, err
 	}

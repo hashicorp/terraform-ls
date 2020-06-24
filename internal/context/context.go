@@ -29,6 +29,8 @@ var (
 	ctxRootModuleMngr   = &contextKey{"root module manager"}
 	ctxParserFinder     = &contextKey{"parser finder"}
 	ctxTfExecFinder     = &contextKey{"terraform exec finder"}
+	ctxRootModuleCaFi   = &contextKey{"root module candidate finder"}
+	ctxRootDir          = &contextKey{"root directory"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -148,4 +150,38 @@ func WithTerraformExecPath(path string, ctx context.Context) context.Context {
 func TerraformExecPath(ctx context.Context) (string, bool) {
 	path, ok := ctx.Value(ctxTfExecPath).(string)
 	return path, ok
+}
+
+func WithRootModuleCandidateFinder(rmcf rootmodule.RootModuleCandidateFinder, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootModuleCaFi, rmcf)
+}
+
+func RootModuleCandidateFinder(ctx context.Context) (rootmodule.RootModuleCandidateFinder, error) {
+	cf, ok := ctx.Value(ctxRootModuleCaFi).(rootmodule.RootModuleCandidateFinder)
+	if !ok {
+		return nil, missingContextErr(ctxRootModuleCaFi)
+	}
+	return cf, nil
+}
+
+func WithRootDirectory(dir *string, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootDir, dir)
+}
+
+func SetRootDirectory(ctx context.Context, dir string) error {
+	rootDir, ok := ctx.Value(ctxRootDir).(*string)
+	if !ok {
+		return missingContextErr(ctxRootDir)
+	}
+
+	*rootDir = dir
+	return nil
+}
+
+func RootDirectory(ctx context.Context) (string, bool) {
+	rootDir, ok := ctx.Value(ctxRootDir).(*string)
+	if !ok {
+		return "", false
+	}
+	return *rootDir, true
 }
