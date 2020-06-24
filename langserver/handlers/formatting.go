@@ -28,7 +28,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	tf, err := tff.TerraformExecutorForDir(fh.Dir())
+	tf, err := tff.TerraformExecutorForDir(ctx, fh.Dir())
 	if err != nil {
 		// TODO: detect no root module found error
 		// -> find OS-wide executor instead

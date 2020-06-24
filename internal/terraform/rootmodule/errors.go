@@ -14,3 +14,11 @@ func (e *RootModuleNotFoundErr) Error() string {
 	}
 	return "root module not found"
 }
+
+func IsRootModuleNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*RootModuleNotFoundErr)
+	return ok
+}
