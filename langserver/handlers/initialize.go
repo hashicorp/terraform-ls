@@ -35,7 +35,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
-	err := lsctx.SetClientCapabilities(ctx, &params.Capabilities)
+	err := lsctx.SetRootDirectory(ctx, fh.FullPath())
+	if err != nil {
+		return serverCaps, err
+	}
+
+	err = lsctx.SetClientCapabilities(ctx, &params.Capabilities)
 	if err != nil {
 		return serverCaps, err
 	}

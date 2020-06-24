@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/creachadair/jrpc2"
@@ -28,6 +29,8 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 		return err
 	}
 
+	rootDir, _ := lsctx.RootDirectory(ctx)
+
 	candidates := cf.RootModuleCandidatesByPath(f.Dir())
 	if len(candidates) == 0 {
 		msg := fmt.Sprintf("No root module found for %s"+
@@ -39,8 +42,10 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 	}
 	if len(candidates) > 1 {
 		// TODO: Suggest specifying explicit root modules?
-		msg := fmt.Sprintf("Alternative root modules found for %s:\n%s",
-			f.Filename(), strings.Join(candidates, "\n"))
+
+		msg := fmt.Sprintf("Alternative root modules found for %s (%s), picked: %s",
+			f.Filename(), renderCandidates(rootDir, candidates[1:]),
+			renderCandidate(rootDir, candidates[0]))
 		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
@@ -48,4 +53,17 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 	}
 
 	return nil
+}
+
+func renderCandidates(rootDir string, candidatePaths []string) string {
+	for i, p := range candidatePaths {
+		// This helps displaying shorter, but still relevant paths
+		candidatePaths[i] = renderCandidate(rootDir, p)
+	}
+	return strings.Join(candidatePaths, ", ")
+}
+
+func renderCandidate(rootDir, path string) string {
+	return strings.TrimPrefix(
+		strings.TrimPrefix(path, rootDir), string(os.PathSeparator))
 }
