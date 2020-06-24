@@ -2,7 +2,7 @@
 
 ENHANCEMENTS:
 
- - terraform: Support 0.13 version ([#149](https://github.com/hashicorp/terraform-ls/pull/149))
+ - terraform: Introduce experimental support for 0.13 version ([#149](https://github.com/hashicorp/terraform-ls/pull/149))
  - Treat schema availability as not essential ([#171](https://github.com/hashicorp/terraform-ls/pull/171))
 
 BUG FIXES:
