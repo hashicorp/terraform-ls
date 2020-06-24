@@ -1,6 +1,6 @@
 default: test
 
 test:
-	go test -mod=vendor ./...
+	go test -mod=vendor -v -cover ./...
 
 .PHONY: test
