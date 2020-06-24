@@ -303,17 +303,6 @@ func (rm *rootModule) PathsToWatch() []string {
 }
 
 func (rm *rootModule) IsKnownModuleManifestFile(path string) bool {
-	rm.pluginMu.RLock()
-	defer rm.pluginMu.RUnlock()
-
-	if rm.pluginLockFile == nil {
-		return false
-	}
-
-	return rm.pluginLockFile.Path() == path
-}
-
-func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
 	rm.moduleMu.RLock()
 	defer rm.moduleMu.RUnlock()
 
@@ -322,4 +311,15 @@ func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
 	}
 
 	return rm.moduleManifestFile.Path() == path
+}
+
+func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
+	rm.pluginMu.RLock()
+	defer rm.pluginMu.RUnlock()
+
+	if rm.pluginLockFile == nil {
+		return false
+	}
+
+	return rm.pluginLockFile.Path() == path
 }
