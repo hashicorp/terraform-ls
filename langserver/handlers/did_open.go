@@ -64,6 +64,10 @@ func renderCandidates(rootDir string, candidatePaths []string) string {
 }
 
 func renderCandidate(rootDir, path string) string {
-	return strings.TrimPrefix(
+	trimmed := strings.TrimPrefix(
 		strings.TrimPrefix(path, rootDir), string(os.PathSeparator))
+	if trimmed == "" {
+		return "."
+	}
+	return trimmed
 }
