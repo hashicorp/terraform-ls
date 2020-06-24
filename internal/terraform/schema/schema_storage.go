@@ -140,7 +140,7 @@ func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {
 	start := time.Now()
 	ps, err := tf.ProviderSchemas()
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve schemas for %q: %s", dir, err)
+		return fmt.Errorf("Unable to retrieve schemas for %q: %w", dir, err)
 	}
 	s.ps = ps
 	s.logger.Printf("Schemas retrieved for %q in %s", dir, time.Since(start))
