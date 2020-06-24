@@ -18,7 +18,7 @@ type ParserFinder interface {
 }
 
 type TerraformExecFinder interface {
-	TerraformExecutorForDir(path string) (*exec.Executor, error)
+	TerraformExecutorForDir(ctx context.Context, path string) (*exec.Executor, error)
 }
 
 type RootModuleCandidateFinder interface {

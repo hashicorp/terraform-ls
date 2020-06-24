@@ -159,13 +159,40 @@ func (rmm *rootModuleManager) ParserForDir(path string) (lang.Parser, error) {
 	return rm.Parser(), nil
 }
 
-func (rmm *rootModuleManager) TerraformExecutorForDir(path string) (*exec.Executor, error) {
+func (rmm *rootModuleManager) TerraformExecutorForDir(ctx context.Context, path string) (*exec.Executor, error) {
 	rm, err := rmm.RootModuleByPath(path)
-	if err != nil {
-		return nil, err
+	if err != nil && IsRootModuleNotFound(err) {
+		return rmm.terraformExecutorForDir(ctx, path)
 	}
 
 	return rm.TerraformExecutor(), nil
+}
+
+func (rmm *rootModuleManager) terraformExecutorForDir(ctx context.Context, dir string) (*exec.Executor, error) {
+	tfPath := rmm.tfExecPath
+	if tfPath == "" {
+		var err error
+		d := &discovery.Discovery{}
+		tfPath, err = d.LookPath()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tf := exec.NewExecutor(ctx, tfPath)
+
+	tf.SetWorkdir(dir)
+	tf.SetLogger(rmm.logger)
+
+	if rmm.tfExecLogPath != "" {
+		tf.SetExecLogPath(rmm.tfExecLogPath)
+	}
+
+	if rmm.tfExecTimeout != 0 {
+		tf.SetTimeout(rmm.tfExecTimeout)
+	}
+
+	return tf, nil
 }
 
 // rootModuleDirFromPath strips known lock file paths and filenames
