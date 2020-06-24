@@ -1,5 +1,9 @@
 ## 0.4.0 (Unreleased)
 
+FEATURES:
+
+ - Walk hierarchy to add root modules ([#176](https://github.com/hashicorp/terraform-ls/pull/176))
+
 ENHANCEMENTS:
 
  - terraform: Introduce experimental support for 0.13 version ([#149](https://github.com/hashicorp/terraform-ls/pull/149))
