@@ -1,4 +1,4 @@
-## 0.4.0 (Unreleased)
+## 0.4.0 (25 June 2020)
 
 FEATURES:
 
