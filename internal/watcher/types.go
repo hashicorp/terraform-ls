@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"context"
 	"log"
 )
 
@@ -18,4 +19,4 @@ type Watcher interface {
 	AddChangeHook(f ChangeHook)
 }
 
-type ChangeHook func(file TrackedFile) error
+type ChangeHook func(ctx context.Context, file TrackedFile) error

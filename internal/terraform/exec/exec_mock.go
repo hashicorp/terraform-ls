@@ -78,7 +78,7 @@ func (mc *MockQueue) NextMockItem() *MockItem {
 }
 
 func MockExecutor(md MockItemDispenser) ExecutorFactory {
-	return func(ctx context.Context, path string) *Executor {
+	return func(path string) *Executor {
 		if md == nil {
 			md = &MockCall{
 				MockError: "no mocks provided",
@@ -86,7 +86,7 @@ func MockExecutor(md MockItemDispenser) ExecutorFactory {
 		}
 
 		path, ctxFunc := mockCommandCtxFunc(md)
-		executor := NewExecutor(context.Background(), path)
+		executor := NewExecutor(path)
 		executor.cmdCtxFunc = ctxFunc
 		return executor
 	}

@@ -14,9 +14,10 @@ import (
 )
 
 func TestInitalizeAndShutdown(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
-	}))
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+		}}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -50,9 +51,10 @@ func TestInitalizeAndShutdown(t *testing.T) {
 }
 
 func TestEOF(t *testing.T) {
-	ms := newMockSession(map[string]*rootmodule.RootModuleMock{
-		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
-	})
+	ms := newMockSession(&MockSessionInput{
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+		}})
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
 	defer stop()
@@ -137,8 +139,17 @@ func TempDir(t *testing.T) lsp.FileHandler {
 	return lsp.FileHandlerFromDirPath(tmpDir)
 }
 
-func InitDir(t *testing.T, dir string) {
-	err := os.Mkdir(filepath.Join(dir, ".terraform"), 0755)
+func InitPluginCache(t *testing.T, dir string) {
+	pluginCacheDir := filepath.Join(dir, ".terraform", "plugins")
+	err := os.MkdirAll(pluginCacheDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(filepath.Join(pluginCacheDir, "selections.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.Close()
 	if err != nil {
 		t.Fatal(err)
 	}

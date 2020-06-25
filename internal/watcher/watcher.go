@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 
@@ -14,8 +15,10 @@ type watcher struct {
 	fw           *fsnotify.Watcher
 	trackedFiles map[string]TrackedFile
 	changeHooks  []ChangeHook
-	watching     bool
 	logger       *log.Logger
+
+	watching   bool
+	cancelFunc context.CancelFunc
 }
 
 type WatcherFactory func() (Watcher, error)
@@ -64,7 +67,7 @@ func (w *watcher) AddChangeHook(h ChangeHook) {
 	w.changeHooks = append(w.changeHooks, h)
 }
 
-func (w *watcher) run() {
+func (w *watcher) run(ctx context.Context) {
 	for {
 		select {
 		case event, ok := <-w.fw.Events:
@@ -84,7 +87,7 @@ func (w *watcher) run() {
 
 				if oldTf.Sha256Sum() != newTf.Sha256Sum() {
 					for _, h := range w.changeHooks {
-						err := h(newTf)
+						err := h(ctx, newTf)
 						if err != nil {
 							w.logger.Println("change hook error:", err)
 						}
@@ -108,9 +111,12 @@ func (w *watcher) Start() error {
 		return nil
 	}
 
-	go w.run()
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	w.cancelFunc = cancelFunc
 	w.watching = true
-	w.logger.Printf("Watching for changes ...")
+
+	w.logger.Printf("watching for changes ...")
+	go w.run(ctx)
 
 	return nil
 }
@@ -119,6 +125,8 @@ func (w *watcher) Stop() error {
 	if !w.watching {
 		return nil
 	}
+
+	w.cancelFunc()
 
 	err := w.fw.Close()
 	if err == nil {

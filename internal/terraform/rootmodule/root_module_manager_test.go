@@ -432,11 +432,11 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 
 	for i, tc := range testCases {
 		base := filepath.Base(tc.walkerRoot)
-		t.Run(fmt.Sprintf("%s/%d-%s", base, i, tc.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
 			rmm := testRootModuleManager(t)
 			w := MockWalker()
-			err := w.WalkInitializedRootModules(tc.walkerRoot, func(rmPath string) error {
-				_, err := rmm.AddRootModule(rmPath)
+			err := w.StartWalking(tc.walkerRoot, func(ctx context.Context, rmPath string) error {
+				_, err := rmm.AddAndStartLoadingRootModule(ctx, rmPath)
 				return err
 			})
 			if err != nil {
@@ -452,12 +452,22 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 }
 
 func testRootModuleManager(t *testing.T) *rootModuleManager {
-	rmm := newRootModuleManager(context.Background())
+	rmm := newRootModuleManager()
+	rmm.syncLoading = true
 	rmm.logger = testLogger()
 	rmm.newRootModule = func(ctx context.Context, dir string) (*rootModule, error) {
-		rm := NewRootModuleMock(ctx, &RootModuleMock{
+		rm := NewRootModuleMock(&RootModuleMock{
 			TerraformExecQueue: &exec.MockQueue{
 				Q: []*exec.MockItem{
+					// TODO: Pass mock items as argument to make testing more accurate
+					{
+						Args:   []string{"version"},
+						Stdout: "Terraform v0.12.0\n",
+					},
+					{
+						Args:   []string{"providers", "schema", "-json"},
+						Stdout: "{\"format_version\":\"0.1\"}\n",
+					},
 					{
 						Args:   []string{"version"},
 						Stdout: "Terraform v0.12.0\n",
@@ -469,9 +479,21 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 				},
 			},
 		}, dir)
+		rm.logger = testLogger()
 		md := &discovery.MockDiscovery{Path: "tf-mock"}
 		rm.tfDiscoFunc = md.LookPath
-		return rm, rm.init(ctx)
+
+		err := rm.discoverCaches(ctx, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = rm.load(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return rm, nil
 	}
 	return rmm
 }

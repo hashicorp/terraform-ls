@@ -5,16 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
-
-type RootModuleMock struct {
-	TerraformExecQueue exec.MockItemDispenser
-	ProviderSchemas    *tfjson.ProviderSchemas
-}
 
 type RootModuleMockFactory struct {
 	rmm    map[string]*RootModuleMock
@@ -27,37 +20,41 @@ func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootMod
 		return nil, fmt.Errorf("unexpected root module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
 	}
 
-	mock := NewRootModuleMock(ctx, rmm, dir)
+	mock := NewRootModuleMock(rmm, dir)
 	mock.SetLogger(rmf.logger)
-	return mock, mock.init(ctx)
+	return mock, mock.discoverCaches(ctx, dir)
 }
 
-func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *rootModule {
-	rm := newRootModule(ctx, dir)
+type RootModuleManagerMockInput struct {
+	RootModules        map[string]*RootModuleMock
+	TerraformExecQueue exec.MockItemDispenser
+}
 
-	md := &discovery.MockDiscovery{Path: "tf-mock"}
-	rm.tfDiscoFunc = md.LookPath
+func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManagerFactory {
+	rmm := newRootModuleManager()
+	rmm.syncLoading = true
 
-	// For now, until we have better testing strategy to mimic real lock files
-	rm.ignorePluginCache = true
-
-	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
-
-	if rmm.ProviderSchemas == nil {
-		rm.newSchemaStorage = schema.NewStorage
-	} else {
-		rm.newSchemaStorage = schema.MockStorage(rmm.ProviderSchemas)
+	rmf := &RootModuleMockFactory{
+		rmm:    make(map[string]*RootModuleMock, 0),
+		logger: rmm.logger,
 	}
 
-	return rm
-}
+	// mock terraform discovery
+	md := &discovery.MockDiscovery{Path: "tf-mock"}
+	rmm.tfDiscoFunc = md.LookPath
 
-func NewRootModuleManagerMock(m map[string]*RootModuleMock) RootModuleManagerFactory {
-	rm := newRootModuleManager(context.Background())
-	rmf := &RootModuleMockFactory{rmm: m, logger: rm.logger}
-	rm.newRootModule = rmf.New
+	// mock terraform executor
+	if input != nil {
+		rmm.tfNewExecutor = exec.MockExecutor(input.TerraformExecQueue)
 
-	return func(ctx context.Context) RootModuleManager {
-		return rm
+		if input.RootModules != nil {
+			rmf.rmm = input.RootModules
+		}
+	}
+
+	rmm.newRootModule = rmf.New
+
+	return func() RootModuleManager {
+		return rmm
 	}
 }

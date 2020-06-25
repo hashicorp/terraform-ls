@@ -30,24 +30,26 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 
 func TestCompletion_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitDir(t, tmpDir.Dir())
+	t.Logf("will init at %s", tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Dir())
 
-	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		tmpDir.Dir(): {
-			TerraformExecQueue: &exec.MockQueue{
-				Q: []*exec.MockItem{
-					{
-						Args:   []string{"version"},
-						Stdout: "Terraform v0.12.0\n",
-					},
-					{
-						Args:   []string{"providers", "schema", "-json"},
-						Stdout: testSchemaOutput,
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			tmpDir.Dir(): {
+				TerraformExecQueue: &exec.MockQueue{
+					Q: []*exec.MockItem{
+						{
+							Args:   []string{"version"},
+							Stdout: "Terraform v0.12.0\n",
+						},
+						{
+							Args:   []string{"providers", "schema", "-json"},
+							Stdout: testSchemaOutput,
+						},
 					},
 				},
 			},
-		},
-	}))
+		}}))
 	stop := ls.Start(t)
 	defer stop()
 

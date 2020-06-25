@@ -1,6 +1,7 @@
 package rootmodule
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -25,7 +26,9 @@ type Walker struct {
 	logger  *log.Logger
 	sync    bool
 	walking bool
-	doneCh  chan struct{}
+
+	cancelFunc context.CancelFunc
+	doneCh     chan struct{}
 }
 
 func NewWalker() *Walker {
@@ -39,28 +42,36 @@ func (w *Walker) SetLogger(logger *log.Logger) {
 	w.logger = logger
 }
 
-type WalkFunc func(rootModulePath string) error
+type WalkFunc func(ctx context.Context, rootModulePath string) error
 
 func (w *Walker) Stop() {
+	if w.cancelFunc != nil {
+		w.cancelFunc()
+	}
+
 	if w.walking {
 		w.walking = false
 		w.doneCh <- struct{}{}
 	}
 }
 
-func (w *Walker) WalkInitializedRootModules(path string, wf WalkFunc) error {
+func (w *Walker) StartWalking(path string, wf WalkFunc) error {
 	if w.walking {
 		return fmt.Errorf("walker is already running")
 	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	w.cancelFunc = cancelFunc
 	w.walking = true
+
 	if w.sync {
 		w.logger.Printf("synchronously walking through %s", path)
-		return w.walk(path, wf)
+		return w.walk(ctx, path, wf)
 	}
 
 	go func(w *Walker, path string, wf WalkFunc) {
 		w.logger.Printf("asynchronously walking through %s", path)
-		err := w.walk(path, wf)
+		err := w.walk(ctx, path, wf)
 		if err != nil {
 			w.logger.Printf("async walking through %s failed: %s", path, err)
 			return
@@ -71,7 +82,11 @@ func (w *Walker) WalkInitializedRootModules(path string, wf WalkFunc) error {
 	return nil
 }
 
-func (w *Walker) walk(rootPath string, wf WalkFunc) error {
+func (w *Walker) IsWalking() bool {
+	return w.walking
+}
+
+func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		select {
 		case <-w.doneCh:
@@ -92,7 +107,7 @@ func (w *Walker) walk(rootPath string, wf WalkFunc) error {
 			}
 
 			w.logger.Printf("found root module %s", rootDir)
-			return wf(rootDir)
+			return wf(ctx, rootDir)
 		}
 
 		if !info.IsDir() {
@@ -107,6 +122,7 @@ func (w *Walker) walk(rootPath string, wf WalkFunc) error {
 
 		return nil
 	})
+	w.logger.Printf("walking of %s finished", rootPath)
 	w.walking = false
 	return err
 }

@@ -14,13 +14,13 @@ func TestExec_timeout(t *testing.T) {
 		Args:          []string{"version"},
 		SleepDuration: 100 * time.Millisecond,
 		Stdout:        "Terraform v0.12.0\n",
-	})(context.Background(), "")
+	})("")
 	e.SetWorkdir(os.TempDir())
 	e.timeout = 1 * time.Millisecond
 
 	expectedErr := ExecTimeoutError([]string{"terraform", "version"}, e.timeout)
 
-	_, err := e.Version()
+	_, err := e.Version(context.Background())
 	if err != nil {
 		if errors.Is(err, expectedErr) {
 			return
@@ -38,9 +38,9 @@ func TestExec_Version(t *testing.T) {
 		Args:     []string{"version"},
 		Stdout:   "Terraform v0.12.0\n",
 		ExitCode: 0,
-	})(context.Background(), "")
+	})("")
 	e.SetWorkdir(os.TempDir())
-	v, err := e.Version()
+	v, err := e.Version(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,9 +55,9 @@ func TestExec_Format(t *testing.T) {
 		Args:     []string{"fmt", "-"},
 		Stdout:   string(expectedOutput),
 		ExitCode: 0,
-	})(context.Background(), "")
+	})("")
 	e.SetWorkdir(os.TempDir())
-	out, err := e.Format([]byte("unformatted"))
+	out, err := e.Format(context.Background(), []byte("unformatted"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,10 +73,10 @@ func TestExec_ProviderSchemas(t *testing.T) {
 		Args:     []string{"providers", "schema", "-json"},
 		Stdout:   `{"format_version": "0.1"}`,
 		ExitCode: 0,
-	})(context.Background(), "")
+	})("")
 	e.SetWorkdir(os.TempDir())
 
-	ps, err := e.ProviderSchemas()
+	ps, err := e.ProviderSchemas(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,7 +13,7 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
+func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
 	fs, err := lsctx.Filesystem(ctx)
 	if err != nil {
 		return err
@@ -30,10 +30,19 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 		return err
 	}
 
+	walker, err := lsctx.RootModuleWalker(ctx)
+	if err != nil {
+		return err
+	}
+
 	rootDir, _ := lsctx.RootDirectory(ctx)
 
 	candidates := cf.RootModuleCandidatesByPath(f.Dir())
-	if len(candidates) == 0 {
+
+	if walker.IsWalking() {
+		// avoid raising false warnings if walker hasn't finished yet
+		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
+	} else if len(candidates) == 0 {
 		msg := fmt.Sprintf("No root module found for %s."+
 			" Functionality may be limited."+
 			// Unfortunately we can't be any more specific wrt where
