@@ -14,46 +14,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
-// func TestRootModuleManager_RootModuleByPath_basic(t *testing.T) {
-// 	rmm := testRootModuleManager(t)
-
-// 	tmpDir := tempDir(t)
-// 	direct, unrelated, dirbased := newTestRootModule(t, "direct"), newTestRootModule(t, "unrelated"), newTestRootModule(t, "dirbased")
-// 	rmm.rms = map[string]*rootModule{
-// 		direct.Dir:    direct.RootModule,
-// 		unrelated.Dir: unrelated.RootModule,
-// 		dirbased.Dir:  dirbased.RootModule,
-// 	}
-
-// 	w1, err := rmm.RootModuleByPath(direct.Dir)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if direct.RootModule != w1 {
-// 		t.Fatalf("unexpected root module found: %p, expected: %p", w1, direct)
-// 	}
-
-// 	lockDirPath := filepath.Join(tmpDir, "dirbased", ".terraform", "plugins")
-// 	lockFilePath := filepath.Join(lockDirPath, "selections.json")
-// 	err = os.MkdirAll(lockDirPath, 0775)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	f, err := os.Create(lockFilePath)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	f.Close()
-
-// 	w2, err := rmm.RootModuleByPath(lockFilePath)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if dirbased.RootModule != w2 {
-// 		t.Fatalf("unexpected root module found: %p, expected: %p", w2, dirbased)
-// 	}
-// }
-
 func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
@@ -484,7 +444,7 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 			}
 
 			candidates := rmm.RootModuleCandidatesByPath(tc.lookupPath)
-			if diff := cmp.Diff(tc.expectedCandidates, candidates); diff != "" {
+			if diff := cmp.Diff(tc.expectedCandidates, candidates.Paths()); diff != "" {
 				t.Fatalf("candidates don't match: %s", diff)
 			}
 		})
