@@ -33,7 +33,8 @@ func main() {
 		},
 		"serve": func() (cli.Command, error) {
 			return &commands.ServeCommand{
-				Ui: ui,
+				Ui:      ui,
+				Version: VersionString(),
 			}, nil
 		},
 	}

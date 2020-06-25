@@ -19,7 +19,8 @@ import (
 )
 
 type ServeCommand struct {
-	Ui cli.Ui
+	Ui      cli.Ui
+	Version string
 
 	// flags
 	port          int
@@ -113,6 +114,8 @@ func (c *ServeCommand) Run(args []string) int {
 		ctx = lsctx.WithTerraformExecPath(path, ctx)
 		logger.Printf("Terraform exec path set to %q", path)
 	}
+
+	logger.Printf("Starting terraform-ls %s", c.Version)
 
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
 	srv.SetLogger(logger)
