@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"reflect"
 	"time"
+
+	"github.com/acarl005/stripansi"
 )
 
 type ExitError struct {
@@ -25,8 +27,8 @@ func (e *ExitError) Error() string {
 		e.Err.Pid(),
 		e.Err.ExitCode(),
 		e.Err.ProcessState.String(),
-		e.Stdout,
-		e.Stderr)
+		stripansi.Strip(e.Stdout),
+		stripansi.Strip(e.Stderr))
 
 	if e.CtxErr != nil {
 		return fmt.Sprintf("%s.\n%s", e.CtxErr, e.Err)

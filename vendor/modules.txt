@@ -1,5 +1,7 @@
 # bitbucket.org/creachadair/stringset v0.0.8
 bitbucket.org/creachadair/stringset
+# github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
+github.com/acarl005/stripansi
 # github.com/agext/levenshtein v1.2.1
 github.com/agext/levenshtein
 # github.com/apparentlymart/go-textseg v1.0.0

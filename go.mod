@@ -3,6 +3,7 @@ module github.com/hashicorp/terraform-ls
 go 1.13
 
 require (
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.8.1
 	github.com/fsnotify/fsnotify v1.4.9
