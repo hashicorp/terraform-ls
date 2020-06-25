@@ -22,7 +22,7 @@ type TerraformExecFinder interface {
 }
 
 type RootModuleCandidateFinder interface {
-	RootModuleCandidatesByPath(path string) []string
+	RootModuleCandidatesByPath(path string) RootModules
 }
 
 type RootModuleManager interface {
@@ -39,7 +39,18 @@ type RootModuleManager interface {
 	RootModuleByPath(path string) (RootModule, error)
 }
 
+type RootModules []RootModule
+
+func (rms RootModules) Paths() []string {
+	paths := make([]string, len(rms))
+	for i, rm := range rms {
+		paths[i] = rm.Path()
+	}
+	return paths
+}
+
 type RootModule interface {
+	Path() string
 	IsKnownPluginLockFile(path string) bool
 	IsKnownModuleManifestFile(path string) bool
 	PathsToWatch() []string
