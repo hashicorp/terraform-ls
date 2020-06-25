@@ -24,6 +24,7 @@ type rootModule struct {
 	moduleManifestFile File
 	moduleManifest     *moduleManifest
 	tfVersion          string
+	lastErr            error
 
 	tfDiscoFunc       discovery.DiscoveryFunc
 	tfNewExecutor     exec.ExecutorFactory
@@ -59,13 +60,10 @@ func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
 	rm.tfDiscoFunc = d.LookPath
 
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = func() *schema.Storage {
-		ss := schema.NewStorage()
-		ss.SetSynchronous()
-		return ss
-	}
+	rm.newSchemaStorage = schema.NewStorage
 
-	return rm, rm.init(ctx)
+	rm.lastErr = rm.init(ctx)
+	return rm, rm.lastErr
 }
 
 func (rm *rootModule) SetLogger(logger *log.Logger) {
@@ -217,6 +215,10 @@ func (rm *rootModule) initModuleCache(dir string) error {
 	}
 
 	return rm.UpdateModuleManifest(lf)
+}
+
+func (rm *rootModule) LastError() error {
+	return rm.lastErr
 }
 
 func (rm *rootModule) Path() string {

@@ -29,7 +29,8 @@ func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootMod
 
 	mock := NewRootModuleMock(ctx, rmm, dir)
 	mock.SetLogger(rmf.logger)
-	return mock, mock.init(ctx)
+	mock.lastErr = mock.init(ctx)
+	return mock, mock.lastErr
 }
 
 func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *rootModule {
@@ -44,11 +45,7 @@ func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *ro
 	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
 
 	if rmm.ProviderSchemas == nil {
-		rm.newSchemaStorage = func() *schema.Storage {
-			ss := schema.NewStorage()
-			ss.SetSynchronous()
-			return ss
-		}
+		rm.newSchemaStorage = schema.NewStorage
 	} else {
 		rm.newSchemaStorage = schema.MockStorage(rmm.ProviderSchemas)
 	}

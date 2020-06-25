@@ -52,6 +52,13 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 			Message: msg,
 		})
 	}
+	err = candidates[0].LastError()
+	if err != nil {
+		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
+			Type:    lsp.MTError,
+			Message: fmt.Sprintf("%s: %s", renderCandidatePath(rootDir, candidates[0]), err.Error()),
+		})
+	}
 
 	return nil
 }

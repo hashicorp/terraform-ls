@@ -52,7 +52,16 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	rm.tfExecTimeout = rmm.tfExecTimeout
 	rm.tfExecLogPath = rmm.tfExecLogPath
 
-	return rm, rm.init(ctx)
+	// Many root modules can be added in a short time period
+	// Running init asynchronously makes it more efficient
+	// and prevents flooding the user with errors
+	// which may not be relevant for them until they actually
+	// open the affected directory
+	go func(ctx context.Context, rm *rootModule) {
+		rm.lastErr = rm.init(ctx)
+	}(ctx, rm)
+
+	return rm, nil
 }
 
 func (rmm *rootModuleManager) SetTerraformExecPath(path string) {

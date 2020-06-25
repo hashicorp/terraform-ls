@@ -51,6 +51,7 @@ func (rms RootModules) Paths() []string {
 
 type RootModule interface {
 	Path() string
+	LastError() error
 	IsKnownPluginLockFile(path string) bool
 	IsKnownModuleManifestFile(path string) bool
 	PathsToWatch() []string
