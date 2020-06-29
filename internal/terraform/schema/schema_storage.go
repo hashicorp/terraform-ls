@@ -24,9 +24,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	ObtainSchemasForWorkspace(*exec.Executor, string) error
-	AddWorkspaceForWatching(string) error
-	StartWatching(*exec.Executor) error
+	ObtainSchemasForModule(*exec.Executor, string) error
 }
 
 type Resource struct {
@@ -43,10 +41,10 @@ type DataSource struct {
 	DescriptionKind tfjson.SchemaDescriptionKind
 }
 
+type StorageFactory func() *Storage
+
 type Storage struct {
-	ps       *tfjson.ProviderSchemas
-	w        watcher
-	watching bool
+	ps *tfjson.ProviderSchemas
 
 	logger *log.Logger
 
@@ -75,9 +73,17 @@ func SchemaSupportsTerraform(v string) error {
 		return fmt.Errorf("failed to parse constraint: %w", err)
 	}
 
-	ver, err := version.NewVersion(v)
+	rawVer, err := version.NewVersion(v)
 	if err != nil {
-		return fmt.Errorf("failed to parse verison: %w", err)
+		return fmt.Errorf("failed to parse version: %w", err)
+	}
+
+	// Assume that alpha/beta/rc prereleases have the same compatibility
+	segments := rawVer.Segments64()
+	segmentsOnly := fmt.Sprintf("%d.%d.%d", segments[0], segments[1], segments[2])
+	ver, err := version.NewVersion(segmentsOnly)
+	if err != nil {
+		return fmt.Errorf("failed to parse stripped version: %w", err)
 	}
 
 	supported := c.Check(ver)
@@ -89,7 +95,7 @@ func SchemaSupportsTerraform(v string) error {
 		}
 	}
 
-	return watcherSupportsTerraform(ver)
+	return nil
 }
 
 func (s *Storage) SetLogger(logger *log.Logger) {
@@ -100,27 +106,27 @@ func (s *Storage) SetSynchronous() {
 	s.sync = true
 }
 
-// ObtainSchemasForWorkspace will (by default) asynchronously obtain schema via tf
+// ObtainSchemasForModule will (by default) asynchronously obtain schema via tf
 // and store it for later consumption via Reader methods
-func (s *Storage) ObtainSchemasForWorkspace(tf *exec.Executor, dir string) error {
+func (s *Storage) ObtainSchemasForModule(tf *exec.Executor, dir string) error {
 	if s.sync {
-		return s.obtainSchemasForWorkspace(tf, dir)
+		return s.obtainSchemasForModule(tf, dir)
 	}
 
 	// This routine is not cancellable in itself
 	// but the time-consuming part is done by exec.Executor
 	// which is cancellable via its own context
 	go func() {
-		err := s.obtainSchemasForWorkspace(tf, dir)
+		err := s.obtainSchemasForModule(tf, dir)
 		if err != nil {
-			s.logger.Println("error obtaining schemas:", err)
+			s.logger.Printf("error obtaining schemas for %s: %s", dir, err)
 		}
 	}()
 
 	return nil
 }
 
-func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error {
+func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {
 	s.logger.Printf("Acquiring semaphore before retrieving schema for %q ...", dir)
 	err := s.sem.Acquire(context.Background(), 1)
 	if err != nil {
@@ -134,10 +140,10 @@ func (s *Storage) obtainSchemasForWorkspace(tf *exec.Executor, dir string) error
 	start := time.Now()
 	ps, err := tf.ProviderSchemas()
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve schemas: %s", err)
+		return fmt.Errorf("Unable to retrieve schemas for %q: %w", dir, err)
 	}
 	s.ps = ps
-	s.logger.Printf("Schemas retrieved in %s", time.Since(start))
+	s.logger.Printf("Schemas retrieved for %q in %s", dir, time.Since(start))
 	return nil
 }
 
@@ -270,68 +276,4 @@ func (s *Storage) DataSources() ([]DataSource, error) {
 	}
 
 	return dataSources, nil
-}
-
-// watcher creates a new Watcher instance
-// if one doesn't exist yet or returns an existing one
-func (s *Storage) watcher() (watcher, error) {
-	if s.w != nil {
-		return s.w, nil
-	}
-
-	w, err := NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-	w.SetLogger(s.logger)
-
-	s.w = w
-	return s.w, nil
-}
-
-// StartWatching starts to watch for plugin changes in dirs that were added
-// via AddWorkspaceForWatching until StopWatching() is called
-func (s *Storage) StartWatching(tf *exec.Executor) error {
-	if s.watching {
-		s.logger.Println("watching already in progress")
-		return nil
-	}
-	w, err := s.watcher()
-	if err != nil {
-		return err
-	}
-
-	go w.OnPluginChange(func(ww *watchedWorkspace) error {
-		s.obtainSchemasForWorkspace(tf, ww.dir)
-		return nil
-	})
-	s.watching = true
-
-	s.logger.Printf("Watching for plugin changes ...")
-
-	return nil
-}
-
-func (s *Storage) StopWatching() error {
-	if s.w == nil {
-		return nil
-	}
-
-	err := s.w.Close()
-	if err == nil {
-		s.watching = false
-	}
-
-	return err
-}
-
-func (s *Storage) AddWorkspaceForWatching(dir string) error {
-	w, err := s.watcher()
-	if err != nil {
-		return err
-	}
-
-	s.logger.Printf("Adding workspace for watching: %q", dir)
-
-	return w.AddWorkspace(dir)
 }

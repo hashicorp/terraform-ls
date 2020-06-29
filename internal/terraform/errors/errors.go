@@ -29,23 +29,11 @@ func (utv *UnsupportedTerraformVersion) Error() string {
 	return msg
 }
 
-type NotInitializedErr struct {
-	Dir string
-}
-
-func (e *NotInitializedErr) Is(err error) bool {
-	_, ok := err.(*NotInitializedErr)
+func (utv *UnsupportedTerraformVersion) Is(err error) bool {
+	te, ok := err.(*UnsupportedTerraformVersion)
 	if !ok {
 		return false
 	}
 
-	return true
-}
-
-func (e *NotInitializedErr) Error() string {
-	if e.Dir != "" {
-		return fmt.Sprintf("workspace %s not initialized", e.Dir)
-	}
-
-	return fmt.Sprintf("workspace not initialized")
+	return te.Version == utv.Version
 }

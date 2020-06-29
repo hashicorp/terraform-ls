@@ -2,11 +2,13 @@ package lsp
 
 import (
 	"testing"
+
+	"github.com/sourcegraph/go-lsp"
 )
 
 func TestFileHandler_valid_windows(t *testing.T) {
 	path := "file:///C:/Users/With%20Space/tf-test/file.tf"
-	fh := FileHandler(path)
+	fh := FileHandlerFromDocumentURI(lsp.DocumentURI(path))
 	if !fh.Valid() {
 		t.Fatalf("Expected %q to be valid", path)
 	}

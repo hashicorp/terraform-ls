@@ -31,6 +31,10 @@ var passthroughEnvVars = os.Environ()
 // ability to pass context for timeout/cancellation
 type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
 
+// ExecutorFactory can be used in external consumers of exec pkg
+// to enable easy swapping with MockExecutor
+type ExecutorFactory func(ctx context.Context, path string) *Executor
+
 type Executor struct {
 	ctx     context.Context
 	timeout time.Duration
@@ -89,7 +93,7 @@ func (e *Executor) cmd(args ...string) (*command, error) {
 	}
 
 	ctx := e.ctx
-	var cancel context.CancelFunc
+	cancel := func() {}
 	if e.timeout > 0 {
 		ctx, cancel = context.WithTimeout(e.ctx, e.timeout)
 	}
@@ -184,6 +188,7 @@ func (e *Executor) runCmd(command *command) ([]byte, error) {
 
 func (e *Executor) run(args ...string) ([]byte, error) {
 	cmd, err := e.cmd(args...)
+	e.logger.Printf("running with timeout %s", e.timeout)
 	defer cmd.CancelFunc()
 	if err != nil {
 		return nil, err

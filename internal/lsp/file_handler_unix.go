@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func (fh FileHandler) FullPath() string {
+func (fh *fileHandler) FullPath() string {
 	p, err := fh.parsePath()
 	if err != nil {
 		panic("invalid uri")

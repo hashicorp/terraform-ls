@@ -9,6 +9,6 @@ fmtcheck:
 	@gofmt -s -l $(SOURCE_FILES) | grep ^; if [ $$? -eq 0 ]; then exit 1; fi
 
 test:
-	go test -mod=vendor ./...
+	go test -mod=vendor -v -cover ./...
 
 .PHONY: fmt fmtcheck test

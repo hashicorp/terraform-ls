@@ -5,11 +5,14 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 func TestShutdown_twice(t *testing.T) {
-	ls := langserver.NewLangServerMock(t, NewMock(validTfMockCalls()))
+	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
+		TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -19,7 +22,7 @@ func TestShutdown_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDirUri())})
+	}`, TempDir(t).URI())})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`})
 

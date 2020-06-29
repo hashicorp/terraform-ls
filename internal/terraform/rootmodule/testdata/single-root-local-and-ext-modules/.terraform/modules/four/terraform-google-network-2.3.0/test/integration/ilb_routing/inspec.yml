@@ -1,0 +1,15 @@
+name: ilb_routing
+depends:
+  - name: inspec-gcp
+    git: https://github.com/inspec/inspec-gcp.git
+    tag: v0.11.0
+attributes:
+  - name: project_id
+    required: true
+    type: string
+  - name: network_name
+    required: true
+    type: string
+  - name: forwarding_rule
+    required: true
+    type: string

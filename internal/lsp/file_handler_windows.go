@@ -9,7 +9,7 @@ import (
 // which occurs in Windows-style paths (e.g. file:///C:/)
 // as url.URL methods don't account for that
 // (see golang/go#6027).
-func (fh FileHandler) FullPath() string {
+func (fh *fileHandler) FullPath() string {
 	p, err := fh.parsePath()
 	if err != nil {
 		panic("invalid uri")

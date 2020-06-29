@@ -36,11 +36,20 @@ type parser struct {
 	schemaReader  schema.Reader
 }
 
-func ParserSupportsTerraform(v string) error {
-	tfVersion, err := version.NewVersion(v)
+func parserSupportsTerraform(v string) error {
+	rawVer, err := version.NewVersion(v)
 	if err != nil {
 		return err
 	}
+
+	// Assume that alpha/beta/rc prereleases have the same compatibility
+	segments := rawVer.Segments64()
+	segmentsOnly := fmt.Sprintf("%d.%d.%d", segments[0], segments[1], segments[2])
+	tfVersion, err := version.NewVersion(segmentsOnly)
+	if err != nil {
+		return fmt.Errorf("failed to parse stripped version: %w", err)
+	}
+
 	c, err := version.NewConstraint(parserVersionConstraint)
 	if err != nil {
 		return err
@@ -60,7 +69,7 @@ func ParserSupportsTerraform(v string) error {
 // FindCompatibleParser finds a parser that is compatible with
 // given Terraform version, so that it parses config accuretly
 func FindCompatibleParser(v string) (Parser, error) {
-	err := ParserSupportsTerraform(v)
+	err := parserSupportsTerraform(v)
 	if err != nil {
 		return nil, err
 	}
