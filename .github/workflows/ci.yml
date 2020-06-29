@@ -54,5 +54,8 @@ jobs:
         name: Go mod verify
         run: go mod verify
       -
+        name: Run go fmt
+        run: make fmt
+      -
         name: Run tests
         run: make test

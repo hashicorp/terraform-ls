@@ -1,0 +1,52 @@
+
+0.0.5
+
+  * travis: fix gh_token
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 30 Jul 2016 03:35:43 +0200
+
+
+
+0.0.4
+
+  * packaging: add choco package, add deb/rpm repositories
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 30 Jul 2016 03:29:44 +0200
+
+
+
+0.0.3
+
+  * packaging: remove glide support in build scripts
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 23 Jul 2016 18:57:52 +0200
+
+
+
+0.0.2
+
+  * packaging: add deb/rpm/msi support
+  * README: update install section
+  * release: update script
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 23 Jul 2016 18:52:38 +0200
+
+
+
+0.0.1
+
+  * Initial release
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 18 Jun 2016 23:35:04 +0200
+
+

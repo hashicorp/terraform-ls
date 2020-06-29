@@ -1,6 +1,11 @@
+export GOFLAGS = -mod=vendor
+
 default: test
 
-test:
-	go test -mod=vendor -v -cover ./...
+fmt:
+	go run github.com/mh-cbon/go-fmt-fail ./...
 
-.PHONY: test
+test:
+	go test -v -cover ./...
+
+.PHONY: fmt test

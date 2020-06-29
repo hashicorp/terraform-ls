@@ -11,6 +11,7 @@ require (
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de
 	github.com/hashicorp/terraform-json v0.5.0
+	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.0.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/sourcegraph/go-lsp v0.0.0-20200117082640-b19bb38222e2

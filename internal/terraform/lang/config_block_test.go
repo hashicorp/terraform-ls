@@ -301,7 +301,7 @@ func TestCompletableLabels_CompletionCandidatesAtPos_overLimit(t *testing.T) {
 		},
 		tBlock: tBlock,
 		labels: map[string][]*labelCandidate{
-			"type": []*labelCandidate{
+			"type": {
 				{label: "aaa"},
 				{label: "bbb"},
 				{label: "ccc"},
@@ -338,7 +338,7 @@ func TestCompletableLabels_CompletionCandidatesAtPos_matchingLimit(t *testing.T)
 		},
 		tBlock: tBlock,
 		labels: map[string][]*labelCandidate{
-			"type": []*labelCandidate{
+			"type": {
 				{label: "aaa"},
 				{label: "bbb"},
 			},
@@ -374,7 +374,7 @@ func TestCompletableLabels_CompletionCandidatesAtPos_withPrefix(t *testing.T) {
 		},
 		tBlock: tBlock,
 		labels: map[string][]*labelCandidate{
-			"type": []*labelCandidate{
+			"type": {
 				{label: "prov_aaa"},
 				{label: "prov_bbb"},
 				{label: "ccc"},

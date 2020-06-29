@@ -1,0 +1,16 @@
+{
+  "name": "go-fmt-fail",
+  "summary": "go fmt fails when a file is formatted",
+  "description": "go fmt fails when a file is formatted",
+  "changelog-cmd": "changelog rpm",
+  "license": "LICENSE",
+  "url": "https://github.com/mh-cbon/!name!",
+  "files": [
+    {
+      "from": "build/!arch!/!name!",
+      "to": "%{_bindir}/",
+      "base": "build/!arch!/",
+      "type": ""
+    }
+  ]
+}
