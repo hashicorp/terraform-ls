@@ -1,0 +1,51 @@
+sudo: required
+
+services:
+  - docker
+
+language: go
+go:
+  - tip
+
+env:
+  global:
+    - MYAPP=go-fmt-fail
+    - MYEMAIL=mh-cbon@users.noreply.github.com
+    - secure: vQ8uqwzDhCBIGHUQOPpBcHBQ1/tySE8GtK+4C87G0W7iIfStdUJsJHuaIdaoNTt6mAZ7QPGD1o+5TDWm2RhWLoViiiuhSej/YutxbRBr1a1NmwaQwSXOtmmoluoVHJHeS0Oj1ct08Vi1v6wATcZOQz83q1rIwhaJ7t//BF1SuQ9cMoBtaVUGcBcp0XweDU8oi8qOW8CtFPO4HymOnWSSjHSkp/gV9duYg6M30T8NrgF2JEx9sPA9v23KEU/ySeF6tiheB9TZrsQQwupWau5yGOwQBJOXToYgcW6NyktClTms7Jpg4OGJXyYOvfQJYWtGCIhfxcXjhq+aNZNcpM7Bq0dL5303g7tpyI6qhCDVvbTC8X79bpwBX7ANgVRJiYIx3pQwErh9ut6dOGUy0Xi11+6NOSPw5Lme6SqPM3ISaD+f/g4UFCvrib0KyQXL364F7ot6O8mjrrmFc1sMUMP/KhtFpt3O535eYHXYMXkx+vjQOckaQT4oNPMByhwPp2vmAxUR/0Z6uwuZCTS3nOViWuWfMJhquOTc4TTjMHY8csLQHKje4eopEHMdyihZVlW3ZdgnIr3aRc4+dtk4Z18aLyulMdP9lojawfJqT8OhDgij/fpcpKAsakmi8ZHSMCjbN21COSnJj64gXP3HHXpoCR6H2AQEh3qMcM6Avivfqn4=
+
+before_install:
+  - sudo apt-get -qq update
+  - mkdir -p ${GOPATH}/bin
+  - cd ~
+
+install:
+  - cd $GOPATH/src/github.com/mh-cbon/$MYAPP
+  - go install
+
+script: echo "pass"
+
+before_deploy:
+  - mkdir -p build/{386,amd64}
+  - mkdir -p pkg-build/{386,amd64}
+  - GOOS=linux GOARCH=386 go build -o build/386/$MYAPP main.go
+  - GOOS=linux GOARCH=amd64 go build -o build/amd64/$MYAPP main.go
+  - curl -L https://raw.githubusercontent.com/mh-cbon/go-bin-deb/master/create-pkg.sh | GH=mh-cbon/$MYAPP sh -xe
+  - curl -L https://raw.githubusercontent.com/mh-cbon/go-bin-rpm/master/create-pkg.sh | GH=mh-cbon/$MYAPP sh -xe
+
+after_deploy:
+  - curl -L https://raw.githubusercontent.com/mh-cbon/go-bin-deb/master/setup-repository.sh | GH=mh-cbon/$MYAPP EMAIL=$MYEMAIL sh -xe
+  - curl -L https://raw.githubusercontent.com/mh-cbon/go-bin-rpm/master/setup-repository.sh | GH=mh-cbon/$MYAPP EMAIL=$MYEMAIL sh -xe
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Dy/lqa6C5TeE51Kk2xYVdHiHcv/r86Hay7ALxIcFGQ4xGZiNv/S7SrbJ+6YlRaPpVkmYo6YUpN0hsy3LXlbzV2RtBujj/VOoWtesFFjLmPo3e7I5d+eQMA7GsUpaCJLm5ZpgTiZwr+3zezsO0x8/2SCW2BGCqFd/09T2vFwZohGMPmmOOmxrtTEJ5H/h7YcimxJE5URD/xz+7+TPkxEpDnWqeHIiGPSJJUGMg2ngK7vkR/ZWwvOiUYg9i8jP1tPGUMQdVY8yeOUD1eoR9NnFqM1tA2aKp3PoWUiwoSsAecu2Zg7Po5WftIEU4+S0TvJpPWLMCJAWU8MTdEXhZ0khvV1FCW6IjDzVW9WDmL5kn0eYkrKqlopTLnx3C+VIrMXjnhKJ+CeiypGw2HbilmO1yYcpB+pWJGq9gXvxGd2jVDdRcO28rNxaOrDPebyO7i8lDbLPh+VfxzANQYlUNd7ir4VAk3vLrftc6UFp6we9ESx1oUlYEsUMZug8xNSRN4EvOouTJL4zbLwvgjcROkk8H9/BOxuFqwIjXxcKPZBAD8bkbsWtZMrXNWfoFmKCQbA9Am7BikFyMhnVOiVTPY49aydMhcFdjXYGwmEqH03AJ4f7kyh/lvGqTyWD83G7QIUDoqHlC3uA+kyYpkyaU7a6cG57wahubxEVpkUj/wFy2Wo=
+  file_glob: true
+  file:
+    - $MYAPP-386.deb
+    - $MYAPP-amd64.deb
+    - $MYAPP-386.rpm
+    - $MYAPP-amd64.rpm
+  skip_cleanup: true
+  on:
+    tags: true

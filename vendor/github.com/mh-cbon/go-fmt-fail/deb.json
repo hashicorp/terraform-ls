@@ -1,0 +1,23 @@
+{
+  "name": "go-fmt-fail",
+  "maintainer": "mh-cbon <mh-cbon@users.noreply.github.com>",
+  "description": "go fmt fails when a file is formatted",
+  "changelog-cmd": "changelog debian --vars='{\"name\":\"!name!\"}'",
+  "homepage": "http://github.com/mh-cbon/!name!",
+  "files": [
+    {
+      "from": "build/!arch!/!name!",
+      "to": "/usr/bin",
+      "base" : "build/!arch!/",
+      "fperm": "0755"
+    }
+  ],
+  "copyrights": [
+    {
+      "files": "*",
+      "copyright": "2016 mh-cbon <mh-cbon@users.noreply.github.com>",
+      "license": "MIT",
+      "file": "LICENSE"
+    }
+  ]
+}
