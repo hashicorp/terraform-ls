@@ -62,7 +62,7 @@ jobs:
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
       -
         name: Publish released artifacts
-        run: hc-releases publish
+        run: hc-releases publish -product=terraform-ls
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
