@@ -12,7 +12,7 @@ import (
 func TestNewRootModuleManagerMock_noMocks(t *testing.T) {
 	f := NewRootModuleManagerMock(map[string]*RootModuleMock{})
 	rmm := f(context.Background())
-	err := rmm.AddRootModule("any-path")
+	_, err := rmm.AddRootModule("any-path")
 	if err == nil {
 		t.Fatal("expected unmocked path addition to fail")
 	}
@@ -38,7 +38,7 @@ func TestNewRootModuleManagerMock_mocks(t *testing.T) {
 		},
 	})
 	rmm := f(context.Background())
-	err := rmm.AddRootModule(tmpDir)
+	_, err := rmm.AddRootModule(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

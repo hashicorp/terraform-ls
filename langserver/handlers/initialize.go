@@ -6,7 +6,6 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -55,25 +54,28 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	walker := rootmodule.NewWalker()
+	walker, err := lsctx.RootModuleWalker(ctx)
+	if err != nil {
+		return serverCaps, err
+	}
+
 	walker.SetLogger(lh.logger)
 	err = walker.WalkInitializedRootModules(fh.Dir(), func(dir string) error {
-		lh.logger.Printf("Adding root module (via %T): %s", rmm, dir)
-		return rmm.AddRootModule(dir)
+		lh.logger.Printf("Adding root module: %s", dir)
+		rm, err := rmm.AddRootModule(dir)
+		if err != nil {
+			return err
+		}
+
+		paths := rm.PathsToWatch()
+		lh.logger.Printf("Adding %d paths of root module for watching (%s)", len(paths), dir)
+		err = w.AddPaths(paths)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
-	if err != nil {
-		return serverCaps, err
-	}
 
-	err = w.AddPaths(rmm.PathsToWatch())
-	if err != nil {
-		return serverCaps, err
-	}
-
-	err = w.Start()
-	if err != nil {
-		return serverCaps, err
-	}
-
-	return serverCaps, nil
+	return serverCaps, err
 }

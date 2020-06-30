@@ -474,9 +474,10 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 		base := filepath.Base(tc.walkerRoot)
 		t.Run(fmt.Sprintf("%s/%d-%s", base, i, tc.name), func(t *testing.T) {
 			rmm := testRootModuleManager(t)
-			w := NewWalker()
+			w := MockWalker()
 			err := w.WalkInitializedRootModules(tc.walkerRoot, func(rmPath string) error {
-				return rmm.AddRootModule(rmPath)
+				_, err := rmm.AddRootModule(rmPath)
+				return err
 			})
 			if err != nil {
 				t.Fatal(err)

@@ -59,11 +59,7 @@ func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
 	rm.tfDiscoFunc = d.LookPath
 
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = func() *schema.Storage {
-		ss := schema.NewStorage()
-		ss.SetSynchronous()
-		return ss
-	}
+	rm.newSchemaStorage = schema.NewStorage
 
 	return rm, rm.init(ctx)
 }
@@ -281,8 +277,15 @@ func (rm *rootModule) UpdatePluginCache(lockFile File) error {
 
 	rm.pluginLockFile = lockFile
 
-	return rm.schemaWriter.ObtainSchemasForModule(
+	err := rm.schemaWriter.ObtainSchemasForModule(
 		rm.tfExec, rootModuleDirFromFilePath(lockFile.Path()))
+	if err != nil {
+		// We fail silently here to still allow tracking the module
+		// The schema can be loaded later via watcher
+		rm.logger.Printf("failed to update plugin cache: %s", err.Error())
+	}
+
+	return nil
 }
 
 func (rm *rootModule) PathsToWatch() []string {

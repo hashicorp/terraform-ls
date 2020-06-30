@@ -71,23 +71,23 @@ func (rmm *rootModuleManager) SetLogger(logger *log.Logger) {
 	rmm.logger = logger
 }
 
-func (rmm *rootModuleManager) AddRootModule(dir string) error {
+func (rmm *rootModuleManager) AddRootModule(dir string) (RootModule, error) {
 	dir = filepath.Clean(dir)
 
 	// TODO: Follow symlinks (requires proper test data)
 
 	if rmm.exists(dir) {
-		return fmt.Errorf("root module %s was already added", dir)
+		return nil, fmt.Errorf("root module %s was already added", dir)
 	}
 
 	rm, err := rmm.newRootModule(context.Background(), dir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	rmm.rms = append(rmm.rms, rm)
 
-	return nil
+	return rm, nil
 }
 
 func (rmm *rootModuleManager) exists(dir string) bool {

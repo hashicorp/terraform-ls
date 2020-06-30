@@ -11,7 +11,6 @@ func MockStorage(ps *tfjson.ProviderSchemas) StorageFactory {
 			ps = &tfjson.ProviderSchemas{}
 		}
 		s.ps = ps
-		s.sync = true
 		return s
 	}
 }

@@ -44,11 +44,7 @@ func NewRootModuleMock(ctx context.Context, rmm *RootModuleMock, dir string) *ro
 	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
 
 	if rmm.ProviderSchemas == nil {
-		rm.newSchemaStorage = func() *schema.Storage {
-			ss := schema.NewStorage()
-			ss.SetSynchronous()
-			return ss
-		}
+		rm.newSchemaStorage = schema.NewStorage
 	} else {
 		rm.newSchemaStorage = schema.MockStorage(rmm.ProviderSchemas)
 	}
