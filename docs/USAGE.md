@@ -5,7 +5,10 @@ in the [README.md](../README.md) if that is applicable to your client
 (i.e. if the client doesn't download the server itself).
 
 Instructions for popular IDEs are below and pull requests
-for updates or addition of more IDEs are welcomed. 
+for updates or addition of more IDEs are welcomed.
+
+See also [settings](./SETTINGS.md) to understand
+how you may configure the settings.
 
 ## Emacs
 

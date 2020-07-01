@@ -297,3 +297,14 @@ func (rmm *rootModuleManager) PathsToWatch() []string {
 	}
 	return paths
 }
+
+// NewRootModuleLoader allows adding & loading root modules
+// with a given context. This can be passed down to any handler
+// which itself will have short-lived context
+// therefore couldn't finish loading the root module asynchronously
+// after it responds to the client
+func NewRootModuleLoader(ctx context.Context, rmm RootModuleManager) RootModuleLoader {
+	return func(dir string) (RootModule, error) {
+		return rmm.AddAndStartLoadingRootModule(ctx, dir)
+	}
+}

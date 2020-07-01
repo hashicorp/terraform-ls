@@ -52,6 +52,8 @@ github.com/mh-cbon/go-fmt-fail/hasWritten
 github.com/mitchellh/cli
 # github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7
 github.com/mitchellh/go-wordwrap
+# github.com/mitchellh/mapstructure v1.3.2
+github.com/mitchellh/mapstructure
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/posener/complete v1.1.1
