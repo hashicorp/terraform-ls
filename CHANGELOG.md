@@ -1,3 +1,9 @@
+## 0.4.1 (Unreleased)
+
+BUG FIXES:
+
+ - Fix volume case issue on Windows ([#199](https://github.com/hashicorp/terraform-ls/pull/199))
+
 ## 0.4.0 (25 June 2020)
 
 FEATURES:
