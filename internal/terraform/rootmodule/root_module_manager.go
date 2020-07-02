@@ -92,7 +92,7 @@ func (rmm *rootModuleManager) AddRootModule(dir string) error {
 
 func (rmm *rootModuleManager) exists(dir string) bool {
 	for _, rm := range rmm.rms {
-		if rm.Path() == dir {
+		if pathEquals(rm.Path(), dir) {
 			return true
 		}
 	}
@@ -101,7 +101,7 @@ func (rmm *rootModuleManager) exists(dir string) bool {
 
 func (rmm *rootModuleManager) rootModuleByPath(dir string) *rootModule {
 	for _, rm := range rmm.rms {
-		if rm.Path() == dir {
+		if pathEquals(rm.Path(), dir) {
 			return rm
 		}
 	}

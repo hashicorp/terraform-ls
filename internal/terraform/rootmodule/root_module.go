@@ -262,8 +262,8 @@ func (rm *rootModule) ReferencesModulePath(path string) bool {
 			continue
 		}
 		absPath := filepath.Join(rm.moduleManifest.rootDir, m.Dir)
-		rm.logger.Printf("checking if %q == %q", absPath, path)
-		if absPath == path {
+		rm.logger.Printf("checking if %q equals %q", absPath, path)
+		if pathEquals(absPath, path) {
 			return true
 		}
 	}
@@ -310,7 +310,7 @@ func (rm *rootModule) IsKnownModuleManifestFile(path string) bool {
 		return false
 	}
 
-	return rm.moduleManifestFile.Path() == path
+	return pathEquals(rm.moduleManifestFile.Path(), path)
 }
 
 func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
@@ -321,5 +321,5 @@ func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
 		return false
 	}
 
-	return rm.pluginLockFile.Path() == path
+	return pathEquals(rm.pluginLockFile.Path(), path)
 }
