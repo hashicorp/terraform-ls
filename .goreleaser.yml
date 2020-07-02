@@ -55,6 +55,26 @@ signs:
     args: ["-u", "{{ .Env.PGP_USER_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
 
+brews:
+  -
+    tap:
+      owner: hashicorp
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    url_template: "https://releases.hashicorp.com/terraform-ls/{{ .Version }}/{{ .ArtifactName }}"
+    commit_author:
+      name: hashibot
+      email: hashibot-feedback@hashicorp.com
+    folder: Formula
+    homepage: "https://github.com/hashicorp/terraform-ls"
+    description: "Terraform Language Server"
+    conflicts:
+      - terraform-ls
+    install: |
+      bin.install "terraform-ls"
+    test: |
+      system "#{bin}/terraform-ls --version"
+
 publishers:
   - name: "hc-releases"
     checksum: true
