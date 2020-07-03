@@ -34,7 +34,7 @@ type RootModuleManager interface {
 	SetTerraformExecPath(path string)
 	SetTerraformExecLogPath(logPath string)
 	SetTerraformExecTimeout(timeout time.Duration)
-	AddRootModule(dir string) error
+	AddRootModule(dir string) (RootModule, error)
 	PathsToWatch() []string
 	RootModuleByPath(path string) (RootModule, error)
 }
@@ -52,3 +52,5 @@ type RootModule interface {
 type RootModuleFactory func(context.Context, string) (*rootModule, error)
 
 type RootModuleManagerFactory func(context.Context) RootModuleManager
+
+type WalkerFactory func() *Walker

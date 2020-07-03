@@ -51,9 +51,6 @@ type Storage struct {
 	// sem ensures atomic reading and obtaining of schemas
 	// as the process of obtaining it may not be thread-safe
 	sem *semaphore.Weighted
-
-	// sync makes operations synchronous which makes testing easier
-	sync bool
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
@@ -102,28 +99,10 @@ func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
 }
 
-func (s *Storage) SetSynchronous() {
-	s.sync = true
-}
-
 // ObtainSchemasForModule will (by default) asynchronously obtain schema via tf
 // and store it for later consumption via Reader methods
 func (s *Storage) ObtainSchemasForModule(tf *exec.Executor, dir string) error {
-	if s.sync {
-		return s.obtainSchemasForModule(tf, dir)
-	}
-
-	// This routine is not cancellable in itself
-	// but the time-consuming part is done by exec.Executor
-	// which is cancellable via its own context
-	go func() {
-		err := s.obtainSchemasForModule(tf, dir)
-		if err != nil {
-			s.logger.Printf("error obtaining schemas for %s: %s", dir, err)
-		}
-	}()
-
-	return nil
+	return s.obtainSchemasForModule(tf, dir)
 }
 
 func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {

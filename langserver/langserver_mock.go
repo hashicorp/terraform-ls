@@ -108,8 +108,6 @@ func (lsm *langServerMock) CloseClientStdout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	time.Sleep(1 * time.Millisecond)
 }
 
 type CallRequest struct {

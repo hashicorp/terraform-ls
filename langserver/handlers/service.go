@@ -26,9 +26,11 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	ww                   watcher.Watcher
+	watcher              watcher.Watcher
+	walker               *rootmodule.Walker
 	newRootModuleManager rootmodule.RootModuleManagerFactory
 	newWatcher           watcher.WatcherFactory
+	newWalker            rootmodule.WalkerFactory
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
@@ -42,6 +44,7 @@ func NewSession(srvCtx context.Context) session.Session {
 		stopSession:          stopSession,
 		newRootModuleManager: rootmodule.NewRootModuleManager,
 		newWatcher:           watcher.NewWatcher,
+		newWalker:            rootmodule.NewWalker,
 	}
 }
 
@@ -69,6 +72,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	rmm := svc.newRootModuleManager(svc.sessCtx)
 	rmm.SetLogger(svc.logger)
 
+	svc.walker = svc.newWalker()
+
 	// The following is set via CLI flags, hence available in the server context
 	if path, ok := lsctx.TerraformExecPath(svc.srvCtx); ok {
 		rmm.SetTerraformExecPath(path)
@@ -84,9 +89,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	if err != nil {
 		return nil, err
 	}
-	svc.ww = ww
-	svc.ww.SetLogger(svc.logger)
-	svc.ww.AddChangeHook(func(file watcher.TrackedFile) error {
+	svc.watcher = ww
+	svc.watcher.SetLogger(svc.logger)
+	svc.watcher.AddChangeHook(func(file watcher.TrackedFile) error {
 		w, err := rmm.RootModuleByPath(file.Path())
 		if err != nil {
 			return err
@@ -98,7 +103,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 		return nil
 	})
-	svc.ww.AddChangeHook(func(file watcher.TrackedFile) error {
+	svc.watcher.AddChangeHook(func(file watcher.TrackedFile) error {
 		rm, err := rmm.RootModuleByPath(file.Path())
 		if err != nil {
 			return err
@@ -110,6 +115,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 		return nil
 	})
+	err = svc.watcher.Start()
+	if err != nil {
+		return nil, err
+	}
 
 	rootDir := ""
 
@@ -122,6 +131,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithClientCapabilitiesSetter(cc, ctx)
 			ctx = lsctx.WithWatcher(ww, ctx)
+			ctx = lsctx.WithRootModuleWalker(svc.walker, ctx)
 			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
 			ctx = lsctx.WithRootModuleManager(rmm, ctx)
 
@@ -221,10 +231,20 @@ func (svc *service) Finish(status jrpc2.ServerStatus) {
 		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}
 
-	svc.logger.Println("Stopping watcher for session ...")
-	err := svc.ww.Stop()
-	if err != nil {
-		svc.logger.Println("Unable to stop watcher for session:", err)
+	// TODO: Cancel any operations on tracked root modules
+	// https://github.com/hashicorp/terraform-ls/issues/195
+
+	if svc.walker != nil {
+		svc.logger.Printf("Stopping walker for session ...")
+		svc.walker.Stop()
+	}
+
+	if svc.watcher != nil {
+		svc.logger.Println("Stopping watcher for session ...")
+		err := svc.watcher.Stop()
+		if err != nil {
+			svc.logger.Println("Unable to stop watcher for session:", err)
+		}
 	}
 
 	svc.stopSession()

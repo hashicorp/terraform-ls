@@ -33,6 +33,7 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		stopSession:          ms.stop,
 		newRootModuleManager: rmmm,
 		newWatcher:           watcher.MockWatcher(),
+		newWalker:            rootmodule.MockWalker,
 	}
 
 	return svc

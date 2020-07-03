@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -79,8 +80,12 @@ func TestEOF(t *testing.T) {
 
 	ls.CloseClientStdout(t)
 
+	// Session is stopped after all other operations stop
+	// which may take some time
+	time.Sleep(1 * time.Millisecond)
+
 	if !ms.StopFuncCalled() {
-		t.Fatal("Expected service to stop on EOF")
+		t.Fatal("Expected session to stop on EOF")
 	}
 	if ls.StopFuncCalled() {
 		t.Fatal("Expected server not to stop on EOF")

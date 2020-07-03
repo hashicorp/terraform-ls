@@ -30,6 +30,7 @@ var (
 	ctxParserFinder     = &contextKey{"parser finder"}
 	ctxTfExecFinder     = &contextKey{"terraform exec finder"}
 	ctxRootModuleCaFi   = &contextKey{"root module candidate finder"}
+	ctxRootModuleWalker = &contextKey{"root module walker"}
 	ctxRootDir          = &contextKey{"root directory"}
 )
 
@@ -184,4 +185,16 @@ func RootDirectory(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return *rootDir, true
+}
+
+func WithRootModuleWalker(w *rootmodule.Walker, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootModuleWalker, w)
+}
+
+func RootModuleWalker(ctx context.Context) (*rootmodule.Walker, error) {
+	w, ok := ctx.Value(ctxRootModuleWalker).(*rootmodule.Walker)
+	if !ok {
+		return nil, missingContextErr(ctxRootModuleWalker)
+	}
+	return w, nil
 }
