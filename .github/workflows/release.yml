@@ -66,3 +66,4 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
+          FASTLY_API_TOKEN: ${{ secrets.RELEASE_FASTLY_API_TOKEN }}
