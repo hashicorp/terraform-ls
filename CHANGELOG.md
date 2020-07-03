@@ -1,3 +1,9 @@
+## 0.4.2 (Unreleased)
+
+BUG FIXES:
+
+ - terraform/rootmodule: Make walker async by default ([#196](https://github.com/hashicorp/terraform-ls/pull/196))
+
 ## 0.4.1 (3 July)
 
 BUG FIXES:
