@@ -109,4 +109,14 @@ endif
 
 ## VS Code
 
-See our [Terraform VS Code Extension](https://github.com/hashicorp/vscode-terraform) repository.
+ - Install [Terraform VS Code Extension](https://marketplace.visualstudio.com/items?itemName=hashicorp.terraform) `>=2.0.0`
+ - Latest version of the language server should be installed automatically on VS Code launch
+ - In case you are upgrading from v1 you may need to reset the settings to reflect v2 default, as shown below
+
+```json
+"terraform.languageServer": {
+    "args": [
+        "serve",
+    ],
+},
+```
