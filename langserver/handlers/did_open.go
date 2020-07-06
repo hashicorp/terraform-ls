@@ -33,8 +33,11 @@ func TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentPara
 
 	candidates := cf.RootModuleCandidatesByPath(f.Dir())
 	if len(candidates) == 0 {
-		msg := fmt.Sprintf("No root module found for %s"+
-			" functionality may be limited", f.Filename())
+		msg := fmt.Sprintf("No root module found for %s."+
+			" Functionality may be limited."+
+			// Unfortunately we can't be any more specific wrt where
+			// because we don't gather "init-able folders" in any way
+			" You may need to run terraform init", f.Filename())
 		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
