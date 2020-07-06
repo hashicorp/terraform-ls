@@ -42,6 +42,7 @@ jobs:
             -H "Accept: application/octet-stream" ${DOWNLOAD_URL}
           tar xzf /tmp/hc-releases.tgz
           sudo mv hc-releases /usr/bin/hc-releases
+          hc-releases version
       -
         name: Import PGP key for archive signing
         run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
