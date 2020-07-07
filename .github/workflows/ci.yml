@@ -28,6 +28,8 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v1
         with:
+          # TODO: Replace with go-version-from-file when it is supported
+          # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version.outputs.content }}
       -
         name: Snapshot build (cross-platform)
@@ -61,6 +63,8 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v1
         with:
+          # TODO: Replace with go-version-from-file when it is supported
+          # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version.outputs.content }}
       -
         name: Go mod verify
