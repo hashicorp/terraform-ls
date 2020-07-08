@@ -18,6 +18,16 @@ if you experience a bug or have an idea for a feature.
 
 ## Installation
 
+### Homebrew (macOS / Linux)
+
+You can install via [Homebrew](https://brew.sh)
+
+```
+brew install hashicorp/tap/terraform-ls
+```
+
+### Other platforms
+
 1. [Download for the latest version](https://releases.hashicorp.com/terraform-ls/)
   of the language server relevant for your operating system and architecture.
 2. The language server is distributed as a single binary.
