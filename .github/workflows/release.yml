@@ -18,9 +18,9 @@ jobs:
       -
         name: Read go version
         id: go-version
-        uses: juliangruber/read-file-action@v1
-        with:
-          path: ./.go-version
+        run: |
+          content=`cat ./.go-version`
+          echo "::set-output name=content::$content"
       -
         name: Set up Go
         uses: actions/setup-go@v1
