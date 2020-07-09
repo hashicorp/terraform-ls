@@ -103,7 +103,7 @@ func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, 
 	}
 
 	rmm.logger.Printf("asynchronously loading root module %s", dir)
-	go rm.StartLoading()
+	rm.StartLoading()
 
 	return rm, nil
 }

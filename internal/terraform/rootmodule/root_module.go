@@ -2,6 +2,7 @@ package rootmodule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,8 +24,10 @@ type rootModule struct {
 
 	// loading
 	isLoading     bool
+	isLoadingMu   *sync.RWMutex
 	cancelLoading context.CancelFunc
 	loadErr       error
+	loadErrMu     *sync.RWMutex
 
 	// module cache
 	moduleMu           *sync.RWMutex
@@ -37,9 +40,11 @@ type rootModule struct {
 	newSchemaStorage schema.StorageFactory
 	schemaStorage    *schema.Storage
 	schemaLoaded     bool
+	schemaLoadedMu   *sync.RWMutex
 
 	// terraform executor
 	tfLoaded      bool
+	tfLoadedMu    *sync.RWMutex
 	tfExec        *exec.Executor
 	tfNewExecutor exec.ExecutorFactory
 	tfExecPath    string
@@ -53,16 +58,22 @@ type rootModule struct {
 	tfVersionErr error
 
 	// language parser
-	parserLoaded bool
-	parser       lang.Parser
+	parserLoaded   bool
+	parserLoadedMu *sync.RWMutex
+	parser         lang.Parser
 }
 
 func newRootModule(dir string) *rootModule {
 	return &rootModule{
-		path:     dir,
-		logger:   defaultLogger,
-		pluginMu: &sync.RWMutex{},
-		moduleMu: &sync.RWMutex{},
+		path:           dir,
+		logger:         defaultLogger,
+		isLoadingMu:    &sync.RWMutex{},
+		loadErrMu:      &sync.RWMutex{},
+		moduleMu:       &sync.RWMutex{},
+		pluginMu:       &sync.RWMutex{},
+		schemaLoadedMu: &sync.RWMutex{},
+		tfLoadedMu:     &sync.RWMutex{},
+		parserLoadedMu: &sync.RWMutex{},
 	}
 }
 
@@ -144,15 +155,15 @@ func (rm *rootModule) StartLoading() {
 	rm.cancelLoading = cancelFunc
 
 	go func(ctx context.Context) {
-		rm.loadErr = rm.load(ctx)
+		rm.setLoadErr(rm.load(ctx))
 	}(ctx)
 }
 
 func (rm *rootModule) CancelLoading() {
-	if rm.isLoading && rm.cancelLoading != nil {
+	if !rm.IsLoadingDone() && rm.cancelLoading != nil {
 		rm.cancelLoading()
 	}
-	rm.isLoading = false
+	rm.setLoadingState(false)
 }
 
 func (rm *rootModule) load(ctx context.Context) error {
@@ -160,7 +171,7 @@ func (rm *rootModule) load(ctx context.Context) error {
 	defer rm.CancelLoading()
 
 	// reset internal loading state
-	rm.isLoading = true
+	rm.setLoadingState(true)
 
 	// The following operations have to happen in a particular order
 	// as they depend on the internal state as mutated by each operation
@@ -188,13 +199,21 @@ func (rm *rootModule) load(ctx context.Context) error {
 	return errs.ErrorOrNil()
 }
 
+func (rm *rootModule) setLoadingState(isLoading bool) {
+	rm.isLoadingMu.Lock()
+	defer rm.isLoadingMu.Unlock()
+	rm.isLoading = isLoading
+}
+
 func (rm *rootModule) IsLoadingDone() bool {
+	rm.isLoadingMu.RLock()
+	defer rm.isLoadingMu.RUnlock()
 	return !rm.isLoading
 }
 
 func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 	defer func() {
-		rm.tfLoaded = true
+		rm.setTfLoaded(true)
 	}()
 
 	tfPath := rm.tfExecPath
@@ -226,7 +245,7 @@ func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 
 func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 	if rm.tfExec == nil {
-		return nil
+		return errors.New("no terraform executor - unable to read version")
 	}
 
 	version, err := rm.tfExec.Version(ctx)
@@ -241,7 +260,7 @@ func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 
 func (rm *rootModule) findCompatibleStateStorage() error {
 	if rm.tfVersion == "" {
-		return nil
+		return errors.New("unknown terraform version - unable to find state storage")
 	}
 
 	err := schema.SchemaSupportsTerraform(rm.tfVersion)
@@ -255,11 +274,11 @@ func (rm *rootModule) findCompatibleStateStorage() error {
 
 func (rm *rootModule) findCompatibleLangParser() error {
 	defer func() {
-		rm.parserLoaded = true
+		rm.setParserLoaded(true)
 	}()
 
 	if rm.tfVersion == "" {
-		return nil
+		return errors.New("unknown terraform version - unable to find parser")
 	}
 
 	p, err := lang.FindCompatibleParser(rm.tfVersion)
@@ -278,7 +297,15 @@ func (rm *rootModule) findCompatibleLangParser() error {
 }
 
 func (rm *rootModule) LoadError() error {
+	rm.loadErrMu.RLock()
+	defer rm.loadErrMu.RUnlock()
 	return rm.loadErr
+}
+
+func (rm *rootModule) setLoadErr(err error) {
+	rm.loadErrMu.Lock()
+	defer rm.loadErrMu.Unlock()
+	rm.loadErr = err
 }
 
 func (rm *rootModule) Path() string {
@@ -323,11 +350,27 @@ func (rm *rootModule) Parser() (lang.Parser, error) {
 }
 
 func (rm *rootModule) IsParserLoaded() bool {
+	rm.parserLoadedMu.RLock()
+	defer rm.parserLoadedMu.RUnlock()
 	return rm.parserLoaded
 }
 
+func (rm *rootModule) setParserLoaded(isLoaded bool) {
+	rm.parserLoadedMu.Lock()
+	defer rm.parserLoadedMu.Unlock()
+	rm.parserLoaded = isLoaded
+}
+
 func (rm *rootModule) IsSchemaLoaded() bool {
+	rm.schemaLoadedMu.RLock()
+	defer rm.schemaLoadedMu.RUnlock()
 	return rm.schemaLoaded
+}
+
+func (rm *rootModule) setSchemaLoaded(isLoaded bool) {
+	rm.schemaLoadedMu.Lock()
+	defer rm.schemaLoadedMu.Unlock()
+	rm.schemaLoaded = isLoaded
 }
 
 func (rm *rootModule) ReferencesModulePath(path string) bool {
@@ -367,19 +410,27 @@ func (rm *rootModule) TerraformExecutor() (*exec.Executor, error) {
 }
 
 func (rm *rootModule) IsTerraformLoaded() bool {
+	rm.tfLoadedMu.RLock()
+	defer rm.tfLoadedMu.RUnlock()
 	return rm.tfLoaded
+}
+
+func (rm *rootModule) setTfLoaded(isLoaded bool) {
+	rm.tfLoadedMu.Lock()
+	defer rm.tfLoadedMu.Unlock()
+	rm.tfLoaded = isLoaded
 }
 
 func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) error {
 	rm.pluginMu.Lock()
 	defer rm.pluginMu.Unlock()
 
-	if !rm.tfLoaded {
+	if !rm.IsTerraformLoaded() {
 		return fmt.Errorf("cannot update schema as terraform executor is not available yet")
 	}
 
 	defer func() {
-		rm.schemaLoaded = true
+		rm.setSchemaLoaded(true)
 	}()
 
 	if lockFile == nil {

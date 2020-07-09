@@ -32,7 +32,7 @@ func TestNewRootModuleManagerMock_mocks(t *testing.T) {
 						},
 						{
 							Args:   []string{"providers", "schema", "-json"},
-							Stdout: "{\"format_version\":\"0.1\"}\n",
+							Stdout: `{"format_version":"0.1"}` + "\n",
 						},
 					},
 				},
