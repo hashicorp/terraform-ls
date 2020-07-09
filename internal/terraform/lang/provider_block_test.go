@@ -139,14 +139,14 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 		},
 		{
-			"missing type",
-			`provider "" {
+			"wrong provider name",
+			`provider "x" {
 }`,
 			simpleSchema,
 			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 14},
 			[]renderedCandidate{},
-			&schema.SchemaUnavailableErr{BlockType: "provider", FullName: ""},
+			&schema.SchemaUnavailableErr{BlockType: "provider", FullName: "x"},
 		},
 		{
 			"schema reader error",
@@ -170,7 +170,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:         "custom",
-					Detail:        "provider",
+					Detail:        "hashicorp/custom",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},

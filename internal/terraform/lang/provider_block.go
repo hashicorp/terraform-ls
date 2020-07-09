@@ -1,11 +1,13 @@
 package lang
 
 import (
+	"fmt"
 	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -105,7 +107,13 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return cl.completionCandidatesAtPos(pos)
 	}
 
-	pSchema, err := p.sr.ProviderConfigSchema(p.RawName())
+	rawName := p.RawName()
+	if rawName == "" {
+		return nil, fmt.Errorf("unknown provider name at %#v", pos)
+	}
+	addr := addrs.ImpliedProviderForUnqualifiedType(rawName)
+
+	pSchema, err := p.sr.ProviderConfigSchema(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +125,12 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func providerCandidates(names []string) []*labelCandidate {
+func providerCandidates(providers []addrs.Provider) []*labelCandidate {
 	candidates := []*labelCandidate{}
-	for _, name := range names {
+	for _, pAddr := range providers {
 		candidates = append(candidates, &labelCandidate{
-			label:  name,
-			detail: "provider",
+			label:  pAddr.Type,
+			detail: pAddr.ForDisplay(),
 		})
 	}
 	return candidates

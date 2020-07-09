@@ -177,7 +177,7 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:         "custom_rs",
-					Detail:        "Resource (custom)",
+					Detail:        "Resource (hashicorp/custom)",
 					Documentation: "",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},

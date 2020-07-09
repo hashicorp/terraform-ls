@@ -142,7 +142,7 @@ func dataSourceCandidates(dataSources []schema.DataSource) []*labelCandidate {
 
 		candidates = append(candidates, &labelCandidate{
 			label:         ds.Name,
-			detail:        fmt.Sprintf("Data Source (%s)", ds.Provider),
+			detail:        fmt.Sprintf("Data Source (%s)", ds.Provider.ForDisplay()),
 			documentation: desc,
 		})
 	}

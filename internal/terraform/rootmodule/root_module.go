@@ -86,7 +86,7 @@ func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
 	rm.tfDiscoFunc = d.LookPath
 
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = schema.NewStorage
+	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	err := rm.discoverCaches(ctx, dir)
 	if err != nil {
@@ -265,11 +265,11 @@ func (rm *rootModule) findCompatibleStateStorage() error {
 		return errors.New("unknown terraform version - unable to find state storage")
 	}
 
-	err := schema.SchemaSupportsTerraform(rm.tfVersion)
+	ss, err := rm.newSchemaStorage(rm.tfVersion)
 	if err != nil {
 		return err
 	}
-	rm.schemaStorage = rm.newSchemaStorage()
+	rm.schemaStorage = ss
 	rm.schemaStorage.SetLogger(rm.logger)
 	return nil
 }
