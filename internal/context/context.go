@@ -19,19 +19,19 @@ func (k *contextKey) String() string {
 }
 
 var (
-	ctxFs               = &contextKey{"filesystem"}
-	ctxClientCapsSetter = &contextKey{"client capabilities setter"}
-	ctxClientCaps       = &contextKey{"client capabilities"}
-	ctxTfExecPath       = &contextKey{"terraform executable path"}
-	ctxTfExecLogPath    = &contextKey{"terraform executor log path"}
-	ctxTfExecTimeout    = &contextKey{"terraform execution timeout"}
-	ctxWatcher          = &contextKey{"watcher"}
-	ctxRootModuleMngr   = &contextKey{"root module manager"}
-	ctxParserFinder     = &contextKey{"parser finder"}
-	ctxTfExecFinder     = &contextKey{"terraform exec finder"}
-	ctxRootModuleCaFi   = &contextKey{"root module candidate finder"}
-	ctxRootModuleWalker = &contextKey{"root module walker"}
-	ctxRootDir          = &contextKey{"root directory"}
+	ctxFs                = &contextKey{"filesystem"}
+	ctxClientCapsSetter  = &contextKey{"client capabilities setter"}
+	ctxClientCaps        = &contextKey{"client capabilities"}
+	ctxTfExecPath        = &contextKey{"terraform executable path"}
+	ctxTfExecLogPath     = &contextKey{"terraform executor log path"}
+	ctxTfExecTimeout     = &contextKey{"terraform execution timeout"}
+	ctxWatcher           = &contextKey{"watcher"}
+	ctxRootModuleMngr    = &contextKey{"root module manager"}
+	ctxParserFinder      = &contextKey{"parser finder"}
+	ctxTfFormatterFinder = &contextKey{"terraform formatter finder"}
+	ctxRootModuleCaFi    = &contextKey{"root module candidate finder"}
+	ctxRootModuleWalker  = &contextKey{"root module walker"}
+	ctxRootDir           = &contextKey{"root directory"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -132,14 +132,14 @@ func ParserFinder(ctx context.Context) (rootmodule.ParserFinder, error) {
 	return pf, nil
 }
 
-func WithTerraformExecFinder(tef rootmodule.TerraformExecFinder, ctx context.Context) context.Context {
-	return context.WithValue(ctx, ctxTfExecFinder, tef)
+func WithTerraformFormatterFinder(tef rootmodule.TerraformFormatterFinder, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxTfFormatterFinder, tef)
 }
 
-func TerraformExecutorFinder(ctx context.Context) (rootmodule.TerraformExecFinder, error) {
-	pf, ok := ctx.Value(ctxTfExecFinder).(rootmodule.TerraformExecFinder)
+func TerraformFormatterFinder(ctx context.Context) (rootmodule.TerraformFormatterFinder, error) {
+	pf, ok := ctx.Value(ctxTfFormatterFinder).(rootmodule.TerraformFormatterFinder)
 	if !ok {
-		return nil, missingContextErr(ctxTfExecFinder)
+		return nil, missingContextErr(ctxTfFormatterFinder)
 	}
 	return pf, nil
 }

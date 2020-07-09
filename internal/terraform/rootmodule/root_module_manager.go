@@ -181,21 +181,19 @@ func (rmm *rootModuleManager) IsSchemaLoaded(path string) (bool, error) {
 	return rm.IsSchemaLoaded(), nil
 }
 
-func (rmm *rootModuleManager) TerraformExecutorForDir(ctx context.Context, path string) (*exec.Executor, error) {
+func (rmm *rootModuleManager) TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		if IsRootModuleNotFound(err) {
-			// TODO: obtain TF version and return "formatter" instead of executor
-			// gated by particular version which introduced "fmt"
-			return rmm.discoverTerraformExecutor(ctx, path)
+			return rmm.newTerraformFormatter(ctx, path)
 		}
 		return nil, err
 	}
 
-	return rm.TerraformExecutor()
+	return rm.TerraformFormatter()
 }
 
-func (rmm *rootModuleManager) discoverTerraformExecutor(ctx context.Context, path string) (*exec.Executor, error) {
+func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, path string) (exec.Formatter, error) {
 	tfPath := rmm.tfExecPath
 	if tfPath == "" {
 		var err error
@@ -218,7 +216,13 @@ func (rmm *rootModuleManager) discoverTerraformExecutor(ctx context.Context, pat
 		tf.SetTimeout(rmm.tfExecTimeout)
 	}
 
-	return tf, nil
+	version, err := tf.Version(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rmm.logger.Printf("Terraform version %s found at %s (alternative)", version, tf.GetExecPath())
+
+	return tf.FormatterForVersion(version)
 }
 
 func (rmm *rootModuleManager) IsTerraformLoaded(path string) (bool, error) {

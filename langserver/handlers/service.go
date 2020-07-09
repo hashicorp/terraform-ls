@@ -193,7 +193,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			ctx = lsctx.WithTerraformExecFinder(svc.modMgr, ctx)
+			ctx = lsctx.WithTerraformFormatterFinder(svc.modMgr, ctx)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},

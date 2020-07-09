@@ -397,7 +397,7 @@ func (rm *rootModule) ReferencesModulePath(path string) bool {
 	return false
 }
 
-func (rm *rootModule) TerraformExecutor() (*exec.Executor, error) {
+func (rm *rootModule) TerraformFormatter() (exec.Formatter, error) {
 	if !rm.IsTerraformLoaded() {
 		return nil, fmt.Errorf("terraform executor is not loaded yet")
 	}
@@ -406,7 +406,7 @@ func (rm *rootModule) TerraformExecutor() (*exec.Executor, error) {
 		return nil, fmt.Errorf("no terraform executor available")
 	}
 
-	return rm.tfExec, nil
+	return rm.tfExec.FormatterForVersion(rm.tfVersion)
 }
 
 func (rm *rootModule) IsTerraformLoaded() bool {
