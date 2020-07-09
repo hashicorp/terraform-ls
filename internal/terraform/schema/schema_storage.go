@@ -24,7 +24,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	ObtainSchemasForModule(*exec.Executor, string) error
+	ObtainSchemasForModule(context.Context, *exec.Executor, string) error
 }
 
 type Resource struct {
@@ -60,6 +60,11 @@ func NewStorage() *Storage {
 		logger: defaultLogger,
 		sem:    semaphore.NewWeighted(1),
 	}
+}
+
+func NewStorageForVersion(version string) (*Storage, error) {
+	// TODO: https://github.com/hashicorp/terraform-ls/issues/164
+	return nil, fmt.Errorf("not implemented yet")
 }
 
 func SchemaSupportsTerraform(v string) error {
@@ -99,13 +104,13 @@ func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
 }
 
-// ObtainSchemasForModule will (by default) asynchronously obtain schema via tf
+// ObtainSchemasForModule will obtain schema via tf
 // and store it for later consumption via Reader methods
-func (s *Storage) ObtainSchemasForModule(tf *exec.Executor, dir string) error {
-	return s.obtainSchemasForModule(tf, dir)
+func (s *Storage) ObtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
+	return s.obtainSchemasForModule(ctx, tf, dir)
 }
 
-func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {
+func (s *Storage) obtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
 	s.logger.Printf("Acquiring semaphore before retrieving schema for %q ...", dir)
 	err := s.sem.Acquire(context.Background(), 1)
 	if err != nil {
@@ -117,7 +122,7 @@ func (s *Storage) obtainSchemasForModule(tf *exec.Executor, dir string) error {
 
 	s.logger.Printf("Retrieving schemas for %q ...", dir)
 	start := time.Now()
-	ps, err := tf.ProviderSchemas()
+	ps, err := tf.ProviderSchemas(ctx)
 	if err != nil {
 		return fmt.Errorf("Unable to retrieve schemas for %q: %w", dir, err)
 	}

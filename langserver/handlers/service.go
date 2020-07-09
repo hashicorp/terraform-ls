@@ -28,6 +28,7 @@ type service struct {
 
 	watcher              watcher.Watcher
 	walker               *rootmodule.Walker
+	modMgr               rootmodule.RootModuleManager
 	newRootModuleManager rootmodule.RootModuleManagerFactory
 	newWatcher           watcher.WatcherFactory
 	newWalker            rootmodule.WalkerFactory
@@ -69,20 +70,20 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	rmm := svc.newRootModuleManager(svc.sessCtx)
-	rmm.SetLogger(svc.logger)
+	svc.modMgr = svc.newRootModuleManager()
+	svc.modMgr.SetLogger(svc.logger)
 
 	svc.walker = svc.newWalker()
 
 	// The following is set via CLI flags, hence available in the server context
 	if path, ok := lsctx.TerraformExecPath(svc.srvCtx); ok {
-		rmm.SetTerraformExecPath(path)
+		svc.modMgr.SetTerraformExecPath(path)
 	}
 	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
-		rmm.SetTerraformExecLogPath(path)
+		svc.modMgr.SetTerraformExecLogPath(path)
 	}
 	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
-		rmm.SetTerraformExecTimeout(timeout)
+		svc.modMgr.SetTerraformExecTimeout(timeout)
 	}
 
 	ww, err := svc.newWatcher()
@@ -91,20 +92,20 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	}
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
-	svc.watcher.AddChangeHook(func(file watcher.TrackedFile) error {
-		w, err := rmm.RootModuleByPath(file.Path())
+	svc.watcher.AddChangeHook(func(ctx context.Context, file watcher.TrackedFile) error {
+		w, err := svc.modMgr.RootModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
 		if w.IsKnownPluginLockFile(file.Path()) {
-			svc.logger.Printf("detected plugin cache change, updating ...")
-			return w.UpdatePluginCache(file)
+			svc.logger.Printf("detected plugin cache change, updating schema ...")
+			return w.UpdateSchemaCache(ctx, file)
 		}
 
 		return nil
 	})
-	svc.watcher.AddChangeHook(func(file watcher.TrackedFile) error {
-		rm, err := rmm.RootModuleByPath(file.Path())
+	svc.watcher.AddChangeHook(func(_ context.Context, file watcher.TrackedFile) error {
+		rm, err := svc.modMgr.RootModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
@@ -133,7 +134,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithWatcher(ww, ctx)
 			ctx = lsctx.WithRootModuleWalker(svc.walker, ctx)
 			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
-			ctx = lsctx.WithRootModuleManager(rmm, ctx)
+			ctx = lsctx.WithRootModuleManager(svc.modMgr, ctx)
 
 			return handle(ctx, req, lh.Initialize)
 		},
@@ -161,8 +162,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
 			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
-			ctx = lsctx.WithRootModuleCandidateFinder(rmm, ctx)
-			return handle(ctx, req, TextDocumentDidOpen)
+			ctx = lsctx.WithRootModuleCandidateFinder(svc.modMgr, ctx)
+			ctx = lsctx.WithRootModuleWalker(svc.walker, ctx)
+			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -180,7 +182,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithFilesystem(fs, ctx) // TODO: Read-only FS
 			ctx = lsctx.WithClientCapabilities(cc, ctx)
-			ctx = lsctx.WithParserFinder(rmm, ctx)
+			ctx = lsctx.WithParserFinder(svc.modMgr, ctx)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
@@ -191,7 +193,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithFilesystem(fs, ctx)
-			ctx = lsctx.WithTerraformExecFinder(rmm, ctx)
+			ctx = lsctx.WithTerraformExecFinder(svc.modMgr, ctx)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
@@ -201,6 +203,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithFilesystem(fs, ctx)
+			svc.shutdown()
 			return handle(ctx, req, Shutdown)
 		},
 		"exit": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -231,23 +234,32 @@ func (svc *service) Finish(status jrpc2.ServerStatus) {
 		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}
 
-	// TODO: Cancel any operations on tracked root modules
-	// https://github.com/hashicorp/terraform-ls/issues/195
+	svc.shutdown()
+	svc.stopSession()
+}
 
+func (svc *service) shutdown() {
 	if svc.walker != nil {
-		svc.logger.Printf("Stopping walker for session ...")
+		svc.logger.Printf("stopping walker for session ...")
 		svc.walker.Stop()
+		svc.logger.Printf("walker stopped")
 	}
 
 	if svc.watcher != nil {
-		svc.logger.Println("Stopping watcher for session ...")
+		svc.logger.Println("stopping watcher for session ...")
 		err := svc.watcher.Stop()
 		if err != nil {
-			svc.logger.Println("Unable to stop watcher for session:", err)
+			svc.logger.Println("unable to stop watcher for session:", err)
+		} else {
+			svc.logger.Println("watcher stopped")
 		}
 	}
 
-	svc.stopSession()
+	if svc.modMgr != nil {
+		svc.logger.Println("cancelling any root module loading ...")
+		svc.modMgr.CancelLoading()
+		svc.logger.Println("root module loading cancelled")
+	}
 }
 
 // convertMap is a helper function allowing us to omit the jrpc2.Func

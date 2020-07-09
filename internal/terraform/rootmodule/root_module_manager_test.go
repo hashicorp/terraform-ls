@@ -14,46 +14,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
-// func TestRootModuleManager_RootModuleByPath_basic(t *testing.T) {
-// 	rmm := testRootModuleManager(t)
-
-// 	tmpDir := tempDir(t)
-// 	direct, unrelated, dirbased := newTestRootModule(t, "direct"), newTestRootModule(t, "unrelated"), newTestRootModule(t, "dirbased")
-// 	rmm.rms = map[string]*rootModule{
-// 		direct.Dir:    direct.RootModule,
-// 		unrelated.Dir: unrelated.RootModule,
-// 		dirbased.Dir:  dirbased.RootModule,
-// 	}
-
-// 	w1, err := rmm.RootModuleByPath(direct.Dir)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if direct.RootModule != w1 {
-// 		t.Fatalf("unexpected root module found: %p, expected: %p", w1, direct)
-// 	}
-
-// 	lockDirPath := filepath.Join(tmpDir, "dirbased", ".terraform", "plugins")
-// 	lockFilePath := filepath.Join(lockDirPath, "selections.json")
-// 	err = os.MkdirAll(lockDirPath, 0775)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	f, err := os.Create(lockFilePath)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	f.Close()
-
-// 	w2, err := rmm.RootModuleByPath(lockFilePath)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	if dirbased.RootModule != w2 {
-// 		t.Fatalf("unexpected root module found: %p, expected: %p", w2, dirbased)
-// 	}
-// }
-
 func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
@@ -472,11 +432,11 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 
 	for i, tc := range testCases {
 		base := filepath.Base(tc.walkerRoot)
-		t.Run(fmt.Sprintf("%s/%d-%s", base, i, tc.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
 			rmm := testRootModuleManager(t)
 			w := MockWalker()
-			err := w.WalkInitializedRootModules(tc.walkerRoot, func(rmPath string) error {
-				_, err := rmm.AddRootModule(rmPath)
+			err := w.StartWalking(tc.walkerRoot, func(ctx context.Context, rmPath string) error {
+				_, err := rmm.AddAndStartLoadingRootModule(ctx, rmPath)
 				return err
 			})
 			if err != nil {
@@ -484,7 +444,7 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 			}
 
 			candidates := rmm.RootModuleCandidatesByPath(tc.lookupPath)
-			if diff := cmp.Diff(tc.expectedCandidates, candidates); diff != "" {
+			if diff := cmp.Diff(tc.expectedCandidates, candidates.Paths()); diff != "" {
 				t.Fatalf("candidates don't match: %s", diff)
 			}
 		})
@@ -492,12 +452,22 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 }
 
 func testRootModuleManager(t *testing.T) *rootModuleManager {
-	rmm := newRootModuleManager(context.Background())
+	rmm := newRootModuleManager()
+	rmm.syncLoading = true
 	rmm.logger = testLogger()
 	rmm.newRootModule = func(ctx context.Context, dir string) (*rootModule, error) {
-		rm := NewRootModuleMock(ctx, &RootModuleMock{
+		rm := NewRootModuleMock(&RootModuleMock{
 			TerraformExecQueue: &exec.MockQueue{
 				Q: []*exec.MockItem{
+					// TODO: Pass mock items as argument to make testing more accurate
+					{
+						Args:   []string{"version"},
+						Stdout: "Terraform v0.12.0\n",
+					},
+					{
+						Args:   []string{"providers", "schema", "-json"},
+						Stdout: "{\"format_version\":\"0.1\"}\n",
+					},
 					{
 						Args:   []string{"version"},
 						Stdout: "Terraform v0.12.0\n",
@@ -509,9 +479,21 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 				},
 			},
 		}, dir)
+		rm.logger = testLogger()
 		md := &discovery.MockDiscovery{Path: "tf-mock"}
 		rm.tfDiscoFunc = md.LookPath
-		return rm, rm.init(ctx)
+
+		err := rm.discoverCaches(ctx, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = rm.load(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return rm, nil
 	}
 	return rmm
 }

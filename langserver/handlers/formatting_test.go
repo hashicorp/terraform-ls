@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 )
@@ -28,15 +27,15 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 }
 
 func TestLangServer_formatting_basic(t *testing.T) {
-	tmpDir := TempDir(t)
-	InitDir(t, tmpDir.Dir())
-	queue := validTfMockCalls()
-	queue.Q = append(queue.Q, &exec.MockItem{
-		Args:   []string{"fmt", "-"},
-		Stdout: "provider \"test\" {\n\n}\n",
-	})
-	ls := langserver.NewLangServerMock(t, NewMockSession(map[string]*rootmodule.RootModuleMock{
-		tmpDir.Dir(): {TerraformExecQueue: queue},
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		ManagerTfExecQueue: &exec.MockQueue{
+			Q: []*exec.MockItem{
+				{
+					Args:   []string{"fmt", "-"},
+					Stdout: "provider \"test\" {\n\n}\n",
+				},
+			},
+		},
 	}))
 	stop := ls.Start(t)
 	defer stop()

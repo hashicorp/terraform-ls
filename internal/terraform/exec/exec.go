@@ -33,10 +33,9 @@ type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
 
 // ExecutorFactory can be used in external consumers of exec pkg
 // to enable easy swapping with MockExecutor
-type ExecutorFactory func(ctx context.Context, path string) *Executor
+type ExecutorFactory func(path string) *Executor
 
 type Executor struct {
-	ctx     context.Context
 	timeout time.Duration
 
 	execPath    string
@@ -55,9 +54,8 @@ type command struct {
 	StderrBuffer *bytes.Buffer
 }
 
-func NewExecutor(ctx context.Context, path string) *Executor {
+func NewExecutor(path string) *Executor {
 	return &Executor{
-		ctx:      ctx,
 		timeout:  defaultExecTimeout,
 		execPath: path,
 		logger:   log.New(ioutil.Discard, "", 0),
@@ -87,15 +85,14 @@ func (e *Executor) GetExecPath() string {
 	return e.execPath
 }
 
-func (e *Executor) cmd(args ...string) (*command, error) {
+func (e *Executor) cmd(ctx context.Context, args ...string) (*command, error) {
 	if e.workDir == "" {
 		return nil, fmt.Errorf("no work directory set")
 	}
 
-	ctx := e.ctx
 	cancel := func() {}
 	if e.timeout > 0 {
-		ctx, cancel = context.WithTimeout(e.ctx, e.timeout)
+		ctx, cancel = context.WithTimeout(ctx, e.timeout)
 	}
 
 	var outBuf bytes.Buffer
@@ -186,8 +183,8 @@ func (e *Executor) runCmd(command *command) ([]byte, error) {
 	return e.waitCmd(command)
 }
 
-func (e *Executor) run(args ...string) ([]byte, error) {
-	cmd, err := e.cmd(args...)
+func (e *Executor) run(ctx context.Context, args ...string) ([]byte, error) {
+	cmd, err := e.cmd(ctx, args...)
 	e.logger.Printf("running with timeout %s", e.timeout)
 	defer cmd.CancelFunc()
 	if err != nil {
@@ -196,8 +193,8 @@ func (e *Executor) run(args ...string) ([]byte, error) {
 	return e.runCmd(cmd)
 }
 
-func (e *Executor) Format(input []byte) ([]byte, error) {
-	cmd, err := e.cmd("fmt", "-")
+func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
+	cmd, err := e.cmd(ctx, "fmt", "-")
 	if err != nil {
 		return nil, err
 	}
@@ -236,8 +233,8 @@ func writeAndClose(w io.WriteCloser, input []byte) (int, error) {
 	return n, nil
 }
 
-func (e *Executor) Version() (string, error) {
-	out, err := e.run("version")
+func (e *Executor) Version(ctx context.Context) (string, error) {
+	out, err := e.run(ctx, "version")
 	if err != nil {
 		return "", fmt.Errorf("failed to get version: %w", err)
 	}
@@ -251,8 +248,8 @@ func (e *Executor) Version() (string, error) {
 	return version, nil
 }
 
-func (e *Executor) VersionIsSupported(c version.Constraints) error {
-	v, err := e.Version()
+func (e *Executor) VersionIsSupported(ctx context.Context, c version.Constraints) error {
+	v, err := e.Version(ctx)
 	if err != nil {
 		return err
 	}
@@ -269,8 +266,8 @@ func (e *Executor) VersionIsSupported(c version.Constraints) error {
 	return nil
 }
 
-func (e *Executor) ProviderSchemas() (*tfjson.ProviderSchemas, error) {
-	outBytes, err := e.run("providers", "schema", "-json")
+func (e *Executor) ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error) {
+	outBytes, err := e.run(ctx, "providers", "schema", "-json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schemas: %w", err)
 	}

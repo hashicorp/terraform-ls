@@ -60,9 +60,9 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 
 	walker.SetLogger(lh.logger)
-	err = walker.WalkInitializedRootModules(fh.Dir(), func(dir string) error {
+	err = walker.StartWalking(fh.Dir(), func(ctx context.Context, dir string) error {
 		lh.logger.Printf("Adding root module: %s", dir)
-		rm, err := rmm.AddRootModule(dir)
+		rm, err := rmm.AddAndStartLoadingRootModule(ctx, dir)
 		if err != nil {
 			return err
 		}

@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/hcl"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -28,16 +31,12 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	tf, err := tff.TerraformExecutorForDir(ctx, fh.Dir())
+	tf, err := findTerraformExecutor(ctx, tff, file.Dir())
 	if err != nil {
-		// TODO: detect no root module found error
-		// -> find OS-wide executor instead
 		return edits, err
 	}
 
-	// TODO: This should probably be FormatWithContext()
-	// so it's cancellable on request cancellation
-	formatted, err := tf.Format(file.Text())
+	formatted, err := tf.Format(ctx, file.Text())
 	if err != nil {
 		return edits, err
 	}
@@ -45,4 +44,21 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 	changes := hcl.Diff(file, formatted)
 
 	return ilsp.TextEdits(changes), nil
+}
+
+func findTerraformExecutor(ctx context.Context, tff rootmodule.TerraformExecFinder, dir string) (*exec.Executor, error) {
+	isLoaded, err := tff.IsTerraformLoaded(dir)
+	if err != nil {
+		if rootmodule.IsRootModuleNotFound(err) {
+			return tff.TerraformExecutorForDir(ctx, dir)
+		}
+		return nil, err
+	} else {
+		if !isLoaded {
+			// TODO: block until it's available <-tff.TerraformLoadingDone()
+			return nil, fmt.Errorf("terraform is not available yet for %s", dir)
+		}
+	}
+
+	return tff.TerraformExecutorForDir(ctx, dir)
 }

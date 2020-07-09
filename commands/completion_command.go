@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -47,6 +48,13 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	path := f.Arg(0)
+
+	path, err := filepath.Abs(path)
+	if err != nil {
+		c.Ui.Output(err.Error())
+		return 1
+	}
+
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("reading file at %q failed: %s", path, err))
@@ -102,16 +110,20 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	w, err := rootmodule.NewRootModule(context.Background(), fh.Dir())
 	if err != nil {
-		c.Ui.Error(err.Error())
+		c.Ui.Error(fmt.Sprintf("failed to load root module: %s", err.Error()))
 		return 1
 	}
-	p := w.Parser()
+	p, err := w.Parser()
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("failed to find parser: %s", err.Error()))
+		return 1
+	}
 
 	pos := fPos.Position()
 
 	candidates, err := p.CompletionCandidatesAtPos(hclFile, pos)
 	if err != nil {
-		c.Ui.Error(err.Error())
+		c.Ui.Error(fmt.Sprintf("failed to find candidates: %s", err.Error()))
 		return 1
 	}
 

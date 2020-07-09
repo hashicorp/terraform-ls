@@ -43,6 +43,25 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 
 	pos := fPos.Position()
 
+	isParserLoaded, err := pf.IsParserLoaded(file.Dir())
+	if err != nil {
+		return list, err
+	}
+	if !isParserLoaded {
+		// TODO: block until it's available <-pf.ParserLoadingDone()
+		// requires https://github.com/hashicorp/terraform-ls/issues/8
+		return list, fmt.Errorf("parser is not available yet for %s", file.Dir())
+	}
+
+	isSchemaLoaded, err := pf.IsSchemaLoaded(file.Dir())
+	if err != nil {
+		return list, err
+	}
+	if !isSchemaLoaded {
+		// TODO: Provide basic completion without schema
+		return list, fmt.Errorf("schema is not available yet for %s", file.Dir())
+	}
+
 	p, err := pf.ParserForDir(file.Dir())
 	if err != nil {
 		return list, fmt.Errorf("finding compatible parser failed: %w", err)

@@ -17,29 +17,39 @@ import (
 
 type rootModuleManager struct {
 	rms           []*rootModule
+	newRootModule RootModuleFactory
+
+	syncLoading bool
+	logger      *log.Logger
+
+	// terraform discovery
+	tfDiscoFunc discovery.DiscoveryFunc
+
+	// terraform executor
+	tfNewExecutor exec.ExecutorFactory
 	tfExecPath    string
 	tfExecTimeout time.Duration
 	tfExecLogPath string
-	logger        *log.Logger
-
-	newRootModule RootModuleFactory
 }
 
-func NewRootModuleManager(ctx context.Context) RootModuleManager {
-	return newRootModuleManager(ctx)
+func NewRootModuleManager() RootModuleManager {
+	return newRootModuleManager()
 }
 
-func newRootModuleManager(ctx context.Context) *rootModuleManager {
+func newRootModuleManager() *rootModuleManager {
+	d := &discovery.Discovery{}
 	rmm := &rootModuleManager{
-		rms:    make([]*rootModule, 0),
-		logger: defaultLogger,
+		rms:           make([]*rootModule, 0),
+		logger:        defaultLogger,
+		tfDiscoFunc:   d.LookPath,
+		tfNewExecutor: exec.NewExecutor,
 	}
 	rmm.newRootModule = rmm.defaultRootModuleFactory
 	return rmm
 }
 
 func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir string) (*rootModule, error) {
-	rm := newRootModule(ctx, dir)
+	rm := newRootModule(dir)
 
 	rm.SetLogger(rmm.logger)
 
@@ -52,7 +62,7 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	rm.tfExecTimeout = rmm.tfExecTimeout
 	rm.tfExecLogPath = rmm.tfExecLogPath
 
-	return rm, rm.init(ctx)
+	return rm, rm.discoverCaches(ctx, dir)
 }
 
 func (rmm *rootModuleManager) SetTerraformExecPath(path string) {
@@ -71,12 +81,12 @@ func (rmm *rootModuleManager) SetLogger(logger *log.Logger) {
 	rmm.logger = logger
 }
 
-func (rmm *rootModuleManager) AddRootModule(dir string) (RootModule, error) {
+func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error) {
 	dir = filepath.Clean(dir)
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	if rmm.exists(dir) {
+	if _, ok := rmm.rootModuleByPath(dir); ok {
 		return nil, fmt.Errorf("root module %s was already added", dir)
 	}
 
@@ -87,49 +97,48 @@ func (rmm *rootModuleManager) AddRootModule(dir string) (RootModule, error) {
 
 	rmm.rms = append(rmm.rms, rm)
 
+	if rmm.syncLoading {
+		rmm.logger.Printf("synchronously loading root module %s", dir)
+		return rm, rm.load(ctx)
+	}
+
+	rmm.logger.Printf("asynchronously loading root module %s", dir)
+	rm.StartLoading()
+
 	return rm, nil
 }
 
-func (rmm *rootModuleManager) exists(dir string) bool {
+func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
 	for _, rm := range rmm.rms {
 		if pathEquals(rm.Path(), dir) {
-			return true
+			return rm, true
 		}
 	}
-	return false
+	return nil, false
 }
 
-func (rmm *rootModuleManager) rootModuleByPath(dir string) *rootModule {
-	for _, rm := range rmm.rms {
-		if pathEquals(rm.Path(), dir) {
-			return rm
-		}
-	}
-	return nil
-}
-
-func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) []string {
+func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModules {
 	path = filepath.Clean(path)
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	if rmm.exists(path) {
+	if rm, ok := rmm.rootModuleByPath(path); ok {
 		rmm.logger.Printf("direct root module lookup succeeded: %s", path)
-		return []string{path}
+		return []RootModule{rm}
 	}
 
 	dir := rootModuleDirFromFilePath(path)
-	if rmm.exists(dir) {
+	if rm, ok := rmm.rootModuleByPath(dir); ok {
 		rmm.logger.Printf("dir-based root module lookup succeeded: %s", dir)
-		return []string{dir}
+		return []RootModule{rm}
 	}
 
-	candidates := make([]string, 0)
+	candidates := make([]RootModule, 0)
 	for _, rm := range rmm.rms {
 		rmm.logger.Printf("looking up %s in module references of %s", dir, rm.Path())
 		if rm.ReferencesModulePath(dir) {
 			rmm.logger.Printf("module-ref-based root module lookup succeeded: %s", dir)
-			candidates = append(candidates, rm.Path())
+			candidates = append(candidates, rm)
 		}
 	}
 
@@ -139,12 +148,7 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) []string {
 func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
 	candidates := rmm.RootModuleCandidatesByPath(path)
 	if len(candidates) > 0 {
-		firstMatch := candidates[0]
-		if !rmm.exists(firstMatch) {
-			return nil, fmt.Errorf("Discovered root module %s not available,"+
-				" this is most likely a bug, please report it", firstMatch)
-		}
-		return rmm.rootModuleByPath(firstMatch), nil
+		return candidates[0], nil
 	}
 
 	return nil, &RootModuleNotFoundErr{path}
@@ -156,16 +160,74 @@ func (rmm *rootModuleManager) ParserForDir(path string) (lang.Parser, error) {
 		return nil, err
 	}
 
-	return rm.Parser(), nil
+	return rm.Parser()
+}
+
+func (rmm *rootModuleManager) IsParserLoaded(path string) (bool, error) {
+	rm, err := rmm.RootModuleByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	return rm.IsParserLoaded(), nil
+}
+
+func (rmm *rootModuleManager) IsSchemaLoaded(path string) (bool, error) {
+	rm, err := rmm.RootModuleByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	return rm.IsSchemaLoaded(), nil
 }
 
 func (rmm *rootModuleManager) TerraformExecutorForDir(ctx context.Context, path string) (*exec.Executor, error) {
 	rm, err := rmm.RootModuleByPath(path)
-	if err != nil && IsRootModuleNotFound(err) {
-		return rmm.terraformExecutorForDir(ctx, path)
+	if err != nil {
+		if IsRootModuleNotFound(err) {
+			// TODO: obtain TF version and return "formatter" instead of executor
+			// gated by particular version which introduced "fmt"
+			return rmm.discoverTerraformExecutor(ctx, path)
+		}
+		return nil, err
 	}
 
-	return rm.TerraformExecutor(), nil
+	return rm.TerraformExecutor()
+}
+
+func (rmm *rootModuleManager) discoverTerraformExecutor(ctx context.Context, path string) (*exec.Executor, error) {
+	tfPath := rmm.tfExecPath
+	if tfPath == "" {
+		var err error
+		tfPath, err = rmm.tfDiscoFunc()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tf := rmm.tfNewExecutor(tfPath)
+
+	tf.SetWorkdir(path)
+	tf.SetLogger(rmm.logger)
+
+	if rmm.tfExecLogPath != "" {
+		tf.SetExecLogPath(rmm.tfExecLogPath)
+	}
+
+	if rmm.tfExecTimeout != 0 {
+		tf.SetTimeout(rmm.tfExecTimeout)
+	}
+
+	return tf, nil
+}
+
+func (rmm *rootModuleManager) IsTerraformLoaded(path string) (bool, error) {
+	rm, err := rmm.RootModuleByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	return rm.IsTerraformLoaded(), nil
 }
 
 func (rmm *rootModuleManager) terraformExecutorForDir(ctx context.Context, dir string) (*exec.Executor, error) {
@@ -179,7 +241,7 @@ func (rmm *rootModuleManager) terraformExecutorForDir(ctx context.Context, dir s
 		}
 	}
 
-	tf := exec.NewExecutor(ctx, tfPath)
+	tf := exec.NewExecutor(tfPath)
 
 	tf.SetWorkdir(dir)
 	tf.SetLogger(rmm.logger)
@@ -193,6 +255,14 @@ func (rmm *rootModuleManager) terraformExecutorForDir(ctx context.Context, dir s
 	}
 
 	return tf, nil
+}
+
+func (rmm *rootModuleManager) CancelLoading() {
+	for _, rm := range rmm.rms {
+		rmm.logger.Printf("cancelling loading for %s", rm.Path())
+		rm.CancelLoading()
+		rmm.logger.Printf("loading cancelled for %s", rm.Path())
+	}
 }
 
 // rootModuleDirFromPath strips known lock file paths and filenames

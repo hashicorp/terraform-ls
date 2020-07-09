@@ -7,13 +7,19 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
+type MockSessionInput struct {
+	RootModules        map[string]*rootmodule.RootModuleMock
+	ManagerTfExecQueue exec.MockItemDispenser
+}
+
 type mockSession struct {
-	mockRMs map[string]*rootmodule.RootModuleMock
+	mockInput *MockSessionInput
 
 	stopFunc       func()
 	stopFuncCalled bool
@@ -23,15 +29,20 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
 
-	logger := testLogger()
-	rmmm := rootmodule.NewRootModuleManagerMock(ms.mockRMs)
+	var input *rootmodule.RootModuleManagerMockInput
+	if ms.mockInput != nil {
+		input = &rootmodule.RootModuleManagerMockInput{
+			RootModules:        ms.mockInput.RootModules,
+			TerraformExecQueue: ms.mockInput.ManagerTfExecQueue,
+		}
+	}
 
 	svc := &service{
-		logger:               logger,
+		logger:               testLogger(),
 		srvCtx:               srvCtx,
 		sessCtx:              sessCtx,
 		stopSession:          ms.stop,
-		newRootModuleManager: rmmm,
+		newRootModuleManager: rootmodule.NewRootModuleManagerMock(input),
 		newWatcher:           watcher.MockWatcher(),
 		newWalker:            rootmodule.MockWalker,
 	}
@@ -56,10 +67,10 @@ func (ms *mockSession) StopFuncCalled() bool {
 	return ms.stopFuncCalled
 }
 
-func newMockSession(mockRMs map[string]*rootmodule.RootModuleMock) *mockSession {
-	return &mockSession{mockRMs: mockRMs}
+func newMockSession(input *MockSessionInput) *mockSession {
+	return &mockSession{mockInput: input}
 }
 
-func NewMockSession(mockRMs map[string]*rootmodule.RootModuleMock) session.SessionFactory {
-	return newMockSession(mockRMs).new
+func NewMockSession(input *MockSessionInput) session.SessionFactory {
+	return newMockSession(input).new
 }
