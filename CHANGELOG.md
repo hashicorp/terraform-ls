@@ -1,3 +1,9 @@
+## 0.5.1 (10 July 2020)
+
+BUG FIXES:
+
+ - Fixes bug which broke schema obtaining due to `-no-color` at unsupported position ([#227](https://github.com/hashicorp/terraform-ls/pull/227))
+
 ## 0.5.0 (10 July 2020)
 
 ENHANCEMENTS:
