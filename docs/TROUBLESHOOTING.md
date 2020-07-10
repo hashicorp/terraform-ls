@@ -14,7 +14,21 @@ $ terraform-ls serve \
 	-tf-log-file=/tmp/tf-exec-{{lsPid}}-{{args}}.log
 ```
 
-It is recommended to inspect these logs when reporting bugs.
+It may be helpful to share these logs when reporting bugs.
+
+### How To Share Logs
+
+It is recommended to avoid pasting logs into the body of an issue,
+unless you are trying to draw attention to a selected line or two.
+
+It's always better to upload the log as [GitHub Gist](https://gist.github.com/)
+and attach the link to your issue/comment, or [attach the file to your issue/comment](https://docs.github.com/en/github/managing-your-work-on-github/file-attachments-on-issues-and-pull-requests).
+
+### Sensitive Data
+
+Logs may contain sensitive data (such as content of the files being edited in the editor).
+If you consider the content sensitive you may PGP encrypt it using [HashiCorp's key](https://www.hashicorp.com/security#secure-communications)
+to reduce the exposure of the sensitive data to HashiCorp.
 
 ### Log Rotation
 
