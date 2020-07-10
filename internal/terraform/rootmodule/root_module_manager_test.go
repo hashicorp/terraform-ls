@@ -461,19 +461,19 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 				Q: []*exec.MockItem{
 					// TODO: Pass mock items as argument to make testing more accurate
 					{
-						Args:   []string{"version", "-no-color"},
+						Args:   []string{"version"},
 						Stdout: "Terraform v0.12.0\n",
 					},
 					{
-						Args:   []string{"providers", "-no-color", "schema", "-json"},
+						Args:   []string{"providers", "schema", "-json"},
 						Stdout: "{\"format_version\":\"0.1\"}\n",
 					},
 					{
-						Args:   []string{"version", "-no-color"},
+						Args:   []string{"version"},
 						Stdout: "Terraform v0.12.0\n",
 					},
 					{
-						Args:   []string{"providers", "-no-color", "schema", "-json"},
+						Args:   []string{"providers", "schema", "-json"},
 						Stdout: "{\"format_version\":\"0.1\"}\n",
 					},
 				},
