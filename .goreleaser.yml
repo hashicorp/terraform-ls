@@ -9,6 +9,9 @@ before:
 builds:
   -
     id: signable
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
     ldflags:
       - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     targets:
@@ -25,6 +28,9 @@ builds:
           {{ .Env.CODESIGN_IMAGE }}
           sign -product-name={{ .ProjectName }} {{ .Name }}
   -
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
     ldflags:
       - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     targets:
