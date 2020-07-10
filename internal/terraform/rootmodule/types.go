@@ -19,8 +19,8 @@ type ParserFinder interface {
 	IsSchemaLoaded(path string) (bool, error)
 }
 
-type TerraformExecFinder interface {
-	TerraformExecutorForDir(ctx context.Context, path string) (*exec.Executor, error)
+type TerraformFormatterFinder interface {
+	TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error)
 	IsTerraformLoaded(path string) (bool, error)
 }
 
@@ -30,7 +30,7 @@ type RootModuleCandidateFinder interface {
 
 type RootModuleManager interface {
 	ParserFinder
-	TerraformExecFinder
+	TerraformFormatterFinder
 	RootModuleCandidateFinder
 
 	SetLogger(logger *log.Logger)
@@ -68,7 +68,7 @@ type RootModule interface {
 	UpdateModuleManifest(manifestFile File) error
 	Parser() (lang.Parser, error)
 	IsParserLoaded() bool
-	TerraformExecutor() (*exec.Executor, error)
+	TerraformFormatter() (exec.Formatter, error)
 	IsTerraformLoaded() bool
 }
 

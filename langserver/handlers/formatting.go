@@ -20,7 +20,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	tff, err := lsctx.TerraformExecutorFinder(ctx)
+	tff, err := lsctx.TerraformFormatterFinder(ctx)
 	if err != nil {
 		return edits, err
 	}
@@ -31,12 +31,12 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	tf, err := findTerraformExecutor(ctx, tff, file.Dir())
+	format, err := findTerraformFormatter(ctx, tff, file.Dir())
 	if err != nil {
 		return edits, err
 	}
 
-	formatted, err := tf.Format(ctx, file.Text())
+	formatted, err := format(ctx, file.Text())
 	if err != nil {
 		return edits, err
 	}
@@ -46,11 +46,11 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 	return ilsp.TextEdits(changes), nil
 }
 
-func findTerraformExecutor(ctx context.Context, tff rootmodule.TerraformExecFinder, dir string) (*exec.Executor, error) {
+func findTerraformFormatter(ctx context.Context, tff rootmodule.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
 	isLoaded, err := tff.IsTerraformLoaded(dir)
 	if err != nil {
 		if rootmodule.IsRootModuleNotFound(err) {
-			return tff.TerraformExecutorForDir(ctx, dir)
+			return tff.TerraformFormatterForDir(ctx, dir)
 		}
 		return nil, err
 	} else {
@@ -60,5 +60,5 @@ func findTerraformExecutor(ctx context.Context, tff rootmodule.TerraformExecFind
 		}
 	}
 
-	return tff.TerraformExecutorForDir(ctx, dir)
+	return tff.TerraformFormatterForDir(ctx, dir)
 }

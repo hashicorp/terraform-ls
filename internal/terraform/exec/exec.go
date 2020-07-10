@@ -193,6 +193,31 @@ func (e *Executor) run(ctx context.Context, args ...string) ([]byte, error) {
 	return e.runCmd(cmd)
 }
 
+type Formatter func(ctx context.Context, input []byte) ([]byte, error)
+
+func (e *Executor) FormatterForVersion(v string) (Formatter, error) {
+	if v == "" {
+		return nil, fmt.Errorf("unknown version - unable to provide formatter")
+	}
+
+	ver, err := version.NewVersion(v)
+	if err != nil {
+		return nil, err
+	}
+
+	// "fmt" command was first introduced in v0.7.7
+	fmtCapableVersion, err := version.NewVersion("0.7.7")
+	if err != nil {
+		return nil, err
+	}
+
+	if ver.GreaterThanOrEqual(fmtCapableVersion) {
+		return e.Format, nil
+	}
+
+	return nil, fmt.Errorf("no formatter available for %s", v)
+}
+
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	cmd, err := e.cmd(ctx, "fmt", "-")
 	if err != nil {
