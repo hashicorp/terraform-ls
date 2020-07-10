@@ -4,6 +4,7 @@ ENHANCEMENTS:
 
  - Introduce CPU & memory profiling ([#223](https://github.com/hashicorp/terraform-ls/pull/223))
  - Pass `-no-color` to terraform ([#208](https://github.com/hashicorp/terraform-ls/pull/208))
+ - settings: Make root modules configurable ([#198](https://github.com/hashicorp/terraform-ls/pull/198))
 
 BUG FIXES:
 
