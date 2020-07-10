@@ -1,5 +1,9 @@
 ## 0.5.0 (Unreleased)
 
+ENHANCEMENTS:
+
+ - Pass `-no-color` to terraform ([#208](https://github.com/hashicorp/terraform-ls/pull/208))
+
 BUG FIXES:
 
  - terraform/rootmodule: Make walker async by default ([#196](https://github.com/hashicorp/terraform-ls/pull/196))
