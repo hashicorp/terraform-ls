@@ -1,4 +1,6 @@
-## Troubleshooting
+# Troubleshooting
+
+## Logging
 
 The language server produces detailed logs which are send to stderr by default.
 Most IDEs provide a way of inspecting these logs when server is launched in the standard
@@ -44,3 +46,31 @@ Log paths support template syntax. This allows sane separation of logs while acc
   - `args` - all arguments passed to `terraform` turned into a safe `-` separated string
 
 The path is interpreted as [Go template](https://golang.org/pkg/text/template/), e.g. `/tmp/terraform-ls-{{timestamp}}.log`.
+
+## CPU Profiling
+
+If the bug you are reporting is related to high CPU usage it may be helpful
+to collect and share CPU profile which can be done via `cpuprofile` flag.
+
+For example you can modify the launch arguments in your editor to:
+
+```sh
+$ terraform-ls serve \
+	-cpuprofile=/tmp/terraform-ls-cpu.prof
+```
+
+The target file will be truncated before being written into.
+
+## Memory Profiling
+
+If the bug you are reporting is related to high memory usage it may be helpful
+to collect and share memory profile which can be done via `memprofile` flag.
+
+For example you can modify the launch arguments in your editor to:
+
+```sh
+$ terraform-ls serve \
+	-memprofile=/tmp/terraform-ls-mem.prof
+```
+
+The target file will be truncated before being written into.

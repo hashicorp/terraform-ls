@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"syscall"
 	"time"
@@ -28,6 +30,8 @@ type ServeCommand struct {
 	tfExecPath    string
 	tfExecLogPath string
 	tfExecTimeout string
+	cpuProfile    string
+	memProfile    string
 }
 
 func (c *ServeCommand) flags() *flag.FlagSet {
@@ -41,6 +45,8 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "path to a file for Terraform executions"+
 		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
 		" syntax {{.VarName}}")
+	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)")
+	fs.StringVar(&c.memProfile, "memprofile", "", "file into which to write memory profile (if not empty)")
 
 	fs.Usage = func() { c.Ui.Error(c.Help()) }
 
@@ -52,6 +58,19 @@ func (c *ServeCommand) Run(args []string) int {
 	if err := f.Parse(args); err != nil {
 		c.Ui.Error(fmt.Sprintf("Error parsing command-line flags: %s", err))
 		return 1
+	}
+
+	if c.cpuProfile != "" {
+		stop, err := writeCpuProfileInto(c.cpuProfile)
+		defer stop()
+		if err != nil {
+			c.Ui.Error(err.Error())
+			return 1
+		}
+	}
+
+	if c.memProfile != "" {
+		defer writeMemoryProfileInto(c.memProfile)
 	}
 
 	var logger *log.Logger
@@ -136,6 +155,39 @@ func (c *ServeCommand) Run(args []string) int {
 	}
 
 	return 0
+}
+
+type stopFunc func() error
+
+func writeCpuProfileInto(path string) (stopFunc, error) {
+	f, err := os.Create(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not create CPU profile: %s", err)
+	}
+
+	if err := pprof.StartCPUProfile(f); err != nil {
+		return f.Close, fmt.Errorf("could not start CPU profile: %s", err)
+	}
+
+	return func() error {
+		pprof.StopCPUProfile()
+		return f.Close()
+	}, nil
+}
+
+func writeMemoryProfileInto(path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("could not create memory profile: %s", err)
+	}
+	defer f.Close()
+
+	runtime.GC()
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		return fmt.Errorf("could not write memory profile: %s", err)
+	}
+
+	return nil
 }
 
 func (c *ServeCommand) Help() string {
