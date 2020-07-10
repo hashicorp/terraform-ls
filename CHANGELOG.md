@@ -1,4 +1,4 @@
-## 0.5.0 (Unreleased)
+## 0.5.0 (10 July 2020)
 
 ENHANCEMENTS:
 
@@ -13,7 +13,7 @@ BUG FIXES:
  - Enable formatting for older Terraform versions (<0.12) ([#219](https://github.com/hashicorp/terraform-ls/pull/219))
  - Gate formatting capability on v0.7.7+ ([#220](https://github.com/hashicorp/terraform-ls/pull/220))
 
-## 0.4.1 (3 July)
+## 0.4.1 (3 July 2020)
 
 BUG FIXES:
 
