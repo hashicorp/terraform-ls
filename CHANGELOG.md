@@ -1,4 +1,4 @@
-## 0.4.2 (Unreleased)
+## 0.5.0 (Unreleased)
 
 BUG FIXES:
 
