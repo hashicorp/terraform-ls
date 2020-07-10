@@ -121,6 +121,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, err
 	}
 
+	rmLoader := rootmodule.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
+
 	rootDir := ""
 
 	m := map[string]rpch.Func{
@@ -135,6 +137,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootModuleWalker(svc.walker, ctx)
 			ctx = lsctx.WithRootDirectory(&rootDir, ctx)
 			ctx = lsctx.WithRootModuleManager(svc.modMgr, ctx)
+			ctx = lsctx.WithRootModuleLoader(rmLoader, ctx)
 
 			return handle(ctx, req, lh.Initialize)
 		},

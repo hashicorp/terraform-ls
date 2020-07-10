@@ -31,6 +31,7 @@ var (
 	ctxTfFormatterFinder = &contextKey{"terraform formatter finder"}
 	ctxRootModuleCaFi    = &contextKey{"root module candidate finder"}
 	ctxRootModuleWalker  = &contextKey{"root module walker"}
+	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
 )
 
@@ -195,6 +196,18 @@ func RootModuleWalker(ctx context.Context) (*rootmodule.Walker, error) {
 	w, ok := ctx.Value(ctxRootModuleWalker).(*rootmodule.Walker)
 	if !ok {
 		return nil, missingContextErr(ctxRootModuleWalker)
+	}
+	return w, nil
+}
+
+func WithRootModuleLoader(rml rootmodule.RootModuleLoader, ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxRootModuleLoader, rml)
+}
+
+func RootModuleLoader(ctx context.Context) (rootmodule.RootModuleLoader, error) {
+	w, ok := ctx.Value(ctxRootModuleLoader).(rootmodule.RootModuleLoader)
+	if !ok {
+		return nil, missingContextErr(ctxRootModuleLoader)
 	}
 	return w, nil
 }

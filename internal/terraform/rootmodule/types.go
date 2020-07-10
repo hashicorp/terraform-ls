@@ -28,6 +28,8 @@ type RootModuleCandidateFinder interface {
 	RootModuleCandidatesByPath(path string) RootModules
 }
 
+type RootModuleLoader func(dir string) (RootModule, error)
+
 type RootModuleManager interface {
 	ParserFinder
 	TerraformFormatterFinder
