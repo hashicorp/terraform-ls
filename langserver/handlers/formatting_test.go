@@ -32,11 +32,11 @@ func TestLangServer_formatting_basic(t *testing.T) {
 		ManagerTfExecQueue: &exec.MockQueue{
 			Q: []*exec.MockItem{
 				{
-					Args:   []string{"version"},
+					Args:   []string{"version", "-no-color"},
 					Stdout: "Terraform v0.12.0\n",
 				},
 				{
-					Args:   []string{"fmt", "-"},
+					Args:   []string{"fmt", "-no-color", "-"},
 					Stdout: "provider \"test\" {\n\n}\n",
 				},
 			},
