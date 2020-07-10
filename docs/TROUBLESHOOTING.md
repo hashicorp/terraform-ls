@@ -1,4 +1,6 @@
-## Troubleshooting
+# Troubleshooting
+
+## Logging
 
 The language server produces detailed logs which are send to stderr by default.
 Most IDEs provide a way of inspecting these logs when server is launched in the standard
@@ -12,7 +14,21 @@ $ terraform-ls serve \
 	-tf-log-file=/tmp/tf-exec-{{lsPid}}-{{args}}.log
 ```
 
-It is recommended to inspect these logs when reporting bugs.
+It may be helpful to share these logs when reporting bugs.
+
+### How To Share Logs
+
+It is recommended to avoid pasting logs into the body of an issue,
+unless you are trying to draw attention to a selected line or two.
+
+It's always better to upload the log as [GitHub Gist](https://gist.github.com/)
+and attach the link to your issue/comment, or [attach the file to your issue/comment](https://docs.github.com/en/github/managing-your-work-on-github/file-attachments-on-issues-and-pull-requests).
+
+### Sensitive Data
+
+Logs may contain sensitive data (such as content of the files being edited in the editor).
+If you consider the content sensitive you may PGP encrypt it using [HashiCorp's key](https://www.hashicorp.com/security#secure-communications)
+to reduce the exposure of the sensitive data to HashiCorp.
 
 ### Log Rotation
 
@@ -44,3 +60,31 @@ Log paths support template syntax. This allows sane separation of logs while acc
   - `args` - all arguments passed to `terraform` turned into a safe `-` separated string
 
 The path is interpreted as [Go template](https://golang.org/pkg/text/template/), e.g. `/tmp/terraform-ls-{{timestamp}}.log`.
+
+## CPU Profiling
+
+If the bug you are reporting is related to high CPU usage it may be helpful
+to collect and share CPU profile which can be done via `cpuprofile` flag.
+
+For example you can modify the launch arguments in your editor to:
+
+```sh
+$ terraform-ls serve \
+	-cpuprofile=/tmp/terraform-ls-cpu.prof
+```
+
+The target file will be truncated before being written into.
+
+## Memory Profiling
+
+If the bug you are reporting is related to high memory usage it may be helpful
+to collect and share memory profile which can be done via `memprofile` flag.
+
+For example you can modify the launch arguments in your editor to:
+
+```sh
+$ terraform-ls serve \
+	-memprofile=/tmp/terraform-ls-mem.prof
+```
+
+The target file will be truncated before being written into.
