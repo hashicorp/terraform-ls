@@ -196,6 +196,8 @@ func (rm *rootModule) load(ctx context.Context) error {
 	err = rm.UpdateSchemaCache(ctx, rm.pluginLockFile)
 	errs = multierror.Append(errs, err)
 
+	rm.logger.Printf("loading of root module %s finished: %s",
+		rm.Path(), errs)
 	return errs.ErrorOrNil()
 }
 
