@@ -39,7 +39,7 @@ func missingContextErr(ctxKey *contextKey) *MissingContextErr {
 	return &MissingContextErr{ctxKey}
 }
 
-func WithFilesystem(fs filesystem.Filesystem, ctx context.Context) context.Context {
+func WithFilesystem(ctx context.Context, fs filesystem.Filesystem) context.Context {
 	return context.WithValue(ctx, ctxFs, fs)
 }
 
@@ -52,7 +52,7 @@ func Filesystem(ctx context.Context) (filesystem.Filesystem, error) {
 	return fs, nil
 }
 
-func WithClientCapabilitiesSetter(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
+func WithClientCapabilitiesSetter(ctx context.Context, caps *lsp.ClientCapabilities) context.Context {
 	return context.WithValue(ctx, ctxClientCapsSetter, caps)
 }
 
@@ -66,7 +66,7 @@ func SetClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) er
 	return nil
 }
 
-func WithClientCapabilities(caps *lsp.ClientCapabilities, ctx context.Context) context.Context {
+func WithClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) context.Context {
 	return context.WithValue(ctx, ctxClientCaps, caps)
 }
 
@@ -79,7 +79,7 @@ func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
 	return *caps, nil
 }
 
-func WithTerraformExecLogPath(path string, ctx context.Context) context.Context {
+func WithTerraformExecLogPath(ctx context.Context, path string) context.Context {
 	return context.WithValue(ctx, ctxTfExecLogPath, path)
 }
 
@@ -88,7 +88,7 @@ func TerraformExecLogPath(ctx context.Context) (string, bool) {
 	return path, ok
 }
 
-func WithTerraformExecTimeout(timeout time.Duration, ctx context.Context) context.Context {
+func WithTerraformExecTimeout(ctx context.Context, timeout time.Duration) context.Context {
 	return context.WithValue(ctx, ctxTfExecTimeout, timeout)
 }
 
@@ -97,7 +97,7 @@ func TerraformExecTimeout(ctx context.Context) (time.Duration, bool) {
 	return path, ok
 }
 
-func WithWatcher(w watcher.Watcher, ctx context.Context) context.Context {
+func WithWatcher(ctx context.Context, w watcher.Watcher) context.Context {
 	return context.WithValue(ctx, ctxWatcher, w)
 }
 
@@ -109,7 +109,7 @@ func Watcher(ctx context.Context) (watcher.Watcher, error) {
 	return w, nil
 }
 
-func WithRootModuleManager(wm rootmodule.RootModuleManager, ctx context.Context) context.Context {
+func WithRootModuleManager(ctx context.Context, wm rootmodule.RootModuleManager) context.Context {
 	return context.WithValue(ctx, ctxRootModuleMngr, wm)
 }
 
@@ -121,7 +121,7 @@ func RootModuleManager(ctx context.Context) (rootmodule.RootModuleManager, error
 	return wm, nil
 }
 
-func WithParserFinder(pf rootmodule.ParserFinder, ctx context.Context) context.Context {
+func WithParserFinder(ctx context.Context, pf rootmodule.ParserFinder) context.Context {
 	return context.WithValue(ctx, ctxParserFinder, pf)
 }
 
@@ -133,7 +133,7 @@ func ParserFinder(ctx context.Context) (rootmodule.ParserFinder, error) {
 	return pf, nil
 }
 
-func WithTerraformFormatterFinder(tef rootmodule.TerraformFormatterFinder, ctx context.Context) context.Context {
+func WithTerraformFormatterFinder(ctx context.Context, tef rootmodule.TerraformFormatterFinder) context.Context {
 	return context.WithValue(ctx, ctxTfFormatterFinder, tef)
 }
 
@@ -145,7 +145,7 @@ func TerraformFormatterFinder(ctx context.Context) (rootmodule.TerraformFormatte
 	return pf, nil
 }
 
-func WithTerraformExecPath(path string, ctx context.Context) context.Context {
+func WithTerraformExecPath(ctx context.Context, path string) context.Context {
 	return context.WithValue(ctx, ctxTfExecPath, path)
 }
 
@@ -154,7 +154,7 @@ func TerraformExecPath(ctx context.Context) (string, bool) {
 	return path, ok
 }
 
-func WithRootModuleCandidateFinder(rmcf rootmodule.RootModuleCandidateFinder, ctx context.Context) context.Context {
+func WithRootModuleCandidateFinder(ctx context.Context, rmcf rootmodule.RootModuleCandidateFinder) context.Context {
 	return context.WithValue(ctx, ctxRootModuleCaFi, rmcf)
 }
 
@@ -166,7 +166,7 @@ func RootModuleCandidateFinder(ctx context.Context) (rootmodule.RootModuleCandid
 	return cf, nil
 }
 
-func WithRootDirectory(dir *string, ctx context.Context) context.Context {
+func WithRootDirectory(ctx context.Context, dir *string) context.Context {
 	return context.WithValue(ctx, ctxRootDir, dir)
 }
 
@@ -188,7 +188,7 @@ func RootDirectory(ctx context.Context) (string, bool) {
 	return *rootDir, true
 }
 
-func WithRootModuleWalker(w *rootmodule.Walker, ctx context.Context) context.Context {
+func WithRootModuleWalker(ctx context.Context, w *rootmodule.Walker) context.Context {
 	return context.WithValue(ctx, ctxRootModuleWalker, w)
 }
 
@@ -200,7 +200,7 @@ func RootModuleWalker(ctx context.Context) (*rootmodule.Walker, error) {
 	return w, nil
 }
 
-func WithRootModuleLoader(rml rootmodule.RootModuleLoader, ctx context.Context) context.Context {
+func WithRootModuleLoader(ctx context.Context, rml rootmodule.RootModuleLoader) context.Context {
 	return context.WithValue(ctx, ctxRootModuleLoader, rml)
 }
 
