@@ -42,6 +42,7 @@ type RootModuleManager interface {
 	SetTerraformExecTimeout(timeout time.Duration)
 
 	AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error)
+	ListRootModules() RootModules
 	PathsToWatch() []string
 	RootModuleByPath(path string) (RootModule, error)
 	CancelLoading()
@@ -60,8 +61,9 @@ func (rms RootModules) Paths() []string {
 type RootModule interface {
 	Path() string
 	LoadError() error
-	StartLoading()
+	StartLoading() error
 	IsLoadingDone() bool
+	LoadingDone() <-chan struct{}
 	IsKnownPluginLockFile(path string) bool
 	IsKnownModuleManifestFile(path string) bool
 	PathsToWatch() []string
@@ -72,6 +74,7 @@ type RootModule interface {
 	IsParserLoaded() bool
 	TerraformFormatter() (exec.Formatter, error)
 	IsTerraformLoaded() bool
+	Modules() []ModuleRecord
 }
 
 type RootModuleFactory func(context.Context, string) (*rootModule, error)

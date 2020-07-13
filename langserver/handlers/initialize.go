@@ -103,7 +103,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 
 	walker.SetLogger(lh.logger)
-	err = walker.StartWalking(fh.Dir(), func(ctx context.Context, dir string) error {
+
+	// Walker runs asynchronously so we're intentionally *not*
+	// passing the request context here
+	ctx = context.Background()
+
+	err = walker.StartWalking(ctx, fh.Dir(), func(ctx context.Context, dir string) error {
 		lh.logger.Printf("Adding root module: %s", dir)
 		rm, err := rmm.AddAndStartLoadingRootModule(ctx, dir)
 		if err != nil {

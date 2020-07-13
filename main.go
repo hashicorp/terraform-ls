@@ -37,6 +37,11 @@ func main() {
 				Version: VersionString(),
 			}, nil
 		},
+		"inspect-module": func() (cli.Command, error) {
+			return &commands.InspectModuleCommand{
+				Ui: ui,
+			}, nil
+		},
 	}
 
 	exitStatus, err := c.Run()
