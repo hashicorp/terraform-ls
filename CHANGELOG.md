@@ -1,3 +1,9 @@
+## 0.6.0 (Unreleased)
+
+INTERNAL:
+
+ - rootmodule: log errors after loading is finished ([#229](https://github.com/hashicorp/terraform-ls/pull/229))
+
 ## 0.5.1 (10 July 2020)
 
 BUG FIXES:
