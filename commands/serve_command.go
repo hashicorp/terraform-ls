@@ -97,7 +97,7 @@ func (c *ServeCommand) Run(args []string) int {
 			c.Ui.Error(fmt.Sprintf("Failed to setup logging for Terraform: %s", err))
 			return 1
 		}
-		ctx = lsctx.WithTerraformExecLogPath(c.tfExecLogPath, ctx)
+		ctx = lsctx.WithTerraformExecLogPath(ctx, c.tfExecLogPath)
 		logger.Printf("Terraform executions will be logged to %s "+
 			"(interpolated at the time of execution)", c.tfExecLogPath)
 	}
@@ -108,7 +108,7 @@ func (c *ServeCommand) Run(args []string) int {
 			c.Ui.Error(fmt.Sprintf("Failed to parse Terraform timeout: %s", err))
 			return 1
 		}
-		ctx = lsctx.WithTerraformExecTimeout(d, ctx)
+		ctx = lsctx.WithTerraformExecTimeout(ctx, d)
 		logger.Printf("Terraform execution timeout set to %s", d)
 	}
 
@@ -130,7 +130,7 @@ func (c *ServeCommand) Run(args []string) int {
 			return 1
 		}
 
-		ctx = lsctx.WithTerraformExecPath(path, ctx)
+		ctx = lsctx.WithTerraformExecPath(ctx, path)
 		logger.Printf("Terraform exec path set to %q", path)
 	}
 
