@@ -110,6 +110,17 @@ if executable('terraform-ls')
 endif
 ```
 
+### LanguageClient-neovim
+
+ - Install the [LanguageClient-neovim plugin](https://github.com/autozimu/LanguageClient-neovim)
+ - Add the following to your `.vimrc`:
+
+```vim
+let g:LanguageClient_serverCommands = {
+    \ 'terraform': ['terraform-ls', 'serve'],
+    \ }
+```
+
 ## VS Code
 
  - Install [Terraform VS Code Extension](https://marketplace.visualstudio.com/items?itemName=hashicorp.terraform) `>=2.0.0`
