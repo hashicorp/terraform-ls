@@ -103,7 +103,7 @@ func parseExecLogPathTemplate(args []string, rawPath string) (*template.Template
 func escapeArguments(rawArgs []string) string {
 	unsafeCharsRe := regexp.MustCompile(`[^a-z-_]+`)
 
-	safeArgs := make([]string, len(rawArgs), len(rawArgs))
+	safeArgs := make([]string, len(rawArgs))
 	for _, rawArg := range rawArgs {
 		// Replace any unsafe character with a hyphen
 		safeArg := unsafeCharsRe.ReplaceAllString(rawArg, "-")

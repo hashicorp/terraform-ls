@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
 func TestFile_BlockAtPosition(t *testing.T) {
@@ -259,13 +258,4 @@ provider "aws" {
 
 		})
 	}
-}
-
-type testPosition struct {
-	filesystem.FileHandler
-	pos hcl.Pos
-}
-
-func (p *testPosition) Position() hcl.Pos {
-	return p.pos
 }

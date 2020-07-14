@@ -76,7 +76,7 @@ func (s *session) ConfirmInitialization(req *jrpc2.Request) error {
 			return fmt.Errorf("session was already confirmed as initalized at %s via request %s",
 				s.initializedReqTime, s.initializedReq.ID())
 		}
-		return fmt.Errorf("session is not ready to be confirmed as initialized (%s).",
+		return fmt.Errorf("session is not ready to be confirmed as initialized (%s)",
 			s.state)
 	}
 	s.initializedReq = req

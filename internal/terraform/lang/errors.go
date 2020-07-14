@@ -3,15 +3,13 @@ package lang
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/hashicorp/hcl/v2"
 )
 
 type emptyCfgErr struct {
 }
 
 func (e *emptyCfgErr) Error() string {
-	return fmt.Sprintf("empty config")
+	return "empty config"
 }
 
 var EmptyConfigErr = &emptyCfgErr{}
@@ -26,14 +24,6 @@ func (e *unknownBlockTypeErr) Is(target error) bool {
 
 func (e *unknownBlockTypeErr) Error() string {
 	return fmt.Sprintf("unknown block type: %q", e.BlockType)
-}
-
-type unsupportedConfigTypeErr struct {
-	Body hcl.Body
-}
-
-func (e *unsupportedConfigTypeErr) Error() string {
-	return fmt.Sprintf("unsupported body type: %T", e.Body)
 }
 
 type noSchemaReaderErr struct {

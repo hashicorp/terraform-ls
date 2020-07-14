@@ -83,8 +83,7 @@ func (r *datasourceBlock) Labels() []*ParsedLabel {
 		return r.labels
 	}
 
-	labels := make([]*ParsedLabel, len(r.labelSchema))
-	labels = ParseLabels(r.tBlock, r.labelSchema)
+	labels := ParseLabels(r.tBlock, r.labelSchema)
 	r.labels = labels
 
 	return r.labels

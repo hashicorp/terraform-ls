@@ -14,14 +14,9 @@ var version = "0.0.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var prerelease = "dev"
 
-// semVer is an instance of version.Version. This has the secondary
-// benefit of verifying during tests and init time that our version is a
-// proper semantic version, which should always be the case.
-var semVer *goversion.Version
-
 func init() {
-	var err error
-	semVer, err = goversion.NewVersion(version)
+	// Verify that the version is proper semantic version, which should always be the case.
+	_, err := goversion.NewVersion(version)
 	if err != nil {
 		panic(err.Error())
 	}

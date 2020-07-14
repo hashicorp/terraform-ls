@@ -105,6 +105,9 @@ func ParseModuleManifestFromFile(path string) (*moduleManifest, error) {
 	}
 
 	mm, err := parseModuleManifest(b)
+	if err != nil {
+		return nil, err
+	}
 	mm.rootDir = rootModuleDirFromFilePath(path)
 
 	return mm, nil
