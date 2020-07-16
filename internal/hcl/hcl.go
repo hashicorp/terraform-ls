@@ -61,26 +61,21 @@ func (f *file) parse() (*parsedFile, error) {
 		return f.pf, nil
 	}
 
-	var parseDiags hcl.Diagnostics
-
 	tokens, diags := hclsyntax.LexConfig(f.content, f.filename, hcl.InitialPos)
 	if diags.HasErrors() {
-		parseDiags = append(parseDiags, diags...)
+		// The hclsyntax parser assumes all tokens are valid
+		// so we return early here
+		// TODO: Avoid ignoring TokenQuotedNewline to provide completion in unclosed string
+		return nil, diags
 	}
 
-	body, diags := hclsyntax.ParseBodyFromTokens(tokens, hclsyntax.TokenEOF)
-	if diags.HasErrors() {
-		parseDiags = append(parseDiags, diags...)
-	}
+	body, _ := hclsyntax.ParseBodyFromTokens(tokens, hclsyntax.TokenEOF)
 
 	f.pf = &parsedFile{
 		Tokens: tokens,
 		Body:   body,
 	}
 
-	if parseDiags.HasErrors() {
-		return f.pf, parseDiags
-	}
 	return f.pf, nil
 }
 
@@ -94,7 +89,10 @@ func (f *file) PosInBlock(pos hcl.Pos) bool {
 }
 
 func (f *file) BlockAtPosition(pos hcl.Pos) (TokenizedBlock, error) {
-	pf, _ := f.parse()
+	pf, err := f.parse()
+	if err != nil {
+		return nil, err
+	}
 
 	body, ok := pf.Body.(*hclsyntax.Body)
 	if !ok {
