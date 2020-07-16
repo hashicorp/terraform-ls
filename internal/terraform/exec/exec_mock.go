@@ -49,17 +49,6 @@ func (mc *MockCall) MarshalJSON() ([]byte, error) {
 	return json.Marshal(q)
 }
 
-func (mc *MockCall) UnmarshalJSON(b []byte) error {
-	q := MockQueue{}
-	err := json.Unmarshal(b, &q)
-	if err != nil {
-		return err
-	}
-
-	mc = (*MockCall)(q.Q[0])
-	return nil
-}
-
 func (mc *MockCall) NextMockItem() *MockItem {
 	return (*MockItem)(mc)
 }
@@ -78,7 +67,7 @@ func (mc *MockQueue) NextMockItem() *MockItem {
 }
 
 func MockExecutor(md MockItemDispenser) ExecutorFactory {
-	return func(path string) *Executor {
+	return func(_ string) *Executor {
 		if md == nil {
 			md = &MockCall{
 				MockError: "no mocks provided",

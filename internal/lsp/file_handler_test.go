@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	validUnixPath    = "file:///valid/path/to/file.tf"
-	validWindowsPath = "file:///C:/Users/With%20Space/tf-test/file.tf"
+	validUnixPath = "file:///valid/path/to/file.tf"
 )
 
 func TestFileHandler_invalid(t *testing.T) {

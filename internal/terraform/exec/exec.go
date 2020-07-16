@@ -109,9 +109,7 @@ func (e *Executor) cmd(ctx context.Context, args ...string) (*command, error) {
 	// so we don't need to ask checkpoint for upgrades.
 	cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 
-	for _, envVar := range passthroughEnvVars {
-		cmd.Env = append(cmd.Env, envVar)
-	}
+	cmd.Env = append(cmd.Env, passthroughEnvVars...)
 
 	if e.execLogPath != "" {
 		logPath, err := logging.ParseExecLogPath(cmd.Args, e.execLogPath)
@@ -268,7 +266,7 @@ func (e *Executor) Version(ctx context.Context) (string, error) {
 	if len(lines) < 1 {
 		return "", fmt.Errorf("unexpected version output: %q", outString)
 	}
-	version := strings.TrimLeft(lines[0], "Terraform v")
+	version := strings.TrimPrefix(lines[0], "Terraform v")
 
 	return version, nil
 }

@@ -6,6 +6,10 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
+var (
+	validWindowsPath = "file:///C:/Users/With%20Space/tf-test/file.tf"
+)
+
 func TestFileHandler_valid_windows(t *testing.T) {
 	path := "file:///C:/Users/With%20Space/tf-test/file.tf"
 	fh := FileHandlerFromDocumentURI(lsp.DocumentURI(path))

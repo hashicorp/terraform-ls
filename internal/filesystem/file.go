@@ -6,12 +6,7 @@ import (
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/source"
-	encunicode "golang.org/x/text/encoding/unicode"
 )
-
-var utf16encoding = encunicode.UTF16(encunicode.LittleEndian, encunicode.IgnoreBOM)
-var utf16encoder = utf16encoding.NewEncoder()
-var utf16decoder = utf16encoding.NewDecoder()
 
 type file struct {
 	fullPath string
@@ -20,7 +15,6 @@ type file struct {
 
 	version int
 	ls      source.Lines
-	errs    bool
 }
 
 func NewFile(fullPath string, content []byte) *file {

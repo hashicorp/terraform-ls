@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	hcllib "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
@@ -16,7 +15,7 @@ type file struct {
 }
 
 type parsedFile struct {
-	Body   hcllib.Body
+	Body   hcl.Body
 	Tokens hclsyntax.Tokens
 }
 
@@ -54,7 +53,7 @@ func NewTestFile(b []byte) TokenizedFile {
 
 func NewTestBlock(b []byte) (TokenizedBlock, error) {
 	f := NewTestFile(b)
-	return f.BlockAtPosition(hcllib.InitialPos)
+	return f.BlockAtPosition(hcl.InitialPos)
 }
 
 func (f *file) parse() (*parsedFile, error) {
@@ -62,9 +61,9 @@ func (f *file) parse() (*parsedFile, error) {
 		return f.pf, nil
 	}
 
-	var parseDiags hcllib.Diagnostics
+	var parseDiags hcl.Diagnostics
 
-	tokens, diags := hclsyntax.LexConfig(f.content, f.filename, hcllib.InitialPos)
+	tokens, diags := hclsyntax.LexConfig(f.content, f.filename, hcl.InitialPos)
 	if diags.HasErrors() {
 		parseDiags = append(parseDiags, diags...)
 	}
@@ -94,14 +93,14 @@ func (f *file) PosInBlock(pos hcl.Pos) bool {
 	return true
 }
 
-func (f *file) BlockAtPosition(pos hcllib.Pos) (TokenizedBlock, error) {
+func (f *file) BlockAtPosition(pos hcl.Pos) (TokenizedBlock, error) {
 	pf, _ := f.parse()
 
 	body, ok := pf.Body.(*hclsyntax.Body)
 	if !ok {
 		return nil, fmt.Errorf("unexpected body type (%T)", body)
 	}
-	if body.SrcRange.Empty() && pos != hcllib.InitialPos {
+	if body.SrcRange.Empty() && pos != hcl.InitialPos {
 		return nil, &InvalidHclPosErr{pos, body.SrcRange}
 	}
 	if !body.SrcRange.Empty() {
@@ -123,7 +122,7 @@ func (f *file) BlockAtPosition(pos hcllib.Pos) (TokenizedBlock, error) {
 	return nil, &NoBlockFoundErr{pos}
 }
 
-func (f *file) TokenAtPosition(pos hcllib.Pos) (hclsyntax.Token, error) {
+func (f *file) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {
 	pf, _ := f.parse()
 
 	for _, t := range pf.Tokens {
@@ -135,7 +134,7 @@ func (f *file) TokenAtPosition(pos hcllib.Pos) (hclsyntax.Token, error) {
 	return hclsyntax.Token{}, &NoTokenFoundErr{pos}
 }
 
-func tokensInRange(tokens hclsyntax.Tokens, rng hcllib.Range) hclsyntax.Tokens {
+func tokensInRange(tokens hclsyntax.Tokens, rng hcl.Range) hclsyntax.Tokens {
 	var ts hclsyntax.Tokens
 
 	for _, t := range tokens {
@@ -202,7 +201,7 @@ func definitionTokens(tokens hclsyntax.Tokens) hclsyntax.Tokens {
 	return tokens
 }
 
-func posIsEqual(a, b hcllib.Pos) bool {
+func posIsEqual(a, b hcl.Pos) bool {
 	return a.Byte == b.Byte &&
 		a.Column == b.Column &&
 		a.Line == b.Line

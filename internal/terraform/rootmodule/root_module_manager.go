@@ -234,33 +234,6 @@ func (rmm *rootModuleManager) IsTerraformLoaded(path string) (bool, error) {
 	return rm.IsTerraformLoaded(), nil
 }
 
-func (rmm *rootModuleManager) terraformExecutorForDir(ctx context.Context, dir string) (*exec.Executor, error) {
-	tfPath := rmm.tfExecPath
-	if tfPath == "" {
-		var err error
-		d := &discovery.Discovery{}
-		tfPath, err = d.LookPath()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	tf := exec.NewExecutor(tfPath)
-
-	tf.SetWorkdir(dir)
-	tf.SetLogger(rmm.logger)
-
-	if rmm.tfExecLogPath != "" {
-		tf.SetExecLogPath(rmm.tfExecLogPath)
-	}
-
-	if rmm.tfExecTimeout != 0 {
-		tf.SetTimeout(rmm.tfExecTimeout)
-	}
-
-	return tf, nil
-}
-
 func (rmm *rootModuleManager) CancelLoading() {
 	for _, rm := range rmm.rms {
 		rmm.logger.Printf("cancelling loading for %s", rm.Path())
