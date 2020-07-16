@@ -57,6 +57,28 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			},
 		},
 		{
+			"invalid tokens",
+			`provider "aws" {
+  arg = "
+}`,
+			hcl.Pos{
+				Line:   2,
+				Column: 10,
+				Byte:   26,
+			},
+			hcl.Diagnostics{
+				&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Invalid multi-line string",
+					Detail: `Quoted strings may not be split over multiple lines. ` +
+						`To produce a multi-line string, either use the \n escape to ` +
+						`represent a newline character or use the "heredoc" ` +
+						`multi-line template syntax.`,
+				},
+			},
+			[]hclsyntax.Token{},
+		},
+		{
 			"valid config and position",
 			`provider "aws" {
 

@@ -124,6 +124,7 @@ func TestParser_ParseBlockFromTokens(t *testing.T) {
 }
 
 func newTestBlock(t *testing.T, src string) ihcl.TokenizedBlock {
+	t.Helper()
 	b, err := ihcl.NewTestBlock([]byte(src))
 	if err != nil {
 		t.Fatal(err)

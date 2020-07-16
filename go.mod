@@ -19,7 +19,6 @@ require (
 	github.com/zclconf/go-cty v1.2.1
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
-	golang.org/x/text v0.3.2
 )
 
 replace github.com/sourcegraph/go-lsp => github.com/radeksimko/go-lsp v0.1.0
