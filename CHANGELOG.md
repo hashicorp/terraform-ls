@@ -1,4 +1,8 @@
-## 0.6.0 (Unreleased)
+## 0.5.2 (16 July 2020)
+
+BUG FIXES:
+
+ - fix: Prevent parsing invalid tokens which would cause CPU spike ([#236](https://github.com/hashicorp/terraform-ls/pull/236))
 
 INTERNAL:
 
