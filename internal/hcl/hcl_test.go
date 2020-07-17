@@ -79,6 +79,96 @@ func TestFile_BlockAtPosition(t *testing.T) {
 			[]hclsyntax.Token{},
 		},
 		{
+			"repro case",
+			`resource "aws_ecr_lifecycle_policy" "policy" {
+  for_each = toset(var.repo_name
+}`,
+			hcl.Pos{
+				Line:   2,
+				Column: 33,
+				Byte:   79,
+			},
+			nil,
+			[]hclsyntax.Token{
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("resource"),
+				},
+				{
+					Type:  hclsyntax.TokenOQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenQuotedLit,
+					Bytes: []byte("aws_ecr_lifecycle_policy"),
+				},
+				{
+					Type:  hclsyntax.TokenCQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenOQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenQuotedLit,
+					Bytes: []byte("policy"),
+				},
+				{
+					Type:  hclsyntax.TokenCQuote,
+					Bytes: []byte(`"`),
+				},
+				{
+					Type:  hclsyntax.TokenOBrace,
+					Bytes: []byte{'{'},
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("for_each"),
+				},
+				{
+					Type:  hclsyntax.TokenEqual,
+					Bytes: []byte{'='},
+				},
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("toset"),
+				},
+				{
+					Type:  hclsyntax.TokenOParen,
+					Bytes: []byte{'('},
+				},
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("var"),
+				},
+				{
+					Type:  hclsyntax.TokenDot,
+					Bytes: []byte{'.'},
+				},
+				{
+					Type:  hclsyntax.TokenIdent,
+					Bytes: []byte("repo_name"),
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+				{
+					Type:  hclsyntax.TokenCBrace,
+					Bytes: []byte{'}'},
+				},
+				{
+					Type:  hclsyntax.TokenNewline,
+					Bytes: []byte("\n"),
+				},
+			},
+		},
+		{
 			"valid config and position",
 			`provider "aws" {
 
