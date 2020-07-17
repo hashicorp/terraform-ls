@@ -51,8 +51,8 @@ func TestFile_BlockAtPosition(t *testing.T) {
 					Bytes: []byte("{"),
 				},
 				{
-					Type:  hclsyntax.TokenNewline,
-					Bytes: []byte("\n"),
+					Type:  hclsyntax.TokenEOF,
+					Bytes: []byte{},
 				},
 			},
 		},
@@ -163,8 +163,8 @@ func TestFile_BlockAtPosition(t *testing.T) {
 					Bytes: []byte{'}'},
 				},
 				{
-					Type:  hclsyntax.TokenNewline,
-					Bytes: []byte("\n"),
+					Type:  hclsyntax.TokenEOF,
+					Bytes: []byte{},
 				},
 			},
 		},
@@ -214,8 +214,8 @@ func TestFile_BlockAtPosition(t *testing.T) {
 					Bytes: []byte("}"),
 				},
 				{
-					Type:  hclsyntax.TokenNewline,
-					Bytes: []byte("\n"),
+					Type:  hclsyntax.TokenEOF,
+					Bytes: []byte{},
 				},
 			},
 		},
@@ -334,8 +334,8 @@ provider "aws" {
 					Bytes: []byte("}"),
 				},
 				{
-					Type:  hclsyntax.TokenNewline,
-					Bytes: []byte("\n"),
+					Type:  hclsyntax.TokenEOF,
+					Bytes: []byte{},
 				},
 			},
 		},
