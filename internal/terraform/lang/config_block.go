@@ -99,6 +99,11 @@ func (cb *completableBlock) completionCandidatesAtPos(pos hcl.Pos) (CompletionCa
 		return nil, nil
 	}
 
+	if block.PosInAttributeValue(pos) {
+		cb.logger.Println("avoiding RHS completion as it's not yet implemented")
+		return nil, nil
+	}
+
 	// Completing the body (attributes and nested blocks)
 	b, ok := block.BlockAtPos(pos)
 	if !ok {

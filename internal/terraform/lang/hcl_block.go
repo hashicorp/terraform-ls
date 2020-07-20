@@ -113,3 +113,46 @@ func (b *parsedBlock) PosInAttribute(pos hcl.Pos) bool {
 
 	return false
 }
+
+func (b *parsedBlock) PosInAttributeValue(pos hcl.Pos) bool {
+	for _, attr := range b.AttributesMap {
+		if !attr.IsDeclared() {
+			continue
+		}
+
+		// Account for the last character
+		if rangeContainsOffset(attr.Range(), pos.Byte) &&
+			!rangeContainsOffset(attr.hclAttribute.NameRange, pos.Byte) {
+			return true
+		}
+	}
+
+	for _, nbt := range b.BlockTypesMap {
+		if nbt.PosInAttributeValue(pos) {
+			return true
+		}
+	}
+
+	// Checking unknown attributes is somewhat pointless
+	// in the context of LS (as we can't autocomplete these)
+	// but we do it anyway, for "correctness"
+
+	for _, attr := range b.unknownAttributes {
+		// Account for the last character
+		if rangeContainsOffset(attr.Range(), pos.Byte) &&
+			!rangeContainsOffset(attr.NameRange, pos.Byte) {
+			return true
+		}
+	}
+
+	for _, block := range b.unknownBlocks {
+		attr := block.Body.AttributeAtPos(pos)
+		if attr != nil &&
+			rangeContainsOffset(attr.Range, pos.Byte) &&
+			!rangeContainsOffset(attr.NameRange, pos.Byte) {
+			return true
+		}
+	}
+
+	return false
+}

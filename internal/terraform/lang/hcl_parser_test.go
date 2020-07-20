@@ -759,6 +759,59 @@ func TestBlock_PosInAttributes(t *testing.T) {
 	}
 }
 
+func TestBlock_PosInAttributeValue(t *testing.T) {
+	schema := &tfjson.SchemaBlock{
+		Attributes: map[string]*tfjson.SchemaAttribute{
+			"known_attr": {
+				AttributeType: cty.String,
+				Optional:      true,
+			},
+		},
+		NestedBlocks: map[string]*tfjson.SchemaBlockType{
+			"known_block": {
+				NestingMode: tfjson.SchemaNestingModeSingle,
+				Block: &tfjson.SchemaBlock{
+					Attributes: map[string]*tfjson.SchemaAttribute{
+						"one_attr": {
+							AttributeType: cty.String,
+							Optional:      true,
+						},
+					},
+				},
+			},
+		},
+	}
+	testCases := []struct {
+		name     string
+		cfg      string
+		pos      hcl.Pos
+		expected bool
+	}{
+		{
+			"in value",
+			`topblock "onelabel" {
+  known_attr = "blah"
+}`,
+			hcl.Pos{Line: 2, Column: 21, Byte: 42},
+			true,
+		},
+	}
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
+			tBlock := newTestBlock(t, tc.cfg)
+			b := ParseBlock(tBlock, schema)
+
+			isInAttribute := b.PosInAttributeValue(tc.pos)
+			if tc.expected != isInAttribute {
+				if tc.expected {
+					t.Fatalf("Expected position %#v to be in attribute value", tc.pos)
+				}
+				t.Fatalf("Not expected position %#v to be in attribute value", tc.pos)
+			}
+		})
+	}
+}
+
 func TestAsHCLSyntaxBlock_invalid(t *testing.T) {
 	jsonCfg := `{"blocktype": {}}`
 	f, diags := json.Parse([]byte(jsonCfg), "/test.tf.json")

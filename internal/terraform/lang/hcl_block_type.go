@@ -30,6 +30,16 @@ func (b *BlockType) PosInAttribute(pos hcl.Pos) bool {
 	return false
 }
 
+func (b *BlockType) PosInAttributeValue(pos hcl.Pos) bool {
+	for _, block := range b.BlockList {
+		if block.PosInAttributeValue(pos) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (b *BlockType) ReachedMaxItems() bool {
 	blockS := b.schema
 
