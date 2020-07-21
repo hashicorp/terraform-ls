@@ -35,6 +35,7 @@ type Block interface {
 	Range() hcl.Range
 	PosInBody(pos hcl.Pos) bool
 	PosInAttribute(pos hcl.Pos) bool
+	PosInAttributeValue(pos hcl.Pos) bool
 	Attributes() map[string]*Attribute
 	BlockTypes() map[string]*BlockType
 }

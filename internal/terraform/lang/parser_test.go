@@ -95,6 +95,14 @@ func TestParser_ParseBlockFromTokens(t *testing.T) {
 			"provider",
 			nil,
 		},
+		{
+			"incomplete function call in block",
+			`resource "aws_ecr_lifecycle_policy" "policy" {
+  for_each = toset(var.repo_name
+}`,
+			"resource",
+			nil,
+		},
 	}
 
 	for i, tc := range testCases {

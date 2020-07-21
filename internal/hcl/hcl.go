@@ -174,26 +174,21 @@ func definitionTokens(tokens hclsyntax.Tokens) hclsyntax.Tokens {
 	if len(tokens) > 0 {
 		// Check if seqence has a terminating token
 		lastToken := tokens[len(tokens)-1]
-		if lastToken.Type != hclsyntax.TokenEOF &&
-			lastToken.Type != hclsyntax.TokenNewline {
+		if lastToken.Type != hclsyntax.TokenEOF {
 			tRng := lastToken.Range
 
-			// if not we attach a newline
-			trailingNewLine := hclsyntax.Token{
-				Type:  hclsyntax.TokenNewline,
-				Bytes: []byte("\n"),
+			// if not we attach EOF
+			eofToken := hclsyntax.Token{
+				Type:  hclsyntax.TokenEOF,
+				Bytes: []byte{},
 				Range: hcl.Range{
 					Filename: tRng.Filename,
 					Start:    tRng.End,
-					End: hcl.Pos{
-						Byte:   tRng.End.Byte + 1,
-						Column: 1,
-						Line:   tRng.End.Line + 1,
-					},
+					End:      tRng.End,
 				},
 			}
 
-			tokens = append(tokens, trailingNewLine)
+			tokens = append(tokens, eofToken)
 		}
 	}
 	return tokens
