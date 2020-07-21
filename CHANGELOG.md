@@ -1,3 +1,9 @@
+## 0.5.3 (21 July 2020)
+
+BUG FIXES:
+
+ - fix: Append EOF instead of newline (prevent CPU spike) ([#239](https://github.com/hashicorp/terraform-ls/pull/239))
+
 ## 0.5.2 (16 July 2020)
 
 BUG FIXES:
