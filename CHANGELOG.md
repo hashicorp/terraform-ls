@@ -1,3 +1,13 @@
+## 0.5.4 (22 July 20202)
+
+BUG FIXES:
+
+ - terraform/schema: Make schema storage version-aware (0.13 compatible) ([#243](https://github.com/hashicorp/terraform-ls/pull/243))
+
+INTERNAL:
+
+ - Improve root module discovery error handling ([#244](https://github.com/hashicorp/terraform-ls/pull/244))
+
 ## 0.5.3 (21 July 2020)
 
 BUG FIXES:
