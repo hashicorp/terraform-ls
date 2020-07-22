@@ -447,15 +447,8 @@ func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) erro
 
 	rm.pluginLockFile = lockFile
 
-	err := rm.schemaStorage.ObtainSchemasForModule(ctx,
+	return rm.schemaStorage.ObtainSchemasForModule(ctx,
 		rm.tfExec, rootModuleDirFromFilePath(lockFile.Path()))
-	if err != nil {
-		// We fail silently here to still allow tracking the module
-		// The schema can be loaded later via watcher
-		rm.logger.Printf("failed to update plugin cache for %s: %s", rm.Path(), err.Error())
-	}
-
-	return nil
 }
 
 func (rm *rootModule) PathsToWatch() []string {
