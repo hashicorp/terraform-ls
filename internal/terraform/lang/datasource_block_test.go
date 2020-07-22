@@ -176,7 +176,7 @@ func TestDataSourceBlock_completionCandidatesAtPos(t *testing.T) {
 			[]renderedCandidate{
 				{
 					Label:  "custom_ds",
-					Detail: "Data Source (custom)",
+					Detail: "Data Source (hashicorp/custom)",
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 5, Byte: 6},
 						Text: "custom_ds",

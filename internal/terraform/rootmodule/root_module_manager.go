@@ -56,7 +56,7 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = schema.NewStorage
+	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	rm.tfExecPath = rmm.tfExecPath
 	rm.tfExecTimeout = rmm.tfExecTimeout

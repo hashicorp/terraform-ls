@@ -138,7 +138,7 @@ func resourceCandidates(resources []schema.Resource) []*labelCandidate {
 
 		candidates = append(candidates, &labelCandidate{
 			label:         r.Name,
-			detail:        fmt.Sprintf("Resource (%s)", r.Provider),
+			detail:        fmt.Sprintf("Resource (%s)", r.Provider.ForDisplay()),
 			documentation: desc,
 		})
 	}
