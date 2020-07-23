@@ -85,8 +85,7 @@ jobs:
         run: make test
       - 
         name: Upload code coverage report
-        # TODO: Switch to "v1" when https://github.com/codecov/codecov-action/issues/100 is addressed
-        uses: codecov/codecov-action@v1.0.11
+        uses: codecov/codecov-action@v1
         with:
           file: coverage.txt
           env_vars: "GOOS,GOARCH"
