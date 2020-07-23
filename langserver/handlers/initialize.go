@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/creachadair/jrpc2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
@@ -36,7 +37,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
-	err := lsctx.SetRootDirectory(ctx, fh.FullPath())
+	rootDir := fh.FullPath()
+	err := lsctx.SetRootDirectory(ctx, rootDir)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -80,7 +82,11 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// Static user-provided paths take precedence over dynamic discovery
 	if len(cfgOpts.RootModulePaths) > 0 {
 		lh.logger.Printf("Attempting to add %d static root module paths", len(cfgOpts.RootModulePaths))
-		for _, rmPath := range cfgOpts.RootModulePaths {
+		for _, rawPath := range cfgOpts.RootModulePaths {
+			rmPath, err := resolvePath(rootDir, rawPath)
+			if err != nil {
+				return serverCaps, err
+			}
 			rm, err := addAndLoadRootModule(rmPath)
 			if err != nil {
 				return serverCaps, err
@@ -106,9 +112,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
-	ctx = context.Background()
-
-	err = walker.StartWalking(ctx, fh.Dir(), func(ctx context.Context, dir string) error {
+	bCtx := context.Background()
+	err = walker.StartWalking(bCtx, fh.Dir(), func(ctx context.Context, dir string) error {
 		lh.logger.Printf("Adding root module: %s", dir)
 		rm, err := rmm.AddAndStartLoadingRootModule(ctx, dir)
 		if err != nil {
@@ -126,4 +131,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	})
 
 	return serverCaps, err
+}
+
+func resolvePath(rootDir, rawPath string) (string, error) {
+	if filepath.IsAbs(rawPath) {
+		return filepath.EvalSymlinks(rawPath)
+	}
+
+	path := filepath.Join(rootDir, rawPath)
+	return filepath.EvalSymlinks(path)
 }

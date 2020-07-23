@@ -7,8 +7,14 @@ The language server supports the following configuration options:
 ## `rootModulePaths` (`[]string`)
 
 This allows overriding automatic root module discovery by passing a static list
-of absolute paths to root modules (i.e. folders with `*.tf` files
+of absolute or relative paths to root modules (i.e. folders with `*.tf` files
 which have been `terraform init`-ed).
+
+Relative paths are resolved relative to the directory opened in the editor.
+
+Path separators are converted automatically to the match separators
+of the target platform (e.g. `\` on Windows, or `/` on Unix),
+symlinks are followed and trailing slashes automatically removed.
 
 ## How to pass settings
 
