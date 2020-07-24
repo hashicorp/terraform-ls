@@ -4,6 +4,10 @@ FEATURES:
 
  - New command: `inspect-module` to help debugging root module discovery issues ([#231](https://github.com/hashicorp/terraform-ls/pull/231))
 
+ENHANCEMENTS:
+
+ - settings: Support relative paths to root modules ([#246](https://github.com/hashicorp/terraform-ls/pull/246))
+
 ## 0.5.4 (22 July 2020)
 
 BUG FIXES:
