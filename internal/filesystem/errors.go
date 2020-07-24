@@ -4,10 +4,26 @@ import (
 	"fmt"
 )
 
-type FileNotOpenErr struct {
-	FileHandler FileHandler
+type DocumentNotOpenErr struct {
+	DocumentHandler DocumentHandler
 }
 
-func (e *FileNotOpenErr) Error() string {
-	return fmt.Sprintf("file is not open: %s", e.FileHandler.URI())
+func (e *DocumentNotOpenErr) Error() string {
+	return fmt.Sprintf("document is not open: %s", e.DocumentHandler.URI())
+}
+
+type MetadataAlreadyExistsErr struct {
+	DocumentHandler DocumentHandler
+}
+
+func (e *MetadataAlreadyExistsErr) Error() string {
+	return fmt.Sprintf("document metadata already exists: %s", e.DocumentHandler.URI())
+}
+
+type UnknownDocumentErr struct {
+	DocumentHandler DocumentHandler
+}
+
+func (e *UnknownDocumentErr) Error() string {
+	return fmt.Sprintf("unknown document: %s", e.DocumentHandler.URI())
 }

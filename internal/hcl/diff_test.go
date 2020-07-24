@@ -16,7 +16,7 @@ func TestDiff(t *testing.T) {
 	testCases := []struct {
 		name                string
 		beforeCfg, afterCfg string
-		expectedChanges     filesystem.FileChanges
+		expectedChanges     filesystem.DocumentChanges
 	}{
 		{
 			"no-op",
@@ -26,7 +26,7 @@ ccc`,
 			`aaa
 bbb
 ccc`,
-			filesystem.FileChanges{},
+			filesystem.DocumentChanges{},
 		},
 		{
 			"two separate lines replaced",
@@ -46,7 +46,7 @@ ccc`,
     s      = 3
   }
 }`,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: `    "key"  = "value"
 `,
@@ -87,7 +87,7 @@ ccc`,
     s      = 3
   }
 }`,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "",
 					rng: hcl.Range{
@@ -106,7 +106,7 @@ ccc`,
 			`resource "aws_vpc" "name" {
 
 }`,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "\n",
 					rng: hcl.Range{
@@ -122,7 +122,7 @@ ccc`,
 			`resource "aws_vpc" "name" {}`,
 			`resource "aws_vpc" "name" {
 }`,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: `resource "aws_vpc" "name" {
 }`,
@@ -143,7 +143,7 @@ ccc`,
 }
 
 `,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "\n",
 					rng: hcl.Range{
@@ -165,7 +165,7 @@ ccc`,
   attr2 = "two"
   attr3 = "three"
 }`,
-			filesystem.FileChanges{
+			filesystem.DocumentChanges{
 				&fileChange{
 					newText: `  attr2 = "two"
 `,

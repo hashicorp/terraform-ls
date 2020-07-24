@@ -1,22 +1,24 @@
 package filesystem
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
 func TestFilesystem_Change_notOpen(t *testing.T) {
-	fs := NewFilesystem()
+	fs := testDocumentStorage()
 
-	var changes FileChanges
-	changes = append(changes, &fileChange{})
+	var changes DocumentChanges
+	changes = append(changes, &testChange{})
 	h := &testHandler{"file:///doesnotexist"}
 
-	err := fs.Change(h, changes)
+	err := fs.ChangeDocument(h, changes)
 
-	expectedErr := &FileNotOpenErr{h}
+	expectedErr := &UnknownDocumentErr{h}
 	if err == nil {
 		t.Fatalf("Expected error: %s", expectedErr)
 	}
@@ -27,23 +29,42 @@ func TestFilesystem_Change_notOpen(t *testing.T) {
 }
 
 func TestFilesystem_Change_closed(t *testing.T) {
-	fs := NewFilesystem()
+	fs := testDocumentStorage()
 
 	fh := &testHandler{"file:///doesnotexist"}
-	fs.Open(&testFile{
-		testHandler: fh,
-		text:        "",
-	})
-	err := fs.Close(fh)
+	fs.CreateAndOpenDocument(fh, []byte{})
+	err := fs.CloseAndRemoveDocument(fh)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var changes FileChanges
-	changes = append(changes, &fileChange{})
-	err = fs.Change(fh, changes)
+	var changes DocumentChanges
+	changes = append(changes, &testChange{})
+	err = fs.ChangeDocument(fh, changes)
 
-	expectedErr := &FileNotOpenErr{fh}
+	expectedErr := &UnknownDocumentErr{fh}
+	if err == nil {
+		t.Fatalf("Expected error: %s", expectedErr)
+	}
+	if err.Error() != expectedErr.Error() {
+		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
+			expectedErr, err)
+	}
+}
+
+func TestFilesystem_Remove_unknown(t *testing.T) {
+	fs := testDocumentStorage()
+
+	fh := &testHandler{"file:///doesnotexist"}
+	fs.CreateAndOpenDocument(fh, []byte{})
+	err := fs.CloseAndRemoveDocument(fh)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = fs.CloseAndRemoveDocument(fh)
+
+	expectedErr := &UnknownDocumentErr{fh}
 	if err == nil {
 		t.Fatalf("Expected error: %s", expectedErr)
 	}
@@ -54,21 +75,12 @@ func TestFilesystem_Change_closed(t *testing.T) {
 }
 
 func TestFilesystem_Close_closed(t *testing.T) {
-	fs := NewFilesystem()
+	fs := testDocumentStorage()
 
-	fh := &testHandler{"file:///doesnotexist"}
-	fs.Open(&testFile{
-		testHandler: fh,
-		text:        "",
-	})
-	err := fs.Close(fh)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = fs.Close(fh)
-
-	expectedErr := &FileNotOpenErr{fh}
+	fh := &testHandler{"file:///isnotopen"}
+	fs.CreateDocument(fh, []byte{})
+	err := fs.CloseAndRemoveDocument(fh)
+	expectedErr := &DocumentNotOpenErr{fh}
 	if err == nil {
 		t.Fatalf("Expected error: %s", expectedErr)
 	}
@@ -79,78 +91,66 @@ func TestFilesystem_Close_closed(t *testing.T) {
 }
 
 func TestFilesystem_Change_noChanges(t *testing.T) {
-	fs := NewFilesystem()
+	fs := testDocumentStorage()
 
 	fh := &testHandler{"file:///test.tf"}
-	fs.Open(&testFile{
-		testHandler: fh,
-		text:        "",
-	})
+	fs.CreateAndOpenDocument(fh, []byte{})
 
-	var changes FileChanges
-	err := fs.Change(fh, changes)
+	var changes DocumentChanges
+	err := fs.ChangeDocument(fh, changes)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestFilesystem_Change_multipleChanges(t *testing.T) {
-	fs := NewFilesystem()
+	fs := testDocumentStorage()
 
 	fh := &testHandler{"file:///test.tf"}
-	fs.Open(&testFile{
-		testHandler: fh,
-		text:        "",
-	})
+	fs.CreateAndOpenDocument(fh, []byte{})
 
-	var changes FileChanges
-	changes = append(changes, &fileChange{text: "ahoy"})
-	changes = append(changes, &fileChange{text: ""})
-	changes = append(changes, &fileChange{text: "quick brown fox jumped over\nthe lazy dog"})
-	changes = append(changes, &fileChange{text: "bye"})
+	var changes DocumentChanges
+	changes = append(changes, &testChange{text: "ahoy"})
+	changes = append(changes, &testChange{text: ""})
+	changes = append(changes, &testChange{text: "quick brown fox jumped over\nthe lazy dog"})
+	changes = append(changes, &testChange{text: "bye"})
 
-	err := fs.Change(fh, changes)
+	err := fs.ChangeDocument(fh, changes)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestFilesystem_GetFile_success(t *testing.T) {
-	fs := NewFilesystem()
+func TestFilesystem_GetDocument_success(t *testing.T) {
+	fs := testDocumentStorage()
 
-	fh := &testHandler{"file:///test.tf"}
-	err := fs.Open(&testFile{
-		testHandler: fh,
-		text:        "hello world",
-	})
+	dh := &testHandler{"file:///test.tf"}
+	err := fs.CreateAndOpenDocument(dh, []byte("hello world"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	f, err := fs.GetFile(fh)
+	f, err := fs.GetDocument(dh)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedFile := &file{
-		content: []byte("hello world"),
-		open:    true,
-	}
-	opts := []cmp.Option{
-		cmp.AllowUnexported(file{}),
-	}
-	if diff := cmp.Diff(expectedFile, f, opts...); diff != "" {
+	b := []byte("hello world")
+	meta := NewDocumentMetadata(dh, b)
+	meta.isOpen = true
+	expectedFile := testDocument(t, dh, meta, b)
+	if diff := cmp.Diff(expectedFile, f); diff != "" {
 		t.Fatalf("File doesn't match: %s", diff)
 	}
 }
 
-func TestFilesystem_GetFile_unopenedFile(t *testing.T) {
-	fs := NewFilesystem()
+func TestFilesystem_GetDocument_unknownDocument(t *testing.T) {
+	fs := testDocumentStorage()
 
 	fh := &testHandler{"file:///test.tf"}
-	_, err := fs.GetFile(fh)
+	_, err := fs.GetDocument(fh)
 
-	expectedErr := &FileNotOpenErr{fh}
+	expectedErr := &UnknownDocumentErr{fh}
 	if err == nil {
 		t.Fatalf("Expected error: %s", expectedErr)
 	}
@@ -158,19 +158,6 @@ func TestFilesystem_GetFile_unopenedFile(t *testing.T) {
 		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
 			expectedErr, err)
 	}
-}
-
-type testFile struct {
-	*testHandler
-	text string
-}
-
-func (f *testFile) Text() []byte {
-	return []byte(f.text)
-}
-
-func (f *testFile) Lines() source.Lines {
-	return source.Lines{}
 }
 
 type testHandler struct {
@@ -194,4 +181,18 @@ func (fh *testHandler) Filename() string {
 }
 func (fh *testHandler) Version() int {
 	return 0
+}
+
+func testDocumentStorage() DocumentStorage {
+	fs := NewFilesystem()
+	fs.logger = testLogger()
+	return fs
+}
+
+func testLogger() *log.Logger {
+	if testing.Verbose() {
+		return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	}
+
+	return log.New(ioutil.Discard, "", 0)
 }

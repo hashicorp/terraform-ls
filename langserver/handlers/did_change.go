@@ -21,30 +21,30 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		ContentChanges: params.ContentChanges,
 	}
 
-	fs, err := lsctx.Filesystem(ctx)
+	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
 	}
 
 	fh := ilsp.VersionedFileHandler(p.TextDocument)
-	f, err := fs.GetFile(fh)
+	f, err := fs.GetDocument(fh)
 	if err != nil {
 		return err
 	}
 
 	// Versions don't have to be consecutive, but they must be increasing
 	if p.TextDocument.Version <= f.Version() {
-		fs.Close(fh)
+		fs.CloseAndRemoveDocument(fh)
 		return fmt.Errorf("Old version (%d) received, current version is %d. "+
 			"Unable to update %s. This is likely a bug, please report it.",
 			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
 	}
 
-	changes, err := ilsp.FileChanges(params.ContentChanges, f)
+	changes, err := ilsp.DocumentChanges(params.ContentChanges, f)
 	if err != nil {
 		return err
 	}
-	return fs.Change(fh, changes)
+	return fs.ChangeDocument(fh, changes)
 }
 
 // TODO: Revisit after https://github.com/hashicorp/terraform-ls/issues/118 is addressed

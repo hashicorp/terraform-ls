@@ -15,7 +15,7 @@ import (
 func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.DocumentFormattingParams) ([]lsp.TextEdit, error) {
 	var edits []lsp.TextEdit
 
-	fs, err := lsctx.Filesystem(ctx)
+	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return edits, err
 	}
@@ -26,7 +26,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 	}
 
 	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
-	file, err := fs.GetFile(fh)
+	file, err := fs.GetDocument(fh)
 	if err != nil {
 		return edits, err
 	}
@@ -36,12 +36,17 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	formatted, err := format(ctx, file.Text())
+	original, err := file.Text()
 	if err != nil {
 		return edits, err
 	}
 
-	changes := hcl.Diff(file, formatted)
+	formatted, err := format(ctx, original)
+	if err != nil {
+		return edits, err
+	}
+
+	changes := hcl.Diff(file, original, formatted)
 
 	return ilsp.TextEdits(changes), nil
 }

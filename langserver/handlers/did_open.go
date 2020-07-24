@@ -14,13 +14,13 @@ import (
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
-	fs, err := lsctx.Filesystem(ctx)
+	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
 	}
 
 	f := ilsp.FileFromDocumentItem(params.TextDocument)
-	err = fs.Open(f)
+	err = fs.CreateAndOpenDocument(f, f.Text())
 	if err != nil {
 		return err
 	}

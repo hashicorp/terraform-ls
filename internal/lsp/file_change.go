@@ -6,33 +6,33 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
-type fileChange struct {
+type contentChange struct {
 	text string
 	rng  hcl.Range
 }
 
-func FileChange(chEvent lsp.TextDocumentContentChangeEvent, f File) (*fileChange, error) {
+func ContentChange(chEvent lsp.TextDocumentContentChangeEvent, f File) (*contentChange, error) {
 	if chEvent.Range != nil {
 		rng, err := lspRangeToHCL(*chEvent.Range, f)
 		if err != nil {
 			return nil, err
 		}
 
-		return &fileChange{
+		return &contentChange{
 			text: chEvent.Text,
 			rng:  *rng,
 		}, nil
 	}
 
-	return &fileChange{
+	return &contentChange{
 		text: chEvent.Text,
 	}, nil
 }
 
-func FileChanges(events []lsp.TextDocumentContentChangeEvent, f File) (filesystem.FileChanges, error) {
-	changes := make(filesystem.FileChanges, len(events))
+func DocumentChanges(events []lsp.TextDocumentContentChangeEvent, f File) (filesystem.DocumentChanges, error) {
+	changes := make(filesystem.DocumentChanges, len(events))
 	for i, event := range events {
-		ch, err := FileChange(event, f)
+		ch, err := ContentChange(event, f)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +41,7 @@ func FileChanges(events []lsp.TextDocumentContentChangeEvent, f File) (filesyste
 	return changes, nil
 }
 
-func TextEdits(changes filesystem.FileChanges) []lsp.TextEdit {
+func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
 	edits := make([]lsp.TextEdit, len(changes))
 
 	for i, change := range changes {
@@ -85,10 +85,10 @@ func lspRangeToHCL(lspRng lsp.Range, f File) (*hcl.Range, error) {
 	}, nil
 }
 
-func (fc *fileChange) Text() string {
+func (fc *contentChange) Text() string {
 	return fc.text
 }
 
-func (fc *fileChange) Range() hcl.Range {
+func (fc *contentChange) Range() hcl.Range {
 	return fc.rng
 }

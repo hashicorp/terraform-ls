@@ -28,24 +28,24 @@ const (
 	OpEqual   = 'e'
 )
 
-// Diff calculates difference between File's content
-// and after byte sequence and returns it as filesystem.FileChanges
-func Diff(f filesystem.File, after []byte) filesystem.FileChanges {
+// Diff calculates difference between Document's content
+// and after byte sequence and returns it as filesystem.DocumentChanges
+func Diff(f filesystem.DocumentHandler, before, after []byte) filesystem.DocumentChanges {
 	return diffLines(f.Filename(),
-		source.MakeSourceLines(f.Filename(), f.Text()),
+		source.MakeSourceLines(f.Filename(), before),
 		source.MakeSourceLines(f.Filename(), after))
 }
 
 // diffLines calculates difference between two source.Lines
-// and returns them as filesystem.FileChanges
-func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem.FileChanges {
+// and returns them as filesystem.DocumentChanges
+func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem.DocumentChanges {
 	context := 3
 
 	m := difflib.NewMatcher(
 		source.StringLines(beforeLines),
 		source.StringLines(afterLines))
 
-	changes := make(filesystem.FileChanges, 0)
+	changes := make(filesystem.DocumentChanges, 0)
 
 	for _, group := range m.GetGroupedOpCodes(context) {
 		for _, c := range group {

@@ -19,7 +19,7 @@ func (k *contextKey) String() string {
 }
 
 var (
-	ctxFs                = &contextKey{"filesystem"}
+	ctxDs                = &contextKey{"document storage"}
 	ctxClientCapsSetter  = &contextKey{"client capabilities setter"}
 	ctxClientCaps        = &contextKey{"client capabilities"}
 	ctxTfExecPath        = &contextKey{"terraform executable path"}
@@ -39,14 +39,14 @@ func missingContextErr(ctxKey *contextKey) *MissingContextErr {
 	return &MissingContextErr{ctxKey}
 }
 
-func WithFilesystem(ctx context.Context, fs filesystem.Filesystem) context.Context {
-	return context.WithValue(ctx, ctxFs, fs)
+func WithDocumentStorage(ctx context.Context, fs filesystem.DocumentStorage) context.Context {
+	return context.WithValue(ctx, ctxDs, fs)
 }
 
-func Filesystem(ctx context.Context) (filesystem.Filesystem, error) {
-	fs, ok := ctx.Value(ctxFs).(filesystem.Filesystem)
+func DocumentStorage(ctx context.Context) (filesystem.DocumentStorage, error) {
+	fs, ok := ctx.Value(ctxDs).(filesystem.DocumentStorage)
 	if !ok {
-		return nil, missingContextErr(ctxFs)
+		return nil, missingContextErr(ctxDs)
 	}
 
 	return fs, nil

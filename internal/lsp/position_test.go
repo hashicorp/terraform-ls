@@ -92,7 +92,7 @@ func TestFile_LspPosToHCLPos(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			f := filesystem.NewFile("file:///test.tf", []byte(tc.content))
+			f := filesystem.NewDocumentMetadata(FileHandlerFromPath("/test.tf"), []byte(tc.content))
 
 			hclPos, err := lspPositionToHCL(f.Lines(), tc.lspPos)
 			if err != nil {
