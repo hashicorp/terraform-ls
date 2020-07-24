@@ -85,7 +85,11 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		for _, rawPath := range cfgOpts.RootModulePaths {
 			rmPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
-				return serverCaps, err
+				jrpc2.ServerPush(ctx, "window/showMessage", &lsp.ShowMessageParams{
+					Type:    lsp.MTWarning,
+					Message: fmt.Sprintf("Ignoring root module path %s: %s", rawPath, err),
+				})
+				continue
 			}
 			rm, err := addAndLoadRootModule(rmPath)
 			if err != nil {
