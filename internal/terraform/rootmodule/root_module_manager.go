@@ -103,7 +103,10 @@ func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, 
 	}
 
 	rmm.logger.Printf("asynchronously loading root module %s", dir)
-	rm.StartLoading()
+	err = rm.StartLoading()
+	if err != nil {
+		return rm, err
+	}
 
 	return rm, nil
 }
@@ -145,6 +148,13 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModule
 	return candidates
 }
 
+func (rmm *rootModuleManager) ListRootModules() RootModules {
+	modules := make([]RootModule, 0)
+	for _, rm := range rmm.rms {
+		modules = append(modules, rm)
+	}
+	return modules
+}
 func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
 	candidates := rmm.RootModuleCandidatesByPath(path)
 	if len(candidates) > 0 {

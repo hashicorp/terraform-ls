@@ -435,7 +435,9 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
 			rmm := testRootModuleManager(t)
 			w := MockWalker()
-			err := w.StartWalking(tc.walkerRoot, func(ctx context.Context, rmPath string) error {
+			w.SetLogger(testLogger())
+			ctx := context.Background()
+			err := w.StartWalking(ctx, tc.walkerRoot, func(ctx context.Context, rmPath string) error {
 				_, err := rmm.AddAndStartLoadingRootModule(ctx, rmPath)
 				return err
 			})

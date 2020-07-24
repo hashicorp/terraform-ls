@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 var (
@@ -23,18 +24,20 @@ var (
 )
 
 type Walker struct {
-	logger  *log.Logger
-	sync    bool
-	walking bool
+	logger *log.Logger
+	sync   bool
 
+	walking    bool
+	walkingMu  *sync.RWMutex
 	cancelFunc context.CancelFunc
-	doneCh     chan struct{}
+	doneCh     <-chan struct{}
 }
 
 func NewWalker() *Walker {
 	return &Walker{
-		logger: discardLogger,
-		doneCh: make(chan struct{}, 0),
+		logger:    discardLogger,
+		walkingMu: &sync.RWMutex{},
+		doneCh:    make(chan struct{}, 0),
 	}
 }
 
@@ -49,20 +52,31 @@ func (w *Walker) Stop() {
 		w.cancelFunc()
 	}
 
-	if w.walking {
-		w.walking = false
-		w.doneCh <- struct{}{}
+	if w.IsWalking() {
+		w.logger.Println("stopping walker")
+		w.setWalking(false)
 	}
 }
 
-func (w *Walker) StartWalking(path string, wf WalkFunc) error {
-	if w.walking {
+func (w *Walker) setWalking(isWalking bool) {
+	w.walkingMu.Lock()
+	defer w.walkingMu.Unlock()
+	w.walking = isWalking
+}
+
+func (w *Walker) Done() <-chan struct{} {
+	return w.doneCh
+}
+
+func (w *Walker) StartWalking(ctx context.Context, path string, wf WalkFunc) error {
+	if w.IsWalking() {
 		return fmt.Errorf("walker is already running")
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx, cancelFunc := context.WithCancel(ctx)
 	w.cancelFunc = cancelFunc
-	w.walking = true
+	w.doneCh = ctx.Done()
+	w.setWalking(true)
 
 	if w.sync {
 		w.logger.Printf("synchronously walking through %s", path)
@@ -83,10 +97,14 @@ func (w *Walker) StartWalking(path string, wf WalkFunc) error {
 }
 
 func (w *Walker) IsWalking() bool {
+	w.walkingMu.RLock()
+	defer w.walkingMu.RUnlock()
+
 	return w.walking
 }
 
 func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
+	defer w.Stop()
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		select {
 		case <-w.doneCh:
@@ -123,7 +141,6 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 		return nil
 	})
 	w.logger.Printf("walking of %s finished", rootPath)
-	w.walking = false
 	return err
 }
 

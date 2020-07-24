@@ -99,7 +99,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		}
 		if w.IsKnownPluginLockFile(file.Path()) {
 			svc.logger.Printf("detected plugin cache change, updating schema ...")
-			return w.UpdateSchemaCache(ctx, file)
+			err := w.UpdateSchemaCache(ctx, file)
+			if err != nil {
+				svc.logger.Printf(err.Error())
+			}
 		}
 
 		return nil
@@ -111,7 +114,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		}
 		if rm.IsKnownModuleManifestFile(file.Path()) {
 			svc.logger.Printf("detected module manifest change, updating ...")
-			return rm.UpdateModuleManifest(file)
+			err := rm.UpdateModuleManifest(file)
+			if err != nil {
+				svc.logger.Printf(err.Error())
+			}
 		}
 
 		return nil
