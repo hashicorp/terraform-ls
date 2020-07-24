@@ -1,4 +1,10 @@
-## 0.5.4 (22 July 20202)
+## 0.6.0 (Unreleased)
+
+FEATURES:
+
+ - New command: `inspect-module` to help debugging root module discovery issues ([#231](https://github.com/hashicorp/terraform-ls/pull/231))
+
+## 0.5.4 (22 July 2020)
 
 BUG FIXES:
 
