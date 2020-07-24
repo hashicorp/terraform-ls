@@ -1,10 +1,6 @@
 package settings
 
 import (
-	"fmt"
-	"path/filepath"
-
-	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -19,15 +15,7 @@ type Options struct {
 }
 
 func (o *Options) Validate() error {
-	var result *multierror.Error
-
-	for _, p := range o.RootModulePaths {
-		if !filepath.IsAbs(p) {
-			result = multierror.Append(result, fmt.Errorf("%q is not an absolute path", p))
-		}
-	}
-
-	return result.ErrorOrNil()
+	return nil
 }
 
 type DecodedOptions struct {

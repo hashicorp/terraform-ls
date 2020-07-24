@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/creachadair/jrpc2"
@@ -36,8 +36,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	}
 
 	rootDir, _ := lsctx.RootDirectory(ctx)
-	dir := relativePath(rootDir, f.Dir())
-
+	readableDir := humanReadablePath(rootDir, f.Dir())
 	candidates := cf.RootModuleCandidatesByPath(f.Dir())
 
 	if walker.IsWalking() {
@@ -45,22 +44,24 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
-		msg := fmt.Sprintf("No root module found for %s."+
+		msg := fmt.Sprintf("No root module found for %q."+
 			" Functionality may be limited."+
 			// Unfortunately we can't be any more specific wrt where
 			// because we don't gather "init-able folders" in any way
 			" You may need to run terraform init"+
-			" and reload your editor.", dir)
+			" and reload your editor.", readableDir)
 		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
 		})
 	}
 	if len(candidates) > 1 {
+		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
+
 		msg := fmt.Sprintf("Alternative root modules found for %s (%s), picked: %s."+
 			" You can try setting paths to root modules explicitly in settings.",
-			dir, candidatePaths(rootDir, candidates[1:]),
-			relativePath(rootDir, candidates[0].Path()))
+			readableDir, candidatePaths(rootDir, candidates[1:]),
+			candidateDir)
 		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
@@ -73,17 +74,28 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 func candidatePaths(rootDir string, candidates []rootmodule.RootModule) string {
 	paths := make([]string, len(candidates))
 	for i, rm := range candidates {
-		// This helps displaying shorter, but still relevant paths
-		paths[i] = relativePath(rootDir, rm.Path())
+		paths[i] = humanReadablePath(rootDir, rm.Path())
 	}
 	return strings.Join(paths, ", ")
 }
 
-func relativePath(rootDir string, path string) string {
-	trimmed := strings.TrimPrefix(
-		strings.TrimPrefix(path, rootDir), string(os.PathSeparator))
-	if trimmed == "" {
-		return "."
+// humanReadablePath helps displaying shorter, but still relevant paths
+func humanReadablePath(rootDir, path string) string {
+	if rootDir == "" {
+		return path
 	}
-	return trimmed
+
+	// absolute paths can be too long for UI/messages,
+	// so we just display relative to root dir
+	relDir, err := filepath.Rel(rootDir, path)
+	if err != nil {
+		return path
+	}
+
+	if relDir == "." {
+		// Name of the root dir is more helpful than "."
+		return filepath.Base(rootDir)
+	}
+
+	return relDir
 }

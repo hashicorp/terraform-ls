@@ -40,15 +40,3 @@ func TestDecodeOptions_success(t *testing.T) {
 		t.Fatalf("options mismatch: %s", diff)
 	}
 }
-
-func TestDecodedOptions_Validate(t *testing.T) {
-	opts := &Options{
-		RootModulePaths: []string{
-			"./relative/path",
-		},
-	}
-	err := opts.Validate()
-	if err == nil {
-		t.Fatal("expected relative path to fail validation")
-	}
-}
