@@ -14,7 +14,8 @@ Relative paths are resolved relative to the directory opened in the editor.
 
 Path separators are converted automatically to the match separators
 of the target platform (e.g. `\` on Windows, or `/` on Unix),
-symlinks are followed and trailing slashes automatically removed.
+symlinks are followed, trailing slashes automatically removed,
+and `~` is replaced with your home directory.
 
 ## How to pass settings
 
