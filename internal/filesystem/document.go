@@ -2,29 +2,19 @@ package filesystem
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/source"
 	"github.com/spf13/afero"
 )
 
-type fileOpener interface {
-	Open(name string) (afero.File, error)
-}
-
 type document struct {
 	meta *documentMetadata
-	fo   fileOpener
+	fs   afero.Fs
 }
 
 func (d *document) Text() ([]byte, error) {
-	f, err := d.fo.Open(d.meta.dh.FullPath())
-	if err != nil {
-		return nil, err
-	}
-
-	return ioutil.ReadAll(f)
+	return afero.ReadFile(d.fs, d.meta.dh.FullPath())
 }
 
 func (d *document) FullPath() string {
