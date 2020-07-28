@@ -9,6 +9,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/mitchellh/go-homedir"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -134,6 +135,11 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 }
 
 func resolvePath(rootDir, rawPath string) (string, error) {
+	rawPath, err := homedir.Expand(rawPath)
+	if err != nil {
+		return "", err
+	}
+
 	if filepath.IsAbs(rawPath) {
 		return filepath.EvalSymlinks(rawPath)
 	}
