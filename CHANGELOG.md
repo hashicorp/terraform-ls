@@ -7,6 +7,7 @@ FEATURES:
 ENHANCEMENTS:
 
  - settings: Support relative paths to root modules ([#246](https://github.com/hashicorp/terraform-ls/pull/246))
+ - settings: Support 'homedir' ~ in root module paths ([#247](https://github.com/hashicorp/terraform-ls/pull/247))
 
 ## 0.5.4 (22 July 2020)
 
