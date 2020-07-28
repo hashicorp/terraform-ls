@@ -67,6 +67,9 @@ github.com/posener/complete/cmd/install
 github.com/posener/complete/match
 # github.com/sourcegraph/go-lsp v0.0.0-20200117082640-b19bb38222e2 => github.com/radeksimko/go-lsp v0.1.0
 github.com/sourcegraph/go-lsp
+# github.com/spf13/afero v1.3.2
+github.com/spf13/afero
+github.com/spf13/afero/mem
 # github.com/zclconf/go-cty v1.2.1
 github.com/zclconf/go-cty/cty
 github.com/zclconf/go-cty/cty/convert

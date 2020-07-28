@@ -9,11 +9,11 @@ import (
 )
 
 func TextDocumentDidClose(ctx context.Context, params lsp.DidCloseTextDocumentParams) error {
-	fs, err := lsctx.Filesystem(ctx)
+	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
 	}
 
 	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
-	return fs.Close(fh)
+	return fs.CloseAndRemoveDocument(fh)
 }

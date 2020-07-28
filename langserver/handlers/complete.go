@@ -13,7 +13,7 @@ import (
 func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (lsp.CompletionList, error) {
 	var list lsp.CompletionList
 
-	fs, err := lsctx.Filesystem(ctx)
+	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return list, err
 	}
@@ -30,12 +30,17 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 
 	h.logger.Printf("Finding block at position %#v", params.TextDocumentPositionParams)
 
-	file, err := fs.GetFile(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
+	file, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
 	if err != nil {
 		return list, err
 	}
 
-	hclFile := ihcl.NewFile(file)
+	text, err := file.Text()
+	if err != nil {
+		return list, err
+	}
+
+	hclFile := ihcl.NewFile(file, text)
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, file)
 	if err != nil {
 		return list, err

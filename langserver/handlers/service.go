@@ -137,7 +137,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithClientCapabilitiesSetter(ctx, cc)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
@@ -152,7 +152,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
 
 			return handle(ctx, req, Initialized)
 		},
@@ -161,7 +160,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -169,7 +168,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
@@ -180,7 +179,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -189,7 +188,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithParserFinder(ctx, svc.modMgr)
 
@@ -201,7 +200,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithTerraformFormatterFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
@@ -211,7 +210,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithFilesystem(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			svc.shutdown()
 			return handle(ctx, req, Shutdown)
 		},
