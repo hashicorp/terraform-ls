@@ -10,6 +10,10 @@ ENHANCEMENTS:
  - settings: Support 'homedir' ~ in root module paths ([#247](https://github.com/hashicorp/terraform-ls/pull/247))
  - handlers/initialize: Skip invalid root module paths ([#248](https://github.com/hashicorp/terraform-ls/pull/248))
 
+INTERNAL:
+
+ - internal/filesystem: Integrate spf13/afero ([#249](https://github.com/hashicorp/terraform-ls/pull/249))
+
 ## 0.5.4 (22 July 2020)
 
 BUG FIXES:
