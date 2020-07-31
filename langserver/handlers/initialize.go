@@ -9,6 +9,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/mitchellh/go-homedir"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -108,13 +109,23 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, nil
 	}
 
+	var excludeModulePaths []string
+	for _, rawPath := range cfgOpts.ExcludeModulePaths {
+		rmPath, err := resolvePath(rootDir, rawPath)
+		if err != nil {
+			lh.logger.Printf("Ignoring exclude root module path %s: %s", rawPath, err)
+			continue
+		}
+		excludeModulePaths = append(excludeModulePaths, rmPath)
+	}
+
 	walker, err := lsctx.RootModuleWalker(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
 
 	walker.SetLogger(lh.logger)
-
+	walker.SetExcludeModulePaths(excludeModulePaths)
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
 	bCtx := context.Background()
@@ -139,15 +150,15 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 }
 
 func resolvePath(rootDir, rawPath string) (string, error) {
-	rawPath, err := homedir.Expand(rawPath)
+	path, err := homedir.Expand(rawPath)
 	if err != nil {
 		return "", err
 	}
 
-	if filepath.IsAbs(rawPath) {
-		return filepath.EvalSymlinks(rawPath)
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(rootDir, rawPath)
 	}
 
-	path := filepath.Join(rootDir, rawPath)
-	return filepath.EvalSymlinks(path)
+	absPath, err := filepath.EvalSymlinks(path)
+	return rootmodule.ToLowerVolumePath(absPath), err
 }

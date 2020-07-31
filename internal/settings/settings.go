@@ -1,12 +1,14 @@
 package settings
 
 import (
+	"fmt"
 	"github.com/mitchellh/mapstructure"
 )
 
 type Options struct {
 	// RootModulePaths describes a list of absolute paths to root modules
-	RootModulePaths []string `mapstructure:"rootModulePaths"`
+	RootModulePaths    []string `mapstructure:"rootModulePaths"`
+	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 
 	// TODO: Need to check for conflict with CLI flags
 	// TerraformExecPath string
@@ -15,6 +17,9 @@ type Options struct {
 }
 
 func (o *Options) Validate() error {
+	if len(o.RootModulePaths) != 0 && len(o.ExcludeModulePaths) != 0 {
+		return fmt.Errorf("at most one of `rootModulePaths` and `excludeModulePaths` could be set")
+	}
 	return nil
 }
 

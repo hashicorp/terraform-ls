@@ -10,3 +10,8 @@ func pathEquals(path1, path2 string) bool {
 	volume2 := filepath.VolumeName(path2)
 	return strings.EqualFold(volume1, volume2) && path1[len(volume1):] == path2[len(volume2):]
 }
+
+func ToLowerVolumePath(path string) string {
+	volume := filepath.VolumeName(path)
+	return strings.ToLower(volume) + path[len(volume):]
+}
