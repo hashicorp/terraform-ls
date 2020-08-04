@@ -129,8 +129,9 @@ func providerCandidates(providers []addrs.Provider) []*labelCandidate {
 	candidates := []*labelCandidate{}
 	for _, pAddr := range providers {
 		candidates = append(candidates, &labelCandidate{
-			label:  pAddr.Type,
-			detail: pAddr.ForDisplay(),
+			label:         pAddr.Type,
+			detail:        pAddr.ForDisplay(),
+			documentation: PlainText(pAddr.Description),
 		})
 	}
 	return candidates

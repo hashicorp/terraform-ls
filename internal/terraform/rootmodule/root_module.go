@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
+	"github.com/hashicorp/terraform-ls/internal/terraform/registry"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -215,6 +216,12 @@ func (rm *rootModule) load(ctx context.Context) error {
 
 	err = rm.UpdateSchemaCache(ctx, rm.pluginLockFile)
 	errs = multierror.Append(errs, err)
+
+	if providers, err := registry.GetProviders(); err != nil {
+		rm.logger.Printf("loading providers from registry failed: %+v", err)
+	} else if len(*providers) != 0 {
+		rm.schemaStorage.SetRegistryProviders(providers)
+	}
 
 	rm.logger.Printf("loading of root module %s finished: %s",
 		rm.Path(), errs)

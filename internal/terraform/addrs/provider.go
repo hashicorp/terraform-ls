@@ -12,9 +12,11 @@ import (
 // Provider encapsulates a single provider type. In the future this will be
 // extended to include additional fields including Namespace and SourceHost
 type Provider struct {
-	Type      string
-	Namespace string
-	Hostname  svchost.Hostname
+	Type        string
+	Namespace   string
+	Hostname    svchost.Hostname
+	Tier        string
+	Description string
 }
 
 // DefaultRegistryHost is the hostname used for provider addresses that do

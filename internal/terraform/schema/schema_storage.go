@@ -49,6 +49,8 @@ type Storage struct {
 	logger    *log.Logger
 	tfVersion *version.Version
 
+	registryProviders *[]addrs.Provider
+
 	// sem ensures atomic reading and obtaining of schemas
 	// as the process of obtaining it may not be thread-safe
 	sem *semaphore.Weighted
@@ -99,6 +101,10 @@ func parseVersion(rawVersion string) (*version.Version, error) {
 
 func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
+}
+
+func (s *Storage) SetRegistryProviders(registryProviders *[]addrs.Provider) {
+	s.registryProviders = registryProviders
 }
 
 // ObtainSchemasForModule will obtain schema via tf
@@ -171,7 +177,12 @@ func (s *Storage) providerIdentity(addr addrs.Provider) string {
 	return addr.String()
 }
 
+// get from registry first. If not exist get from schema
 func (s *Storage) Providers() ([]addrs.Provider, error) {
+	if s.registryProviders != nil || len(*s.registryProviders) != 0 {
+		return *s.registryProviders, nil
+	}
+
 	ps, err := s.schema()
 	if err != nil {
 		return nil, err
