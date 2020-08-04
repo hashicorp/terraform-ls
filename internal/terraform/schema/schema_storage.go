@@ -179,7 +179,7 @@ func (s *Storage) providerIdentity(addr addrs.Provider) string {
 
 // get from registry first. If not exist get from schema
 func (s *Storage) Providers() ([]addrs.Provider, error) {
-	if s.registryProviders != nil || len(*s.registryProviders) != 0 {
+	if s.registryProviders != nil && len(*s.registryProviders) != 0 {
 		return *s.registryProviders, nil
 	}
 
