@@ -32,16 +32,31 @@ func InboundRequest(ctx context.Context) *Request {
 
 type inboundRequestKey struct{}
 
-// ServerPush posts a server notification to the client. If ctx does not
-// contain a server notifier, this reports ErrNotifyUnsupported. The context
+// PushNotify posts a server notification to the client. If ctx does not
+// contain a server notifier, this reports ErrPushUnsupported. The context
 // passed to the handler by *jrpc2.Server will support notifications if the
 // server was constructed with the AllowPush option set true.
-func ServerPush(ctx context.Context, method string, params interface{}) error {
+func PushNotify(ctx context.Context, method string, params interface{}) error {
 	s := ctx.Value(serverKey{}).(*Server)
 	if !s.allowP {
-		return ErrNotifyUnsupported
+		return ErrPushUnsupported
 	}
-	return s.Push(ctx, method, params)
+	return s.Notify(ctx, method, params)
+}
+
+// PushCall posts a server call to the client. If ctx does not contain a server
+// caller, this reports ErrPushUnsupported. The context passed to the handler
+// by *jrpc2.Server will support callbacks if the server was constructed with
+// the AllowPush option set true.
+//
+// A successful callback reports a nil error and a non-nil response. Errors
+// returned by the client have concrete type *jrpc2.Error.
+func PushCall(ctx context.Context, method string, params interface{}) (*Response, error) {
+	s := ctx.Value(serverKey{}).(*Server)
+	if !s.allowP {
+		return nil, ErrPushUnsupported
+	}
+	return s.Callback(ctx, method, params)
 }
 
 // CancelRequest requests the cancellation of the pending or in-flight request
@@ -54,6 +69,6 @@ func CancelRequest(ctx context.Context, id string) {
 
 type serverKey struct{}
 
-// ErrNotifyUnsupported is returned by ServerPush if server notifications are
-// not enabled in the specified context.
-var ErrNotifyUnsupported = errors.New("server notifications are not enabled")
+// ErrPushUnsupported is returned by PushNotify and PushCall if server pushes
+// are not enabled in the specified context.
+var ErrPushUnsupported = errors.New("server push is not enabled")

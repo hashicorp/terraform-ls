@@ -185,6 +185,21 @@ name on the first period ("."), and you may nest ServiceMaps more deeply if you
 require a more complex hierarchy.
 
 
+Concurrency
+
+A Server processes requests concurrently, up to the Concurrency limit given in
+its ServerOptions. Two requests (calls or notifications) are concurrent if they
+arrive as part of the same batch. In addition, two calls are concurrent if the
+time intervals between the arrival of the request objects and delivery of the
+response objects overlap.
+
+The server may issue concurrent requests to their handlers in any order.
+Otherwise, requests are processed in order of arrival. Notifications, in
+particular, can only be concurrent with other notifications in the same batch.
+This ensures a client that sends a notification can be sure its notification
+was fully processed before any subsequent calls are issued.
+
+
 Non-Standard Extension Methods
 
 By default a jrpc2.Server exports the following built-in non-standard extension
@@ -203,20 +218,25 @@ These extension methods are enabled by default, but may be disabled by setting
 the DisableBuiltin server option to true when constructing the server.
 
 
-Server Notifications
+Server Push
 
 The AllowPush option in jrpc2.ServerOptions enables the server to "push"
-notifications back to the client. This is a non-standard extension of JSON-RPC
-used by some applications such as the Language Server Protocol (LSP). The Push
-method sends a notification back to the client, if this feature is enabled:
+requests back to the client. This is a non-standard extension of JSON-RPC used
+by some applications such as the Language Server Protocol (LSP). If this
+feature is enabled, the server's Notify and Callback methods send requests back
+to the client:
 
-  if err := s.Push(ctx, "methodName", params); err == jrpc2.ErrNotifyUnsupported {
-    // server notifications are not enabled
+  if err := s.Notify(ctx, "methodName", params); err == jrpc2.ErrPushUnsupported {
+    // server push is not enabled
+  }
+  if rsp, err := s.Callback(ctx, "methodName", params); err == jrpc2.ErrPushUnsupported {
+    // server push is not enabled
   }
 
-A method handler may use jrpc2.ServerPush to access this functionality.  On the
-client side, the OnNotify option in jrpc2.ClientOptions provides a callback to
-which any server notifications are delivered if it is set.
+A method handler may use jrpc2.PushNotify and jrpc2.PushCall functions to
+access these methods.  On the client side, the OnNotify and OnCallback options
+in jrpc2.ClientOptions provide hooks to which any server requests are
+delivered, if they are set.
 */
 package jrpc2
 
