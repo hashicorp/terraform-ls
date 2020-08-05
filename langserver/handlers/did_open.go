@@ -50,7 +50,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			// because we don't gather "init-able folders" in any way
 			" You may need to run terraform init"+
 			" and reload your editor.", readableDir)
-		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
+		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
 		})
@@ -62,7 +62,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			" You can try setting paths to root modules explicitly in settings.",
 			readableDir, candidatePaths(rootDir, candidates[1:]),
 			candidateDir)
-		return jrpc2.ServerPush(ctx, "window/showMessage", lsp.ShowMessageParams{
+		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: msg,
 		})
