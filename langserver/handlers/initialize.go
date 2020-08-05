@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/creachadair/jrpc2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/settings"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/mitchellh/go-homedir"
 	lsp "github.com/sourcegraph/go-lsp"
 )
@@ -160,5 +160,10 @@ func resolvePath(rootDir, rawPath string) (string, error) {
 	}
 
 	absPath, err := filepath.EvalSymlinks(path)
-	return rootmodule.ToLowerVolumePath(absPath), err
+	return toLowerVolumePath(absPath), err
+}
+
+func toLowerVolumePath(path string) string {
+	volume := filepath.VolumeName(path)
+	return strings.ToLower(volume) + path[len(volume):]
 }
