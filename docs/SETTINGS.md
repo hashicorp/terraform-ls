@@ -17,7 +17,7 @@ of the target platform (e.g. `\` on Windows, or `/` on Unix),
 symlinks are followed, trailing slashes automatically removed,
 and `~` is replaced with your home directory.
 
-## `ExcludeModulePaths` (`[]string`)
+## `excludeModulePaths` (`[]string`)
 
 This allows exclude root module path when automatic root module discovery by passing a static list
 of absolute or relative paths to root modules (i.e. folders with `*.tf` files
