@@ -32,7 +32,7 @@ type Walker struct {
 	cancelFunc context.CancelFunc
 	doneCh     <-chan struct{}
 
-	excludeModulePaths []string
+	excludeModulePaths map[string]bool
 }
 
 func NewWalker() *Walker {
@@ -48,7 +48,10 @@ func (w *Walker) SetLogger(logger *log.Logger) {
 }
 
 func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
-	w.excludeModulePaths = excludeModulePaths
+	w.excludeModulePaths = make(map[string]bool)
+	for _, path := range excludeModulePaths {
+		w.excludeModulePaths[path] = true
+	}
 }
 
 type WalkFunc func(ctx context.Context, rootModulePath string) error
@@ -112,11 +115,6 @@ func (w *Walker) IsWalking() bool {
 func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 	defer w.Stop()
 
-	excludePathMap := make(map[string]bool)
-	for _, path := range w.excludeModulePaths {
-		excludePathMap[path] = true
-	}
-
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		select {
 		case <-w.doneCh:
@@ -135,7 +133,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 			return err
 		}
 
-		if _, ok := excludePathMap[dir]; ok {
+		if _, ok := w.excludeModulePaths[dir]; ok {
 			w.logger.Printf("successfully exclude root_module: %s", dir)
 			return filepath.SkipDir
 		}
