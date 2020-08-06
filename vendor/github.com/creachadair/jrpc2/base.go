@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -102,7 +101,7 @@ var ErrInvalidVersion = Errorf(code.InvalidRequest, "incorrect version marker")
 // returns ErrInvalidVersion along with the parsed results. Otherwise, no
 // validation apart from basic structure is performed on the results.
 func ParseRequests(msg []byte) ([]*Request, error) {
-	var req jrequests
+	var req jmessages
 	if err := req.parseJSON(msg); err != nil {
 		return nil, err
 	}
@@ -131,7 +130,7 @@ type Response struct {
 	// ch completes the request and is responsible for updating rsp and then
 	// closing ch. The client owns writing to ch, and is responsible to ensure
 	// that at most one write is ever performed.
-	ch     chan *jresponse
+	ch     chan *jmessage
 	cancel func()
 }
 
@@ -160,7 +159,7 @@ func (r *Response) ResultString() string { return string(r.result) }
 
 // MarshalJSON converts the response to equivalent JSON.
 func (r *Response) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jresponse{
+	return json.Marshal(&jmessage{
 		V:  Version,
 		ID: json.RawMessage(r.id),
 		R:  r.result,
@@ -193,20 +192,20 @@ func (r *Response) wait() {
 	}
 }
 
-// jrequests is either a single request or a slice of requests.  This handles
-// the decoding of batch requests in JSON-RPC 2.0.
-type jrequests []*jrequest
+// jmessages is either a single protocol message or an array of protocol
+// messages.  This handles the decoding of batch requests in JSON-RPC 2.0.
+type jmessages []*jmessage
 
-func (j jrequests) toJSON() ([]byte, error) {
-	if len(j) == 1 {
+func (j jmessages) toJSON() ([]byte, error) {
+	if len(j) == 1 && !j[0].batch {
 		return json.Marshal(j[0])
 	}
-	return json.Marshal([]*jrequest(j))
+	return json.Marshal([]*jmessage(j))
 }
 
 // N.B. Not UnmarshalJSON, because json.Unmarshal checks for validity early and
 // here we want to control the error that is returned.
-func (j *jrequests) parseJSON(data []byte) error {
+func (j *jmessages) parseJSON(data []byte) error {
 	*j = (*j)[:0] // reset state
 
 	// When parsing requests, validation checks are deferred: The only immediate
@@ -228,7 +227,7 @@ func (j *jrequests) parseJSON(data []byte) error {
 	// Now parse the individual request messages, but do not fail on errors.  We
 	// know that the messages are intact, but validity is checked at usage.
 	for _, raw := range msgs {
-		req := new(jrequest)
+		req := new(jmessage)
 		req.parseJSON(raw)
 		req.batch = batch
 		*j = append(*j, req)
@@ -236,23 +235,33 @@ func (j *jrequests) parseJSON(data []byte) error {
 	return nil
 }
 
-// jrequest is the transmission format of a request message.
-type jrequest struct {
+// jmessage is the transmission format of a protocol message.
+type jmessage struct {
 	V  string          `json:"jsonrpc"`      // must be Version
 	ID json.RawMessage `json:"id,omitempty"` // may be nil
-	M  string          `json:"method"`
-	P  json.RawMessage `json:"params,omitempty"` // may be nil
 
-	batch bool  // this request was part of a batch
-	err   error // if not nil, this request is invalid and err is why
+	// Fields belonging to request or notification objects
+	M string          `json:"method,omitempty"`
+	P json.RawMessage `json:"params,omitempty"` // may be nil
+
+	// Fields belonging to response or error objects
+	E *Error          `json:"error,omitempty"`  // set on error
+	R json.RawMessage `json:"result,omitempty"` // set on success
+
+	// N.B.: In a valid protocol message, M and P are mutually exclusive with E
+	// and R. Specifically, if M != "" then E and R must both be unset. This is
+	// checked during parsing.
+
+	batch bool  // this message was part of a batch
+	err   error // if not nil, this message is invalid and err is why
 }
 
-func (j *jrequest) fail(code code.Code, msg string) error {
+func (j *jmessage) fail(code code.Code, msg string) error {
 	j.err = Errorf(code, msg)
 	return j.err
 }
 
-func (j *jrequest) parseJSON(data []byte) error {
+func (j *jmessage) parseJSON(data []byte) error {
 	// Unmarshal into a map so we can check for extra keys.  The json.Decoder
 	// has DisallowUnknownFields, but fails decoding eagerly for fields that do
 	// not map to known tags. We want to fully parse the object so we can
@@ -264,7 +273,7 @@ func (j *jrequest) parseJSON(data []byte) error {
 		return j.fail(code.ParseError, "request is not a JSON object")
 	}
 
-	*j = jrequest{}    // reset content
+	*j = jmessage{}    // reset content
 	var extra []string // extra field names
 	for key, val := range obj {
 		switch key {
@@ -287,55 +296,34 @@ func (j *jrequest) parseJSON(data []byte) error {
 			if len(j.P) != 0 && j.P[0] != '[' && j.P[0] != '{' {
 				j.fail(code.InvalidRequest, "parameters must be array or object")
 			}
+		case "error":
+			if json.Unmarshal(val, &j.E) != nil {
+				j.fail(code.ParseError, "invalid error value")
+			}
+		case "result":
+			j.R = val
 		default:
 			extra = append(extra, key)
 		}
 	}
 
+	// Report an error if request/response fields overlap.
+	if j.M != "" && (j.E != nil || j.R != nil) {
+		j.fail(code.InvalidRequest, "mixed request and reply fields")
+	}
+
 	// Report an error for extraneous fields.
-	if len(extra) != 0 {
+	if j.err == nil && len(extra) != 0 {
 		j.err = DataErrorf(code.InvalidRequest, extra, "extra fields in request")
 	}
 	return nil
 }
 
-// jresponses is a slice of responses, encoded as a single response if there is
-// exactly one.
-type jresponses []*jresponse
+// isRequestOrNotification reports whether j is a request or notification.
+func (j *jmessage) isRequestOrNotification() bool { return j.E == nil && j.R == nil && j.M != "" }
 
-func (j jresponses) toJSON() ([]byte, error) {
-	if len(j) == 1 && !j[0].batch {
-		return json.Marshal(j[0])
-	}
-	return json.Marshal([]*jresponse(j))
-}
-
-func (j *jresponses) parseJSON(data []byte) error {
-	if len(data) == 0 {
-		return errors.New("empty request message")
-	} else if data[0] != '[' {
-		*j = jresponses{new(jresponse)}
-		return json.Unmarshal(data, (*j)[0])
-	}
-	return json.Unmarshal(data, (*[]*jresponse)(j))
-}
-
-// jresponse is the transmission format of a response message.
-type jresponse struct {
-	V  string          `json:"jsonrpc"`          // must be Version
-	ID json.RawMessage `json:"id,omitempty"`     // set if request had an ID
-	E  *Error          `json:"error,omitempty"`  // set on error
-	R  json.RawMessage `json:"result,omitempty"` // set on success
-
-	// Allow the server to send a response that looks like a notification.
-	// This is an extension of JSON-RPC 2.0.
-	M string          `json:"method,omitempty"`
-	P json.RawMessage `json:"params,omitempty"`
-
-	batch bool // the request was part of a batch
-}
-
-func (j jresponse) isServerRequest() bool { return j.E == nil && j.R == nil && j.M != "" }
+// isNotification reports whether j is a notification
+func (j *jmessage) isNotification() bool { return j.isRequestOrNotification() && fixID(j.ID) == nil }
 
 type jerror struct {
 	C int32           `json:"code"`
@@ -354,7 +342,7 @@ func fixID(id json.RawMessage) json.RawMessage {
 }
 
 // encode marshals rsps as JSON and forwards it to the channel.
-func encode(ch channel.Sender, rsps jresponses) (int, error) {
+func encode(ch channel.Sender, rsps jmessages) (int, error) {
 	bits, err := rsps.toJSON()
 	if err != nil {
 		return 0, err
@@ -402,4 +390,16 @@ func isServiceName(s string) bool {
 // isNull reports whether msg is exactly the JSON "null" value.
 func isNull(msg json.RawMessage) bool {
 	return len(msg) == 4 && msg[0] == 'n' && msg[1] == 'u' && msg[2] == 'l' && msg[3] == 'l'
+}
+
+// filterError filters an *Error value to distinguish context errors from other
+// error types. If err is not a context error, it is returned unchanged.
+func filterError(e *Error) error {
+	switch e.code {
+	case code.Cancelled:
+		return context.Canceled
+	case code.DeadlineExceeded:
+		return context.DeadlineExceeded
+	}
+	return e
 }

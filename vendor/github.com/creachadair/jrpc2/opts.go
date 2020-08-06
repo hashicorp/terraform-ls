@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/creachadair/jrpc2/code"
 	"github.com/creachadair/jrpc2/metrics"
 )
 
@@ -25,9 +26,9 @@ type ServerOptions struct {
 	// required "jsonrpc" version marker.
 	AllowV1 bool
 
-	// Instructs the server to allow server notifications, a non-standard
-	// extension to the JSON-RPC protocol. If AllowPush is false, the Push
-	// method of the server will report an error when called.
+	// Instructs the server to allow server callbacks and notifications, a
+	// non-standard extension to the JSON-RPC protocol. If AllowPush is false,
+	// the Notify and Callback methods of the server report errors if called.
 	AllowPush bool
 
 	// Instructs the server to disable the built-in rpc.* handler methods.
@@ -38,7 +39,8 @@ type ServerOptions struct {
 	DisableBuiltin bool
 
 	// Allows up to the specified number of goroutines to execute concurrently
-	// in request handlers. A value less than 1 uses runtime.NumCPU().
+	// in request handlers. A value less than 1 uses runtime.NumCPU().  Note
+	// that this setting does not constrain order of issue.
 	Concurrency int
 
 	// If set, this function is called with the method name and encoded request
@@ -149,6 +151,12 @@ type ClientOptions struct {
 	// most one invocation of the callback will be active at a time.
 	// Server notifications are a non-standard extension of JSON-RPC.
 	OnNotify func(*Request)
+
+	// If set, this function is called if a request is received from the server.
+	// If unset, server requests are logged and discarded. At most one
+	// invocation of this callback will be active at a time.
+	// Server callbacks are a non-standard extension of JSON-RPC.
+	OnCallback func(context.Context, *Request) (interface{}, error)
 }
 
 func (c *ClientOptions) logger() logger {
@@ -173,17 +181,41 @@ func (c *ClientOptions) encodeContext() encoder {
 	return c.EncodeContext
 }
 
-func (c *ClientOptions) handleNotification() func(*jresponse) bool {
+func (c *ClientOptions) handleNotification() func(*jmessage) {
 	if c == nil || c.OnNotify == nil {
-		return func(*jresponse) bool { return false }
+		return nil
 	}
 	h := c.OnNotify
-	return func(req *jresponse) bool {
-		if req.isServerRequest() {
-			h(&Request{method: req.M, params: req.P})
-			return true
+	return func(req *jmessage) { h(&Request{method: req.M, params: req.P}) }
+}
+
+func (c *ClientOptions) handleCallback() func(*jmessage) ([]byte, error) {
+	if c == nil || c.OnCallback == nil {
+		return nil
+	}
+	cb := c.OnCallback
+	return func(req *jmessage) ([]byte, error) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		rsp := &jmessage{V: Version, ID: req.ID}
+		v, err := cb(ctx, &Request{
+			id:     req.ID,
+			method: req.M,
+			params: req.P,
+		})
+		if err == nil {
+			rsp.R, err = json.Marshal(v)
 		}
-		return false
+		if err != nil {
+			rsp.R = nil
+			if e, ok := err.(*Error); ok {
+				rsp.E = e
+			} else {
+				rsp.E = &Error{code: code.FromError(err), message: err.Error()}
+			}
+		}
+		return json.Marshal(rsp)
 	}
 }
 

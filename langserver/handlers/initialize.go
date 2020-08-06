@@ -74,7 +74,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 	if len(out.UnusedKeys) > 0 {
-		jrpc2.ServerPush(ctx, "window/showMessage", &lsp.ShowMessageParams{
+		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,
 			Message: fmt.Sprintf("Unknown configuration options: %q", out.UnusedKeys),
 		})
@@ -87,7 +87,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		for _, rawPath := range cfgOpts.RootModulePaths {
 			rmPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
-				jrpc2.ServerPush(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type:    lsp.MTWarning,
 					Message: fmt.Sprintf("Ignoring root module path %s: %s", rawPath, err),
 				})
