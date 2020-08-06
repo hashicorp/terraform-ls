@@ -14,6 +14,7 @@ ENHANCEMENTS:
 INTERNAL:
 
  - internal/filesystem: Integrate spf13/afero ([#249](https://github.com/hashicorp/terraform-ls/pull/249))
+ - deps: Bump creachadair/jrpc2 to latest (0.10.0) ([#253](https://github.com/hashicorp/terraform-ls/pull/253))
 
 ## 0.5.4 (22 July 2020)
 
