@@ -70,7 +70,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	svc.modMgr = svc.newRootModuleManager()
+	svc.modMgr = svc.newRootModuleManager(fs)
 	svc.modMgr.SetLogger(svc.logger)
 
 	svc.walker = svc.newWalker()
@@ -161,6 +161,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {

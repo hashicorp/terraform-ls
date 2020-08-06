@@ -2,6 +2,7 @@ package rootmodule
 
 import (
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
@@ -13,7 +14,8 @@ type RootModuleMock struct {
 }
 
 func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
-	rm := newRootModule(dir)
+	fs := filesystem.NewFilesystem()
+	rm := newRootModule(fs, dir)
 
 	// mock terraform discovery
 	md := &discovery.MockDiscovery{Path: "tf-mock"}

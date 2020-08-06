@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
@@ -31,7 +33,8 @@ type RootModuleManagerMockInput struct {
 }
 
 func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManagerFactory {
-	rmm := newRootModuleManager()
+	fs := filesystem.NewFilesystem()
+	rmm := newRootModuleManager(fs)
 	rmm.syncLoading = true
 
 	rmf := &RootModuleMockFactory{
@@ -54,7 +57,7 @@ func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManag
 
 	rmm.newRootModule = rmf.New
 
-	return func() RootModuleManager {
+	return func(tfconfig.FS) RootModuleManager {
 		return rmm
 	}
 }

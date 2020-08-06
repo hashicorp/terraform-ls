@@ -38,3 +38,9 @@ func (e *noSchemaReaderErr) Error() string {
 
 	return msg
 }
+
+type UnknownProviderErr struct{}
+
+func (e *UnknownProviderErr) Error() string {
+	return "unknown provider"
+}

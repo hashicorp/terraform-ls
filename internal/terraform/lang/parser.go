@@ -10,6 +10,7 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/errors"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
@@ -34,6 +35,7 @@ type parser struct {
 
 	maxCandidates int
 	schemaReader  schema.Reader
+	providerRefs  addrs.ProviderReferences
 }
 
 func parserSupportsTerraform(v string) error {
@@ -81,6 +83,7 @@ func newParser() *parser {
 	return &parser{
 		logger:        log.New(ioutil.Discard, "", 0),
 		maxCandidates: defaultMaxCompletionCandidates,
+		providerRefs:  make(addrs.ProviderReferences, 0),
 	}
 }
 
@@ -89,7 +92,13 @@ func (p *parser) SetLogger(logger *log.Logger) {
 }
 
 func (p *parser) SetSchemaReader(sr schema.Reader) {
+	// TODO: mutex
 	p.schemaReader = sr
+}
+
+func (p *parser) SetProviderReferences(refs addrs.ProviderReferences) {
+	// TODO: mutex
+	p.providerRefs = refs
 }
 
 func (p *parser) blockTypes() map[string]configBlockFactory {
@@ -97,14 +106,17 @@ func (p *parser) blockTypes() map[string]configBlockFactory {
 		"provider": &providerBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
+			providerRefs: p.providerRefs,
 		},
 		"resource": &resourceBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
+			providerRefs: p.providerRefs,
 		},
 		"data": &datasourceBlockFactory{
 			logger:       p.logger,
 			schemaReader: p.schemaReader,
+			providerRefs: p.providerRefs,
 		},
 	}
 }

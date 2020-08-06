@@ -153,7 +153,7 @@ func TestResourceBlock_completionCandidatesAtPos(t *testing.T) {
 			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 17},
 			[]renderedCandidate{},
-			&schema.SchemaUnavailableErr{BlockType: "resource", FullName: ""},
+			&UnknownProviderErr{},
 		},
 		{
 			"schema reader error",

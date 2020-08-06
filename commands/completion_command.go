@@ -110,7 +110,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	w, err := rootmodule.NewRootModule(context.Background(), fh.Dir())
+	w, err := rootmodule.NewRootModule(context.Background(), fs, fh.Dir())
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to load root module: %s", err.Error()))
 		return 1

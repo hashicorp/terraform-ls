@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
@@ -454,7 +455,8 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 }
 
 func testRootModuleManager(t *testing.T) *rootModuleManager {
-	rmm := newRootModuleManager()
+	fs := filesystem.NewFilesystem()
+	rmm := newRootModuleManager(fs)
 	rmm.syncLoading = true
 	rmm.logger = testLogger()
 	rmm.newRootModule = func(ctx context.Context, dir string) (*rootModule, error) {

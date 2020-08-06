@@ -1,7 +1,6 @@
 package lang
 
 import (
-	"fmt"
 	"log"
 
 	hcl "github.com/hashicorp/hcl/v2"
@@ -15,6 +14,7 @@ type providerBlockFactory struct {
 	logger *log.Logger
 
 	schemaReader schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (f *providerBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
@@ -25,9 +25,10 @@ func (f *providerBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, err
 	return &providerBlock{
 		logger: f.logger,
 
-		labelSchema: f.LabelSchema(),
-		tBlock:      tBlock,
-		sr:          f.schemaReader,
+		labelSchema:  f.LabelSchema(),
+		tBlock:       tBlock,
+		sr:           f.schemaReader,
+		providerRefs: f.providerRefs,
 	}, nil
 }
 
@@ -50,10 +51,11 @@ func (f *providerBlockFactory) Documentation() MarkupContent {
 type providerBlock struct {
 	logger *log.Logger
 
-	labelSchema LabelSchema
-	labels      []*ParsedLabel
-	tBlock      ihcl.TokenizedBlock
-	sr          schema.Reader
+	labelSchema  LabelSchema
+	labels       []*ParsedLabel
+	tBlock       ihcl.TokenizedBlock
+	sr           schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (p *providerBlock) Name() string {
@@ -100,7 +102,7 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 			parsedLabels: p.Labels(),
 			tBlock:       p.tBlock,
 			labels: labelCandidates{
-				"name": providerCandidates(providers),
+				"name": p.providerCandidates(providers),
 			},
 		}
 
@@ -109,9 +111,17 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 
 	rawName := p.RawName()
 	if rawName == "" {
-		return nil, fmt.Errorf("unknown provider name at %#v", pos)
+		return nil, &UnknownProviderErr{}
 	}
-	addr := addrs.ImpliedProviderForUnqualifiedType(rawName)
+
+	lRef, err := addrs.ParseProviderConfigCompactStr(rawName)
+	if err != nil {
+		return nil, err
+	}
+	addr, err := lookupProviderAddress(p.providerRefs, lRef)
+	if err != nil {
+		return nil, err
+	}
 
 	pSchema, err := p.sr.ProviderConfigSchema(addr)
 	if err != nil {
@@ -125,9 +135,19 @@ func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 	return cb.completionCandidatesAtPos(pos)
 }
 
-func providerCandidates(providers []addrs.Provider) []*labelCandidate {
+func (p *providerBlock) providerCandidates(providers []addrs.Provider) []*labelCandidate {
 	candidates := []*labelCandidate{}
 	for _, pAddr := range providers {
+		// If provider was declared explicitly, we avoid inferring
+		if ref, ok := p.providerRefs.LocalNameByAddr(pAddr); ok {
+			candidates = append(candidates, &labelCandidate{
+				label:  ref.LocalName,
+				detail: pAddr.ForDisplay(),
+			})
+			continue
+		}
+
+		// if not, just assume 0.12-style inferred name
 		candidates = append(candidates, &labelCandidate{
 			label:  pAddr.Type,
 			detail: pAddr.ForDisplay(),

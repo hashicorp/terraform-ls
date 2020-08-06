@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -15,6 +16,7 @@ type resourceBlockFactory struct {
 	logger *log.Logger
 
 	schemaReader schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (f *resourceBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
@@ -25,9 +27,10 @@ func (f *resourceBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, err
 	return &resourceBlock{
 		logger: f.logger,
 
-		labelSchema: f.LabelSchema(),
-		tBlock:      tBlock,
-		sr:          f.schemaReader,
+		labelSchema:  f.LabelSchema(),
+		tBlock:       tBlock,
+		sr:           f.schemaReader,
+		providerRefs: f.providerRefs,
 	}, nil
 }
 
@@ -51,10 +54,11 @@ func (r *resourceBlockFactory) Documentation() MarkupContent {
 type resourceBlock struct {
 	logger *log.Logger
 
-	labelSchema LabelSchema
-	labels      []*ParsedLabel
-	tBlock      ihcl.TokenizedBlock
-	sr          schema.Reader
+	labelSchema  LabelSchema
+	labels       []*ParsedLabel
+	tBlock       ihcl.TokenizedBlock
+	sr           schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (r *resourceBlock) Type() string {
@@ -115,7 +119,17 @@ func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandid
 		return cl.completionCandidatesAtPos(pos)
 	}
 
-	rSchema, err := r.sr.ResourceSchema(r.Type())
+	lRef, err := parseProviderRef(hclBlock.Body.Attributes, r.Type())
+	if err != nil {
+		return nil, err
+	}
+
+	pAddr, err := lookupProviderAddress(r.providerRefs, lRef)
+	if err != nil {
+		return nil, err
+	}
+
+	rSchema, err := r.sr.ResourceSchema(pAddr, r.Type())
 	if err != nil {
 		return nil, err
 	}

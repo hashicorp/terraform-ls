@@ -7,6 +7,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -15,6 +16,7 @@ import (
 type Parser interface {
 	SetLogger(*log.Logger)
 	SetSchemaReader(schema.Reader)
+	SetProviderReferences(addrs.ProviderReferences)
 	BlockTypeCandidates(ihcl.TokenizedFile, hcl.Pos) CompletionCandidates
 	CompletionCandidatesAtPos(ihcl.TokenizedFile, hcl.Pos) (CompletionCandidates, error)
 }
