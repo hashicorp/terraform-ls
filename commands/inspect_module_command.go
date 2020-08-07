@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
@@ -81,7 +82,9 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		return fmt.Errorf("expected %s to be a directory", rootPath)
 	}
 
-	rmm := rootmodule.NewRootModuleManager()
+	fs := filesystem.NewFilesystem()
+
+	rmm := rootmodule.NewRootModuleManager(fs)
 	rmm.SetLogger(c.logger)
 	walker := rootmodule.NewWalker()
 	walker.SetLogger(c.logger)

@@ -1,7 +1,10 @@
 package filesystem
 
 import (
+	"os"
+
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
@@ -38,4 +41,13 @@ type DocumentStorage interface {
 	GetDocument(DocumentHandler) (Document, error)
 	CloseAndRemoveDocument(DocumentHandler) error
 	ChangeDocument(VersionedDocumentHandler, DocumentChanges) error
+}
+
+type Filesystem interface {
+	DocumentStorage
+
+	// direct FS methods
+	ReadFile(name string) ([]byte, error)
+	ReadDir(name string) ([]os.FileInfo, error)
+	Open(name string) (tfconfig.File, error)
 }

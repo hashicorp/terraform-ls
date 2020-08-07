@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
 func TestNewRootModuleManagerMock_noMocks(t *testing.T) {
 	f := NewRootModuleManagerMock(nil)
-	rmm := f()
+	rmm := f(filesystem.NewFilesystem())
 	_, err := rmm.AddAndStartLoadingRootModule(context.Background(), "any-path")
 	if err == nil {
 		t.Fatal("expected unmocked path addition to fail")
@@ -38,7 +39,7 @@ func TestNewRootModuleManagerMock_mocks(t *testing.T) {
 				},
 			},
 		}})
-	rmm := f()
+	rmm := f(filesystem.NewFilesystem())
 	_, err := rmm.AddAndStartLoadingRootModule(context.Background(), tmpDir)
 	if err != nil {
 		t.Fatal(err)

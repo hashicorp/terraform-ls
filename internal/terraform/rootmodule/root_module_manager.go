@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
@@ -18,6 +19,7 @@ import (
 type rootModuleManager struct {
 	rms           []*rootModule
 	newRootModule RootModuleFactory
+	filesystem    tfconfig.FS
 
 	syncLoading bool
 	logger      *log.Logger
@@ -32,14 +34,15 @@ type rootModuleManager struct {
 	tfExecLogPath string
 }
 
-func NewRootModuleManager() RootModuleManager {
-	return newRootModuleManager()
+func NewRootModuleManager(fs tfconfig.FS) RootModuleManager {
+	return newRootModuleManager(fs)
 }
 
-func newRootModuleManager() *rootModuleManager {
+func newRootModuleManager(fs tfconfig.FS) *rootModuleManager {
 	d := &discovery.Discovery{}
 	rmm := &rootModuleManager{
 		rms:           make([]*rootModule, 0),
+		filesystem:    fs,
 		logger:        defaultLogger,
 		tfDiscoFunc:   d.LookPath,
 		tfNewExecutor: exec.NewExecutor,
@@ -49,7 +52,7 @@ func newRootModuleManager() *rootModuleManager {
 }
 
 func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir string) (*rootModule, error) {
-	rm := newRootModule(dir)
+	rm := newRootModule(rmm.filesystem, dir)
 
 	rm.SetLogger(rmm.logger)
 

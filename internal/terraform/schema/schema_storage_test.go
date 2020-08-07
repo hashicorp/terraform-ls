@@ -208,7 +208,8 @@ func TestResourceSchema_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	given, err := s.ResourceSchema("null_resource")
+	nullAddr := addrs.ImpliedProviderForUnqualifiedType("null")
+	given, err := s.ResourceSchema(nullAddr, "null_resource")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +240,8 @@ func TestResourceSchema_noSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErr := &NoSchemaAvailableErr{}
-	_, err = s.ResourceSchema("any")
+	anyAddr := addrs.ImpliedProviderForUnqualifiedType("any")
+	_, err = s.ResourceSchema(anyAddr, "any_res")
 	if err == nil {
 		t.Fatalf("Expected error (%q)", expectedErr.Error())
 	}
@@ -255,7 +257,8 @@ func TestDataSourceSchema_noSchema(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErr := &NoSchemaAvailableErr{}
-	_, err = s.DataSourceSchema("any")
+	anyAddr := addrs.ImpliedProviderForUnqualifiedType("any")
+	_, err = s.DataSourceSchema(anyAddr, "any_res")
 	if err == nil {
 		t.Fatalf("Expected error (%q)", expectedErr.Error())
 	}
@@ -277,7 +280,8 @@ func TestDataSourceSchema_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	given, err := s.DataSourceSchema("null_data_source")
+	nullAddr := addrs.ImpliedProviderForUnqualifiedType("null")
+	given, err := s.DataSourceSchema(nullAddr, "null_data_source")
 	if err != nil {
 		t.Fatal(err)
 	}

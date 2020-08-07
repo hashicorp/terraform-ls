@@ -10,7 +10,7 @@ import (
 
 func TestFile_ApplyChange_fullUpdate(t *testing.T) {
 	fs := testDocumentStorage()
-	dh := &testHandler{"file:///test.tf"}
+	dh := &testHandler{uri: "file:///test.tf"}
 
 	err := fs.CreateAndOpenDocument(dh, []byte("hello world"))
 	if err != nil {
@@ -171,7 +171,7 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 
 	for _, v := range testData {
 		fs := testDocumentStorage()
-		dh := &testHandler{"file:///test.tf"}
+		dh := &testHandler{uri: "file:///test.tf"}
 
 		err := fs.CreateAndOpenDocument(dh, []byte(v.Content))
 		if err != nil {
@@ -214,7 +214,7 @@ func testDocument(t *testing.T, dh DocumentHandler, meta *documentMetadata, b []
 
 	return &document{
 		meta: meta,
-		fo:   fs,
+		fs:   fs,
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
@@ -59,29 +61,37 @@ type rootModule struct {
 	tfVersionErr error
 
 	// language parser
-	parserLoaded   bool
-	parserLoadedMu *sync.RWMutex
-	parser         lang.Parser
+	parserLoaded bool
+	parserMu     *sync.RWMutex
+	parser       lang.Parser
+
+	// provider references
+	filesystem     tfconfig.FS
+	providerRefs   addrs.ProviderReferences
+	providerRefsMu *sync.RWMutex
 }
 
-func newRootModule(dir string) *rootModule {
+func newRootModule(fs tfconfig.FS, dir string) *rootModule {
 	return &rootModule{
 		path:           dir,
+		filesystem:     fs,
 		logger:         defaultLogger,
+		providerRefs:   make(addrs.ProviderReferences, 0),
+		providerRefsMu: &sync.RWMutex{},
 		isLoadingMu:    &sync.RWMutex{},
 		loadErrMu:      &sync.RWMutex{},
 		moduleMu:       &sync.RWMutex{},
 		pluginMu:       &sync.RWMutex{},
 		schemaLoadedMu: &sync.RWMutex{},
 		tfLoadedMu:     &sync.RWMutex{},
-		parserLoadedMu: &sync.RWMutex{},
+		parserMu:       &sync.RWMutex{},
 	}
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
-func NewRootModule(ctx context.Context, dir string) (RootModule, error) {
-	rm := newRootModule(dir)
+func NewRootModule(ctx context.Context, fs tfconfig.FS, dir string) (RootModule, error) {
+	rm := newRootModule(fs, dir)
 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
@@ -207,10 +217,13 @@ func (rm *rootModule) load(ctx context.Context) error {
 	rm.tfVersionErr = err
 	errs = multierror.Append(errs, err)
 
-	err = rm.findCompatibleStateStorage()
+	err = rm.ParseProviderReferences()
 	errs = multierror.Append(errs, err)
 
 	err = rm.findCompatibleLangParser()
+	errs = multierror.Append(errs, err)
+
+	err = rm.findCompatibleStateStorage()
 	errs = multierror.Append(errs, err)
 
 	err = rm.UpdateSchemaCache(ctx, rm.pluginLockFile)
@@ -291,6 +304,11 @@ func (rm *rootModule) findCompatibleStateStorage() error {
 	}
 	rm.schemaStorage = ss
 	rm.schemaStorage.SetLogger(rm.logger)
+
+	if rm.IsParserLoaded() {
+		rm.parser.SetSchemaReader(rm.schemaStorage)
+	}
+
 	return nil
 }
 
@@ -309,11 +327,56 @@ func (rm *rootModule) findCompatibleLangParser() error {
 	}
 	p.SetLogger(rm.logger)
 
-	if rm.schemaStorage != nil {
-		p.SetSchemaReader(rm.schemaStorage)
+	rm.parser = p
+
+	return nil
+}
+
+func (rm *rootModule) ParseProviderReferences() error {
+	rm.providerRefsMu.Lock()
+	defer rm.providerRefsMu.Unlock()
+
+	mod, diags := tfconfig.LoadModuleFromFilesystem(rm.filesystem, rm.Path())
+	if diags.HasErrors() {
+		rm.logger.Printf("parsing provider references for %s failed: %s",
+			rm.Path(), diags.Error())
+	}
+	if mod == nil {
+		rm.logger.Printf("no provider references parsed for %s", rm.Path())
+		return nil
 	}
 
-	rm.parser = p
+	refs := make(addrs.ProviderReferences, 0)
+
+	rm.logger.Printf("%d provider references found for %s",
+		len(mod.RequiredProviders), rm.Path())
+
+	for name, rp := range mod.RequiredProviders {
+		if name == "" {
+			// skip unnamed inferred provider references
+			continue
+		}
+
+		lName, err := addrs.ParseProviderConfigCompactStr(name)
+		if err != nil {
+			return err
+		}
+		if rp.Source != "" {
+			pAddr, err := addrs.ParseProviderSourceString(rp.Source)
+			if err != nil {
+				return err
+			}
+			refs[lName] = pAddr
+		}
+	}
+
+	rm.providerRefs = refs
+
+	if rm.IsParserLoaded() {
+		rm.parserMu.Lock()
+		defer rm.parserMu.Unlock()
+		rm.parser.SetProviderReferences(rm.providerRefs)
+	}
 
 	return nil
 }
@@ -357,12 +420,11 @@ func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
 }
 
 func (rm *rootModule) Parser() (lang.Parser, error) {
-	rm.pluginMu.RLock()
-	defer rm.pluginMu.RUnlock()
-
 	if !rm.IsParserLoaded() {
 		return nil, fmt.Errorf("parser is not loaded yet")
 	}
+	rm.parserMu.RLock()
+	defer rm.parserMu.RUnlock()
 
 	if rm.parser == nil {
 		return nil, fmt.Errorf("no parser available")
@@ -372,14 +434,14 @@ func (rm *rootModule) Parser() (lang.Parser, error) {
 }
 
 func (rm *rootModule) IsParserLoaded() bool {
-	rm.parserLoadedMu.RLock()
-	defer rm.parserLoadedMu.RUnlock()
+	rm.parserMu.RLock()
+	defer rm.parserMu.RUnlock()
 	return rm.parserLoaded
 }
 
 func (rm *rootModule) setParserLoaded(isLoaded bool) {
-	rm.parserLoadedMu.Lock()
-	defer rm.parserLoadedMu.Unlock()
+	rm.parserMu.Lock()
+	defer rm.parserMu.Unlock()
 	rm.parserLoaded = isLoaded
 }
 

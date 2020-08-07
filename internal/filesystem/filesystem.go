@@ -7,11 +7,13 @@ import (
 	"os"
 	"sync"
 
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/spf13/afero"
 )
 
 type fsystem struct {
 	memFs afero.Fs
+	osFs  afero.Fs
 
 	docMeta   map[string]*documentMetadata
 	docMetaMu *sync.RWMutex
@@ -22,6 +24,7 @@ type fsystem struct {
 func NewFilesystem() *fsystem {
 	return &fsystem{
 		memFs:     afero.NewMemMapFs(),
+		osFs:      afero.NewReadOnlyFs(afero.NewOsFs()),
 		docMeta:   make(map[string]*documentMetadata, 0),
 		docMetaMu: &sync.RWMutex{},
 		logger:    log.New(ioutil.Discard, "", 0),
@@ -173,6 +176,54 @@ func (fs *fsystem) GetDocument(dh DocumentHandler) (Document, error) {
 
 	return &document{
 		meta: dm,
-		fo:   fs.memFs,
+		fs:   fs.memFs,
 	}, nil
+}
+
+func (fs *fsystem) ReadFile(name string) ([]byte, error) {
+	b, err := afero.ReadFile(fs.memFs, name)
+	if err != nil && os.IsNotExist(err) {
+		return afero.ReadFile(fs.osFs, name)
+	}
+
+	return b, err
+}
+
+func (fs *fsystem) ReadDir(name string) ([]os.FileInfo, error) {
+	memList, err := afero.ReadDir(fs.memFs, name)
+	if err != nil {
+		return nil, err
+	}
+	osList, err := afero.ReadDir(fs.osFs, name)
+	if err != nil {
+		return nil, err
+	}
+
+	list := memList
+	for _, osFi := range osList {
+		if fileIsInList(list, osFi) {
+			continue
+		}
+		list = append(list, osFi)
+	}
+
+	return list, nil
+}
+
+func fileIsInList(list []os.FileInfo, file os.FileInfo) bool {
+	for _, fi := range list {
+		if fi.Name() == file.Name() {
+			return true
+		}
+	}
+	return false
+}
+
+func (fs *fsystem) Open(name string) (tfconfig.File, error) {
+	f, err := fs.memFs.Open(name)
+	if err != nil && os.IsNotExist(err) {
+		return fs.osFs.Open(name)
+	}
+
+	return f, err
 }

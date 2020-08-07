@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -77,33 +78,13 @@ func TestProviderBlock_Name(t *testing.T) {
 }
 
 func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
-	simpleSchema := &tfjson.ProviderSchemas{
-		FormatVersion: "0.1",
-		Schemas: map[string]*tfjson.ProviderSchema{
-			"custom": {
-				ConfigSchema: &tfjson.Schema{
-					Block: &tfjson.SchemaBlock{
-						Attributes: map[string]*tfjson.SchemaAttribute{
-							"attr_optional": {
-								AttributeType: cty.String,
-								Optional:      true,
-							},
-							"attr_required": {
-								AttributeType: cty.String,
-								Required:      true,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 	testCases := []struct {
-		name      string
-		src       string
-		schemas   *tfjson.ProviderSchemas
-		readerErr error
-		pos       hcl.Pos
+		name         string
+		src          string
+		schemas      *tfjson.ProviderSchemas
+		readerErr    error
+		providerRefs addrs.ProviderReferences
+		pos          hcl.Pos
 
 		expectedCandidates []renderedCandidate
 		expectedErr        error
@@ -114,6 +95,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 
 }`,
 			simpleSchema,
+			nil,
 			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 20},
 			[]renderedCandidate{
@@ -144,6 +126,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 }`,
 			simpleSchema,
 			nil,
+			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 14},
 			[]renderedCandidate{},
 			&schema.SchemaUnavailableErr{BlockType: "provider", FullName: "x"},
@@ -155,6 +138,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 }`,
 			nil,
 			errors.New("error getting schema"),
+			nil,
 			hcl.Pos{Line: 2, Column: 1, Byte: 20},
 			[]renderedCandidate{},
 			errors.New("error getting schema"),
@@ -166,6 +150,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 }`,
 			simpleSchema,
 			nil,
+			nil,
 			hcl.Pos{Line: 1, Column: 9, Byte: 10},
 			[]renderedCandidate{
 				{
@@ -175,6 +160,34 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 					Snippet: renderedSnippet{
 						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
 						Text: "custom",
+					},
+				},
+			},
+			nil,
+		},
+		{
+			"provider names",
+			`provider "" {
+
+}`,
+			simpleSchema,
+			nil,
+			addrs.ProviderReferences{
+				addrs.LocalProviderConfig{LocalName: "foo"}: addrs.Provider{
+					Type:      "custom",
+					Namespace: "hashicorp",
+					Hostname:  "registry.terraform.io",
+				},
+			},
+			hcl.Pos{Line: 1, Column: 9, Byte: 10},
+			[]renderedCandidate{
+				{
+					Label:         "foo",
+					Detail:        "hashicorp/custom",
+					Documentation: "",
+					Snippet: renderedSnippet{
+						Pos:  hcl.Pos{Line: 1, Column: 9, Byte: 10},
+						Text: "foo",
 					},
 				},
 			},
@@ -192,6 +205,7 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 					ProviderSchemas:   tc.schemas,
 					ProviderSchemaErr: tc.readerErr,
 				},
+				providerRefs: tc.providerRefs,
 			}
 			p, err := pf.New(tBlock)
 			if err != nil {
@@ -216,4 +230,26 @@ func TestProviderBlock_completionCandidatesAtPos(t *testing.T) {
 			}
 		})
 	}
+}
+
+var simpleSchema = &tfjson.ProviderSchemas{
+	FormatVersion: "0.1",
+	Schemas: map[string]*tfjson.ProviderSchema{
+		"custom": {
+			ConfigSchema: &tfjson.Schema{
+				Block: &tfjson.SchemaBlock{
+					Attributes: map[string]*tfjson.SchemaAttribute{
+						"attr_optional": {
+							AttributeType: cty.String,
+							Optional:      true,
+						},
+						"attr_required": {
+							AttributeType: cty.String,
+							Required:      true,
+						},
+					},
+				},
+			},
+		},
+	},
 }

@@ -44,7 +44,25 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 	if err != nil {
 		return err
 	}
-	return fs.ChangeDocument(fh, changes)
+	err = fs.ChangeDocument(fh, changes)
+	if err != nil {
+		return err
+	}
+
+	cf, err := lsctx.RootModuleCandidateFinder(ctx)
+	if err != nil {
+		return err
+	}
+	rms := cf.RootModuleCandidatesByPath(fh.Dir())
+	if len(rms) > 0 {
+		rm := rms[0]
+		err := rm.ParseProviderReferences()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // TODO: Revisit after https://github.com/hashicorp/terraform-ls/issues/118 is addressed

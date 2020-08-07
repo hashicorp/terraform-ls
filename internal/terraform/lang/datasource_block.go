@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
+	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
@@ -15,6 +16,7 @@ type datasourceBlockFactory struct {
 	logger *log.Logger
 
 	schemaReader schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (f *datasourceBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, error) {
@@ -25,9 +27,10 @@ func (f *datasourceBlockFactory) New(tBlock ihcl.TokenizedBlock) (ConfigBlock, e
 	return &datasourceBlock{
 		logger: f.logger,
 
-		labelSchema: f.LabelSchema(),
-		tBlock:      tBlock,
-		sr:          f.schemaReader,
+		labelSchema:  f.LabelSchema(),
+		tBlock:       tBlock,
+		sr:           f.schemaReader,
+		providerRefs: f.providerRefs,
 	}, nil
 }
 
@@ -51,10 +54,11 @@ func (f *datasourceBlockFactory) Documentation() MarkupContent {
 type datasourceBlock struct {
 	logger *log.Logger
 
-	labelSchema LabelSchema
-	labels      []*ParsedLabel
-	tBlock      ihcl.TokenizedBlock
-	sr          schema.Reader
+	labelSchema  LabelSchema
+	labels       []*ParsedLabel
+	tBlock       ihcl.TokenizedBlock
+	sr           schema.Reader
+	providerRefs addrs.ProviderReferences
 }
 
 func (r *datasourceBlock) Type() string {
@@ -119,7 +123,17 @@ func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCand
 		return cl.completionCandidatesAtPos(pos)
 	}
 
-	rSchema, err := r.sr.DataSourceSchema(r.Type())
+	lRef, err := parseProviderRef(hclBlock.Body.Attributes, r.Type())
+	if err != nil {
+		return nil, err
+	}
+
+	pAddr, err := lookupProviderAddress(r.providerRefs, lRef)
+	if err != nil {
+		return nil, err
+	}
+
+	rSchema, err := r.sr.DataSourceSchema(pAddr, r.Type())
 	if err != nil {
 		return nil, err
 	}

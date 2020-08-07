@@ -16,15 +16,18 @@ import (
 )
 
 type Reader interface {
-	ProviderConfigSchema(name addrs.Provider) (*tfjson.Schema, error)
+	ProviderConfigSchema(addr addrs.Provider) (*tfjson.Schema, error)
 	Providers() ([]addrs.Provider, error)
-	ResourceSchema(rType string) (*tfjson.Schema, error)
+	ResourceSchema(pAddr addrs.Provider, rType string) (*tfjson.Schema, error)
 	Resources() ([]Resource, error)
-	DataSourceSchema(dsType string) (*tfjson.Schema, error)
+	DataSourceSchema(pAddr addrs.Provider, dsType string) (*tfjson.Schema, error)
 	DataSources() ([]DataSource, error)
 }
 
 type Writer interface {
+	// TODO: Consider decoupling TF exec logic and replace
+	// with UpdateSchemas(*tfjson.ProviderSchemas) which may be more suitable
+	// in relation to https://github.com/hashicorp/terraform-ls/issues/193
 	ObtainSchemasForModule(context.Context, *exec.Executor, string) error
 }
 
@@ -189,7 +192,7 @@ func (s *Storage) Providers() ([]addrs.Provider, error) {
 	return providers, nil
 }
 
-func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
+func (s *Storage) ResourceSchema(pAddr addrs.Provider, rType string) (*tfjson.Schema, error) {
 	s.logger.Printf("Reading %q resource schema", rType)
 
 	ps, err := s.schema()
@@ -197,8 +200,6 @@ func (s *Storage) ResourceSchema(rType string) (*tfjson.Schema, error) {
 		return nil, err
 	}
 
-	// TODO: Reflect provider alias associations here
-	// (need to be parsed and made accessible first)
 	for _, schema := range ps.Schemas {
 		rSchema, ok := schema.ResourceSchemas[rType]
 		if ok {
@@ -234,7 +235,7 @@ func (s *Storage) Resources() ([]Resource, error) {
 	return resources, nil
 }
 
-func (s *Storage) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
+func (s *Storage) DataSourceSchema(pAddr addrs.Provider, dsType string) (*tfjson.Schema, error) {
 	s.logger.Printf("Reading %q datasource schema", dsType)
 
 	ps, err := s.schema()

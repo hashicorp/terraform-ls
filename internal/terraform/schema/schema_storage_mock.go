@@ -49,11 +49,11 @@ func (r *MockReader) Providers() ([]addrs.Provider, error) {
 	return r.storage().Providers()
 }
 
-func (r *MockReader) ResourceSchema(rType string) (*tfjson.Schema, error) {
+func (r *MockReader) ResourceSchema(pAddr addrs.Provider, rType string) (*tfjson.Schema, error) {
 	if r.ResourceSchemaErr != nil {
 		return nil, r.ResourceSchemaErr
 	}
-	return r.storage().ResourceSchema(rType)
+	return r.storage().ResourceSchema(pAddr, rType)
 }
 func (r *MockReader) Resources() ([]Resource, error) {
 	if r.ResourceSchemaErr != nil {
@@ -62,11 +62,11 @@ func (r *MockReader) Resources() ([]Resource, error) {
 	return r.storage().Resources()
 }
 
-func (r *MockReader) DataSourceSchema(dsType string) (*tfjson.Schema, error) {
+func (r *MockReader) DataSourceSchema(pAddr addrs.Provider, dsType string) (*tfjson.Schema, error) {
 	if r.DataSourceSchemaErr != nil {
 		return nil, r.DataSourceSchemaErr
 	}
-	return r.storage().DataSourceSchema(dsType)
+	return r.storage().DataSourceSchema(pAddr, dsType)
 }
 func (r *MockReader) DataSources() ([]DataSource, error) {
 	if r.DataSourceSchemaErr != nil {
