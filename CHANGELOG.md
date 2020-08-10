@@ -11,6 +11,7 @@ ENHANCEMENTS:
  - settings: Support 'homedir' ~ in root module paths ([#247](https://github.com/hashicorp/terraform-ls/pull/247))
  - settings: Add support for `excludeModulePaths` ([#251](https://github.com/hashicorp/terraform-ls/pull/251))
  - handlers/initialize: Skip invalid root module paths ([#248](https://github.com/hashicorp/terraform-ls/pull/248))
+ - Cap parallel root module loading (to reduce CPU usage) ([#256](https://github.com/hashicorp/terraform-ls/pull/256))
 
 INTERNAL:
 
