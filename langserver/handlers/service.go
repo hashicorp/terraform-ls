@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
@@ -72,6 +73,14 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	svc.modMgr = svc.newRootModuleManager(fs)
 	svc.modMgr.SetLogger(svc.logger)
+
+	svc.logger.Printf("Worker pool size set to %d", svc.modMgr.WorkerPoolSize())
+
+	tr := newTickReporter(5 * time.Second)
+	tr.AddReporter(func() {
+		svc.logger.Printf("Root modules waiting to be loaded: %d", svc.modMgr.WorkerQueueSize())
+	})
+	tr.StartReporting(svc.sessCtx)
 
 	svc.walker = svc.newWalker()
 
