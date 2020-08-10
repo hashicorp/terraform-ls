@@ -8,7 +8,7 @@ ENHANCEMENTS:
 
  - Support 0.13 provider identities ([#255](https://github.com/hashicorp/terraform-ls/pull/255))
  - settings: Support relative paths to root modules ([#246](https://github.com/hashicorp/terraform-ls/pull/246))
- - settings: Support 'homedir' ~ in root module paths ([#247](https://github.com/hashicorp/terraform-ls/pull/247))
+ - settings: Expand `~` in root module paths ([#247](https://github.com/hashicorp/terraform-ls/pull/247))
  - settings: Add support for `excludeModulePaths` ([#251](https://github.com/hashicorp/terraform-ls/pull/251))
  - handlers/initialize: Skip invalid root module paths ([#248](https://github.com/hashicorp/terraform-ls/pull/248))
  - Cap parallel root module loading (to reduce CPU usage) ([#256](https://github.com/hashicorp/terraform-ls/pull/256))
