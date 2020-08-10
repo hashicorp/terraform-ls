@@ -43,6 +43,8 @@ type RootModuleManager interface {
 	SetTerraformExecTimeout(timeout time.Duration)
 
 	AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error)
+	WorkerPoolSize() int
+	WorkerQueueSize() int
 	ListRootModules() RootModules
 	PathsToWatch() []string
 	RootModuleByPath(path string) (RootModule, error)

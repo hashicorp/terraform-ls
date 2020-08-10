@@ -21,6 +21,10 @@ github.com/creachadair/jrpc2/server
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
+# github.com/gammazero/deque v0.0.0-20200227231300-1e9af0e52b46
+github.com/gammazero/deque
+# github.com/gammazero/workerpool v1.0.0
+github.com/gammazero/workerpool
 # github.com/google/go-cmp v0.4.1
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
