@@ -78,7 +78,11 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	tr := newTickReporter(5 * time.Second)
 	tr.AddReporter(func() {
-		svc.logger.Printf("Root modules waiting to be loaded: %d", svc.modMgr.WorkerQueueSize())
+		queueSize := svc.modMgr.WorkerQueueSize()
+		if queueSize < 1 {
+			return
+		}
+		svc.logger.Printf("Root modules waiting to be loaded: %d", queueSize)
 	})
 	tr.StartReporting(svc.sessCtx)
 
