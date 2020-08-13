@@ -4,10 +4,10 @@ go 1.13
 
 require (
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.10.0
+	github.com/creachadair/jrpc2 v0.10.1-0.20200813195131-333041b568c9
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gammazero/workerpool v1.0.0
-	github.com/google/go-cmp v0.4.1
+	github.com/google/go-cmp v0.5.1
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de
@@ -23,7 +23,7 @@ require (
 	github.com/spf13/afero v1.3.2
 	github.com/zclconf/go-cty v1.2.1
 	golang.org/x/net v0.0.0-20191009170851-d66e71096ffb
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 // indirect
 )
 
