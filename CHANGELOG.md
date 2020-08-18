@@ -2,6 +2,7 @@
 
 BUG FIXES:
 
+ - Reduce logging of module loading ([#259](https://github.com/hashicorp/terraform-ls/pull/259))
  - Update jrpc2 to fix cancelRequest deadlock ([#260](https://github.com/hashicorp/terraform-ls/pull/260))
 
 ## 0.6.0 (10 August 2020)
