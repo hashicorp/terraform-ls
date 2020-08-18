@@ -177,6 +177,20 @@ func (s *Server) nextRequest() (func() error, error) {
 	return s.dispatch(next, ch), nil
 }
 
+// waitForBarrier blocks until all notification handlers that have been issued
+// have completed, then adds n to the barrier.
+//
+// The caller must hold s.mu, but the lock is released during the wait to avert
+// a deadlock with handlers calling back into the server.  See #27.
+// s.nbar counts the number of notifications that have been issued and are not
+// yet complete.
+func (s *Server) waitForBarrier(n int) {
+	s.mu.Unlock()
+	defer s.mu.Lock()
+	s.nbar.Wait()
+	s.nbar.Add(n)
+}
+
 // dispatch constructs a function that invokes each of the specified tasks.
 // The caller must hold s.mu when calling dispatch, but the returned function
 // should be executed outside the lock to wait for the handlers to return.
@@ -191,13 +205,8 @@ func (s *Server) dispatch(next jmessages, ch channel.Sender) func() error {
 	tasks := s.checkAndAssign(next)
 	last := len(tasks) - 1
 
-	// s.nbar counts the number of notifications that have been issued and are
-	// not yet complete. Before issuing any tasks in this batch, wait for all
-	// such notifications to complete, and update the barrier with the number in
-	// this batch. This update must happen under s.mu, so that multiple batches
-	// do not race on Wait/Add.
-	s.nbar.Wait()
-	s.nbar.Add(tasks.numValidNotifications())
+	// Ensure all notifications already issued have completed; see #24.
+	s.waitForBarrier(tasks.numValidNotifications())
 
 	return func() error {
 		var wg sync.WaitGroup

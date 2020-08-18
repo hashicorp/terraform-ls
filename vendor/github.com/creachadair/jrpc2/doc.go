@@ -165,8 +165,8 @@ to produce a handler.Map for those methods:
 This assigner maps the name "Add" to the Add method, and the name "Mul" to the
 Mul method, of the math value.
 
-This may be further combined with the handler.Map type to allow different
-services to work together:
+This may be further combined with the handler.ServiceMap type to allow
+different services to work together:
 
    type status struct{}
 
