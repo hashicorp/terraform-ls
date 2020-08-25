@@ -120,6 +120,27 @@ func (f *file) BlockAtPosition(pos hcl.Pos) (TokenizedBlock, error) {
 	return nil, &NoBlockFoundErr{pos}
 }
 
+func (f *file) Blocks() ([]TokenizedBlock, error) {
+	var blocks []TokenizedBlock
+
+	pf, err := f.parse()
+	if err != nil {
+		return blocks, err
+	}
+
+	body, ok := pf.Body.(*hclsyntax.Body)
+	if !ok {
+		return blocks, fmt.Errorf("unexpected body type (%T)", body)
+	}
+
+	for _, block := range body.Blocks {
+		dt := definitionTokens(tokensInRange(pf.Tokens, block.Range()))
+		blocks = append(blocks, &parsedBlock{dt})
+	}
+
+	return blocks, nil
+}
+
 func (f *file) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {
 	pf, _ := f.parse()
 
