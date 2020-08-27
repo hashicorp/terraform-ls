@@ -15,4 +15,5 @@ type TokenizedFile interface {
 type TokenizedBlock interface {
 	TokenAtPosition(hcl.Pos) (hclsyntax.Token, error)
 	Tokens() hclsyntax.Tokens
+	Range() hcl.Range
 }

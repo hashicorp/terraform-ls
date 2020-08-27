@@ -27,6 +27,14 @@ func (pb *parsedBlock) Tokens() hclsyntax.Tokens {
 	return pb.tokens
 }
 
+func (pb *parsedBlock) Range() hcl.Range {
+	return hcl.Range{
+		Filename: pb.tokens[0].Range.Filename,
+		Start:    pb.tokens[0].Range.Start,
+		End:      pb.tokens[len(pb.tokens)-1].Range.End,
+	}
+}
+
 func (pb *parsedBlock) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {
 	for _, t := range pb.tokens {
 		if rangeContainsOffset(t.Range, pos.Byte) {
