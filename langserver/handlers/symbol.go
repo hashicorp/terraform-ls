@@ -68,7 +68,6 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 	}
 
 	for _, block := range blocks {
-		block.Labels()
 		symbols = append(symbols, lsp.SymbolInformation{
 			Name: symbolName(block),
 			Kind: lsp.SKStruct, // We don't have a great SymbolKind match for blocks
