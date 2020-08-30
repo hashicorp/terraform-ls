@@ -37,6 +37,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 					"change": 2
 				},
 				"completionProvider": {},
+				"documentSymbolProvider":true,
 				"documentFormattingProvider":true
 			}
 		}
@@ -75,6 +76,7 @@ func TestEOF(t *testing.T) {
 					"change": 2
 				},
 				"completionProvider": {},
+				"documentSymbolProvider":true,
 				"documentFormattingProvider":true
 			}
 		}
