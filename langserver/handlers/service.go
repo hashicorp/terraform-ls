@@ -196,6 +196,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
+		"textDocument/documentSymbol": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithParserFinder(ctx, svc.modMgr)
+
+			return handle(ctx, req, lh.TextDocumentSymbol)
+		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {

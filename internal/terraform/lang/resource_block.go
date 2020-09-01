@@ -96,6 +96,10 @@ func (r *resourceBlock) BlockType() string {
 	return "resource"
 }
 
+func (r *resourceBlock) Range() hcl.Range {
+	return r.tBlock.Range()
+}
+
 func (r *resourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
 	if r.sr == nil {
 		return nil, &noSchemaReaderErr{r.BlockType()}

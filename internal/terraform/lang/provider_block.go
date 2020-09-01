@@ -85,6 +85,10 @@ func (p *providerBlock) BlockType() string {
 	return "provider"
 }
 
+func (p *providerBlock) Range() hcl.Range {
+	return p.tBlock.Range()
+}
+
 func (p *providerBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
 	if p.sr == nil {
 		return nil, &noSchemaReaderErr{p.BlockType()}

@@ -19,6 +19,7 @@ type Parser interface {
 	SetProviderReferences(addrs.ProviderReferences)
 	BlockTypeCandidates(ihcl.TokenizedFile, hcl.Pos) CompletionCandidates
 	CompletionCandidatesAtPos(ihcl.TokenizedFile, hcl.Pos) (CompletionCandidates, error)
+	Blocks(ihcl.TokenizedFile) ([]ConfigBlock, error)
 }
 
 // ConfigBlock implements an abstraction above HCL block
@@ -28,6 +29,7 @@ type ConfigBlock interface {
 	Name() string
 	BlockType() string
 	Labels() []*ParsedLabel
+	Range() hcl.Range
 }
 
 // Block represents a decoded HCL block (by a Parser)

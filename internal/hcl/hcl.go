@@ -27,6 +27,14 @@ func (pb *parsedBlock) Tokens() hclsyntax.Tokens {
 	return pb.tokens
 }
 
+func (pb *parsedBlock) Range() hcl.Range {
+	return hcl.Range{
+		Filename: pb.tokens[0].Range.Filename,
+		Start:    pb.tokens[0].Range.Start,
+		End:      pb.tokens[len(pb.tokens)-1].Range.End,
+	}
+}
+
 func (pb *parsedBlock) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {
 	for _, t := range pb.tokens {
 		if rangeContainsOffset(t.Range, pos.Byte) {
@@ -118,6 +126,27 @@ func (f *file) BlockAtPosition(pos hcl.Pos) (TokenizedBlock, error) {
 	}
 
 	return nil, &NoBlockFoundErr{pos}
+}
+
+func (f *file) Blocks() ([]TokenizedBlock, error) {
+	var blocks []TokenizedBlock
+
+	pf, err := f.parse()
+	if err != nil {
+		return blocks, err
+	}
+
+	body, ok := pf.Body.(*hclsyntax.Body)
+	if !ok {
+		return blocks, fmt.Errorf("unexpected body type (%T)", body)
+	}
+
+	for _, block := range body.Blocks {
+		dt := definitionTokens(tokensInRange(pf.Tokens, block.Range()))
+		blocks = append(blocks, &parsedBlock{dt})
+	}
+
+	return blocks, nil
 }
 
 func (f *file) TokenAtPosition(pos hcl.Pos) (hclsyntax.Token, error) {

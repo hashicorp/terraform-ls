@@ -61,13 +61,13 @@ type datasourceBlock struct {
 	providerRefs addrs.ProviderReferences
 }
 
-func (r *datasourceBlock) Type() string {
-	return r.Labels()[0].Value
+func (d *datasourceBlock) Type() string {
+	return d.Labels()[0].Value
 }
 
-func (r *datasourceBlock) Name() string {
-	firstLabel := r.Labels()[0].Value
-	secondLabel := r.Labels()[1].Value
+func (d *datasourceBlock) Name() string {
+	firstLabel := d.Labels()[0].Value
+	secondLabel := d.Labels()[1].Value
 
 	if firstLabel == "" && secondLabel == "" {
 		return "<unknown>"
@@ -82,39 +82,43 @@ func (r *datasourceBlock) Name() string {
 	return fmt.Sprintf("%s.%s", firstLabel, secondLabel)
 }
 
-func (r *datasourceBlock) Labels() []*ParsedLabel {
-	if r.labels != nil {
-		return r.labels
+func (d *datasourceBlock) Labels() []*ParsedLabel {
+	if d.labels != nil {
+		return d.labels
 	}
 
-	labels := ParseLabels(r.tBlock, r.labelSchema)
-	r.labels = labels
+	labels := ParseLabels(d.tBlock, d.labelSchema)
+	d.labels = labels
 
-	return r.labels
+	return d.labels
 }
 
-func (r *datasourceBlock) BlockType() string {
+func (d *datasourceBlock) BlockType() string {
 	return "data"
 }
 
-func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
-	if r.sr == nil {
-		return nil, &noSchemaReaderErr{r.BlockType()}
+func (d *datasourceBlock) Range() hcl.Range {
+	return d.tBlock.Range()
+}
+
+func (d *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCandidates, error) {
+	if d.sr == nil {
+		return nil, &noSchemaReaderErr{d.BlockType()}
 	}
 
 	// We ignore diags as we assume incomplete (invalid) configuration
-	hclBlock, _ := hclsyntax.ParseBlockFromTokens(r.tBlock.Tokens())
+	hclBlock, _ := hclsyntax.ParseBlockFromTokens(d.tBlock.Tokens())
 
 	if PosInLabels(hclBlock, pos) {
-		dataSources, err := r.sr.DataSources()
+		dataSources, err := d.sr.DataSources()
 		if err != nil {
 			return nil, err
 		}
 
 		cl := &completableLabels{
-			logger:       r.logger,
-			parsedLabels: r.Labels(),
-			tBlock:       r.tBlock,
+			logger:       d.logger,
+			parsedLabels: d.Labels(),
+			tBlock:       d.tBlock,
 			labels: labelCandidates{
 				"type": dataSourceCandidates(dataSources),
 			},
@@ -123,25 +127,25 @@ func (r *datasourceBlock) CompletionCandidatesAtPos(pos hcl.Pos) (CompletionCand
 		return cl.completionCandidatesAtPos(pos)
 	}
 
-	lRef, err := parseProviderRef(hclBlock.Body.Attributes, r.Type())
+	lRef, err := parseProviderRef(hclBlock.Body.Attributes, d.Type())
 	if err != nil {
 		return nil, err
 	}
 
-	pAddr, err := lookupProviderAddress(r.providerRefs, lRef)
+	pAddr, err := lookupProviderAddress(d.providerRefs, lRef)
 	if err != nil {
 		return nil, err
 	}
 
-	rSchema, err := r.sr.DataSourceSchema(pAddr, r.Type())
+	rSchema, err := d.sr.DataSourceSchema(pAddr, d.Type())
 	if err != nil {
 		return nil, err
 	}
 	cb := &completableBlock{
-		logger:       r.logger,
-		parsedLabels: r.Labels(),
+		logger:       d.logger,
+		parsedLabels: d.Labels(),
 		schema:       rSchema.Block,
-		tBlock:       r.tBlock,
+		tBlock:       d.tBlock,
 	}
 	return cb.completionCandidatesAtPos(pos)
 }

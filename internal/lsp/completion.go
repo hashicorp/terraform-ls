@@ -66,6 +66,6 @@ func textEdit(te lang.TextEdit, pos hcl.Pos) *lsp.TextEdit {
 
 	return &lsp.TextEdit{
 		NewText: te.NewText(),
-		Range:   hclRangeToLSP(*rng),
+		Range:   HCLRangeToLSP(*rng),
 	}
 }

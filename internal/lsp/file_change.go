@@ -46,7 +46,7 @@ func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
 
 	for i, change := range changes {
 		edits[i] = lsp.TextEdit{
-			Range:   hclRangeToLSP(change.Range()),
+			Range:   HCLRangeToLSP(change.Range()),
 			NewText: change.Text(),
 		}
 	}
@@ -54,7 +54,7 @@ func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
 	return edits
 }
 
-func hclRangeToLSP(hclRng hcl.Range) lsp.Range {
+func HCLRangeToLSP(hclRng hcl.Range) lsp.Range {
 	return lsp.Range{
 		Start: lsp.Position{
 			Character: hclRng.Start.Column - 1,
