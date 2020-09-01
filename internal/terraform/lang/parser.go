@@ -178,6 +178,8 @@ func (p *parser) Blocks(file ihcl.TokenizedFile) ([]ConfigBlock, error) {
 	for _, block := range blocks {
 		cfgBlock, err := p.ParseBlockFromTokens(block)
 		if err != nil {
+			// do not error out if parsing failed, continue to parse
+			// blocks that are supported
 			p.logger.Printf("parsing config block failed: %s", err)
 			continue
 		}
