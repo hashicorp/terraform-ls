@@ -1,3 +1,9 @@
+## 0.7.0 (Unreleased)
+
+FEATURES:
+
+ - Document Symbol support ([#265](https://github.com/hashicorp/terraform-ls/pull/265))
+
 ## 0.6.1 (18 August 2020)
 
 BUG FIXES:
