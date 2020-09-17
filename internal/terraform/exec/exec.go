@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/logging"
 )
@@ -36,6 +37,8 @@ type cmdCtxFunc func(context.Context, string, ...string) *exec.Cmd
 type ExecutorFactory func(path string) *Executor
 
 type Executor struct {
+	tf *tfexec.Terraform
+
 	timeout time.Duration
 
 	execPath    string
@@ -44,6 +47,10 @@ type Executor struct {
 	execLogPath string
 
 	cmdCtxFunc cmdCtxFunc
+
+	// when mocked is true, previous implementation is used to avoid breaking
+	// the way the mocks work.
+	mocked bool
 }
 
 type command struct {
@@ -63,6 +70,31 @@ func NewExecutor(path string) *Executor {
 			return exec.CommandContext(ctx, path, arg...)
 		},
 	}
+}
+
+// tfExec should be used to initialize and return an instance of tfexec.Terraform just in
+// time, the instance will be cached. This is helpful because the language server sets the working
+// directory after the creation of the Executor instance.
+func (e *Executor) tfExec() *tfexec.Terraform {
+	if e.tf == nil {
+		tf, err := tfexec.NewTerraform(e.workDir, e.execPath)
+		if err != nil {
+			panic(err)
+		}
+		tf.SetLogger(e.logger)
+
+		// TODO: make sense of how this works
+		// if e.execLogPath != "" {
+		// 	logPath, err := logging.ParseExecLogPath(cmd.Args, e.execLogPath)
+		// 	tf.SetLogPath(logPath)
+		// }
+
+		// TODO: figure out what env vars are already handled by tfexec
+		// tf.SetEnv(nil)
+
+		e.tf = tf
+	}
+	return e.tf
 }
 
 func (e *Executor) SetLogger(logger *log.Logger) {
@@ -217,6 +249,15 @@ func (e *Executor) FormatterForVersion(v string) (Formatter, error) {
 }
 
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
+	if !e.mocked {
+		if e.timeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, e.timeout)
+			defer cancel()
+		}
+		formatted, err := tfexec.FormatString(ctx, e.execPath, string(input))
+		return []byte(formatted), err
+	}
 	cmd, err := e.cmd(ctx, "fmt", "-")
 	if err != nil {
 		return nil, err
@@ -257,6 +298,19 @@ func writeAndClose(w io.WriteCloser, input []byte) (int, error) {
 }
 
 func (e *Executor) Version(ctx context.Context) (string, error) {
+	if !e.mocked {
+		if e.timeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, e.timeout)
+			defer cancel()
+		}
+		v, _, err := e.tfExec().Version(ctx, true)
+		if err != nil {
+			return "", err
+		}
+		// TODO: consider refactoring codebase to work directly with go-version.Version
+		return v.String(), nil
+	}
 	out, err := e.run(ctx, "version")
 	if err != nil {
 		return "", fmt.Errorf("failed to get version: %w", err)
@@ -290,6 +344,14 @@ func (e *Executor) VersionIsSupported(ctx context.Context, c version.Constraints
 }
 
 func (e *Executor) ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error) {
+	if !e.mocked {
+		if e.timeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, e.timeout)
+			defer cancel()
+		}
+		return e.tfExec().ProvidersSchema(ctx)
+	}
 	outBytes, err := e.run(ctx, "providers", "schema", "-json")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schemas: %w", err)

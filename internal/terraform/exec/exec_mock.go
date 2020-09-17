@@ -76,6 +76,7 @@ func MockExecutor(md MockItemDispenser) ExecutorFactory {
 
 		path, ctxFunc := mockCommandCtxFunc(md)
 		executor := NewExecutor(path)
+		executor.mocked = true
 		executor.cmdCtxFunc = ctxFunc
 		return executor
 	}

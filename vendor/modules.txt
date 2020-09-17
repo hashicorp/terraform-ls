@@ -36,7 +36,7 @@ github.com/google/go-cmp/cmp/internal/value
 github.com/hashicorp/errwrap
 # github.com/hashicorp/go-multierror v1.1.0
 github.com/hashicorp/go-multierror
-# github.com/hashicorp/go-version v1.2.0
+# github.com/hashicorp/go-version v1.2.1
 github.com/hashicorp/go-version
 # github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f
 github.com/hashicorp/hcl
@@ -58,18 +58,21 @@ github.com/hashicorp/hcl/v2/hclwrite
 github.com/hashicorp/hcl/v2/json
 # github.com/hashicorp/terraform-config-inspect v0.0.0-20200806211835-c481b8bfa41e
 github.com/hashicorp/terraform-config-inspect/tfconfig
+# github.com/hashicorp/terraform-exec v0.10.1-0.20200916014713-c7076943ddf7
+github.com/hashicorp/terraform-exec/internal/version
+github.com/hashicorp/terraform-exec/tfexec
 # github.com/hashicorp/terraform-json v0.5.0
 github.com/hashicorp/terraform-json
 # github.com/hashicorp/terraform-svchost v0.0.0-20191119180714-d2e4933b9136
 github.com/hashicorp/terraform-svchost
 # github.com/mattn/go-colorable v0.0.9
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.3
+# github.com/mattn/go-isatty v0.0.4
 github.com/mattn/go-isatty
 # github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 github.com/mh-cbon/go-fmt-fail
 github.com/mh-cbon/go-fmt-fail/hasWritten
-# github.com/mitchellh/cli v1.0.0
+# github.com/mitchellh/cli v1.1.1
 github.com/mitchellh/cli
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
@@ -97,7 +100,7 @@ github.com/zclconf/go-cty/cty/function/stdlib
 github.com/zclconf/go-cty/cty/gocty
 github.com/zclconf/go-cty/cty/json
 github.com/zclconf/go-cty/cty/set
-# golang.org/x/net v0.0.0-20191009170851-d66e71096ffb
+# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 golang.org/x/net/idna
 # golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 golang.org/x/sync/semaphore
