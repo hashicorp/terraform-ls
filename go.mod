@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.5.2-0.20200528183353-fa7c453538de
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20200806211835-c481b8bfa41e
-	github.com/hashicorp/terraform-exec v0.10.1-0.20200916014713-c7076943ddf7
+	github.com/hashicorp/terraform-exec v0.11.0
 	github.com/hashicorp/terraform-json v0.5.0
 	github.com/hashicorp/terraform-svchost v0.0.0-20191119180714-d2e4933b9136
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
