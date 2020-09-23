@@ -31,7 +31,7 @@ type rootModuleManager struct {
 	tfDiscoFunc discovery.DiscoveryFunc
 
 	// terraform executor
-	tfNewExecutor exec.ExecutorFactory
+	tfNewExecutor executorFactory
 	tfExecPath    string
 	tfExecTimeout time.Duration
 	tfExecLogPath string
@@ -48,12 +48,11 @@ func newRootModuleManager(fs tfconfig.FS) *rootModuleManager {
 	wp := workerpool.New(defaultSize)
 
 	rmm := &rootModuleManager{
-		rms:           make([]*rootModule, 0),
-		filesystem:    fs,
-		workerPool:    wp,
-		logger:        defaultLogger,
-		tfDiscoFunc:   d.LookPath,
-		tfNewExecutor: exec.NewExecutor,
+		rms:         make([]*rootModule, 0),
+		filesystem:  fs,
+		workerPool:  wp,
+		logger:      defaultLogger,
+		tfDiscoFunc: d.LookPath,
 	}
 	rmm.newRootModule = rmm.defaultRootModuleFactory
 	return rmm
@@ -74,7 +73,7 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
-	rm.tfNewExecutor = exec.NewExecutor
+	rm.tfNewExecutor = executorWrap(exec.NewExecutor)
 	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	rm.tfExecPath = rmm.tfExecPath

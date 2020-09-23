@@ -11,7 +11,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -28,7 +27,7 @@ type Writer interface {
 	// TODO: Consider decoupling TF exec logic and replace
 	// with UpdateSchemas(*tfjson.ProviderSchemas) which may be more suitable
 	// in relation to https://github.com/hashicorp/terraform-ls/issues/193
-	ObtainSchemasForModule(context.Context, *exec.Executor, string) error
+	ObtainSchemasForModule(context.Context, SchemaProvider, string) error
 }
 
 type Resource struct {
@@ -106,11 +105,11 @@ func (s *Storage) SetLogger(logger *log.Logger) {
 
 // ObtainSchemasForModule will obtain schema via tf
 // and store it for later consumption via Reader methods
-func (s *Storage) ObtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
+func (s *Storage) ObtainSchemasForModule(ctx context.Context, tf SchemaProvider, dir string) error {
 	return s.obtainSchemasForModule(ctx, tf, dir)
 }
 
-func (s *Storage) obtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
+func (s *Storage) obtainSchemasForModule(ctx context.Context, tf SchemaProvider, dir string) error {
 	s.logger.Printf("Acquiring semaphore before retrieving schema for %q ...", dir)
 	err := s.sem.Acquire(context.Background(), 1)
 	if err != nil {

@@ -48,7 +48,7 @@ func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManag
 
 	// mock terraform executor
 	if input != nil {
-		rmm.tfNewExecutor = exec.MockExecutor(input.TerraformExecQueue)
+		rmm.tfNewExecutor = mockExecutorWrap(exec.MockExecutor(input.TerraformExecQueue))
 
 		if input.RootModules != nil {
 			rmf.rmm = input.RootModules

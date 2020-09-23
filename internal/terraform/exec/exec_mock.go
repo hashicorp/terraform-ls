@@ -1,14 +1,20 @@
 package exec
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"time"
+
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type MockItemDispenser interface {
@@ -66,34 +72,126 @@ func (mc *MockQueue) NextMockItem() *MockItem {
 	return mi
 }
 
-func MockExecutor(md MockItemDispenser) ExecutorFactory {
-	return func(_ string) *Executor {
+type mockExecutor struct {
+	path    string
+	timeout time.Duration
+	md      MockItemDispenser
+}
+
+func (*mockExecutor) SetWorkdir(string) {}
+
+func (*mockExecutor) SetExecLogPath(string) {}
+
+func (*mockExecutor) SetLogger(*log.Logger) {}
+
+func (m *mockExecutor) SetTimeout(timeout time.Duration) {
+	m.timeout = timeout
+}
+
+func (m *mockExecutor) GetExecPath() string {
+	return m.path
+}
+
+func (m *mockExecutor) Version(ctx context.Context) (string, error) {
+	out, err := m.run(ctx, "version")
+	if err != nil {
+		return "", fmt.Errorf("failed to get version: %w", err)
+	}
+	outString := string(out)
+	lines := strings.Split(outString, "\n")
+	if len(lines) < 1 {
+		return "", fmt.Errorf("unexpected version output: %q", outString)
+	}
+	version := strings.TrimPrefix(lines[0], "Terraform v")
+
+	return version, nil
+}
+
+func (m *mockExecutor) Format(ctx context.Context, input []byte) ([]byte, error) {
+	return m.run(ctx, "fmt", "-")
+}
+
+func (m *mockExecutor) ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error) {
+	outBytes, err := m.run(ctx, "providers", "schema", "-json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get schemas: %w", err)
+	}
+
+	var schemas tfjson.ProviderSchemas
+	err = json.Unmarshal(outBytes, &schemas)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &schemas, nil
+}
+
+func (m *mockExecutor) FormatterForVersion(v string) (Formatter, error) {
+	return formatterForVersion(v, m.Format)
+}
+
+func (m *mockExecutor) run(ctx context.Context, args ...string) ([]byte, error) {
+	b, err := m.md.NextMockItem().MarshalJSON()
+	if err != nil {
+		panic(err)
+	}
+
+	cancel := func() {}
+	if m.timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, m.timeout)
+	}
+	defer cancel()
+
+	var outBuf bytes.Buffer
+	var errBuf bytes.Buffer
+
+	cmd := exec.CommandContext(ctx, os.Args[0])
+	cmd.Args = append([]string{"terraform"}, args...)
+	cmd.Env = []string{"TF_LS_MOCK=" + string(b)}
+	cmd.Stderr = &errBuf
+	cmd.Stdout = &outBuf
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+	err = cmd.Wait()
+	if err != nil {
+		if tErr, ok := err.(*exec.ExitError); ok {
+			exitErr := &ExitError{
+				Err:    tErr,
+				Path:   cmd.Path,
+				Stdout: outBuf.String(),
+				Stderr: errBuf.String(),
+			}
+
+			ctxErr := ctx.Err()
+			if errors.Is(ctxErr, context.DeadlineExceeded) {
+				exitErr.CtxErr = ExecTimeoutError(cmd.Args, m.timeout)
+			}
+			if errors.Is(ctxErr, context.Canceled) {
+				exitErr.CtxErr = ExecCanceledError(cmd.Args)
+			}
+
+			return nil, exitErr
+		}
+
+		return nil, err
+	}
+
+	return outBuf.Bytes(), nil
+}
+
+type MockExecutorFactory func(string) *mockExecutor
+
+func MockExecutor(md MockItemDispenser) MockExecutorFactory {
+	return func(string) *mockExecutor {
 		if md == nil {
 			md = &MockCall{
 				MockError: "no mocks provided",
 			}
 		}
 
-		path, ctxFunc := mockCommandCtxFunc(md)
-		executor := NewExecutor(path)
-		executor.mocked = true
-		executor.cmdCtxFunc = ctxFunc
-		return executor
-	}
-}
-
-func mockCommandCtxFunc(md MockItemDispenser) (string, cmdCtxFunc) {
-	return os.Args[0], func(ctx context.Context, path string, arg ...string) *exec.Cmd {
-		cmd := exec.CommandContext(ctx, os.Args[0], os.Args[1:]...)
-
-		b, err := md.NextMockItem().MarshalJSON()
-		if err != nil {
-			panic(err)
-		}
-		expectedJson := string(b)
-		cmd.Env = []string{"TF_LS_MOCK=" + string(expectedJson)}
-
-		return cmd
+		return &mockExecutor{path: os.Args[0], md: md}
 	}
 }
 

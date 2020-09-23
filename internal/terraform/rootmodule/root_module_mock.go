@@ -22,7 +22,7 @@ func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
 	rm.tfDiscoFunc = md.LookPath
 
 	// mock terraform executor
-	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
+	rm.tfNewExecutor = mockExecutorWrap(exec.MockExecutor(rmm.TerraformExecQueue))
 
 	if rmm.ProviderSchemas == nil {
 		rm.newSchemaStorage = schema.NewStorageForVersion

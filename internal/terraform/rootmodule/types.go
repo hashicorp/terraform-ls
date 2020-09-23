@@ -86,3 +86,27 @@ type RootModuleFactory func(context.Context, string) (*rootModule, error)
 type RootModuleManagerFactory func(tfconfig.FS) RootModuleManager
 
 type WalkerFactory func() *Walker
+
+type executor interface {
+	SetWorkdir(string)
+	SetLogger(*log.Logger)
+	SetExecLogPath(string)
+	SetTimeout(time.Duration)
+	Version(context.Context) (string, error)
+	GetExecPath() string
+	FormatterForVersion(string) (exec.Formatter, error)
+}
+
+type executorFactory func(string) executor
+
+func executorWrap(f exec.ExecutorFactory) executorFactory {
+	return func(path string) executor {
+		return f(path)
+	}
+}
+
+func mockExecutorWrap(f exec.MockExecutorFactory) executorFactory {
+	return func(path string) executor {
+		return f(path)
+	}
+}

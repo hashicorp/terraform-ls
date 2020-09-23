@@ -48,8 +48,8 @@ type rootModule struct {
 	// terraform executor
 	tfLoaded      bool
 	tfLoadedMu    *sync.RWMutex
-	tfExec        *exec.Executor
-	tfNewExecutor exec.ExecutorFactory
+	tfExec        executor
+	tfNewExecutor executorFactory
 	tfExecPath    string
 	tfExecTimeout time.Duration
 	tfExecLogPath string
@@ -96,7 +96,7 @@ func NewRootModule(ctx context.Context, fs tfconfig.FS, dir string) (RootModule,
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
 
-	rm.tfNewExecutor = exec.NewExecutor
+	rm.tfNewExecutor = executorWrap(exec.NewExecutor)
 	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	err := rm.discoverCaches(ctx, dir)
@@ -532,7 +532,7 @@ func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) erro
 	rm.pluginLockFile = lockFile
 
 	return rm.schemaStorage.ObtainSchemasForModule(ctx,
-		rm.tfExec, rootModuleDirFromFilePath(lockFile.Path()))
+		rm.tfExec.(schema.SchemaProvider), rootModuleDirFromFilePath(lockFile.Path()))
 }
 
 func (rm *rootModule) PathsToWatch() []string {

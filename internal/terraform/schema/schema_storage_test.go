@@ -79,7 +79,7 @@ func TestProviderConfigSchema_basic_v012(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +107,7 @@ func TestProviders_v012(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +132,7 @@ func TestProviderConfigSchema_basic_v013(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.13.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.13.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +161,7 @@ func TestProviders_v013(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.13.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.13.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -202,7 +202,7 @@ func TestResourceSchema_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -274,7 +274,7 @@ func TestDataSourceSchema_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -341,7 +341,7 @@ func TestDataSources_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -403,7 +403,7 @@ func TestResources_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
+		testSchemaProvider(t, "./testdata/null-schema-0.12.json",
 			TempDir(t)), TempDir(t))
 	if err != nil {
 		t.Fatal(err)
@@ -427,7 +427,7 @@ func TestResources_basic(t *testing.T) {
 	}
 }
 
-func testExecutor(t *testing.T, pathToSchema, dir string) *exec.Executor {
+func testSchemaProvider(t *testing.T, pathToSchema, dir string) SchemaProvider {
 	b, err := ioutil.ReadFile(pathToSchema)
 	if err != nil {
 		t.Fatal(err)
