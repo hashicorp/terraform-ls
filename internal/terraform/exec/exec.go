@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"time"
 
@@ -16,12 +15,6 @@ import (
 )
 
 var defaultExecTimeout = 30 * time.Second
-
-// We pass through all variables, but longer term we'll need to reflect
-// that some variables might be workspace/directory specific
-// and passing through these may be dangerous once the LS
-// starts to execute commands which can mutate the state
-var passthroughEnvVars = os.Environ()
 
 // ExecutorFactory can be used in external consumers of exec pkg
 // to enable easy swapping with MockExecutor
@@ -65,16 +58,11 @@ func (e *Executor) tfExec() *tfexec.Terraform {
 		}
 		tf.SetLogger(e.logger)
 
-		// TODO: make sense of how this works
+		// TODO: support log filename template upstream
 		// if e.execLogPath != "" {
 		// 	logPath, err := logging.ParseExecLogPath(cmd.Args, e.execLogPath)
 		// 	tf.SetLogPath(logPath)
 		// }
-
-		// TODO: figure out what env vars are already handled by tfexec
-		// specifically CHECKPOINT_DISABLE=1, TF_LOG=TRACE, and
-		// passthroughEnvVars?
-		// tf.SetEnv(nil)
 
 		e.tf = tf
 	}
