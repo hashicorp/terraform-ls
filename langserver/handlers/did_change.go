@@ -49,6 +49,16 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
+	diags, err := lsctx.Diagnostics(ctx)
+	if err != nil {
+		return err
+	}
+	text, err := f.Text()
+	if err != nil {
+		return err
+	}
+	diags.DiagnoseHCL(ctx, params.TextDocument.URI, text)
+
 	cf, err := lsctx.RootModuleCandidateFinder(ctx)
 	if err != nil {
 		return err

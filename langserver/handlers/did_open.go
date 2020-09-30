@@ -14,6 +14,13 @@ import (
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
+
+	diags, err := lsctx.Diagnostics(ctx)
+	if err != nil {
+		return err
+	}
+	diags.DiagnoseHCL(ctx, params.TextDocument.URI, []byte(params.TextDocument.Text))
+
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
