@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
+	"github.com/hashicorp/terraform-ls/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 	"github.com/sourcegraph/go-lsp"
 )
@@ -141,6 +142,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	}
 
 	rmLoader := rootmodule.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
+	diags := diagnostics.NewNotifier(svc.sessCtx)
 
 	rootDir := ""
 
@@ -173,6 +175,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
@@ -182,6 +185,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)

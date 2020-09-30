@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
+	"github.com/hashicorp/terraform-ls/langserver/diagnostics"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -33,6 +34,7 @@ var (
 	ctxRootModuleWalker  = &contextKey{"root module walker"}
 	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
+	ctxDiags             = &contextKey{"diagnostics"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -210,4 +212,17 @@ func RootModuleLoader(ctx context.Context) (rootmodule.RootModuleLoader, error) 
 		return nil, missingContextErr(ctxRootModuleLoader)
 	}
 	return w, nil
+}
+
+func WithDiagnostics(ctx context.Context, diags *diagnostics.Notifier) context.Context {
+	return context.WithValue(ctx, ctxDiags, diags)
+}
+
+func Diagnostics(ctx context.Context) (*diagnostics.Notifier, error) {
+	diags, ok := ctx.Value(ctxDiags).(*diagnostics.Notifier)
+	if !ok {
+		return nil, missingContextErr(ctxDiags)
+	}
+
+	return diags, nil
 }
