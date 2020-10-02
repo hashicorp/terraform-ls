@@ -1,9 +1,8 @@
 package diagnostics
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 func TestDiagnoseHCL_Closes(t *testing.T) {
