@@ -49,6 +49,7 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
+	// now that the file content has been sync'd run diagnostics
 	diags, err := lsctx.Diagnostics(ctx)
 	if err != nil {
 		return err
