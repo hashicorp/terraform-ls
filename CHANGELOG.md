@@ -1,3 +1,9 @@
+## 0.8.0 (Unreleased)
+
+FEATURES:
+
+ - HCL diagnostics support [GH-269]
+
 ## 0.7.0 (2 September 2020)
 
 FEATURES:
