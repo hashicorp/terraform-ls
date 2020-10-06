@@ -16,6 +16,25 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const intializeResponse = `{
+	"jsonrpc": "2.0",
+	"id": 1,
+	"result": {
+		"capabilities": {
+			"textDocumentSync": {
+				"openClose": true,
+				"change": 2
+			},
+			"completionProvider": {},
+			"documentSymbolProvider":true,
+			"documentFormattingProvider":true,
+			"executeCommandProvider": {
+				"commands": ["workspaces"]
+			}
+		}
+	}
+}`
+
 func TestInitalizeAndShutdown(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
@@ -30,21 +49,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, `{
-		"jsonrpc": "2.0",
-		"id": 1,
-		"result": {
-			"capabilities": {
-				"textDocumentSync": {
-					"openClose": true,
-					"change": 2
-				},
-				"completionProvider": {},
-				"documentSymbolProvider":true,
-				"documentFormattingProvider":true
-			}
-		}
-	}`)
+	}`, TempDir(t).URI())}, intializeResponse)
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -69,21 +74,7 @@ func TestEOF(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, `{
-		"jsonrpc": "2.0",
-		"id": 1,
-		"result": {
-			"capabilities": {
-				"textDocumentSync": {
-					"openClose": true,
-					"change": 2
-				},
-				"completionProvider": {},
-				"documentSymbolProvider":true,
-				"documentFormattingProvider":true
-			}
-		}
-	}`)
+	}`, TempDir(t).URI())}, intializeResponse)
 
 	ls.CloseClientStdout(t)
 
