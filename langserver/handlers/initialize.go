@@ -28,6 +28,9 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			},
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
+			ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
+				Commands: []string{"workspaces"},
+			},
 		},
 	}
 
