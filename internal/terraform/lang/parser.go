@@ -38,14 +38,9 @@ type parser struct {
 	providerRefs  addrs.ProviderReferences
 }
 
-func parserSupportsTerraform(v string) error {
-	rawVer, err := version.NewVersion(v)
-	if err != nil {
-		return err
-	}
-
+func parserSupportsTerraform(ver *version.Version) error {
 	// Assume that alpha/beta/rc prereleases have the same compatibility
-	segments := rawVer.Segments64()
+	segments := ver.Segments64()
 	segmentsOnly := fmt.Sprintf("%d.%d.%d", segments[0], segments[1], segments[2])
 	tfVersion, err := version.NewVersion(segmentsOnly)
 	if err != nil {
@@ -60,7 +55,7 @@ func parserSupportsTerraform(v string) error {
 	if !c.Check(tfVersion) {
 		return &errors.UnsupportedTerraformVersion{
 			Component:   "parser",
-			Version:     v,
+			Version:     ver.String(),
 			Constraints: c,
 		}
 	}
@@ -70,7 +65,7 @@ func parserSupportsTerraform(v string) error {
 
 // FindCompatibleParser finds a parser that is compatible with
 // given Terraform version, so that it parses config accuretly
-func FindCompatibleParser(v string) (Parser, error) {
+func FindCompatibleParser(v *version.Version) (Parser, error) {
 	err := parserSupportsTerraform(v)
 	if err != nil {
 		return nil, err

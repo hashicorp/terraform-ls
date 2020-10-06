@@ -2,6 +2,7 @@ package schema
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,10 +12,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -54,7 +55,7 @@ func TestSchemaSupportsTerraform(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			_, err := NewStorageForVersion(tc.version)
+			_, err := NewStorageForVersion(testVersion(t, tc.version))
 			if err != nil {
 				if tc.expectedErr == nil {
 					t.Fatalf("Expected no error for %q: %#v",
@@ -74,13 +75,12 @@ func TestSchemaSupportsTerraform(t *testing.T) {
 }
 
 func TestProviderConfigSchema_basic_v012(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,13 +102,12 @@ func TestProviderConfigSchema_basic_v012(t *testing.T) {
 }
 
 func TestProviders_v012(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,13 +126,12 @@ func TestProviders_v012(t *testing.T) {
 }
 
 func TestProviderConfigSchema_basic_v013(t *testing.T) {
-	s, err := NewStorageForVersion("0.13.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.13.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.13.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.13.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,13 +154,12 @@ func TestProviderConfigSchema_basic_v013(t *testing.T) {
 }
 
 func TestProviders_v013(t *testing.T) {
-	s, err := NewStorageForVersion("0.13.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.13.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.13.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.13.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +178,7 @@ func TestProviders_v013(t *testing.T) {
 }
 
 func TestProviderConfigSchema_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,13 +194,12 @@ func TestProviderConfigSchema_noSchema(t *testing.T) {
 }
 
 func TestResourceSchema_basic(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +231,7 @@ func TestResourceSchema_basic(t *testing.T) {
 }
 
 func TestResourceSchema_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +248,7 @@ func TestResourceSchema_noSchema(t *testing.T) {
 }
 
 func TestDataSourceSchema_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,13 +265,12 @@ func TestDataSourceSchema_noSchema(t *testing.T) {
 }
 
 func TestDataSourceSchema_basic(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +315,7 @@ func TestDataSourceSchema_basic(t *testing.T) {
 }
 
 func TestDataSources_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,13 +331,12 @@ func TestDataSources_noSchema(t *testing.T) {
 }
 
 func TestDataSources_basic(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +360,7 @@ func TestDataSources_basic(t *testing.T) {
 }
 
 func TestProviders_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +376,7 @@ func TestProviders_noSchema(t *testing.T) {
 }
 
 func TestResources_noSchema(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,13 +392,12 @@ func TestResources_noSchema(t *testing.T) {
 }
 
 func TestResources_basic(t *testing.T) {
-	s, err := NewStorageForVersion("0.12.0")
+	s, err := NewStorageForVersion(testVersion(t, "0.12.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.ObtainSchemasForModule(context.Background(),
-		testExecutor(t, "./testdata/null-schema-0.12.json",
-			TempDir(t)), TempDir(t))
+	ctx := context.Background()
+	err = s.UpdateSchemas(ctx, parseSchemas(t, "./testdata/null-schema-0.12.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -427,18 +420,19 @@ func TestResources_basic(t *testing.T) {
 	}
 }
 
-func testExecutor(t *testing.T, pathToSchema, dir string) *exec.Executor {
+func parseSchemas(t *testing.T, pathToSchema string) *tfjson.ProviderSchemas {
 	b, err := ioutil.ReadFile(pathToSchema)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tfFactory := exec.MockExecutor(&exec.MockCall{
-		Args:   []string{"providers", "schema", "-json"},
-		Stdout: string(b),
-	})
+	var schemas tfjson.ProviderSchemas
+	err = json.Unmarshal(b, &schemas)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	return tfFactory(dir)
+	return &schemas
 }
 
 func TempDir(t *testing.T) string {
@@ -462,11 +456,10 @@ func TempDir(t *testing.T) string {
 	return tmpDir
 }
 
-func TestMain(m *testing.M) {
-	if v := os.Getenv("TF_LS_MOCK"); v != "" {
-		os.Exit(exec.ExecuteMockData(v))
-		return
+func testVersion(t *testing.T, v string) *version.Version {
+	ver, err := version.NewVersion(v)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	os.Exit(m.Run())
+	return ver
 }

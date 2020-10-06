@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/template"
 	"time"
@@ -66,12 +65,12 @@ func parseLogPath(rawPath string) (string, error) {
 }
 
 func ValidateExecLogPath(rawPath string) error {
-	_, err := parseExecLogPathTemplate([]string{}, rawPath)
+	_, err := parseExecLogPathTemplate("", rawPath)
 	return err
 }
 
-func ParseExecLogPath(args []string, rawPath string) (string, error) {
-	tpl, err := parseExecLogPathTemplate(args, rawPath)
+func ParseExecLogPath(method string, rawPath string) (string, error) {
+	tpl, err := parseExecLogPathTemplate(method, rawPath)
 	if err != nil {
 		return "", err
 	}
@@ -85,39 +84,21 @@ func ParseExecLogPath(args []string, rawPath string) (string, error) {
 	return buf.String(), nil
 }
 
-func parseExecLogPathTemplate(args []string, rawPath string) (*template.Template, error) {
+func parseExecLogPathTemplate(method string, rawPath string) (*template.Template, error) {
 	tpl := template.New("tf-log-file")
+	methodFunc := func() string {
+		return method
+	}
 	tpl = tpl.Funcs(template.FuncMap{
 		"timestamp": time.Now().Local().Unix,
 		"lsPid":     os.Getpid,
 		"lsPpid":    os.Getppid,
-		"args": func() string {
-			return escapeArguments(args)
-		},
+		"method":    methodFunc,
+
+		// DEPRECATED
+		"args": methodFunc,
 	})
 	return tpl.Parse(rawPath)
-}
-
-// escapeArguments turns arguments into a string
-// which is safe to use in a filename without any side-effects
-func escapeArguments(rawArgs []string) string {
-	unsafeCharsRe := regexp.MustCompile(`[^a-z-_]+`)
-
-	safeArgs := make([]string, len(rawArgs))
-	for _, rawArg := range rawArgs {
-		// Replace any unsafe character with a hyphen
-		safeArg := unsafeCharsRe.ReplaceAllString(rawArg, "-")
-		safeArgs = append(safeArgs, safeArg)
-	}
-
-	args := strings.Join(safeArgs, "-")
-
-	// Reduce hyphens to just one
-	hyphensRe := regexp.MustCompile(`[-]+`)
-	reduced := hyphensRe.ReplaceAllString(args, "-")
-
-	// Trim hyphens from both ends
-	return strings.Trim(reduced, "-")
 }
 
 func (fl *fileLogger) Logger() *log.Logger {

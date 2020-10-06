@@ -5,15 +5,17 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestInitialize_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()
@@ -39,10 +41,19 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
 			tmpDir.Dir(): {
-				TerraformExecQueue: &exec.MockCall{
-					Args:   []string{"version"},
-					Stdout: "Terraform v0.11.0\n",
-				},
+				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.11.0")),
+							nil,
+						},
+					},
+				}),
 			},
 		}}))
 	stop := ls.Start(t)
@@ -60,7 +71,7 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 func TestInitialize_withInvalidRootURI(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()

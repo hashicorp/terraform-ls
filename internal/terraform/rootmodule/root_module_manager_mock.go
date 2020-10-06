@@ -28,8 +28,8 @@ func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootMod
 }
 
 type RootModuleManagerMockInput struct {
-	RootModules        map[string]*RootModuleMock
-	TerraformExecQueue exec.MockItemDispenser
+	RootModules       map[string]*RootModuleMock
+	TfExecutorFactory exec.ExecutorFactory
 }
 
 func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManagerFactory {
@@ -48,7 +48,7 @@ func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManag
 
 	// mock terraform executor
 	if input != nil {
-		rmm.tfNewExecutor = exec.MockExecutor(input.TerraformExecQueue)
+		rmm.tfNewExecutor = input.TfExecutorFactory
 
 		if input.RootModules != nil {
 			rmf.rmm = input.RootModules

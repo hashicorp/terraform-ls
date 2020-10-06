@@ -11,9 +11,7 @@ type ExitError struct {
 	Err    *exec.ExitError
 	CtxErr error
 
-	Path   string
-	Stdout string
-	Stderr string
+	Method string
 }
 
 func (e *ExitError) Unwrap() error {
@@ -21,13 +19,11 @@ func (e *ExitError) Unwrap() error {
 }
 
 func (e *ExitError) Error() string {
-	out := fmt.Sprintf("terraform (pid %d) exited (code %d): %s\nstdout: %q\nstderr: %q",
+	out := fmt.Sprintf("terraform %q (pid %d) exited (code %d): %s",
+		e.Method,
 		e.Err.Pid(),
 		e.Err.ExitCode(),
-		e.Err.ProcessState.String(),
-		e.Stdout,
-		e.Stderr)
-
+		e.Err.ProcessState.String())
 	if e.CtxErr != nil {
 		return fmt.Sprintf("%s.\n%s", e.CtxErr, e.Err)
 	}
@@ -36,7 +32,7 @@ func (e *ExitError) Error() string {
 }
 
 type execTimeoutErr struct {
-	args     []string
+	method   string
 	duration time.Duration
 }
 
@@ -46,15 +42,15 @@ func (e *execTimeoutErr) Is(target error) bool {
 
 func (e *execTimeoutErr) Error() string {
 	return fmt.Sprintf("Execution of %q timed out after %s",
-		e.args, e.duration)
+		e.method, e.duration)
 }
 
-func ExecTimeoutError(args []string, duration time.Duration) *execTimeoutErr {
-	return &execTimeoutErr{args, duration}
+func ExecTimeoutError(method string, duration time.Duration) *execTimeoutErr {
+	return &execTimeoutErr{method, duration}
 }
 
 type execCanceledErr struct {
-	cmd []string
+	method string
 }
 
 func (e *execCanceledErr) Is(target error) bool {
@@ -62,9 +58,9 @@ func (e *execCanceledErr) Is(target error) bool {
 }
 
 func (e *execCanceledErr) Error() string {
-	return fmt.Sprintf("Execution of %q canceled", e.cmd)
+	return fmt.Sprintf("Execution of %q canceled", e.method)
 }
 
-func ExecCanceledError(cmd []string) *execCanceledErr {
-	return &execCanceledErr{cmd}
+func ExecCanceledError(method string) *execCanceledErr {
+	return &execCanceledErr{method}
 }

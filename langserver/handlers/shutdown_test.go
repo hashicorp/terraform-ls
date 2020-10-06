@@ -12,7 +12,7 @@ import (
 func TestShutdown_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()

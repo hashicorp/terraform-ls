@@ -6,8 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewRootModuleManagerMock_noMocks(t *testing.T) {
@@ -25,18 +28,7 @@ func TestNewRootModuleManagerMock_mocks(t *testing.T) {
 	f := NewRootModuleManagerMock(&RootModuleManagerMockInput{
 		RootModules: map[string]*RootModuleMock{
 			tmpDir: {
-				TerraformExecQueue: &exec.MockQueue{
-					Q: []*exec.MockItem{
-						{
-							Args:   []string{"version"},
-							Stdout: "Terraform v0.12.0\n",
-						},
-						{
-							Args:   []string{"providers", "schema", "-json"},
-							Stdout: `{"format_version":"0.1"}` + "\n",
-						},
-					},
-				},
+				TfExecFactory: validTfMockCalls(t, tmpDir),
 			},
 		}})
 	rmm := f(filesystem.NewFilesystem())
@@ -46,11 +38,36 @@ func TestNewRootModuleManagerMock_mocks(t *testing.T) {
 	}
 }
 
-func TestMain(m *testing.M) {
-	if v := os.Getenv("TF_LS_MOCK"); v != "" {
-		os.Exit(exec.ExecuteMockData(v))
-		return
-	}
-
-	os.Exit(m.Run())
+func validTfMockCalls(t *testing.T, workDir string) exec.ExecutorFactory {
+	return exec.NewMockExecutor([]*mock.Call{
+		{
+			Method:        "Version",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.emptyCtx"),
+			},
+			ReturnArguments: []interface{}{
+				version.Must(version.NewVersion("0.12.0")),
+				nil,
+			},
+		},
+		{
+			Method:        "GetExecPath",
+			Repeatability: 1,
+			ReturnArguments: []interface{}{
+				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.emptyCtx"),
+			},
+			ReturnArguments: []interface{}{
+				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				nil,
+			},
+		},
+	})
 }

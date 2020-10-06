@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 	"github.com/hashicorp/terraform-ls/langserver/session"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestCompletion_withoutInitialization(t *testing.T) {
@@ -33,21 +37,46 @@ func TestCompletion_withValidData(t *testing.T) {
 	t.Logf("will init at %s", tmpDir.Dir())
 	InitPluginCache(t, tmpDir.Dir())
 
+	var testSchema tfjson.ProviderSchemas
+	err := json.Unmarshal([]byte(testSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
 			tmpDir.Dir(): {
-				TerraformExecQueue: &exec.MockQueue{
-					Q: []*exec.MockItem{
-						{
-							Args:   []string{"version"},
-							Stdout: "Terraform v0.12.0\n",
+				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
 						},
-						{
-							Args:   []string{"providers", "schema", "-json"},
-							Stdout: testSchemaOutput,
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
 						},
 					},
-				},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				}),
 			},
 		}}))
 	stop := ls.Start(t)
