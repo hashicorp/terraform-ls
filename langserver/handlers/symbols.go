@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
@@ -39,22 +38,10 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 
 	// TODO: block until it's available <-pf.ParserLoadingDone()
 	// requires https://github.com/hashicorp/terraform-ls/issues/8
-	// TODO: replace crude wait/timeout loop
-	var isParserLoaded bool
-	var elapsed time.Duration
-	sleepFor := 10 * time.Millisecond
-	maxWait := 3 * time.Second
-	for !isParserLoaded {
-		time.Sleep(sleepFor)
-		elapsed += sleepFor
-		if elapsed >= maxWait {
-			return symbols, fmt.Errorf("parser is not available yet for %s", file.Dir())
-		}
-		var err error
-		isParserLoaded, err = pf.IsParserLoaded(file.Dir())
-		if err != nil {
-			return symbols, err
-		}
+	if err := Waiter(func() (bool, error) {
+		return pf.IsSchemaLoaded(file.Dir())
+	}).Waitf("parser is not available yet for %s", file.Dir()); err != nil {
+		return symbols, err
 	}
 
 	p, err := pf.ParserForDir(file.Dir())
