@@ -234,6 +234,18 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
+		"workspace/executeCommand": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
+			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
+
+			return handle(ctx, req, lh.WorkspaceExecuteCommand)
+		},
 		"shutdown": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.Shutdown(req)
 			if err != nil {
