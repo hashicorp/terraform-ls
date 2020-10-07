@@ -1,5 +1,3 @@
-export GOFLAGS = -mod=vendor
-
 default: test
 
 fmt:

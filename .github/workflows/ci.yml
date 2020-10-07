@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+env:
+  GOPROXY: https://proxy.golang.org/
+
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -26,7 +29,9 @@ jobs:
           echo "::set-output name=content::$content"
       -
         name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
+        env:
+          GOPROXY: https://proxy.golang.org/
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
@@ -69,11 +74,14 @@ jobs:
           echo "::set-output name=content::$content"
       -
         name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version-unix.outputs.content || steps.go-version-win.outputs.content }}
+      -
+        name: Go mod download
+        run: go mod download -x
       -
         name: Go mod verify
         run: go mod verify
