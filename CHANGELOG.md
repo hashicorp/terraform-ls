@@ -6,7 +6,7 @@ FEATURES:
 
 INTERNAL:
 
- - Replace most of terraform/exec w/ terraform-exec [GH-271]
+ - Replace most of `internal/terraform/exec` with [`hashicorp/terraform-exec`](https://github.com/hashicorp/terraform-exec) [GH-271]
 
 ## 0.7.0 (2 September 2020)
 
