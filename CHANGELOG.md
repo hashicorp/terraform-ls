@@ -4,6 +4,10 @@ FEATURES:
 
  - HCL diagnostics support [GH-269]
 
+INTERNAL:
+
+ - Replace most of terraform/exec w/ terraform-exec [GH-271]
+
 ## 0.7.0 (2 September 2020)
 
 FEATURES:
