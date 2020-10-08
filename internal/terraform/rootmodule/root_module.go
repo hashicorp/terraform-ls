@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
@@ -48,7 +49,7 @@ type rootModule struct {
 	// terraform executor
 	tfLoaded      bool
 	tfLoadedMu    *sync.RWMutex
-	tfExec        *exec.Executor
+	tfExec        exec.TerraformExecutor
 	tfNewExecutor exec.ExecutorFactory
 	tfExecPath    string
 	tfExecTimeout time.Duration
@@ -57,7 +58,7 @@ type rootModule struct {
 	// terraform discovery
 	tfDiscoFunc  discovery.DiscoveryFunc
 	tfDiscoErr   error
-	tfVersion    string
+	tfVersion    *version.Version
 	tfVersionErr error
 
 	// language parser
@@ -260,9 +261,11 @@ func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 		}
 	}
 
-	tf := rm.tfNewExecutor(tfPath)
+	tf, err := rm.tfNewExecutor(rm.path, tfPath)
+	if err != nil {
+		return err
+	}
 
-	tf.SetWorkdir(rm.path)
 	tf.SetLogger(rm.logger)
 
 	if rm.tfExecLogPath != "" {
@@ -294,7 +297,7 @@ func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 }
 
 func (rm *rootModule) findCompatibleStateStorage() error {
-	if rm.tfVersion == "" {
+	if rm.tfVersion == nil {
 		return errors.New("unknown terraform version - unable to find state storage")
 	}
 
@@ -317,7 +320,7 @@ func (rm *rootModule) findCompatibleLangParser() error {
 		rm.setParserLoaded(true)
 	}()
 
-	if rm.tfVersion == "" {
+	if rm.tfVersion == nil {
 		return errors.New("unknown terraform version - unable to find parser")
 	}
 
@@ -492,7 +495,7 @@ func (rm *rootModule) TerraformFormatter() (exec.Formatter, error) {
 		return nil, fmt.Errorf("no terraform executor available")
 	}
 
-	return rm.tfExec.FormatterForVersion(rm.tfVersion)
+	return rm.tfExec.Format, nil
 }
 
 func (rm *rootModule) IsTerraformLoaded() bool {
@@ -531,8 +534,12 @@ func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) erro
 
 	rm.pluginLockFile = lockFile
 
-	return rm.schemaStorage.ObtainSchemasForModule(ctx,
-		rm.tfExec, rootModuleDirFromFilePath(lockFile.Path()))
+	schemas, err := rm.tfExec.ProviderSchemas(ctx)
+	if err != nil {
+		return err
+	}
+
+	return rm.schemaStorage.UpdateSchemas(ctx, schemas)
 }
 
 func (rm *rootModule) PathsToWatch() []string {

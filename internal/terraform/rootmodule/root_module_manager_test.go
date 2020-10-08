@@ -10,9 +10,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
@@ -459,29 +462,42 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 	rmm := newRootModuleManager(fs)
 	rmm.syncLoading = true
 	rmm.logger = testLogger()
+
 	rmm.newRootModule = func(ctx context.Context, dir string) (*rootModule, error) {
+		// TODO(RS): Should be just 1, unsure why it requires 2
+		repeatability := 2
 		rm := NewRootModuleMock(&RootModuleMock{
-			TerraformExecQueue: &exec.MockQueue{
-				Q: []*exec.MockItem{
-					// TODO: Pass mock items as argument to make testing more accurate
-					{
-						Args:   []string{"version"},
-						Stdout: "Terraform v0.12.0\n",
+			TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+				{
+					Method:        "Version",
+					Repeatability: repeatability,
+					Arguments: []interface{}{
+						mock.AnythingOfType(""),
 					},
-					{
-						Args:   []string{"providers", "schema", "-json"},
-						Stdout: "{\"format_version\":\"0.1\"}\n",
-					},
-					{
-						Args:   []string{"version"},
-						Stdout: "Terraform v0.12.0\n",
-					},
-					{
-						Args:   []string{"providers", "schema", "-json"},
-						Stdout: "{\"format_version\":\"0.1\"}\n",
+					ReturnArguments: []interface{}{
+						version.Must(version.NewVersion("0.12.0")),
+						nil,
 					},
 				},
-			},
+				{
+					Method:        "GetExecPath",
+					Repeatability: repeatability,
+					ReturnArguments: []interface{}{
+						"",
+					},
+				},
+				{
+					Method:        "ProviderSchemas",
+					Repeatability: repeatability,
+					Arguments: []interface{}{
+						mock.AnythingOfType(""),
+					},
+					ReturnArguments: []interface{}{
+						&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+						nil,
+					},
+				},
+			}),
 		}, dir)
 		rm.logger = testLogger()
 		md := &discovery.MockDiscovery{Path: "tf-mock"}

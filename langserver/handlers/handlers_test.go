@@ -7,16 +7,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestInitalizeAndShutdown(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()
@@ -54,7 +57,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 func TestEOF(t *testing.T) {
 	ms := newMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TerraformExecQueue: validTfMockCalls()},
+			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}})
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
@@ -96,28 +99,32 @@ func TestEOF(t *testing.T) {
 	}
 }
 
-func validTfMockCalls() *exec.MockQueue {
-	return &exec.MockQueue{
-		Q: []*exec.MockItem{
-			{
-				Args:   []string{"version"},
-				Stdout: "Terraform v0.12.0\n",
+func validTfMockCalls() exec.ExecutorFactory {
+	return exec.NewMockExecutor([]*mock.Call{
+		{
+			Method:        "Version",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
 			},
-			{
-				Args:   []string{"providers", "schema", "-json"},
-				Stdout: "{\"format_version\":\"0.1\"}\n",
+			ReturnArguments: []interface{}{
+				version.Must(version.NewVersion("0.12.0")),
+				map[string]*version.Version{},
+				nil,
 			},
 		},
-	}
-}
-
-func TestMain(m *testing.M) {
-	if v := os.Getenv("TF_LS_MOCK"); v != "" {
-		os.Exit(exec.ExecuteMockData(v))
-		return
-	}
-
-	os.Exit(m.Run())
+		{
+			Method:        "ProvidersSchema",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
+			},
+			ReturnArguments: []interface{}{
+				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				nil,
+			},
+		},
+	})
 }
 
 func TempDir(t *testing.T) lsp.FileHandler {

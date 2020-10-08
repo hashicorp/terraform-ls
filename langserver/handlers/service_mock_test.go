@@ -14,8 +14,8 @@ import (
 )
 
 type MockSessionInput struct {
-	RootModules        map[string]*rootmodule.RootModuleMock
-	ManagerTfExecQueue exec.MockItemDispenser
+	RootModules       map[string]*rootmodule.RootModuleMock
+	TfExecutorFactory exec.ExecutorFactory
 }
 
 type mockSession struct {
@@ -32,8 +32,8 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	var input *rootmodule.RootModuleManagerMockInput
 	if ms.mockInput != nil {
 		input = &rootmodule.RootModuleManagerMockInput{
-			RootModules:        ms.mockInput.RootModules,
-			TerraformExecQueue: ms.mockInput.ManagerTfExecQueue,
+			RootModules:       ms.mockInput.RootModules,
+			TfExecutorFactory: ms.mockInput.TfExecutorFactory,
 		}
 	}
 

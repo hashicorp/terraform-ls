@@ -1,12 +1,13 @@
 package schema
 
 import (
+	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 )
 
 func NewMockStorage(ps *tfjson.ProviderSchemas) StorageFactory {
-	return func(v string) (*Storage, error) {
+	return func(v *version.Version) (*Storage, error) {
 		s, err := NewStorageForVersion(v)
 		if err != nil {
 			return nil, err
@@ -31,7 +32,8 @@ type MockReader struct {
 }
 
 func (r *MockReader) storage() *Storage {
-	ss, _ := NewMockStorage(r.ProviderSchemas)("0.12.0")
+	ver := version.Must(version.NewVersion("0.12.0"))
+	ss, _ := NewMockStorage(r.ProviderSchemas)(ver)
 	// TODO: err handling
 	return ss
 }

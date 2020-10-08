@@ -9,8 +9,8 @@ import (
 )
 
 type RootModuleMock struct {
-	TerraformExecQueue exec.MockItemDispenser
-	ProviderSchemas    *tfjson.ProviderSchemas
+	TfExecFactory   exec.ExecutorFactory
+	ProviderSchemas *tfjson.ProviderSchemas
 }
 
 func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
@@ -22,7 +22,7 @@ func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
 	rm.tfDiscoFunc = md.LookPath
 
 	// mock terraform executor
-	rm.tfNewExecutor = exec.MockExecutor(rmm.TerraformExecQueue)
+	rm.tfNewExecutor = rmm.TfExecFactory
 
 	if rmm.ProviderSchemas == nil {
 		rm.newSchemaStorage = schema.NewStorageForVersion

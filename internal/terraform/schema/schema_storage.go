@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
 	tferr "github.com/hashicorp/terraform-ls/internal/terraform/errors"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -25,10 +23,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	// TODO: Consider decoupling TF exec logic and replace
-	// with UpdateSchemas(*tfjson.ProviderSchemas) which may be more suitable
-	// in relation to https://github.com/hashicorp/terraform-ls/issues/193
-	ObtainSchemasForModule(context.Context, *exec.Executor, string) error
+	UpdateSchemas(*tfjson.ProviderSchemas) error
 }
 
 type Resource struct {
@@ -45,7 +40,7 @@ type DataSource struct {
 	DescriptionKind tfjson.SchemaDescriptionKind
 }
 
-type StorageFactory func(v string) (*Storage, error)
+type StorageFactory func(v *version.Version) (*Storage, error)
 
 type Storage struct {
 	ps        *tfjson.ProviderSchemas
@@ -59,7 +54,7 @@ type Storage struct {
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
-func NewStorageForVersion(tfVersion string) (*Storage, error) {
+func NewStorageForVersion(tfVersion *version.Version) (*Storage, error) {
 	c, err := version.NewConstraint(
 		">= 0.12.0", // Version 0.12 first introduced machine-readable schemas
 	)
@@ -67,7 +62,7 @@ func NewStorageForVersion(tfVersion string) (*Storage, error) {
 		return nil, fmt.Errorf("failed to parse constraint: %w", err)
 	}
 
-	ver, err := parseVersion(tfVersion)
+	ver, err := semanticVersion(tfVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +71,7 @@ func NewStorageForVersion(tfVersion string) (*Storage, error) {
 	if !supported {
 		return nil, &tferr.UnsupportedTerraformVersion{
 			Component:   "schema storage",
-			Version:     tfVersion,
+			Version:     tfVersion.String(),
 			Constraints: c,
 		}
 	}
@@ -88,12 +83,7 @@ func NewStorageForVersion(tfVersion string) (*Storage, error) {
 	}, nil
 }
 
-func parseVersion(rawVersion string) (*version.Version, error) {
-	ver, err := version.NewVersion(rawVersion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse version: %w", err)
-	}
-
+func semanticVersion(ver *version.Version) (*version.Version, error) {
 	// Assume that alpha/beta/rc prereleases have the same compatibility
 	segments := ver.Segments64()
 	segmentsOnly := fmt.Sprintf("%d.%d.%d", segments[0], segments[1], segments[2])
@@ -104,30 +94,13 @@ func (s *Storage) SetLogger(logger *log.Logger) {
 	s.logger = logger
 }
 
-// ObtainSchemasForModule will obtain schema via tf
-// and store it for later consumption via Reader methods
-func (s *Storage) ObtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
-	return s.obtainSchemasForModule(ctx, tf, dir)
-}
-
-func (s *Storage) obtainSchemasForModule(ctx context.Context, tf *exec.Executor, dir string) error {
-	s.logger.Printf("Acquiring semaphore before retrieving schema for %q ...", dir)
-	err := s.sem.Acquire(context.Background(), 1)
+func (s *Storage) UpdateSchemas(ctx context.Context, ps *tfjson.ProviderSchemas) error {
+	err := s.sem.Acquire(ctx, 1)
 	if err != nil {
 		return fmt.Errorf("failed to acquire semaphore: %w", err)
 	}
 	defer s.sem.Release(1)
-
-	tf.SetWorkdir(dir)
-
-	s.logger.Printf("Retrieving schemas for %q ...", dir)
-	start := time.Now()
-	ps, err := tf.ProviderSchemas(ctx)
-	if err != nil {
-		return fmt.Errorf("Unable to retrieve schemas for %q: %w", dir, err)
-	}
 	s.ps = ps
-	s.logger.Printf("Schemas retrieved for %q in %s", dir, time.Since(start))
 	return nil
 }
 

@@ -223,7 +223,7 @@ func (rmm *rootModuleManager) TerraformFormatterForDir(ctx context.Context, path
 	return rm.TerraformFormatter()
 }
 
-func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, path string) (exec.Formatter, error) {
+func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, workDir string) (exec.Formatter, error) {
 	tfPath := rmm.tfExecPath
 	if tfPath == "" {
 		var err error
@@ -233,9 +233,11 @@ func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, path st
 		}
 	}
 
-	tf := rmm.tfNewExecutor(tfPath)
+	tf, err := rmm.tfNewExecutor(workDir, tfPath)
+	if err != nil {
+		return nil, err
+	}
 
-	tf.SetWorkdir(path)
 	tf.SetLogger(rmm.logger)
 
 	if rmm.tfExecLogPath != "" {
@@ -252,7 +254,7 @@ func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, path st
 	}
 	rmm.logger.Printf("Terraform version %s found at %s (alternative)", version, tf.GetExecPath())
 
-	return tf.FormatterForVersion(version)
+	return tf.Format, nil
 }
 
 func (rmm *rootModuleManager) IsTerraformLoaded(path string) (bool, error) {

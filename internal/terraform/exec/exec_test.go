@@ -1,24 +1,22 @@
 package exec
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform-exec/tfinstall"
 )
 
 func TestExec_timeout(t *testing.T) {
-	e := MockExecutor(&MockCall{
-		Args:          []string{"version"},
-		SleepDuration: 100 * time.Millisecond,
-		Stdout:        "Terraform v0.12.0\n",
-	})("")
-	e.SetWorkdir(os.TempDir())
-	e.timeout = 1 * time.Millisecond
+	e := newExecutor(t)
+	timeout := 1 * time.Millisecond
+	e.SetTimeout(timeout)
 
-	expectedErr := ExecTimeoutError([]string{"terraform", "version"}, e.timeout)
+	expectedErr := ExecTimeoutError("Version", timeout)
 
 	_, err := e.Version(context.Background())
 	if err != nil {
@@ -30,60 +28,69 @@ func TestExec_timeout(t *testing.T) {
 			expectedErr, err)
 	}
 
-	t.Fatalf("expected timeout error: %#v", expectedErr)
+	t.Fatalf("expected timeout error: %#v, given: %#v", expectedErr, err)
 }
 
-func TestExec_Version(t *testing.T) {
-	e := MockExecutor(&MockCall{
-		Args:     []string{"version"},
-		Stdout:   "Terraform v0.12.0\n",
-		ExitCode: 0,
-	})("")
-	e.SetWorkdir(os.TempDir())
-	v, err := e.Version(context.Background())
+func TestExec_cancel(t *testing.T) {
+	e := newExecutor(t)
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	cancelFunc()
+
+	expectedErr := ExecCanceledError("Version")
+
+	_, err := e.Version(ctx)
+	if err != nil {
+		if errors.Is(err, expectedErr) {
+			return
+		}
+
+		t.Fatalf("errors don't match.\nexpected: %#v\ngiven:    %#v\n",
+			expectedErr, err)
+	}
+
+	t.Fatalf("expected cancel error: %#v, given: %#v", expectedErr, err)
+}
+
+func newExecutor(t *testing.T) TerraformExecutor {
+	tmpDir := TempDir(t)
+	workDir := filepath.Join(tmpDir, "workdir")
+	err := os.MkdirAll(workDir, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v != "0.12.0" {
-		t.Fatalf("output does not match: %#v", v)
-	}
-}
-
-func TestExec_Format(t *testing.T) {
-	expectedOutput := []byte("formatted config")
-	e := MockExecutor(&MockCall{
-		Args:     []string{"fmt", "-"},
-		Stdout:   string(expectedOutput),
-		ExitCode: 0,
-	})("")
-	e.SetWorkdir(os.TempDir())
-	out, err := e.Format(context.Background(), []byte("unformatted"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !bytes.Equal(out, expectedOutput) {
-		t.Fatalf("Expected output: %q\nGiven: %q\n",
-			string(expectedOutput), string(out))
-	}
-}
-
-func TestExec_ProviderSchemas(t *testing.T) {
-	e := MockExecutor(&MockCall{
-		Args:     []string{"providers", "schema", "-json"},
-		Stdout:   `{"format_version": "0.1"}`,
-		ExitCode: 0,
-	})("")
-	e.SetWorkdir(os.TempDir())
-
-	ps, err := e.ProviderSchemas(context.Background())
+	installDir := filepath.Join(tmpDir, "installdir")
+	err = os.MkdirAll(installDir, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedVersion := "0.1"
-	if ps.FormatVersion != expectedVersion {
-		t.Fatalf("format version doesn't match.\nexpected: %q\ngiven: %q\n",
-			expectedVersion, ps.FormatVersion)
+	opts := tfinstall.ExactVersion("0.13.1", installDir)
+	execPath, err := opts.ExecPath(context.Background())
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	e, err := NewExecutor(workDir, execPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return e
+}
+
+func TempDir(t *testing.T) string {
+	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
+
+	err := os.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	return tmpDir
 }
