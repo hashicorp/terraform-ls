@@ -222,9 +222,10 @@ func (p *parser) ParseBlockFromTokens(tBlock ihcl.TokenizedBlock) (ConfigBlock, 
 	// It is probably excessive to be parsing the whole block just for type
 	// but there is no avoiding it without refactoring the upstream HCL parser
 	// and it should not hurt the performance too much
-	//
-	// We ignore diags as we assume incomplete (invalid) configuration
-	block, _ := hclsyntax.ParseBlockFromTokens(tBlock.Tokens())
+	block, diags := hclsyntax.ParseBlockFromTokens(tBlock.Tokens())
+	if block == nil {
+		return nil, diags
+	}
 
 	p.logger.Printf("Parsed block type: %q", block.Type)
 
