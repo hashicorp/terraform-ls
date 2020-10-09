@@ -1,12 +1,12 @@
-## 0.8.0 (Unreleased)
+## 0.8.0 (9 October 2020)
 
 FEATURES:
 
- - HCL diagnostics support [GH-269]
+ - HCL diagnostics support ([#269](https://github.com/hashicorp/terraform-ls/pull/269))
 
 INTERNAL:
 
- - Replace most of `internal/terraform/exec` with [`hashicorp/terraform-exec`](https://github.com/hashicorp/terraform-exec) [GH-271]
+ - Replace most of `internal/terraform/exec` with [`hashicorp/terraform-exec`](https://github.com/hashicorp/terraform-exec) ([#271](https://github.com/hashicorp/terraform-ls/pull/271))
 
 ## 0.7.0 (2 September 2020)
 
