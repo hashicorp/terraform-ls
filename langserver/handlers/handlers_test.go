@@ -109,12 +109,18 @@ func validTfMockCalls() exec.ExecutorFactory {
 			},
 			ReturnArguments: []interface{}{
 				version.Must(version.NewVersion("0.12.0")),
-				map[string]*version.Version{},
 				nil,
 			},
 		},
 		{
-			Method:        "ProvidersSchema",
+			Method:        "GetExecPath",
+			Repeatability: 1,
+			ReturnArguments: []interface{}{
+				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
 			Repeatability: 1,
 			Arguments: []interface{}{
 				mock.AnythingOfType(""),
