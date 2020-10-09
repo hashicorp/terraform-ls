@@ -4,6 +4,10 @@ FEATURES:
 
  - HCL diagnostics support ([#269](https://github.com/hashicorp/terraform-ls/pull/269))
 
+BUG FIXES:
+
+ - fix: prevent crash when listing symbols in invalid config ([#273](https://github.com/hashicorp/terraform-ls/pull/273))
+
 INTERNAL:
 
  - Replace most of `internal/terraform/exec` with [`hashicorp/terraform-exec`](https://github.com/hashicorp/terraform-exec) ([#271](https://github.com/hashicorp/terraform-ls/pull/271))
