@@ -70,7 +70,7 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 	for _, block := range blocks {
 		symbols = append(symbols, lsp.SymbolInformation{
 			Name: symbolName(block),
-			Kind: lsp.SKStruct, // We don't have a great SymbolKind match for blocks
+			Kind: lsp.SKClass, // most applicable kind for now
 			Location: lsp.Location{
 				Range: ilsp.HCLRangeToLSP(block.Range()),
 				URI:   params.TextDocument.URI,
