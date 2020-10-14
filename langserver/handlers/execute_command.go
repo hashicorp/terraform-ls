@@ -13,6 +13,14 @@ var executeCommandHandlers = map[string]executeCommandHandler{
 	"rootmodules": executeCommandRootModulesHandler,
 }
 
+func Commands() []string {
+	var commands []string
+	for command := range executeCommandHandlers {
+		commands = append(commands, command)
+	}
+	return commands
+}
+
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
 	handler, ok := executeCommandHandlers[params.Command]
 	if !ok {
