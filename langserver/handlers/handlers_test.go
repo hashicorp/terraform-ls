@@ -29,7 +29,7 @@ const intializeResponse = `{
 			"documentSymbolProvider":true,
 			"documentFormattingProvider":true,
 			"executeCommandProvider": {
-				"commands": ["rootmodule"]
+				"commands": ["rootmodules"]
 			}
 		}
 	}
