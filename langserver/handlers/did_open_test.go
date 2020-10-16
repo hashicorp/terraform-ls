@@ -21,7 +21,7 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
-			"text": "provider \"github\" {\n\n}\n",
+			"text": "provider \"github\" {}",
 			"uri": "%s/main.tf"
 		}
 	}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())

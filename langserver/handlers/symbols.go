@@ -38,6 +38,9 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 
 	// TODO: block until it's available <-pf.ParserLoadingDone()
 	// requires https://github.com/hashicorp/terraform-ls/issues/8
+	// textDocument/documentSymbol fires early alongside textDocument/didOpen
+	// the protocol does not retry the request, so it's best to give the parser
+	// a moment
 	if err := Waiter(func() (bool, error) {
 		return pf.IsSchemaLoaded(file.Dir())
 	}).Waitf("parser is not available yet for %s", file.Dir()); err != nil {

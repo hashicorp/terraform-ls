@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.Dir())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -40,8 +42,8 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
-			"text": "provider \"github\"\n\n}\n",
-			"uri": "%s"
+			"text": "provider \"github\" {}",
+			"uri": %q
 		}
 	}`, testFileURI)})
 
@@ -49,5 +51,5 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 		Method: "workspace/executeCommand",
 		ReqParams: `{
 		"command": "notfound"
-	}`}, commandHandlerNotFound.Err())
+	}`}, code.MethodNotFound.Err())
 }

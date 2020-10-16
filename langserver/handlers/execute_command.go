@@ -11,25 +11,24 @@ import (
 )
 
 type executeCommandHandler func(context.Context, commandArgs) (interface{}, error)
+type executeCommandHandlers map[string]executeCommandHandler
 
-var executeCommandHandlers = map[string]executeCommandHandler{
+var handlers = executeCommandHandlers{
 	"rootmodules": executeCommandRootModulesHandler,
 }
 
-const commandHandlerNotFound code.Code = -32003
-
-func Commands() []string {
-	var commands []string
-	for command := range executeCommandHandlers {
-		commands = append(commands, command)
+func (h executeCommandHandlers) Names() []string {
+	var names []string
+	for name := range h {
+		names = append(names, name)
 	}
-	return commands
+	return names
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
-	handler, ok := executeCommandHandlers[params.Command]
+	handler, ok := handlers[params.Command]
 	if !ok {
-		return nil, fmt.Errorf("%w: command handler not found for %q", commandHandlerNotFound.Err(), params.Command)
+		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}
 	return handler(ctx, parseCommandArgs(params.Arguments))
 }
