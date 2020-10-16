@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/creachadair/jrpc2"
@@ -75,8 +76,18 @@ func hclDiags(docs <-chan documentContext) {
 		if err := jrpc2.PushNotify(doc.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         doc.uri,
 			Diagnostics: hclParse(doc),
-		}); err != nil {
+		}); fatalError(err) {
 			panic(err)
 		}
 	}
+}
+
+func fatalError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if strings.Contains(err.Error(), "client connection is closed") {
+		return false
+	}
+	return true
 }
