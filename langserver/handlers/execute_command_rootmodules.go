@@ -3,24 +3,25 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
 const rootmodulesCommandResponseVersion = 0
-const rootmodulesCommandFileArgNotFound code.Code = -32004
 
 type rootmodulesCommandResponse struct {
-	Version     int              `json:"version"`
-	DoneLoading bool             `json:"doneLoading"`
-	RootModules []rootModuleInfo `json:"rootModules"`
+	ResponseVersion int              `json:"responseVersion"`
+	DoneLoading     bool             `json:"doneLoading"`
+	RootModules     []rootModuleInfo `json:"rootModules"`
 }
 
 type rootModuleInfo struct {
-	Path string `json:"path"`
+	URI string `json:"uri"`
 }
 
 func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (interface{}, error) {
@@ -29,13 +30,12 @@ func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (in
 		return nil, err
 	}
 
-	file, ok := args.GetString("file")
-	if !ok || file == "" {
-		return nil, fmt.Errorf("%w: expected file argument to be set", rootmodulesCommandFileArgNotFound.Err())
+	uri, ok := args.GetString("uri")
+	if !ok || uri == "" {
+		return nil, fmt.Errorf("%w: expected uri argument to be set", code.InvalidParams.Err())
 	}
 
-	uri := lsp.DocumentURI(file)
-	fh := ilsp.FileHandlerFromDocumentURI(uri)
+	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(uri))
 
 	cf, err := lsctx.RootModuleCandidateFinder(ctx)
 	if err != nil {
@@ -47,12 +47,15 @@ func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (in
 	rootModules := make([]rootModuleInfo, len(candidates))
 	for i, candidate := range candidates {
 		rootModules[i] = rootModuleInfo{
-			Path: candidate.Path(),
+			URI: filesystem.URIFromPath(candidate.Path()),
 		}
 	}
+	sort.SliceStable(rootModules, func(i, j int) bool {
+		return rootModules[i].URI < rootModules[j].URI
+	})
 	return rootmodulesCommandResponse{
-		Version:     rootmodulesCommandResponseVersion,
-		DoneLoading: doneLoading,
-		RootModules: rootModules,
+		ResponseVersion: rootmodulesCommandResponseVersion,
+		DoneLoading:     doneLoading,
+		RootModules:     rootModules,
 	}, nil
 }

@@ -2,12 +2,16 @@ package diagnostics
 
 import (
 	"context"
+	"io/ioutil"
+	"log"
 	"testing"
 )
 
+var discardLogger = log.New(ioutil.Discard, "", 0)
+
 func TestDiagnoseHCL_Closes(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	n := NewNotifier(ctx)
+	n := NewNotifier(ctx, discardLogger)
 	cancel()
 	n.DiagnoseHCL(context.Background(), "", []byte{})
 	if _, open := <-n.hclDocs; open {
@@ -22,7 +26,7 @@ func TestDiagnoseHCL_DoesNotSendAfterClose(t *testing.T) {
 		}
 	}()
 	ctx, cancel := context.WithCancel(context.Background())
-	n := NewNotifier(ctx)
+	n := NewNotifier(ctx, discardLogger)
 	cancel()
 	n.DiagnoseHCL(context.Background(), "", []byte{})
 	n.DiagnoseHCL(context.Background(), "", []byte{})

@@ -142,7 +142,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	}
 
 	rmLoader := rootmodule.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
-	diags := diagnostics.NewNotifier(svc.sessCtx)
+	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
 

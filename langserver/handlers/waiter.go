@@ -16,8 +16,8 @@ type waiter struct {
 func Waiter(fn waitFn) *waiter {
 	return &waiter{
 		fn:      fn,
-		sleep:   10 * time.Millisecond,
-		timeout: 3 * time.Second,
+		sleep:   10 * time.Millisecond, // arbitrary sleep interval
+		timeout: 3 * time.Second,       // arbitrary timeout
 	}
 }
 

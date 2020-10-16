@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"main","Source":"../../main","Dir":"../../main"},{"Key":"main.db","Source":"../modules/database","Dir":"../../modules/database"},{"Key":"main.gorilla-app","Source":"../modules/application","Dir":"../../modules/application"}]}

@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const intializeResponse = `{
+const initializeResponse = `{
 	"jsonrpc": "2.0",
 	"id": 1,
 	"result": {
@@ -49,7 +49,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, intializeResponse)
+	}`, TempDir(t).URI())}, initializeResponse)
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -74,7 +74,7 @@ func TestEOF(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, intializeResponse)
+	}`, TempDir(t).URI())}, initializeResponse)
 
 	ls.CloseClientStdout(t)
 
@@ -124,23 +124,35 @@ func validTfMockCalls() exec.ExecutorFactory {
 	})
 }
 
-func TempDir(t *testing.T) lsp.FileHandler {
+// TempDir creates a temporary directory containing the test name, as well any
+// additional nested dir specified, use slash "/" to nest for more complex
+// setups
+//
+//  ex: TempDir(t, "a/b", "c")
+//  ├── a
+//  │   └── b
+//  └── c
+//
+// The returned filehandler is the parent tmp dir
+func TempDir(t *testing.T, nested ...string) lsp.FileHandler {
 	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
-
 	err := os.MkdirAll(tmpDir, 0755)
-	if err != nil {
-		if os.IsExist(err) {
-			return lsp.FileHandlerFromDirPath(tmpDir)
-		}
+	if err != nil && !os.IsExist(err) {
 		t.Fatal(err)
 	}
-
 	t.Cleanup(func() {
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
+
+	for _, dir := range nested {
+		err := os.MkdirAll(filepath.Join(tmpDir, filepath.FromSlash(dir)), 0755)
+		if err != nil && !os.IsExist(err) {
+			t.Fatal(err)
+		}
+	}
 
 	return lsp.FileHandlerFromDirPath(tmpDir)
 }

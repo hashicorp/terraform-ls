@@ -39,7 +39,7 @@ func TestLangServer_symbols_basic(t *testing.T) {
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
-			"text": "provider \"github\"\n\n}\n",
+			"text": "provider \"github\" {}",
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI())})

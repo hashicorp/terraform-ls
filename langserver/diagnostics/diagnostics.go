@@ -2,7 +2,7 @@ package diagnostics
 
 import (
 	"context"
-	"strings"
+	"log"
 	"sync"
 
 	"github.com/creachadair/jrpc2"
@@ -25,9 +25,9 @@ type Notifier struct {
 	closeHclDocsOnce sync.Once
 }
 
-func NewNotifier(sessCtx context.Context) *Notifier {
+func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 	hclDocs := make(chan documentContext, 10)
-	go hclDiags(hclDocs)
+	go hclDiags(hclDocs, logger)
 	return &Notifier{hclDocs: hclDocs, sessCtx: sessCtx}
 }
 
@@ -68,7 +68,7 @@ func hclParse(doc documentContext) []lsp.Diagnostic {
 	return diags
 }
 
-func hclDiags(docs <-chan documentContext) {
+func hclDiags(docs <-chan documentContext, logger *log.Logger) {
 	for doc := range docs {
 		// always push diagnostics, even if the slice is empty, this is how previous diagnostics are cleared
 		// any push error will result in a panic since this is executing in its own thread and we can't bubble
@@ -76,18 +76,8 @@ func hclDiags(docs <-chan documentContext) {
 		if err := jrpc2.PushNotify(doc.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         doc.uri,
 			Diagnostics: hclParse(doc),
-		}); fatalError(err) {
-			panic(err)
+		}); err != nil {
+			logger.Printf("Error pushing hcl diagnostics: %s", err)
 		}
 	}
-}
-
-func fatalError(err error) bool {
-	if err == nil {
-		return false
-	}
-	if strings.Contains(err.Error(), "client connection is closed") {
-		return false
-	}
-	return true
 }
