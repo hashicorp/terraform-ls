@@ -1,3 +1,9 @@
+## 0.9.0 (Unreleased)
+
+FEATURES:
+
+ - Support for `workspace/executeCommand` with new `rootmodules` inspection command ([#274](https://github.com/hashicorp/terraform-ls/pull/274))
+
 ## 0.8.0 (9 October 2020)
 
 FEATURES:
