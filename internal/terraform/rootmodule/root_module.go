@@ -8,17 +8,21 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
-	"github.com/hashicorp/terraform-ls/internal/terraform/addrs"
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/schema"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
+	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
 type rootModule struct {
@@ -38,17 +42,15 @@ type rootModule struct {
 	moduleManifestFile File
 	moduleManifest     *moduleManifest
 
-	// plugin cache
+	// plugin (provider schema) cache
 	pluginMu         *sync.RWMutex
 	pluginLockFile   File
-	newSchemaStorage schema.StorageFactory
-	schemaStorage    *schema.Storage
-	schemaLoaded     bool
-	schemaLoadedMu   *sync.RWMutex
+	providerSchema   *tfjson.ProviderSchemas
+	providerSchemaMu *sync.RWMutex
 
 	// terraform executor
-	tfLoaded      bool
-	tfLoadedMu    *sync.RWMutex
+	tfLoadingDone bool
+	tfLoadingMu   *sync.RWMutex
 	tfExec        exec.TerraformExecutor
 	tfNewExecutor exec.ExecutorFactory
 	tfExecPath    string
@@ -61,44 +63,52 @@ type rootModule struct {
 	tfVersion    *version.Version
 	tfVersionErr error
 
-	// language parser
-	parserLoaded bool
-	parserMu     *sync.RWMutex
-	parser       lang.Parser
+	// core schema
+	coreSchemaLoaded bool
+	coreSchema       *schema.BodySchema
+	coreSchemaMu     *sync.RWMutex
 
-	// provider references
-	filesystem     tfconfig.FS
-	providerRefs   addrs.ProviderReferences
-	providerRefsMu *sync.RWMutex
+	// decoder
+	decoder     *decoder.Decoder
+	isParsed    bool
+	isParsedMu  *sync.RWMutex
+	pFilesMap   map[string]*hcl.File
+	parsedDiags hcl.Diagnostics
+	parserMu    *sync.RWMutex
+	filesystem  filesystem.Filesystem
 }
 
-func newRootModule(fs tfconfig.FS, dir string) *rootModule {
+func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
+	d := decoder.NewDecoder()
+	d.SetSchema(tfschema.UniversalCoreModuleSchema())
+
 	return &rootModule{
-		path:           dir,
-		filesystem:     fs,
-		logger:         defaultLogger,
-		providerRefs:   make(addrs.ProviderReferences, 0),
-		providerRefsMu: &sync.RWMutex{},
-		isLoadingMu:    &sync.RWMutex{},
-		loadErrMu:      &sync.RWMutex{},
-		moduleMu:       &sync.RWMutex{},
-		pluginMu:       &sync.RWMutex{},
-		schemaLoadedMu: &sync.RWMutex{},
-		tfLoadedMu:     &sync.RWMutex{},
-		parserMu:       &sync.RWMutex{},
+		path:             dir,
+		filesystem:       fs,
+		logger:           defaultLogger,
+		isLoadingMu:      &sync.RWMutex{},
+		loadErrMu:        &sync.RWMutex{},
+		moduleMu:         &sync.RWMutex{},
+		pluginMu:         &sync.RWMutex{},
+		providerSchemaMu: &sync.RWMutex{},
+		tfLoadingMu:      &sync.RWMutex{},
+		coreSchemaMu:     &sync.RWMutex{},
+		isParsedMu:       &sync.RWMutex{},
+		decoder:          d,
+		pFilesMap:        make(map[string]*hcl.File, 0),
+		parserMu:         &sync.RWMutex{},
 	}
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
-func NewRootModule(ctx context.Context, fs tfconfig.FS, dir string) (RootModule, error) {
+func NewRootModule(ctx context.Context, fs filesystem.Filesystem, dir string) (RootModule, error) {
 	rm := newRootModule(fs, dir)
 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
 
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	err := rm.discoverCaches(ctx, dir)
 	if err != nil {
@@ -218,16 +228,10 @@ func (rm *rootModule) load(ctx context.Context) error {
 	rm.tfVersionErr = err
 	errs = multierror.Append(errs, err)
 
-	err = rm.ParseProviderReferences()
+	err = rm.findAndSetCoreSchema()
 	errs = multierror.Append(errs, err)
 
-	err = rm.findCompatibleLangParser()
-	errs = multierror.Append(errs, err)
-
-	err = rm.findCompatibleStateStorage()
-	errs = multierror.Append(errs, err)
-
-	err = rm.UpdateSchemaCache(ctx, rm.pluginLockFile)
+	err = rm.UpdateProviderSchemaCache(ctx, rm.pluginLockFile)
 	errs = multierror.Append(errs, err)
 
 	rm.logger.Printf("loading of root module %s finished: %s",
@@ -249,7 +253,7 @@ func (rm *rootModule) IsLoadingDone() bool {
 
 func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 	defer func() {
-		rm.setTfLoaded(true)
+		rm.setTfDiscoveryFinished(true)
 	}()
 
 	tfPath := rm.tfExecPath
@@ -296,92 +300,20 @@ func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 	return nil
 }
 
-func (rm *rootModule) findCompatibleStateStorage() error {
+func (rm *rootModule) findAndSetCoreSchema() error {
 	if rm.tfVersion == nil {
-		return errors.New("unknown terraform version - unable to find state storage")
+		return errors.New("unable to find core schema without version")
 	}
 
-	ss, err := rm.newSchemaStorage(rm.tfVersion)
+	coreSchema, err := tfschema.CoreModuleSchemaForVersion(rm.tfVersion)
 	if err != nil {
 		return err
 	}
-	rm.schemaStorage = ss
-	rm.schemaStorage.SetLogger(rm.logger)
 
-	if rm.IsParserLoaded() {
-		rm.parser.SetSchemaReader(rm.schemaStorage)
-	}
+	rm.coreSchema = coreSchema
+	rm.setCoreSchemaLoaded(true)
 
-	return nil
-}
-
-func (rm *rootModule) findCompatibleLangParser() error {
-	defer func() {
-		rm.setParserLoaded(true)
-	}()
-
-	if rm.tfVersion == nil {
-		return errors.New("unknown terraform version - unable to find parser")
-	}
-
-	p, err := lang.FindCompatibleParser(rm.tfVersion)
-	if err != nil {
-		return err
-	}
-	p.SetLogger(rm.logger)
-
-	rm.parser = p
-
-	return nil
-}
-
-func (rm *rootModule) ParseProviderReferences() error {
-	rm.providerRefsMu.Lock()
-	defer rm.providerRefsMu.Unlock()
-
-	mod, diags := tfconfig.LoadModuleFromFilesystem(rm.filesystem, rm.Path())
-	if diags.HasErrors() {
-		rm.logger.Printf("parsing provider references for %s failed: %s",
-			rm.Path(), diags.Error())
-	}
-	if mod == nil {
-		rm.logger.Printf("no provider references parsed for %s", rm.Path())
-		return nil
-	}
-
-	refs := make(addrs.ProviderReferences, 0)
-
-	rm.logger.Printf("%d provider references found for %s",
-		len(mod.RequiredProviders), rm.Path())
-
-	for name, rp := range mod.RequiredProviders {
-		if name == "" {
-			// skip unnamed inferred provider references
-			continue
-		}
-
-		lName, err := addrs.ParseProviderConfigCompactStr(name)
-		if err != nil {
-			return err
-		}
-		if rp.Source != "" {
-			pAddr, err := addrs.ParseProviderSourceString(rp.Source)
-			if err != nil {
-				return err
-			}
-			refs[lName] = pAddr
-		}
-	}
-
-	rm.providerRefs = refs
-
-	if rm.IsParserLoaded() {
-		rm.parserMu.Lock()
-		defer rm.parserMu.Unlock()
-		rm.parser.SetProviderReferences(rm.providerRefs)
-	}
-
-	return nil
+	return rm.mergeAndSetDecoderSchema()
 }
 
 func (rm *rootModule) LoadError() error {
@@ -398,6 +330,10 @@ func (rm *rootModule) setLoadErr(err error) {
 
 func (rm *rootModule) Path() string {
 	return rm.path
+}
+
+func (rm *rootModule) MatchesPath(path string) bool {
+	return filepath.Clean(rm.path) == filepath.Clean(path)
 }
 
 func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
@@ -422,42 +358,138 @@ func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
 	return nil
 }
 
-func (rm *rootModule) Parser() (lang.Parser, error) {
-	if !rm.IsParserLoaded() {
-		return nil, fmt.Errorf("parser is not loaded yet")
-	}
-	rm.parserMu.RLock()
-	defer rm.parserMu.RUnlock()
-
-	if rm.parser == nil {
-		return nil, fmt.Errorf("no parser available")
-	}
-
-	return rm.parser, nil
+func (rm *rootModule) Decoder() (*decoder.Decoder, error) {
+	return rm.decoder, nil
 }
 
-func (rm *rootModule) IsParserLoaded() bool {
-	rm.parserMu.RLock()
-	defer rm.parserMu.RUnlock()
-	return rm.parserLoaded
+func (rm *rootModule) IsCoreSchemaLoaded() bool {
+	rm.coreSchemaMu.RLock()
+	defer rm.coreSchemaMu.RUnlock()
+	return rm.coreSchemaLoaded
 }
 
-func (rm *rootModule) setParserLoaded(isLoaded bool) {
+func (rm *rootModule) setCoreSchemaLoaded(isLoaded bool) {
+	rm.coreSchemaMu.Lock()
+	defer rm.coreSchemaMu.Unlock()
+	rm.coreSchemaLoaded = isLoaded
+}
+
+func (rm *rootModule) IsProviderSchemaLoaded() bool {
+	rm.providerSchemaMu.RLock()
+	defer rm.providerSchemaMu.RUnlock()
+	return rm.providerSchema != nil
+}
+
+func (rm *rootModule) IsParsed() bool {
+	rm.isParsedMu.RLock()
+	defer rm.isParsedMu.RUnlock()
+	return rm.isParsed
+}
+
+func (rm *rootModule) setIsParsed(parsed bool) {
+	rm.isParsedMu.Lock()
+	defer rm.isParsedMu.Unlock()
+	rm.isParsed = parsed
+}
+
+func (rm *rootModule) ParseAndLoadFiles() error {
 	rm.parserMu.Lock()
 	defer rm.parserMu.Unlock()
-	rm.parserLoaded = isLoaded
+
+	files := make(map[string]*hcl.File, 0)
+	var diags hcl.Diagnostics
+
+	infos, err := rm.filesystem.ReadDir(rm.Path())
+	if err != nil {
+		return fmt.Errorf("failed to read module at %q: %w", rm.Path(), err)
+	}
+
+	for _, info := range infos {
+		if info.IsDir() {
+			// We only care about files
+			continue
+		}
+
+		name := info.Name()
+		if !strings.HasSuffix(name, ".tf") || IsIgnoredFile(name) {
+			continue
+		}
+
+		// TODO: overrides
+
+		fullPath := filepath.Join(rm.Path(), name)
+
+		src, err := rm.filesystem.ReadFile(fullPath)
+		if err != nil {
+			return fmt.Errorf("failed to read %q: %s", name, err)
+		}
+
+		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
+		diags = append(diags, pDiags...)
+		if f != nil {
+			files[name] = f
+		}
+	}
+
+	rm.pFilesMap = files
+	rm.parsedDiags = diags
+	rm.setIsParsed(true)
+
+	for name, f := range files {
+		err := rm.decoder.LoadFile(name, f)
+		if err != nil {
+			return fmt.Errorf("failed to load a file: %w", err)
+		}
+	}
+
+	return nil
 }
 
-func (rm *rootModule) IsSchemaLoaded() bool {
-	rm.schemaLoadedMu.RLock()
-	defer rm.schemaLoadedMu.RUnlock()
-	return rm.schemaLoaded
+func (rm *rootModule) ParsedDiagnostics() hcl.Diagnostics {
+	rm.parserMu.Lock()
+	defer rm.parserMu.Unlock()
+	return rm.parsedDiags
 }
 
-func (rm *rootModule) setSchemaLoaded(isLoaded bool) {
-	rm.schemaLoadedMu.Lock()
-	defer rm.schemaLoadedMu.Unlock()
-	rm.schemaLoaded = isLoaded
+func (rm *rootModule) parsedFiles() map[string]*hcl.File {
+	rm.parserMu.RLock()
+	defer rm.parserMu.RUnlock()
+
+	return rm.pFilesMap
+}
+
+func (rm *rootModule) mergeAndSetDecoderSchema() error {
+	var mergedSchema *schema.BodySchema
+
+	if rm.IsCoreSchemaLoaded() {
+		mergedSchema = rm.coreSchema
+	}
+
+	if rm.IsProviderSchemaLoaded() {
+		if !rm.IsParsed() {
+			err := rm.ParseAndLoadFiles()
+			if err != nil {
+				return err
+			}
+		}
+		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, rm.providerSchema)
+		if err != nil {
+			return err
+		}
+		mergedSchema = s
+	}
+
+	rm.decoder.SetSchema(mergedSchema)
+
+	return nil
+}
+
+// IsIgnoredFile returns true if the given filename (which must not have a
+// directory path ahead of it) should be ignored as e.g. an editor swap file.
+func IsIgnoredFile(name string) bool {
+	return strings.HasPrefix(name, ".") || // Unix-like hidden files
+		strings.HasSuffix(name, "~") || // vim
+		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }
 
 func (rm *rootModule) ReferencesModulePath(path string) bool {
@@ -487,49 +519,45 @@ func (rm *rootModule) ReferencesModulePath(path string) bool {
 }
 
 func (rm *rootModule) TerraformFormatter() (exec.Formatter, error) {
-	if !rm.IsTerraformLoaded() {
-		return nil, fmt.Errorf("terraform executor is not loaded yet")
+	if !rm.HasTerraformDiscoveryFinished() {
+		return nil, fmt.Errorf("terraform is not loaded yet")
 	}
 
-	if rm.tfExec == nil {
-		return nil, fmt.Errorf("no terraform executor available")
+	if !rm.IsTerraformAvailable() {
+		return nil, fmt.Errorf("terraform is not available")
 	}
 
 	return rm.tfExec.Format, nil
 }
 
-func (rm *rootModule) IsTerraformLoaded() bool {
-	rm.tfLoadedMu.RLock()
-	defer rm.tfLoadedMu.RUnlock()
-	return rm.tfLoaded
+func (rm *rootModule) HasTerraformDiscoveryFinished() bool {
+	rm.tfLoadingMu.RLock()
+	defer rm.tfLoadingMu.RUnlock()
+	return rm.tfLoadingDone
 }
 
-func (rm *rootModule) setTfLoaded(isLoaded bool) {
-	rm.tfLoadedMu.Lock()
-	defer rm.tfLoadedMu.Unlock()
-	rm.tfLoaded = isLoaded
+func (rm *rootModule) setTfDiscoveryFinished(isLoaded bool) {
+	rm.tfLoadingMu.Lock()
+	defer rm.tfLoadingMu.Unlock()
+	rm.tfLoadingDone = isLoaded
 }
 
-func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) error {
+func (rm *rootModule) IsTerraformAvailable() bool {
+	return rm.HasTerraformDiscoveryFinished() && rm.tfExec != nil
+}
+
+func (rm *rootModule) UpdateProviderSchemaCache(ctx context.Context, lockFile File) error {
 	rm.pluginMu.Lock()
 	defer rm.pluginMu.Unlock()
 
-	if !rm.IsTerraformLoaded() {
-		return fmt.Errorf("cannot update schema as terraform executor is not available yet")
+	if !rm.IsTerraformAvailable() {
+		return fmt.Errorf("cannot update provider schema as terraform is unavailable")
 	}
-
-	defer func() {
-		rm.setSchemaLoaded(true)
-	}()
 
 	if lockFile == nil {
-		rm.logger.Printf("ignoring schema cache update as no lock file was found for %s",
+		rm.logger.Printf("ignoring provider schema update as no lock file was provided for %s",
 			rm.Path())
 		return nil
-	}
-
-	if rm.schemaStorage == nil {
-		return fmt.Errorf("cannot update schema as schema cache is not available")
 	}
 
 	rm.pluginLockFile = lockFile
@@ -539,7 +567,11 @@ func (rm *rootModule) UpdateSchemaCache(ctx context.Context, lockFile File) erro
 		return err
 	}
 
-	return rm.schemaStorage.UpdateSchemas(ctx, schemas)
+	rm.providerSchemaMu.Lock()
+	rm.providerSchema = schemas
+	rm.providerSchemaMu.Unlock()
+
+	return rm.mergeAndSetDecoderSchema()
 }
 
 func (rm *rootModule) PathsToWatch() []string {

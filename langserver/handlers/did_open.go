@@ -62,6 +62,21 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			Message: msg,
 		})
 	}
+
+	for _, c := range candidates {
+		if c.MatchesPath(f.Dir()) {
+			// We reparse because the file being opened may not match
+			// (originally parsed) content on the disk
+			// TODO: Do this only if we can verify the file differs?
+			err := c.ParseAndLoadFiles()
+			if err != nil {
+				return fmt.Errorf("failed to parse files: %w", err)
+			}
+
+			// TOOD: Publish diags from c.ParsedDiagnostics()
+		}
+	}
+
 	if len(candidates) > 1 {
 		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
 

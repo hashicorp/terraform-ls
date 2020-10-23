@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -14,6 +13,7 @@ import (
 type RootModuleMockFactory struct {
 	rmm    map[string]*RootModuleMock
 	logger *log.Logger
+	fs     filesystem.Filesystem
 }
 
 func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootModule, error) {
@@ -22,7 +22,7 @@ func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootMod
 		return nil, fmt.Errorf("unexpected root module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
 	}
 
-	mock := NewRootModuleMock(rmm, dir)
+	mock := NewRootModuleMock(rmm, rmf.fs, dir)
 	mock.SetLogger(rmf.logger)
 	return mock, mock.discoverCaches(ctx, dir)
 }
@@ -33,31 +33,31 @@ type RootModuleManagerMockInput struct {
 }
 
 func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManagerFactory {
-	fs := filesystem.NewFilesystem()
-	rmm := newRootModuleManager(fs)
-	rmm.syncLoading = true
+	return func(fs filesystem.Filesystem) RootModuleManager {
+		rmm := newRootModuleManager(fs)
+		rmm.syncLoading = true
 
-	rmf := &RootModuleMockFactory{
-		rmm:    make(map[string]*RootModuleMock, 0),
-		logger: rmm.logger,
-	}
-
-	// mock terraform discovery
-	md := &discovery.MockDiscovery{Path: "tf-mock"}
-	rmm.tfDiscoFunc = md.LookPath
-
-	// mock terraform executor
-	if input != nil {
-		rmm.tfNewExecutor = input.TfExecutorFactory
-
-		if input.RootModules != nil {
-			rmf.rmm = input.RootModules
+		rmf := &RootModuleMockFactory{
+			rmm:    make(map[string]*RootModuleMock, 0),
+			logger: rmm.logger,
+			fs:     fs,
 		}
-	}
 
-	rmm.newRootModule = rmf.New
+		// mock terraform discovery
+		md := &discovery.MockDiscovery{Path: "tf-mock"}
+		rmm.tfDiscoFunc = md.LookPath
 
-	return func(tfconfig.FS) RootModuleManager {
+		// mock terraform executor
+		if input != nil {
+			rmm.tfNewExecutor = input.TfExecutorFactory
+
+			if input.RootModules != nil {
+				rmf.rmm = input.RootModules
+			}
+		}
+
+		rmm.newRootModule = rmf.New
+
 		return rmm
 	}
 }

@@ -498,7 +498,7 @@ func testRootModuleManager(t *testing.T) *rootModuleManager {
 					},
 				},
 			}),
-		}, dir)
+		}, fs, dir)
 		rm.logger = testLogger()
 		md := &discovery.MockDiscovery{Path: "tf-mock"}
 		rm.tfDiscoFunc = md.LookPath

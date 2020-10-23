@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/logging"
@@ -92,13 +91,6 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	text, err := file.Text()
-	if err != nil {
-		c.Ui.Error(err.Error())
-		return 1
-	}
-
-	hclFile := ihcl.NewFile(file, text)
 	fPos, err := ilsp.FilePositionFromDocumentPosition(lsp.TextDocumentPositionParams{
 		TextDocument: lsp.TextDocumentIdentifier{
 			URI: fh.DocumentURI(),
@@ -110,12 +102,12 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	w, err := rootmodule.NewRootModule(context.Background(), fs, fh.Dir())
+	rm, err := rootmodule.NewRootModule(context.Background(), fs, fh.Dir())
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to load root module: %s", err.Error()))
 		return 1
 	}
-	p, err := w.Parser()
+	d, err := rm.Decoder()
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find parser: %s", err.Error()))
 		return 1
@@ -123,14 +115,14 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	pos := fPos.Position()
 
-	candidates, err := p.CompletionCandidatesAtPos(hclFile, pos)
+	candidates, err := d.CandidatesAtPos(file.Filename(), pos)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find candidates: %s", err.Error()))
 		return 1
 	}
 
 	cc := &lsp.ClientCapabilities{}
-	items := ilsp.CompletionList(candidates, pos, cc.TextDocument)
+	items := ilsp.CompletionList(candidates, cc.TextDocument)
 
 	c.Ui.Output(fmt.Sprintf("%#v", items))
 	return 0

@@ -7,7 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/spf13/afero"
 )
 
@@ -191,7 +190,7 @@ func (fs *fsystem) ReadFile(name string) ([]byte, error) {
 
 func (fs *fsystem) ReadDir(name string) ([]os.FileInfo, error) {
 	memList, err := afero.ReadDir(fs.memFs, name)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 	osList, err := afero.ReadDir(fs.osFs, name)
@@ -219,7 +218,7 @@ func fileIsInList(list []os.FileInfo, file os.FileInfo) bool {
 	return false
 }
 
-func (fs *fsystem) Open(name string) (tfconfig.File, error) {
+func (fs *fsystem) Open(name string) (File, error) {
 	f, err := fs.memFs.Open(name)
 	if err != nil && os.IsNotExist(err) {
 		return fs.osFs.Open(name)

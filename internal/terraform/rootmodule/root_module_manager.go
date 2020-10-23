@@ -11,17 +11,16 @@ import (
 	"time"
 
 	"github.com/gammazero/workerpool"
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
 type rootModuleManager struct {
 	rms           []*rootModule
 	newRootModule RootModuleFactory
-	filesystem    tfconfig.FS
+	filesystem    filesystem.Filesystem
 
 	syncLoading bool
 	workerPool  *workerpool.WorkerPool
@@ -37,11 +36,11 @@ type rootModuleManager struct {
 	tfExecLogPath string
 }
 
-func NewRootModuleManager(fs tfconfig.FS) RootModuleManager {
+func NewRootModuleManager(fs filesystem.Filesystem) RootModuleManager {
 	return newRootModuleManager(fs)
 }
 
-func newRootModuleManager(fs tfconfig.FS) *rootModuleManager {
+func newRootModuleManager(fs filesystem.Filesystem) *rootModuleManager {
 	d := &discovery.Discovery{}
 
 	defaultSize := 3 * runtime.NumCPU()
@@ -75,7 +74,6 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
 	rm.tfNewExecutor = exec.NewExecutor
-	rm.newSchemaStorage = schema.NewStorageForVersion
 
 	rm.tfExecPath = rmm.tfExecPath
 	rm.tfExecTimeout = rmm.tfExecTimeout
@@ -146,7 +144,6 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModule
 	// TODO: Follow symlinks (requires proper test data)
 
 	if rm, ok := rmm.rootModuleByPath(path); ok {
-		rmm.logger.Printf("direct root module lookup succeeded: %s", path)
 		return []RootModule{rm}
 	}
 
@@ -184,31 +181,31 @@ func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) 
 	return nil, &RootModuleNotFoundErr{path}
 }
 
-func (rmm *rootModuleManager) ParserForDir(path string) (lang.Parser, error) {
+func (rmm *rootModuleManager) DecoderForDir(path string) (*decoder.Decoder, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return rm.Parser()
+	return rm.Decoder()
 }
 
-func (rmm *rootModuleManager) IsParserLoaded(path string) (bool, error) {
+func (rmm *rootModuleManager) IsCoreSchemaLoaded(path string) (bool, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
 
-	return rm.IsParserLoaded(), nil
+	return rm.IsCoreSchemaLoaded(), nil
 }
 
-func (rmm *rootModuleManager) IsSchemaLoaded(path string) (bool, error) {
+func (rmm *rootModuleManager) IsProviderSchemaLoaded(path string) (bool, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
 
-	return rm.IsSchemaLoaded(), nil
+	return rm.IsProviderSchemaLoaded(), nil
 }
 
 func (rmm *rootModuleManager) TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error) {
@@ -257,13 +254,22 @@ func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, workDir
 	return tf.Format, nil
 }
 
-func (rmm *rootModuleManager) IsTerraformLoaded(path string) (bool, error) {
+func (rmm *rootModuleManager) IsTerraformAvailable(path string) (bool, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
 
-	return rm.IsTerraformLoaded(), nil
+	return rm.IsTerraformAvailable(), nil
+}
+
+func (rmm *rootModuleManager) HasTerraformDiscoveryFinished(path string) (bool, error) {
+	rm, err := rmm.RootModuleByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	return rm.HasTerraformDiscoveryFinished(), nil
 }
 
 func (rmm *rootModuleManager) CancelLoading() {
