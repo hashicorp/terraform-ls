@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,29 +17,38 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const initializeResponse = `{
-	"jsonrpc": "2.0",
-	"id": 1,
-	"result": {
-		"capabilities": {
-			"textDocumentSync": {
-				"openClose": true,
-				"change": 2
-			},
-			"completionProvider": {},
-			"documentSymbolProvider":true,
-			"documentFormattingProvider":true,
-			"executeCommandProvider": {
-				"commands": ["rootmodules"]
+func initializeResponse(t *testing.T, rootUri string) string {
+	jsonArray, err := json.Marshal(handlers.Names("." + rootUri))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return fmt.Sprintf(`{
+		"jsonrpc": "2.0",
+		"id": 1,
+		"result": {
+			"capabilities": {
+				"textDocumentSync": {
+					"openClose": true,
+					"change": 2
+				},
+				"completionProvider": {},
+				"documentSymbolProvider":true,
+				"documentFormattingProvider":true,
+				"executeCommandProvider": {
+					"commands": %s
+				}
 			}
 		}
-	}
-}`
+	}`, string(jsonArray))
+}
 
 func TestInitalizeAndShutdown(t *testing.T) {
+	tmpDir := TempDir(t)
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
+			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()
@@ -49,7 +59,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, initializeResponse)
+	}`, tmpDir.URI())}, initializeResponse(t, tmpDir.URI()))
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -60,6 +70,8 @@ func TestInitalizeAndShutdown(t *testing.T) {
 }
 
 func TestEOF(t *testing.T) {
+	tmpDir := TempDir(t)
+
 	ms := newMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
@@ -74,7 +86,7 @@ func TestEOF(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, initializeResponse)
+	}`, tmpDir.URI())}, initializeResponse(t, tmpDir.URI()))
 
 	ls.CloseClientStdout(t)
 

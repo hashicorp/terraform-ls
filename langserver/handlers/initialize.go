@@ -29,7 +29,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
 			ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
-				Commands: handlers.Names(),
+				Commands: handlers.Names("." + string(params.RootURI)),
 			},
 		},
 	}

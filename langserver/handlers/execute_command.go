@@ -7,8 +7,12 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2/code"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/sourcegraph/go-lsp"
 )
+
+const commandPrefix = "terraform-ls."
 
 type executeCommandHandler func(context.Context, commandArgs) (interface{}, error)
 type executeCommandHandlers map[string]executeCommandHandler
@@ -17,16 +21,20 @@ var handlers = executeCommandHandlers{
 	"rootmodules": executeCommandRootModulesHandler,
 }
 
-func (h executeCommandHandlers) Names() []string {
-	var names []string
+func (h executeCommandHandlers) Names(suffix string) []string {
+	var fullnames []string
 	for name := range h {
-		names = append(names, name)
+		fullnames = append(fullnames, commandPrefix+name+suffix)
 	}
-	return names
+	return fullnames
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
-	handler, ok := handlers[params.Command]
+	rootDir, _ := lsctx.RootDirectory(ctx)
+	fh := ilsp.FileHandlerFromDirPath(rootDir)
+	name := strings.TrimPrefix(params.Command, commandPrefix)
+	name = strings.TrimSuffix(name, "."+fh.URI())
+	handler, ok := handlers[name]
 	if !ok {
 		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}
