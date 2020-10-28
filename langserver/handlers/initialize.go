@@ -28,9 +28,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			},
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
-			ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
-				Commands: handlers.Names("." + string(params.RootURI)),
-			},
 		},
 	}
 
@@ -76,6 +73,16 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	err = out.Options.Validate()
 	if err != nil {
 		return serverCaps, err
+	}
+
+	// set server ID
+	err = lsctx.SetServerID(ctx, out.Options.ID)
+	if err != nil {
+		return serverCaps, err
+	}
+	// apply suffix to executeCommand handler names
+	serverCaps.Capabilities.ExecuteCommandProvider = &lsp.ExecuteCommandOptions{
+		Commands: handlers.Names(out.Options.ID),
 	}
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{

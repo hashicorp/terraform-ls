@@ -35,6 +35,7 @@ var (
 	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
 	ctxDiags             = &contextKey{"diagnostics"}
+	ctxServerID          = &contextKey{"servier id"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -188,6 +189,28 @@ func RootDirectory(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return *rootDir, true
+}
+
+func WithServerID(ctx context.Context, id *string) context.Context {
+	return context.WithValue(ctx, ctxServerID, id)
+}
+
+func SetServerID(ctx context.Context, id string) error {
+	serverID, ok := ctx.Value(ctxServerID).(*string)
+	if !ok {
+		return missingContextErr(ctxServerID)
+	}
+
+	*serverID = id
+	return nil
+}
+
+func ServerID(ctx context.Context) (string, bool) {
+	serverID, ok := ctx.Value(ctxServerID).(*string)
+	if !ok {
+		return "", false
+	}
+	return *serverID, true
 }
 
 func WithRootModuleWalker(ctx context.Context, w *rootmodule.Walker) context.Context {
