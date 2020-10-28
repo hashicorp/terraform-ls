@@ -35,7 +35,7 @@ var (
 	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
 	ctxDiags             = &contextKey{"diagnostics"}
-	ctxServerID          = &contextKey{"servier id"}
+	ctxServerID          = &contextKey{"server id"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
