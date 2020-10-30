@@ -10,7 +10,7 @@ type Options struct {
 	// RootModulePaths describes a list of absolute paths to root modules
 	RootModulePaths    []string `mapstructure:"rootModulePaths"`
 	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
-	ID                 string   `mapstructure:"id"`
+	CommandPrefix      string   `mapstructure:"commandPrefix"`
 
 	// TODO: Need to check for conflict with CLI flags
 	// TerraformExecPath string

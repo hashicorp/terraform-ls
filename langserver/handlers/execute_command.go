@@ -7,35 +7,42 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	lsp "github.com/sourcegraph/go-lsp"
 )
-
-const commandPrefix = "terraform-ls."
 
 type executeCommandHandler func(context.Context, commandArgs) (interface{}, error)
 type executeCommandHandlers map[string]executeCommandHandler
 
-var handlers = executeCommandHandlers{
-	"rootmodules": executeCommandRootModulesHandler,
+const langServerPrefix = "terraform-ls."
+
+var commandPrefix string
+var handlers = make(executeCommandHandlers)
+
+func prefix(name string) string {
+	prefix := langServerPrefix
+	if commandPrefix != "" {
+		prefix = commandPrefix + "." + langServerPrefix
+	}
+	return prefix + name
 }
 
-func (h executeCommandHandlers) Names(suffix string) []string {
-	if suffix != "" && !strings.HasPrefix(suffix, ".") {
-		suffix = "." + suffix
+func (h executeCommandHandlers) Init(p string) executeCommandHandlers {
+	if len(h) == 0 {
+		commandPrefix = p
+		h[prefix("rootmodules")] = executeCommandRootModulesHandler
 	}
-	var fullnames []string
+	return h
+}
+
+func (h executeCommandHandlers) Names() (names []string) {
 	for name := range h {
-		fullnames = append(fullnames, commandPrefix+name+suffix)
+		names = append(names, name)
 	}
-	return fullnames
+	return names
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
-	serverID, _ := lsctx.ServerID(ctx)
-	name := strings.TrimPrefix(params.Command, commandPrefix)
-	name = strings.TrimSuffix(name, "."+serverID)
-	handler, ok := handlers[name]
+	handler, ok := handlers[params.Command]
 	if !ok {
 		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}

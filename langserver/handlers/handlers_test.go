@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func initializeResponse(t *testing.T, commandSuffix string) string {
-	jsonArray, err := json.Marshal(handlers.Names("." + commandSuffix))
+func initializeResponse(t *testing.T, prefix string) string {
+	jsonArray, err := json.Marshal(handlers.Init(prefix).Names())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,11 +58,8 @@ func TestInitalizeAndShutdown(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-		"processId": 12345,
-		"initializationOptions": {
-			"id": "1"
-		}
-	}`, tmpDir.URI())}, initializeResponse(t, "1"))
+		"processId": 12345
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -88,11 +85,8 @@ func TestEOF(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-		"processId": 12345,
-		"initializationOptions": {
-			"id": "1"
-		}
-	}`, tmpDir.URI())}, initializeResponse(t, "1"))
+		"processId": 12345
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 
 	ls.CloseClientStdout(t)
 

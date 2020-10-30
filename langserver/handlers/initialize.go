@@ -75,14 +75,9 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	// set server ID
-	err = lsctx.SetServerID(ctx, out.Options.ID)
-	if err != nil {
-		return serverCaps, err
-	}
-	// apply suffix to executeCommand handler names
+	// apply prefix to executeCommand handler names
 	serverCaps.Capabilities.ExecuteCommandProvider = &lsp.ExecuteCommandOptions{
-		Commands: handlers.Names(out.Options.ID),
+		Commands: handlers.Init(out.Options.CommandPrefix).Names(),
 	}
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{

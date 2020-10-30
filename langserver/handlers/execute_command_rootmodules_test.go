@@ -31,10 +31,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-		"processId": 12345,
-		"initializationOptions": {
-			"id": "1"
-		}
+		"processId": 12345
 	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -54,8 +51,8 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
-		"command": "terraform-ls.rootmodules.1"
-	}`)}, code.InvalidParams.Err())
+		"command": %q
+	}`, prefix("rootmodules"))}, code.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
@@ -78,10 +75,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-		"processId": 12345,
-		"initializationOptions": {
-			"id": "1"
-		}
+		"processId": 12345
 	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -101,9 +95,9 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
-		"command": "terraform-ls.rootmodules.1",
+		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, testFileURI)}, fmt.Sprintf(`{
+	}`, prefix("rootmodules"), testFileURI)}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": {
@@ -152,10 +146,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-		"processId": 12345,
-		"initializationOptions": {
-			"id": "1"
-		}
+		"processId": 12345
 	}`, root.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -167,9 +158,9 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
-		"command": "terraform-ls.rootmodules.1",
+		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, module.URI())}, fmt.Sprintf(`{
+	}`, prefix("rootmodules"), module.URI())}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {
