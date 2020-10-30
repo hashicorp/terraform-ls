@@ -35,7 +35,6 @@ var (
 	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
 	ctxDiags             = &contextKey{"diagnostics"}
-	ctxCommandPrefix     = &contextKey{"command prefix"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -189,10 +188,6 @@ func RootDirectory(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return *rootDir, true
-}
-
-func WithCommandPrefix(ctx context.Context, prefix *string) context.Context {
-	return context.WithValue(ctx, ctxCommandPrefix, prefix)
 }
 
 func WithRootModuleWalker(ctx context.Context, w *rootmodule.Walker) context.Context {
