@@ -69,6 +69,28 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	}`)
 }
 
+func TestInitalizeWithCommandPrefix(t *testing.T) {
+	tmpDir := TempDir(t)
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+		"processId": 12345,
+		"initializationOptions": {
+			"commandPrefix": "1"
+		}
+	}`, tmpDir.URI())}, initializeResponse(t, "1"))
+}
+
 func TestEOF(t *testing.T) {
 	tmpDir := TempDir(t)
 
