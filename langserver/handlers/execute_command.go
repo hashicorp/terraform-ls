@@ -17,10 +17,10 @@ type executeCommandHandlers map[string]executeCommandHandler
 const langServerPrefix = "terraform-ls."
 
 var handlers = executeCommandHandlers{
-	prefix("rootmodules"): executeCommandRootModulesHandler,
+	prefixCommandName("rootmodules"): executeCommandRootModulesHandler,
 }
 
-func prefix(name string) string {
+func prefixCommandName(name string) string {
 	return langServerPrefix + name
 }
 

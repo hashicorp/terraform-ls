@@ -52,7 +52,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, prefix("rootmodules"))}, code.InvalidParams.Err())
+	}`, prefixCommandName("rootmodules"))}, code.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
@@ -97,7 +97,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, prefix("rootmodules"), testFileURI)}, fmt.Sprintf(`{
+	}`, prefixCommandName("rootmodules"), testFileURI)}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": {
@@ -160,7 +160,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, prefix("rootmodules"), module.URI())}, fmt.Sprintf(`{
+	}`, prefixCommandName("rootmodules"), module.URI())}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {
