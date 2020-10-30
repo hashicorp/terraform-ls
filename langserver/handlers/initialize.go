@@ -75,10 +75,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
+	// set commandPrefix for session
+	lsctx.SetCommandPrefix(ctx, out.Options.CommandPrefix)
 	// apply prefix to executeCommand handler names
 	serverCaps.Capabilities.ExecuteCommandProvider = &lsp.ExecuteCommandOptions{
-		Commands: handlers.Init(out.Options.CommandPrefix).Names(),
+		Commands: handlers.Names(out.Options.CommandPrefix),
 	}
+
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,

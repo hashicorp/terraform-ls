@@ -145,6 +145,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
+	commandPrefix := ""
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -157,6 +158,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
+			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleLoader(ctx, rmLoader)
 
@@ -240,6 +242,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
+			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 

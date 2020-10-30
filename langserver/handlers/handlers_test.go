@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func initializeResponse(t *testing.T) string {
-	jsonArray, err := json.Marshal(handlers.Names())
+func initializeResponse(t *testing.T, commandPrefix string) string {
+	jsonArray, err := json.Marshal(handlers.Names(commandPrefix))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,8 +44,6 @@ func initializeResponse(t *testing.T) string {
 }
 
 func TestInitalizeAndShutdown(t *testing.T) {
-	handlers = make(executeCommandHandlers)
-	handlers.Init("")
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -61,7 +59,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())}, initializeResponse(t))
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -72,8 +70,6 @@ func TestInitalizeAndShutdown(t *testing.T) {
 }
 
 func TestInitalizeWithCommandPrefix(t *testing.T) {
-	handlers = make(executeCommandHandlers)
-	handlers.Init("1")
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -92,12 +88,10 @@ func TestInitalizeWithCommandPrefix(t *testing.T) {
 		"initializationOptions": {
 			"commandPrefix": "1"
 		}
-	}`, tmpDir.URI())}, initializeResponse(t))
+	}`, tmpDir.URI())}, initializeResponse(t, "1"))
 }
 
 func TestEOF(t *testing.T) {
-	handlers = make(executeCommandHandlers)
-	handlers.Init("")
 	tmpDir := TempDir(t)
 
 	ms := newMockSession(&MockSessionInput{
@@ -114,7 +108,7 @@ func TestEOF(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())}, initializeResponse(t))
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 
 	ls.CloseClientStdout(t)
 
