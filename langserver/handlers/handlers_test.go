@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,29 +17,38 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const initializeResponse = `{
-	"jsonrpc": "2.0",
-	"id": 1,
-	"result": {
-		"capabilities": {
-			"textDocumentSync": {
-				"openClose": true,
-				"change": 2
-			},
-			"completionProvider": {},
-			"documentSymbolProvider":true,
-			"documentFormattingProvider":true,
-			"executeCommandProvider": {
-				"commands": ["rootmodules"]
+func initializeResponse(t *testing.T, commandPrefix string) string {
+	jsonArray, err := json.Marshal(handlers.Names(commandPrefix))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return fmt.Sprintf(`{
+		"jsonrpc": "2.0",
+		"id": 1,
+		"result": {
+			"capabilities": {
+				"textDocumentSync": {
+					"openClose": true,
+					"change": 2
+				},
+				"completionProvider": {},
+				"documentSymbolProvider":true,
+				"documentFormattingProvider":true,
+				"executeCommandProvider": {
+					"commands": %s
+				}
 			}
 		}
-	}
-}`
+	}`, string(jsonArray))
+}
 
 func TestInitalizeAndShutdown(t *testing.T) {
+	tmpDir := TempDir(t)
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
-			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
+			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
 	defer stop()
@@ -48,8 +58,8 @@ func TestInitalizeAndShutdown(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-	    "processId": 12345
-	}`, TempDir(t).URI())}, initializeResponse)
+		"processId": 12345
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -59,7 +69,31 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	}`)
 }
 
+func TestInitalizeWithCommandPrefix(t *testing.T) {
+	tmpDir := TempDir(t)
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+		"processId": 12345,
+		"initializationOptions": {
+			"commandPrefix": "1"
+		}
+	}`, tmpDir.URI())}, initializeResponse(t, "1"))
+}
+
 func TestEOF(t *testing.T) {
+	tmpDir := TempDir(t)
+
 	ms := newMockSession(&MockSessionInput{
 		RootModules: map[string]*rootmodule.RootModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
@@ -73,8 +107,8 @@ func TestEOF(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-	    "processId": 12345
-	}`, TempDir(t).URI())}, initializeResponse)
+		"processId": 12345
+	}`, tmpDir.URI())}, initializeResponse(t, ""))
 
 	ls.CloseClientStdout(t)
 

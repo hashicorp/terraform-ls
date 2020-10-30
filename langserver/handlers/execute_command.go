@@ -7,26 +7,45 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2/code"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type executeCommandHandler func(context.Context, commandArgs) (interface{}, error)
 type executeCommandHandlers map[string]executeCommandHandler
 
+const langServerPrefix = "terraform-ls."
+
 var handlers = executeCommandHandlers{
-	"rootmodules": executeCommandRootModulesHandler,
+	prefixCommandName("rootmodules"): executeCommandRootModulesHandler,
 }
 
-func (h executeCommandHandlers) Names() []string {
-	var names []string
+func prefixCommandName(name string) string {
+	return langServerPrefix + name
+}
+
+func (h executeCommandHandlers) Names(commandPrefix string) (names []string) {
+	if commandPrefix != "" {
+		commandPrefix += "."
+	}
 	for name := range h {
-		names = append(names, name)
+		names = append(names, commandPrefix+name)
 	}
 	return names
 }
 
+func (h executeCommandHandlers) Get(name, commandPrefix string) (executeCommandHandler, bool) {
+	if commandPrefix != "" {
+		commandPrefix += "."
+	}
+	name = strings.TrimPrefix(name, commandPrefix)
+	handler, ok := h[name]
+	return handler, ok
+}
+
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
-	handler, ok := handlers[params.Command]
+	commandPrefix, _ := lsctx.CommandPrefix(ctx)
+	handler, ok := handlers.Get(params.Command, commandPrefix)
 	if !ok {
 		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}

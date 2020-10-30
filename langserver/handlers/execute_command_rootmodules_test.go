@@ -31,7 +31,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-	    "processId": 12345
+		"processId": 12345
 	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -50,9 +50,9 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
-		ReqParams: `{
-		"command": "rootmodules"
-	}`}, code.InvalidParams.Err())
+		ReqParams: fmt.Sprintf(`{
+		"command": %q
+	}`, prefixCommandName("rootmodules"))}, code.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
@@ -75,7 +75,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-	    "processId": 12345
+		"processId": 12345
 	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -95,9 +95,9 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
-		"command": "rootmodules",
+		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, testFileURI)}, fmt.Sprintf(`{
+	}`, prefixCommandName("rootmodules"), testFileURI)}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": {
@@ -146,7 +146,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
-	    "processId": 12345
+		"processId": 12345
 	}`, root.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -158,9 +158,9 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
-		"command": "rootmodules",
+		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, module.URI())}, fmt.Sprintf(`{
+	}`, prefixCommandName("rootmodules"), module.URI())}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {

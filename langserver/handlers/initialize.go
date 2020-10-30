@@ -28,9 +28,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			},
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
-			ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
-				Commands: handlers.Names(),
-			},
 		},
 	}
 
@@ -77,6 +74,14 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	if err != nil {
 		return serverCaps, err
 	}
+
+	// set commandPrefix for session
+	lsctx.SetCommandPrefix(ctx, out.Options.CommandPrefix)
+	// apply prefix to executeCommand handler names
+	serverCaps.Capabilities.ExecuteCommandProvider = &lsp.ExecuteCommandOptions{
+		Commands: handlers.Names(out.Options.CommandPrefix),
+	}
+
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type:    lsp.MTWarning,

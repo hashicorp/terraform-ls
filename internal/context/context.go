@@ -34,6 +34,7 @@ var (
 	ctxRootModuleWalker  = &contextKey{"root module walker"}
 	ctxRootModuleLoader  = &contextKey{"root module loader"}
 	ctxRootDir           = &contextKey{"root directory"}
+	ctxCommandPrefix     = &contextKey{"command prefix"}
 	ctxDiags             = &contextKey{"diagnostics"}
 )
 
@@ -188,6 +189,28 @@ func RootDirectory(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return *rootDir, true
+}
+
+func WithCommandPrefix(ctx context.Context, prefix *string) context.Context {
+	return context.WithValue(ctx, ctxCommandPrefix, prefix)
+}
+
+func SetCommandPrefix(ctx context.Context, prefix string) error {
+	commandPrefix, ok := ctx.Value(ctxCommandPrefix).(*string)
+	if !ok {
+		return missingContextErr(ctxCommandPrefix)
+	}
+
+	*commandPrefix = prefix
+	return nil
+}
+
+func CommandPrefix(ctx context.Context) (string, bool) {
+	commandPrefix, ok := ctx.Value(ctxCommandPrefix).(*string)
+	if !ok {
+		return "", false
+	}
+	return *commandPrefix, true
 }
 
 func WithRootModuleWalker(ctx context.Context, w *rootmodule.Walker) context.Context {
