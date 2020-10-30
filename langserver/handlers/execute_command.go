@@ -27,10 +27,8 @@ func prefix(name string) string {
 }
 
 func (h executeCommandHandlers) Init(p string) executeCommandHandlers {
-	if len(h) == 0 {
-		commandPrefix = p
-		h[prefix("rootmodules")] = executeCommandRootModulesHandler
-	}
+	commandPrefix = p
+	h[prefix("rootmodules")] = executeCommandRootModulesHandler
 	return h
 }
 
