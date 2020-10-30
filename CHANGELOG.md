@@ -3,6 +3,7 @@
 FEATURES:
 
  - Support for `workspace/executeCommand` with new `rootmodules` inspection command ([#274](https://github.com/hashicorp/terraform-ls/pull/274))
+ - Prevent command collisions for clients such as VS Code with `commandPrefix` init option ([#279](https://github.com/hashicorp/terraform-ls/pull/279))
 
 ## 0.8.0 (9 October 2020)
 
