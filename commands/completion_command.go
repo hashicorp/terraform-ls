@@ -107,7 +107,12 @@ func (c *CompletionCommand) Run(args []string) int {
 		c.Ui.Error(fmt.Sprintf("failed to load root module: %s", err.Error()))
 		return 1
 	}
-	d, err := rm.Decoder()
+	schema, err := rm.MergedSchema()
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("failed to find schema: %s", err.Error()))
+		return 1
+	}
+	d, err := rm.DecoderWithSchema(schema)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find parser: %s", err.Error()))
 		return 1

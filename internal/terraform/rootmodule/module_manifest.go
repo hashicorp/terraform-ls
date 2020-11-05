@@ -108,7 +108,7 @@ func ParseModuleManifestFromFile(path string) (*moduleManifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	mm.rootDir = rootModuleDirFromFilePath(path)
+	mm.rootDir = trimLockFilePath(path)
 
 	return mm, nil
 }

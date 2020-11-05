@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gammazero/workerpool"
-	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -129,6 +129,22 @@ func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, 
 	return rm, nil
 }
 
+func (rmm *rootModuleManager) SchemaForPath(path string) (*schema.BodySchema, error) {
+	candidates := rmm.RootModuleCandidatesByPath(path)
+	for _, rm := range candidates {
+		schema, err := rm.MergedSchema()
+		if err != nil {
+			rmm.logger.Printf("failed to merge schema for %s: %s", rm.Path(), err)
+			continue
+		}
+		if schema != nil {
+			rmm.logger.Printf("found schema for %s at %s", path, rm.Path())
+			return schema, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to find schema for %s", path)
+}
+
 func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
 	for _, rm := range rmm.rms {
 		if pathEquals(rm.Path(), dir) {
@@ -138,26 +154,35 @@ func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
 	return nil, false
 }
 
+// RootModuleCandidatesByPath finds any initialized root modules
 func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModules {
 	path = filepath.Clean(path)
 
+	candidates := make([]RootModule, 0)
+
 	// TODO: Follow symlinks (requires proper test data)
 
-	if rm, ok := rmm.rootModuleByPath(path); ok {
-		return []RootModule{rm}
+	rm, foundPath := rmm.rootModuleByPath(path)
+	if foundPath {
+		inited, _ := rm.WasInitialized()
+		if inited {
+			candidates = append(candidates, rm)
+		}
 	}
 
-	dir := rootModuleDirFromFilePath(path)
-	if rm, ok := rmm.rootModuleByPath(dir); ok {
-		rmm.logger.Printf("dir-based root module lookup succeeded: %s", dir)
-		return []RootModule{rm}
+	if !foundPath {
+		dir := trimLockFilePath(path)
+		rm, ok := rmm.rootModuleByPath(dir)
+		if ok {
+			inited, _ := rm.WasInitialized()
+			if inited {
+				candidates = append(candidates, rm)
+			}
+		}
 	}
 
-	candidates := make([]RootModule, 0)
 	for _, rm := range rmm.rms {
-		rmm.logger.Printf("looking up %s in module references of %s", dir, rm.Path())
-		if rm.ReferencesModulePath(dir) {
-			rmm.logger.Printf("module-ref-based root module lookup succeeded: %s", dir)
+		if rm.ReferencesModulePath(path) {
 			candidates = append(candidates, rm)
 		}
 	}
@@ -173,21 +198,19 @@ func (rmm *rootModuleManager) ListRootModules() RootModules {
 	return modules
 }
 func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
-	candidates := rmm.RootModuleCandidatesByPath(path)
-	if len(candidates) > 0 {
-		return candidates[0], nil
+	path = filepath.Clean(path)
+
+	if rm, ok := rmm.rootModuleByPath(path); ok {
+		return rm, nil
+	}
+
+	dir := trimLockFilePath(path)
+
+	if rm, ok := rmm.rootModuleByPath(dir); ok {
+		return rm, nil
 	}
 
 	return nil, &RootModuleNotFoundErr{path}
-}
-
-func (rmm *rootModuleManager) DecoderForDir(path string) (*decoder.Decoder, error) {
-	rm, err := rmm.RootModuleByPath(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return rm.Decoder()
 }
 
 func (rmm *rootModuleManager) IsCoreSchemaLoaded(path string) (bool, error) {
@@ -283,7 +306,7 @@ func (rmm *rootModuleManager) CancelLoading() {
 
 // rootModuleDirFromPath strips known lock file paths and filenames
 // to get the directory path of the relevant rootModule
-func rootModuleDirFromFilePath(filePath string) string {
+func trimLockFilePath(filePath string) string {
 	pluginLockFileSuffixes := pluginLockFilePaths(string(os.PathSeparator))
 	for _, s := range pluginLockFileSuffixes {
 		if strings.HasSuffix(filePath, s) {

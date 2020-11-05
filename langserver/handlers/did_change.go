@@ -60,22 +60,22 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 	}
 	diags.DiagnoseHCL(ctx, params.TextDocument.URI, text)
 
-	cf, err := lsctx.RootModuleCandidateFinder(ctx)
+	rmf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return err
 	}
 
-	rms := cf.RootModuleCandidatesByPath(fh.Dir())
-	if len(rms) > 0 {
-		// Here we assume the first match is exact match
-		// TODO: Verify *here* this is in fact the case
-		rm := rms[0]
-		err := rm.ParseAndLoadFiles()
-		if err != nil {
-			return err
-		}
-		// TODO: publish/update diags from rm.ParsedDiagnostics()
+	rm, err := rmf.RootModuleByPath(fh.Dir())
+	if err != nil {
+		return err
 	}
+
+	err = rm.ParseFiles()
+	if err != nil {
+		return err
+	}
+
+	// TODO: publish/update diags from rm.ParsedDiagnostics()
 
 	return nil
 }

@@ -179,7 +179,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
-			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -190,7 +190,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
-			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},
@@ -209,7 +209,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
-			ctx = lsctx.WithDecoderFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentSymbol)
 		},
@@ -221,7 +221,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDocumentStorage(ctx, fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithDecoderFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
@@ -243,7 +243,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithRootModuleCandidateFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 
 			return handle(ctx, req, lh.WorkspaceExecuteCommand)

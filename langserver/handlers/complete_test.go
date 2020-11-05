@@ -199,26 +199,6 @@ func TestCompletion_withValidData(t *testing.T) {
 							},
 							"newText": "individual"
 						}
-					},
-					{
-						"label": "version",
-						"kind": 10,
-						"detail": "Optional, string",
-						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
-						"insertTextFormat": 1,
-						"textEdit": {
-							"range": {
-								"start": {
-									"line": 1,
-									"character": 0
-								},
-								"end": {
-									"line": 1,
-									"character": 0
-								}
-							},
-							"newText": "version"
-						}
 					}
 				]
 			}

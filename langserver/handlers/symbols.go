@@ -17,7 +17,7 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	df, err := lsctx.DecoderFinder(ctx)
+	rmf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return symbols, err
 	}
@@ -27,9 +27,14 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	d, err := df.DecoderForDir(file.Dir())
+	rm, err := rmf.RootModuleByPath(file.Dir())
 	if err != nil {
 		return symbols, fmt.Errorf("finding compatible decoder failed: %w", err)
+	}
+
+	d, err := rm.Decoder()
+	if err != nil {
+		return symbols, err
 	}
 
 	sbs, err := d.SymbolsInFile(file.Filename())

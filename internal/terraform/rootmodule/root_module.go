@@ -69,7 +69,6 @@ type rootModule struct {
 	coreSchemaMu     *sync.RWMutex
 
 	// decoder
-	decoder     *decoder.Decoder
 	isParsed    bool
 	isParsedMu  *sync.RWMutex
 	pFilesMap   map[string]*hcl.File
@@ -79,9 +78,6 @@ type rootModule struct {
 }
 
 func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
-	d := decoder.NewDecoder()
-	d.SetSchema(tfschema.UniversalCoreModuleSchema())
-
 	return &rootModule{
 		path:             dir,
 		filesystem:       fs,
@@ -94,7 +90,6 @@ func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
 		tfLoadingMu:      &sync.RWMutex{},
 		coreSchemaMu:     &sync.RWMutex{},
 		isParsedMu:       &sync.RWMutex{},
-		decoder:          d,
 		pFilesMap:        make(map[string]*hcl.File, 0),
 		parserMu:         &sync.RWMutex{},
 	}
@@ -131,6 +126,25 @@ func (rm *rootModule) discoverCaches(ctx context.Context, dir string) error {
 	}
 
 	return errs.ErrorOrNil()
+}
+
+func (rm *rootModule) WasInitialized() (bool, error) {
+	tfDirPath := filepath.Join(rm.Path(), ".terraform")
+
+	f, err := rm.filesystem.Open(tfDirPath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return false, err
+	}
+	if !fi.IsDir() {
+		return false, fmt.Errorf("%s is not a directory", tfDirPath)
+	}
+
+	return true, nil
 }
 
 func (rm *rootModule) discoverPluginCache(dir string) error {
@@ -313,7 +327,7 @@ func (rm *rootModule) findAndSetCoreSchema() error {
 	rm.coreSchema = coreSchema
 	rm.setCoreSchemaLoaded(true)
 
-	return rm.mergeAndSetDecoderSchema()
+	return nil
 }
 
 func (rm *rootModule) LoadError() error {
@@ -358,8 +372,27 @@ func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
 	return nil
 }
 
+func (rm *rootModule) DecoderWithSchema(schema *schema.BodySchema) (*decoder.Decoder, error) {
+	d, err := rm.Decoder()
+	if err != nil {
+		return nil, err
+	}
+
+	d.SetSchema(schema)
+
+	return d, nil
+}
+
 func (rm *rootModule) Decoder() (*decoder.Decoder, error) {
-	return rm.decoder, nil
+	d := decoder.NewDecoder()
+
+	for name, f := range rm.parsedFiles() {
+		err := d.LoadFile(name, f)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load a file: %w", err)
+		}
+	}
+	return d, nil
 }
 
 func (rm *rootModule) IsCoreSchemaLoaded() bool {
@@ -392,7 +425,7 @@ func (rm *rootModule) setIsParsed(parsed bool) {
 	rm.isParsed = parsed
 }
 
-func (rm *rootModule) ParseAndLoadFiles() error {
+func (rm *rootModule) ParseFiles() error {
 	rm.parserMu.Lock()
 	defer rm.parserMu.Unlock()
 
@@ -424,6 +457,7 @@ func (rm *rootModule) ParseAndLoadFiles() error {
 			return fmt.Errorf("failed to read %q: %s", name, err)
 		}
 
+		rm.logger.Printf("parsing file %q", name)
 		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
 		diags = append(diags, pDiags...)
 		if f != nil {
@@ -434,13 +468,6 @@ func (rm *rootModule) ParseAndLoadFiles() error {
 	rm.pFilesMap = files
 	rm.parsedDiags = diags
 	rm.setIsParsed(true)
-
-	for name, f := range files {
-		err := rm.decoder.LoadFile(name, f)
-		if err != nil {
-			return fmt.Errorf("failed to load a file: %w", err)
-		}
-	}
 
 	return nil
 }
@@ -458,7 +485,7 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 	return rm.pFilesMap
 }
 
-func (rm *rootModule) mergeAndSetDecoderSchema() error {
+func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 	var mergedSchema *schema.BodySchema
 
 	if rm.IsCoreSchemaLoaded() {
@@ -467,21 +494,19 @@ func (rm *rootModule) mergeAndSetDecoderSchema() error {
 
 	if rm.IsProviderSchemaLoaded() {
 		if !rm.IsParsed() {
-			err := rm.ParseAndLoadFiles()
+			err := rm.ParseFiles()
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, rm.providerSchema)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		mergedSchema = s
 	}
 
-	rm.decoder.SetSchema(mergedSchema)
-
-	return nil
+	return mergedSchema, nil
 }
 
 // IsIgnoredFile returns true if the given filename (which must not have a
@@ -509,7 +534,6 @@ func (rm *rootModule) ReferencesModulePath(path string) bool {
 			continue
 		}
 		absPath := filepath.Join(rm.moduleManifest.rootDir, m.Dir)
-		rm.logger.Printf("checking if %q equals %q", absPath, path)
 		if pathEquals(absPath, path) {
 			return true
 		}
@@ -571,7 +595,7 @@ func (rm *rootModule) UpdateProviderSchemaCache(ctx context.Context, lockFile Fi
 	rm.providerSchema = schemas
 	rm.providerSchemaMu.Unlock()
 
-	return rm.mergeAndSetDecoderSchema()
+	return nil
 }
 
 func (rm *rootModule) PathsToWatch() []string {

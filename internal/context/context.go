@@ -28,7 +28,6 @@ var (
 	ctxTfExecTimeout     = &contextKey{"terraform execution timeout"}
 	ctxWatcher           = &contextKey{"watcher"}
 	ctxRootModuleMngr    = &contextKey{"root module manager"}
-	ctxDecoderFinder     = &contextKey{"decoder finder"}
 	ctxTfFormatterFinder = &contextKey{"terraform formatter finder"}
 	ctxRootModuleCaFi    = &contextKey{"root module candidate finder"}
 	ctxRootModuleWalker  = &contextKey{"root module walker"}
@@ -124,18 +123,6 @@ func RootModuleManager(ctx context.Context) (rootmodule.RootModuleManager, error
 	return wm, nil
 }
 
-func WithDecoderFinder(ctx context.Context, pf rootmodule.DecoderFinder) context.Context {
-	return context.WithValue(ctx, ctxDecoderFinder, pf)
-}
-
-func DecoderFinder(ctx context.Context) (rootmodule.DecoderFinder, error) {
-	pf, ok := ctx.Value(ctxDecoderFinder).(rootmodule.DecoderFinder)
-	if !ok {
-		return nil, missingContextErr(ctxDecoderFinder)
-	}
-	return pf, nil
-}
-
 func WithTerraformFormatterFinder(ctx context.Context, tef rootmodule.TerraformFormatterFinder) context.Context {
 	return context.WithValue(ctx, ctxTfFormatterFinder, tef)
 }
@@ -157,12 +144,12 @@ func TerraformExecPath(ctx context.Context) (string, bool) {
 	return path, ok
 }
 
-func WithRootModuleCandidateFinder(ctx context.Context, rmcf rootmodule.RootModuleCandidateFinder) context.Context {
+func WithRootModuleFinder(ctx context.Context, rmcf rootmodule.RootModuleFinder) context.Context {
 	return context.WithValue(ctx, ctxRootModuleCaFi, rmcf)
 }
 
-func RootModuleCandidateFinder(ctx context.Context) (rootmodule.RootModuleCandidateFinder, error) {
-	cf, ok := ctx.Value(ctxRootModuleCaFi).(rootmodule.RootModuleCandidateFinder)
+func RootModuleFinder(ctx context.Context) (rootmodule.RootModuleFinder, error) {
+	cf, ok := ctx.Value(ctxRootModuleCaFi).(rootmodule.RootModuleFinder)
 	if !ok {
 		return nil, missingContextErr(ctxRootModuleCaFi)
 	}

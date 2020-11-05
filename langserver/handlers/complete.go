@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -22,7 +21,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
-	df, err := lsctx.DecoderFinder(ctx)
+	rmf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return list, err
 	}
@@ -32,9 +31,19 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
-	d, err := df.DecoderForDir(file.Dir())
+	rm, err := rmf.RootModuleByPath(file.Dir())
 	if err != nil {
-		return list, fmt.Errorf("finding compatible decoder failed: %w", err)
+		return list, err
+	}
+
+	schema, err := rmf.SchemaForPath(file.Dir())
+	if err != nil {
+		return list, err
+	}
+
+	d, err := rm.DecoderWithSchema(schema)
+	if err != nil {
+		return list, err
 	}
 
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, file)
