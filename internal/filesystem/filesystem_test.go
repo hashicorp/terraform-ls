@@ -334,7 +334,10 @@ func TestFilesystem_Open_osOnly(t *testing.T) {
 
 func TestFilesystem_Open_memOnly(t *testing.T) {
 	fs := NewFilesystem()
-	fh := &testHandler{uri: "file:///tmp/test.tf"}
+	tmpDir := TempDir(t)
+	testPath := filepath.Join(tmpDir, "test.tf")
+	fh := testHandlerFromPath(testPath)
+
 	content := "test content"
 	err := fs.CreateDocument(fh, []byte(content))
 	if err != nil {
@@ -402,6 +405,30 @@ func TestFilesystem_Open_memAndOs(t *testing.T) {
 
 	if !os.IsNotExist(err) {
 		t.Fatalf("expected file to not exist, given error: %s", err)
+	}
+}
+
+func TestFilesystem_Create_memOnly(t *testing.T) {
+	fs := NewFilesystem()
+	tmpDir := TempDir(t)
+	testPath := filepath.Join(tmpDir, "test.tf")
+	fh := testHandlerFromPath(testPath)
+
+	content := "test content"
+	err := fs.CreateDocument(fh, []byte(content))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	infos, err := fs.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedFis := []string{"test.tf"}
+	names := namesFromFileInfos(infos)
+	if diff := cmp.Diff(expectedFis, names); diff != "" {
+		t.Fatalf("file list mismatch: %s", diff)
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
@@ -49,5 +48,13 @@ type Filesystem interface {
 	// direct FS methods
 	ReadFile(name string) ([]byte, error)
 	ReadDir(name string) ([]os.FileInfo, error)
-	Open(name string) (tfconfig.File, error)
+	Open(name string) (File, error)
+}
+
+// File represents an open file in FS
+// See io/fs.File in http://golang.org/s/draft-iofs-design
+type File interface {
+	Stat() (os.FileInfo, error)
+	Read([]byte) (int, error)
+	Close() error
 }

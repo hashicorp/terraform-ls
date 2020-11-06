@@ -5,36 +5,34 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-config-inspect/tfconfig"
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/schema"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 )
 
 type File interface {
 	Path() string
 }
 
-type ParserFinder interface {
-	ParserForDir(path string) (lang.Parser, error)
-	IsParserLoaded(path string) (bool, error)
-	IsSchemaLoaded(path string) (bool, error)
-}
-
 type TerraformFormatterFinder interface {
 	TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error)
-	IsTerraformLoaded(path string) (bool, error)
+	HasTerraformDiscoveryFinished(path string) (bool, error)
+	IsTerraformAvailable(path string) (bool, error)
 }
 
-type RootModuleCandidateFinder interface {
+type RootModuleFinder interface {
 	RootModuleCandidatesByPath(path string) RootModules
+	RootModuleByPath(path string) (RootModule, error)
+	SchemaForPath(path string) (*schema.BodySchema, error)
 }
 
 type RootModuleLoader func(dir string) (RootModule, error)
 
 type RootModuleManager interface {
-	ParserFinder
+	RootModuleFinder
 	TerraformFormatterFinder
-	RootModuleCandidateFinder
 
 	SetLogger(logger *log.Logger)
 
@@ -47,7 +45,6 @@ type RootModuleManager interface {
 	WorkerQueueSize() int
 	ListRootModules() RootModules
 	PathsToWatch() []string
-	RootModuleByPath(path string) (RootModule, error)
 	CancelLoading()
 }
 
@@ -63,6 +60,7 @@ func (rms RootModules) Paths() []string {
 
 type RootModule interface {
 	Path() string
+	MatchesPath(path string) bool
 	LoadError() error
 	StartLoading() error
 	IsLoadingDone() bool
@@ -70,19 +68,24 @@ type RootModule interface {
 	IsKnownPluginLockFile(path string) bool
 	IsKnownModuleManifestFile(path string) bool
 	PathsToWatch() []string
-	UpdateSchemaCache(ctx context.Context, lockFile File) error
-	ParseProviderReferences() error
-	IsSchemaLoaded() bool
+	UpdateProviderSchemaCache(ctx context.Context, lockFile File) error
+	IsProviderSchemaLoaded() bool
 	UpdateModuleManifest(manifestFile File) error
-	Parser() (lang.Parser, error)
-	IsParserLoaded() bool
+	Decoder() (*decoder.Decoder, error)
+	DecoderWithSchema(*schema.BodySchema) (*decoder.Decoder, error)
+	MergedSchema() (*schema.BodySchema, error)
+	IsParsed() bool
+	ParseFiles() error
+	ParsedDiagnostics() hcl.Diagnostics
+	IsCoreSchemaLoaded() bool
 	TerraformFormatter() (exec.Formatter, error)
-	IsTerraformLoaded() bool
+	HasTerraformDiscoveryFinished() bool
+	IsTerraformAvailable() bool
 	Modules() []ModuleRecord
 }
 
 type RootModuleFactory func(context.Context, string) (*rootModule, error)
 
-type RootModuleManagerFactory func(tfconfig.FS) RootModuleManager
+type RootModuleManagerFactory func(filesystem.Filesystem) RootModuleManager
 
 type WalkerFactory func() *Walker

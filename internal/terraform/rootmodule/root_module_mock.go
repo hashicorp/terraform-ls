@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/schema"
 )
 
 type RootModuleMock struct {
@@ -13,8 +12,7 @@ type RootModuleMock struct {
 	ProviderSchemas *tfjson.ProviderSchemas
 }
 
-func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
-	fs := filesystem.NewFilesystem()
+func NewRootModuleMock(rmm *RootModuleMock, fs filesystem.Filesystem, dir string) *rootModule {
 	rm := newRootModule(fs, dir)
 
 	// mock terraform discovery
@@ -24,10 +22,8 @@ func NewRootModuleMock(rmm *RootModuleMock, dir string) *rootModule {
 	// mock terraform executor
 	rm.tfNewExecutor = rmm.TfExecFactory
 
-	if rmm.ProviderSchemas == nil {
-		rm.newSchemaStorage = schema.NewStorageForVersion
-	} else {
-		rm.newSchemaStorage = schema.NewMockStorage(rmm.ProviderSchemas)
+	if rmm.ProviderSchemas != nil {
+		rm.providerSchema = rmm.ProviderSchemas
 	}
 
 	return rm

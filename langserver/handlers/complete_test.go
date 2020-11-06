@@ -85,9 +85,9 @@ func TestCompletion_withValidData(t *testing.T) {
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
-	    "capabilities": {},
-	    "rootUri": %q,
-	    "processId": 12345
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
 	}`, TempDir(t).URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
@@ -121,19 +121,39 @@ func TestCompletion_withValidData(t *testing.T) {
 				"isIncomplete": false,
 				"items": [
 					{
-						"label":"anonymous",
-						"kind":5,
-						"detail":"Optional, number",
-						"documentation":"Desc 1",
-						"insertTextFormat":1,
+						"label": "alias",
+						"kind": 10,
+						"detail": "Optional, string",
+						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
+						"insertTextFormat": 1,
 						"textEdit": {
 							"range": {
 								"start": {
-									"line": 1, 
+									"line": 1,
 									"character": 0
 								},
 								"end": {
-									"line": 1, 
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "alias"
+						}
+					},
+					{
+						"label": "anonymous",
+						"kind": 10,
+						"detail": "Optional, number",
+						"documentation": "Desc 1",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
 									"character": 0
 								}
 							},
@@ -141,19 +161,19 @@ func TestCompletion_withValidData(t *testing.T) {
 						}
 					},
 					{
-						"label":"base_url",
-						"kind":5,
-						"detail":"Optional, string",
-						"documentation":"Desc 2",
-						"insertTextFormat":1,
+						"label": "base_url",
+						"kind": 10,
+						"detail": "Optional, string",
+						"documentation": "Desc 2",
+						"insertTextFormat": 1,
 						"textEdit": {
 							"range": {
 								"start": {
-									"line": 1, 
+									"line": 1,
 									"character": 0
 								},
 								"end": {
-									"line": 1, 
+									"line": 1,
 									"character": 0
 								}
 							},
@@ -161,19 +181,19 @@ func TestCompletion_withValidData(t *testing.T) {
 						}
 					},
 					{
-						"label":"individual",
-						"kind":5,
-						"detail":"Optional, bool",
-						"documentation":"Desc 3",
-						"insertTextFormat":1,
+						"label": "individual",
+						"kind": 10,
+						"detail": "Optional, bool",
+						"documentation": "Desc 3",
+						"insertTextFormat": 1,
 						"textEdit": {
 							"range": {
 								"start": {
-									"line": 1, 
+									"line": 1,
 									"character": 0
 								},
 								"end": {
-									"line": 1, 
+									"line": 1,
 									"character": 0
 								}
 							},
@@ -188,46 +208,46 @@ func TestCompletion_withValidData(t *testing.T) {
 var testSchemaOutput = `{
   "format_version": "0.1",
   "provider_schemas": {
-    "test": {
-      "provider": {
-        "version": 0,
-        "block": {
-          "attributes": {
-            "anonymous": {
-              "type": "number",
-              "description": "Desc 1",
-              "description_kind": "plaintext",
-              "optional": true
-            },
-            "base_url": {
-              "type": "string",
-              "description": "Desc **2**",
-              "description_kind": "markdown",
-              "optional": true
-            },
-            "individual": {
-              "type": "bool",
-              "description": "Desc _3_",
-              "description_kind": "markdown",
-              "optional": true
-            }
-          }
-        }
-      }
-    }
+	"test": {
+	  "provider": {
+		"version": 0,
+		"block": {
+		  "attributes": {
+			"anonymous": {
+			  "type": "number",
+			  "description": "Desc 1",
+			  "description_kind": "plaintext",
+			  "optional": true
+			},
+			"base_url": {
+			  "type": "string",
+			  "description": "Desc **2**",
+			  "description_kind": "markdown",
+			  "optional": true
+			},
+			"individual": {
+			  "type": "bool",
+			  "description": "Desc _3_",
+			  "description_kind": "markdown",
+			  "optional": true
+			}
+		  }
+		}
+	  }
+	}
   },
   "resource_schemas": {
-    "test_resource_1": {
-      "version": 0,
-      "block": {
-        "description": "Resource 1 description",
-        "description_kind": "markdown",
-        "attributes": {
-          "deprecated_attr": {
-            "deprecated": true
-          }
-        }
-      }
-    }
+	"test_resource_1": {
+	  "version": 0,
+	  "block": {
+		"description": "Resource 1 description",
+		"description_kind": "markdown",
+		"attributes": {
+		  "deprecated_attr": {
+			"deprecated": true
+		  }
+		}
+	  }
+	}
   }
 }`

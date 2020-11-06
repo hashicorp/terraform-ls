@@ -52,16 +52,26 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 }
 
 func findTerraformFormatter(ctx context.Context, tff rootmodule.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
-	isLoaded, err := tff.IsTerraformLoaded(dir)
+	discoveryDone, err := tff.HasTerraformDiscoveryFinished(dir)
 	if err != nil {
 		if rootmodule.IsRootModuleNotFound(err) {
 			return tff.TerraformFormatterForDir(ctx, dir)
 		}
 		return nil, err
 	} else {
-		if !isLoaded {
+		if !discoveryDone {
 			// TODO: block until it's available <-tff.TerraformLoadingDone()
-			return nil, fmt.Errorf("terraform is not available yet for %s", dir)
+			return nil, fmt.Errorf("terraform is still being discovered for %s", dir)
+		}
+		available, err := tff.IsTerraformAvailable(dir)
+		if err != nil {
+			if rootmodule.IsRootModuleNotFound(err) {
+				return tff.TerraformFormatterForDir(ctx, dir)
+			}
+		}
+		if !available {
+			// TODO: block until it's available <-tff.TerraformLoadingDone()
+			return nil, fmt.Errorf("terraform is not available for %s", dir)
 		}
 	}
 

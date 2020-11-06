@@ -32,7 +32,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return err
 	}
 
-	cf, err := lsctx.RootModuleCandidateFinder(ctx)
+	rmm, err := lsctx.RootModuleManager(ctx)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,34 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 
 	rootDir, _ := lsctx.RootDirectory(ctx)
 	readableDir := humanReadablePath(rootDir, f.Dir())
-	candidates := cf.RootModuleCandidatesByPath(f.Dir())
+
+	var rm rootmodule.RootModule
+
+	rm, err = rmm.RootModuleByPath(f.Dir())
+	if err != nil {
+		if rootmodule.IsRootModuleNotFound(err) {
+			rm, err = rmm.AddAndStartLoadingRootModule(ctx, f.Dir())
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	lh.logger.Printf("opened root module: %s", rm.Path())
+
+	// We reparse because the file being opened may not match
+	// (originally parsed) content on the disk
+	// TODO: Do this only if we can verify the file differs?
+	err = rm.ParseFiles()
+	if err != nil {
+		return fmt.Errorf("failed to parse files: %w", err)
+	}
+
+	// TOOD: Publish diags from c.ParsedDiagnostics()
+
+	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
 
 	if walker.IsWalking() {
 		// avoid raising false warnings if walker hasn't finished yet
@@ -62,6 +89,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			Message: msg,
 		})
 	}
+
 	if len(candidates) > 1 {
 		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
 

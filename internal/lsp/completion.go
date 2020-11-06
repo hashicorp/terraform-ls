@@ -1,71 +1,70 @@
 package lsp
 
 import (
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
+	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/terraform-ls/internal/mdplain"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func CompletionList(candidates lang.CompletionCandidates, pos hcl.Pos, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
-	snippetSupport := caps.Completion.CompletionItem.SnippetSupport
-	list := lsp.CompletionList{}
-
-	if candidates == nil {
-		return list
+func CompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
+	list := lsp.CompletionList{
+		Items:        make([]lsp.CompletionItem, len(candidates.List)),
+		IsIncomplete: !candidates.IsComplete,
 	}
 
-	cList := candidates.List()
+	snippetSupport := caps.Completion.CompletionItem.SnippetSupport
 
-	list.IsIncomplete = !candidates.IsComplete()
-	list.Items = make([]lsp.CompletionItem, len(cList))
-	for i, c := range cList {
-		list.Items[i] = CompletionItem(c, pos, snippetSupport)
+	markdown := false
+	docsFormat := caps.Completion.CompletionItem.DocumentationFormat
+	if len(docsFormat) > 0 && docsFormat[0] == "markdown" {
+		markdown = true
+	}
+
+	for i, c := range candidates.List {
+		list.Items[i] = CompletionItem(c, snippetSupport, markdown)
 	}
 
 	return list
 }
 
-func CompletionItem(candidate lang.CompletionCandidate, pos hcl.Pos, snippetSupport bool) lsp.CompletionItem {
-	// TODO: deprecated / tags?
+func CompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.CompletionItem {
+	doc := candidate.Description.Value
 
-	doc := ""
-	if c := candidate.Documentation(); c != nil {
-		// TODO: markdown handling
-		doc = c.Value()
+	// TODO: revisit once go-lsp supports markdown in CompletionItem
+	doc = mdplain.Clean(doc)
+
+	var kind lsp.CompletionItemKind
+	switch candidate.Kind {
+	case lang.AttributeCandidateKind:
+		kind = lsp.CIKProperty
+	case lang.BlockCandidateKind:
+		kind = lsp.CIKClass
+	case lang.LabelCandidateKind:
+		kind = lsp.CIKField
 	}
 
-	if snippetSupport {
-		return lsp.CompletionItem{
-			Label:            candidate.Label(),
-			Kind:             lsp.CIKField,
-			InsertTextFormat: lsp.ITFSnippet,
-			Detail:           candidate.Detail(),
-			Documentation:    doc,
-			TextEdit:         textEdit(candidate.Snippet(), pos),
-		}
-	}
+	te, format := textEdit(candidate.TextEdit, snippet)
 
 	return lsp.CompletionItem{
-		Label:            candidate.Label(),
-		Kind:             lsp.CIKField,
-		InsertTextFormat: lsp.ITFPlainText,
-		Detail:           candidate.Detail(),
+		Label:            candidate.Label,
+		Kind:             kind,
+		InsertTextFormat: format,
+		Detail:           candidate.Detail,
 		Documentation:    doc,
-		TextEdit:         textEdit(candidate.PlainText(), pos),
+		TextEdit:         te,
 	}
 }
 
-func textEdit(te lang.TextEdit, pos hcl.Pos) *lsp.TextEdit {
-	rng := te.Range()
-	if rng == nil {
-		rng = &hcl.Range{
-			Start: pos,
-			End:   pos,
-		}
+func textEdit(te lang.TextEdit, snippetSupport bool) (*lsp.TextEdit, lsp.InsertTextFormat) {
+	if snippetSupport {
+		return &lsp.TextEdit{
+			NewText: te.Snippet,
+			Range:   HCLRangeToLSP(te.Range),
+		}, lsp.ITFSnippet
 	}
 
 	return &lsp.TextEdit{
-		NewText: te.NewText(),
-		Range:   HCLRangeToLSP(*rng),
-	}
+		NewText: te.NewText,
+		Range:   HCLRangeToLSP(te.Range),
+	}, lsp.ITFPlainText
 }

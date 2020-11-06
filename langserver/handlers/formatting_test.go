@@ -8,6 +8,7 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/langserver"
 	"github.com/hashicorp/terraform-ls/langserver/session"
 	"github.com/stretchr/testify/mock"
@@ -31,39 +32,45 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 }
 
 func TestLangServer_formatting_basic(t *testing.T) {
+	tmpDir := TempDir(t)
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		TfExecutorFactory: exec.NewMockExecutor([]*mock.Call{
-			{
-				Method:        "Version",
-				Repeatability: 1,
-				Arguments: []interface{}{
-					mock.AnythingOfType(""),
-				},
-				ReturnArguments: []interface{}{
-					version.Must(version.NewVersion("0.12.0")),
-					nil,
-				},
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			tmpDir.Dir(): {
+				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "Format",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+							[]byte("provider  \"test\"   {\n\n}\n"),
+						},
+						ReturnArguments: []interface{}{
+							[]byte("provider \"test\" {\n\n}\n"),
+							nil,
+						},
+					},
+				}),
 			},
-			{
-				Method:        "GetExecPath",
-				Repeatability: 1,
-				ReturnArguments: []interface{}{
-					"",
-				},
-			},
-			{
-				Method:        "Format",
-				Repeatability: 1,
-				Arguments: []interface{}{
-					mock.AnythingOfType(""),
-					[]byte("provider  \"test\"   {\n\n}\n"),
-				},
-				ReturnArguments: []interface{}{
-					[]byte("provider \"test\" {\n\n}\n"),
-					nil,
-				},
-			},
-		}),
+		},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -74,7 +81,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())})
+	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -88,14 +95,14 @@ func TestLangServer_formatting_basic(t *testing.T) {
 			"text": "provider  \"test\"   {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())})
+	}`, tmpDir.URI())})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI())}, `{
+		}`, tmpDir.URI())}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -111,39 +118,44 @@ func TestLangServer_formatting_basic(t *testing.T) {
 }
 
 func TestLangServer_formatting_oldVersion(t *testing.T) {
+	tmpDir := TempDir(t)
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		TfExecutorFactory: exec.NewMockExecutor([]*mock.Call{
-			{
-				Method:        "Version",
-				Repeatability: 1,
-				Arguments: []interface{}{
-					mock.AnythingOfType(""),
-				},
-				ReturnArguments: []interface{}{
-					version.Must(version.NewVersion("0.7.6")),
-					nil,
-				},
+		RootModules: map[string]*rootmodule.RootModuleMock{
+			tmpDir.Dir(): {
+				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.7.6")),
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "Format",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+							[]byte("provider  \"test\"   {\n\n}\n"),
+						},
+						ReturnArguments: []interface{}{
+							nil,
+							errors.New("not implemented"),
+						},
+					},
+				}),
 			},
-			{
-				Method:        "GetExecPath",
-				Repeatability: 1,
-				ReturnArguments: []interface{}{
-					"",
-				},
-			},
-			{
-				Method:        "Format",
-				Repeatability: 1,
-				Arguments: []interface{}{
-					mock.AnythingOfType(""),
-					[]byte("provider  \"test\"   {\n\n}\n"),
-				},
-				ReturnArguments: []interface{}{
-					nil,
-					errors.New("not implemented"),
-				},
-			},
-		}),
+		},
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -154,7 +166,7 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())})
+	}`, tmpDir.URI())})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -168,12 +180,12 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 			"text": "provider  \"test\"   {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())})
+	}`, tmpDir.URI())})
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI())}, code.SystemError.Err())
+		}`, tmpDir.URI())}, code.SystemError.Err())
 }

@@ -37,7 +37,7 @@ func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (in
 
 	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(uri))
 
-	cf, err := lsctx.RootModuleCandidateFinder(ctx)
+	cf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}

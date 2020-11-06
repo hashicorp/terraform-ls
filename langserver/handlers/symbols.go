@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	ihcl "github.com/hashicorp/terraform-ls/internal/hcl"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/lang"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -19,7 +17,7 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	pf, err := lsctx.ParserFinder(ctx)
+	rmf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return symbols, err
 	}
@@ -29,53 +27,20 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	text, err := file.Text()
+	rm, err := rmf.RootModuleByPath(file.Dir())
+	if err != nil {
+		return symbols, fmt.Errorf("finding compatible decoder failed: %w", err)
+	}
+
+	d, err := rm.Decoder()
 	if err != nil {
 		return symbols, err
 	}
 
-	hclFile := ihcl.NewFile(file, text)
-
-	// TODO: block until it's available <-pf.ParserLoadingDone()
-	// requires https://github.com/hashicorp/terraform-ls/issues/8
-	// textDocument/documentSymbol fires early alongside textDocument/didOpen
-	// the protocol does not retry the request, so it's best to give the parser
-	// a moment
-	if err := Waiter(func() (bool, error) {
-		return pf.IsSchemaLoaded(file.Dir())
-	}).Waitf("parser is not available yet for %s", file.Dir()); err != nil {
-		return symbols, err
-	}
-
-	p, err := pf.ParserForDir(file.Dir())
-	if err != nil {
-		return symbols, fmt.Errorf("finding compatible parser failed: %w", err)
-	}
-
-	blocks, err := p.Blocks(hclFile)
+	sbs, err := d.SymbolsInFile(file.Filename())
 	if err != nil {
 		return symbols, err
 	}
 
-	for _, block := range blocks {
-		symbols = append(symbols, lsp.SymbolInformation{
-			Name: symbolName(block),
-			Kind: lsp.SKClass, // most applicable kind for now
-			Location: lsp.Location{
-				Range: ilsp.HCLRangeToLSP(block.Range()),
-				URI:   params.TextDocument.URI,
-			},
-		})
-	}
-
-	return symbols, nil
-
-}
-
-func symbolName(b lang.ConfigBlock) string {
-	name := b.BlockType()
-	for _, l := range b.Labels() {
-		name += "." + l.Value
-	}
-	return name
+	return ilsp.ConvertSymbols(params.TextDocument.URI, sbs), nil
 }
