@@ -3,7 +3,19 @@
 FEATURES:
 
  - Support for `workspace/executeCommand` with new `rootmodules` inspection command ([#274](https://github.com/hashicorp/terraform-ls/pull/274))
+
+ENHANCEMENTS:
+
+ - Limited completion is available as soon as the server starts and is progressively enhanced as more (core or provider) schema is discovered ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
+ - Symbols are available as soon as the server starts ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
+
+BUG FIXES:
+
  - Prevent command collisions for clients such as VS Code with `commandPrefix` init option ([#279](https://github.com/hashicorp/terraform-ls/pull/279))
+
+INTERNAL:
+
+ - Replace internal decoder with `hashicorp/hcl-lang` ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
 
 ## 0.8.0 (9 October 2020)
 
