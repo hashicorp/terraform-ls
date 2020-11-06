@@ -76,7 +76,7 @@ type RootModule interface {
 	MergedSchema() (*schema.BodySchema, error)
 	IsParsed() bool
 	ParseFiles() error
-	ParsedDiagnostics() hcl.Diagnostics
+	ParsedDiagnostics() map[string]hcl.Diagnostics
 	IsCoreSchemaLoaded() bool
 	TerraformFormatter() (exec.Formatter, error)
 	HasTerraformDiscoveryFinished() bool

@@ -17,3 +17,24 @@ func HCLSeverityToLSP(severity hcl.DiagnosticSeverity) lsp.DiagnosticSeverity {
 	}
 	return sev
 }
+
+func HCLDiagsToLSP(hclDiags hcl.Diagnostics) []lsp.Diagnostic {
+	diags := []lsp.Diagnostic{}
+
+	for _, hclDiag := range hclDiags {
+		// only process diagnostics with an attributable spot in the code
+		if hclDiag.Subject != nil {
+			msg := hclDiag.Summary
+			if hclDiag.Detail != "" {
+				msg += ": " + hclDiag.Detail
+			}
+			diags = append(diags, lsp.Diagnostic{
+				Range:    HCLRangeToLSP(*hclDiag.Subject),
+				Severity: HCLSeverityToLSP(hclDiag.Severity),
+				Source:   "Terraform",
+				Message:  msg,
+			})
+		}
+	}
+	return diags
+}

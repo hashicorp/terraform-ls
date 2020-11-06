@@ -3,81 +3,59 @@ package diagnostics
 import (
 	"context"
 	"log"
+	"path/filepath"
 	"sync"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/sourcegraph/go-lsp"
 )
 
-// documentContext encapsulates the data needed to diagnose the file and push diagnostics to the client
-type documentContext struct {
-	ctx  context.Context
-	uri  lsp.DocumentURI
-	text []byte
+type diagContext struct {
+	ctx   context.Context
+	uri   lsp.DocumentURI
+	diags hcl.Diagnostics
 }
 
-// Notifier is a type responsible for processing documents and pushing diagnostics to the client
+// Notifier is a type responsible for queueing hcl diagnostics to be converted
+// and sent to the client
 type Notifier struct {
-	sessCtx          context.Context
-	hclDocs          chan documentContext
-	closeHclDocsOnce sync.Once
+	sessCtx        context.Context
+	diags          chan diagContext
+	closeDiagsOnce sync.Once
 }
 
 func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
-	hclDocs := make(chan documentContext, 10)
-	go hclDiags(hclDocs, logger)
-	return &Notifier{hclDocs: hclDocs, sessCtx: sessCtx}
+	diags := make(chan diagContext, 50)
+	go notify(diags, logger)
+	return &Notifier{sessCtx: sessCtx, diags: diags}
 }
 
-// DiagnoseHCL enqueues the document for HCL parsing. Documents will be parsed and notifications delivered in order that
-// they are enqueued. Files that are actively changing should be enqueued in order, so that diagnostics remain insync with
-// the current content of the file. This is the responsibility of the caller.
-func (n *Notifier) DiagnoseHCL(ctx context.Context, uri lsp.DocumentURI, text []byte) {
+// Publish accepts a map of diagnostics per file and queues them for publishing
+func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]hcl.Diagnostics) {
 	select {
 	case <-n.sessCtx.Done():
-		n.closeHclDocsOnce.Do(func() {
-			close(n.hclDocs)
+		n.closeDiagsOnce.Do(func() {
+			close(n.diags)
 		})
 		return
 	default:
 	}
-	n.hclDocs <- documentContext{ctx: ctx, uri: uri, text: text}
-}
 
-func hclParse(doc documentContext) []lsp.Diagnostic {
-	diags := []lsp.Diagnostic{}
-
-	_, hclDiags := hclparse.NewParser().ParseHCL(doc.text, string(doc.uri))
-	for _, hclDiag := range hclDiags {
-		// only process diagnostics with an attributable spot in the code
-		if hclDiag.Subject != nil {
-			msg := hclDiag.Summary
-			if hclDiag.Detail != "" {
-				msg += ": " + hclDiag.Detail
-			}
-			diags = append(diags, lsp.Diagnostic{
-				Range:    ilsp.HCLRangeToLSP(*hclDiag.Subject),
-				Severity: ilsp.HCLSeverityToLSP(hclDiag.Severity),
-				Source:   "HCL",
-				Message:  msg,
-			})
-		}
+	for path, ds := range diags {
+		n.diags <- diagContext{ctx: ctx, diags: ds, uri: lsp.DocumentURI(filesystem.URIFromPath(filepath.Join(rmDir, path)))}
 	}
-	return diags
 }
 
-func hclDiags(docs <-chan documentContext, logger *log.Logger) {
-	for doc := range docs {
-		// always push diagnostics, even if the slice is empty, this is how previous diagnostics are cleared
-		// any push error will result in a panic since this is executing in its own thread and we can't bubble
-		// an error to a jrpc response
-		if err := jrpc2.PushNotify(doc.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
-			URI:         doc.uri,
-			Diagnostics: hclParse(doc),
+func notify(diags <-chan diagContext, logger *log.Logger) {
+	for d := range diags {
+		if err := jrpc2.PushNotify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
+			URI:         d.uri,
+			Diagnostics: ilsp.HCLDiagsToLSP(d.diags),
 		}); err != nil {
-			logger.Printf("Error pushing hcl diagnostics: %s", err)
+			logger.Printf("Error pushing diagnostics: %s", err)
 		}
 	}
 }
