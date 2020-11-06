@@ -15,7 +15,8 @@ BUG FIXES:
 
 INTERNAL:
 
- - Replace internal decoder with `hashicorp/hcl-lang` ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
+ - Internal decoder decoupled into `hashicorp/hcl-lang` ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
+ - Schema handling decoupled into `hashicorp/terraform-schema` ([#281](https://github.com/hashicorp/terraform-ls/pull/281))
 
 ## 0.8.0 (9 October 2020)
 
