@@ -1,11 +1,11 @@
-package filesystem
+package uri
 
 import (
 	"net/url"
 	"path/filepath"
 )
 
-func URIFromPath(path string) string {
+func FromPath(path string) string {
 	p := filepath.ToSlash(path)
 	p = wrapPath(p)
 

@@ -1,6 +1,6 @@
 // +build !windows
 
-package filesystem
+package uri
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestURIFromPath(t *testing.T) {
 	path := "/random/path"
-	uri := URIFromPath(path)
+	uri := FromPath(path)
 
 	expectedURI := "file:///random/path"
 	if uri != expectedURI {

@@ -22,19 +22,21 @@ func HCLDiagsToLSP(hclDiags hcl.Diagnostics) []lsp.Diagnostic {
 	diags := []lsp.Diagnostic{}
 
 	for _, hclDiag := range hclDiags {
-		// only process diagnostics with an attributable spot in the code
-		if hclDiag.Subject != nil {
-			msg := hclDiag.Summary
-			if hclDiag.Detail != "" {
-				msg += ": " + hclDiag.Detail
-			}
-			diags = append(diags, lsp.Diagnostic{
-				Range:    HCLRangeToLSP(*hclDiag.Subject),
-				Severity: HCLSeverityToLSP(hclDiag.Severity),
-				Source:   "Terraform",
-				Message:  msg,
-			})
+		msg := hclDiag.Summary
+		if hclDiag.Detail != "" {
+			msg += ": " + hclDiag.Detail
 		}
+		rnge := hcl.Range{}
+		if hclDiag.Subject != nil {
+			rnge = *hclDiag.Subject
+		}
+		diags = append(diags, lsp.Diagnostic{
+			Range:    HCLRangeToLSP(rnge),
+			Severity: HCLSeverityToLSP(hclDiag.Severity),
+			Source:   "Terraform",
+			Message:  msg,
+		})
+
 	}
 	return diags
 }

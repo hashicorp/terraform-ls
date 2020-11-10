@@ -8,8 +8,8 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -45,7 +45,7 @@ func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]h
 	}
 
 	for path, ds := range diags {
-		n.diags <- diagContext{ctx: ctx, diags: ds, uri: lsp.DocumentURI(filesystem.URIFromPath(filepath.Join(rmDir, path)))}
+		n.diags <- diagContext{ctx: ctx, diags: ds, uri: lsp.DocumentURI(uri.FromPath(filepath.Join(rmDir, path)))}
 	}
 }
 

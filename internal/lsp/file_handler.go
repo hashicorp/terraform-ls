@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -95,12 +95,12 @@ func (fh *versionedFileHandler) Version() int {
 }
 
 func FileHandlerFromPath(path string) *fileHandler {
-	return &fileHandler{uri: filesystem.URIFromPath(path)}
+	return &fileHandler{uri: uri.FromPath(path)}
 }
 
 func FileHandlerFromDirPath(dirPath string) *fileHandler {
 	// Dir URIs are usually without trailing separator in LSP
 	dirPath = filepath.Clean(dirPath)
 
-	return &fileHandler{uri: filesystem.URIFromPath(dirPath), isDir: true}
+	return &fileHandler{uri: uri.FromPath(dirPath), isDir: true}
 }

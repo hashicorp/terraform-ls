@@ -1,12 +1,12 @@
-package filesystem
+package uri
 
 import (
 	"testing"
 )
 
-func TestURIFromPath(t *testing.T) {
+func TestFromPath(t *testing.T) {
 	path := `C:\Users\With Space\file.tf`
-	uri := URIFromPath(path)
+	uri := FromPath(path)
 
 	expectedURI := "file:///C:/Users/With%20Space/file.tf"
 	if uri != expectedURI {
