@@ -3,6 +3,9 @@
 FEATURES:
 
  - Support for `workspace/executeCommand` with new `rootmodules` inspection command ([#274](https://github.com/hashicorp/terraform-ls/pull/274))
+ - Provide version-aware schema for completion of "core" blocks ([#287](https://github.com/hashicorp/terraform-ls/pull/287))
+   - `locals`, `module`, `output`, `variable` and `terraform`
+   - enrichment of `data`, `provider` and `resource` schemas by meta-arguments, such as `count` or `for_each`
 
 ENHANCEMENTS:
 
