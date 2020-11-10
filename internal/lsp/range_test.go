@@ -94,7 +94,7 @@ func TestLspRangeToHCL(t *testing.T) {
 	}
 }
 
-func TestHCLRangeToLSP_no_less_than_zero(t *testing.T) {
+func TestHCLRangeToLSP(t *testing.T) {
 	testData := []struct {
 		Name   string
 		Range  hcl.Range
