@@ -243,7 +243,10 @@ func (rm *rootModule) load(ctx context.Context) error {
 	errs = multierror.Append(errs, err)
 
 	err = rm.findAndSetCoreSchema()
-	errs = multierror.Append(errs, err)
+	if err != nil {
+		rm.logger.Printf("%s: %s - falling back to universal schema",
+			rm.Path(), err)
+	}
 
 	err = rm.UpdateProviderSchemaCache(ctx, rm.pluginLockFile)
 	errs = multierror.Append(errs, err)
