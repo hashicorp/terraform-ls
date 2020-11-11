@@ -2,7 +2,11 @@
 
 FEATURES:
 
- - Support rootmodule wide diagnostics ([#288](https://github.com/hashicorp/terraform-ls/pull/288))
+ - Support module wide diagnostics ([#288](https://github.com/hashicorp/terraform-ls/pull/288))
+
+ENHANCEMENTS:
+
+ - Add support for upcoming Terraform v0.14 ([#289](https://github.com/hashicorp/terraform-ls/pull/289))
 
 ## 0.9.0 (10 November 2020)
 
