@@ -15,12 +15,6 @@ import (
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
 
-	diags, err := lsctx.Diagnostics(ctx)
-	if err != nil {
-		return err
-	}
-	diags.DiagnoseHCL(ctx, params.TextDocument.URI, []byte(params.TextDocument.Text))
-
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
@@ -69,7 +63,11 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return fmt.Errorf("failed to parse files: %w", err)
 	}
 
-	// TOOD: Publish diags from c.ParsedDiagnostics()
+	diags, err := lsctx.Diagnostics(ctx)
+	if err != nil {
+		return err
+	}
+	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
 	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
 

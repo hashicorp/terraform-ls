@@ -6,7 +6,7 @@ import (
 )
 
 func HCLRangeToLSP(hclRng hcl.Range) lsp.Range {
-	return lsp.Range{
+	r := lsp.Range{
 		Start: lsp.Position{
 			Character: hclRng.Start.Column - 1,
 			Line:      hclRng.Start.Line - 1,
@@ -16,6 +16,8 @@ func HCLRangeToLSP(hclRng hcl.Range) lsp.Range {
 			Line:      hclRng.End.Line - 1,
 		},
 	}
+
+	return r
 }
 
 func lspRangeToHCL(lspRng lsp.Range, f File) (*hcl.Range, error) {

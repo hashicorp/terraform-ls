@@ -17,3 +17,26 @@ func HCLSeverityToLSP(severity hcl.DiagnosticSeverity) lsp.DiagnosticSeverity {
 	}
 	return sev
 }
+
+func HCLDiagsToLSP(hclDiags hcl.Diagnostics, source string) []lsp.Diagnostic {
+	diags := []lsp.Diagnostic{}
+
+	for _, hclDiag := range hclDiags {
+		msg := hclDiag.Summary
+		if hclDiag.Detail != "" {
+			msg += ": " + hclDiag.Detail
+		}
+		var rnge lsp.Range
+		if hclDiag.Subject != nil {
+			rnge = HCLRangeToLSP(*hclDiag.Subject)
+		}
+		diags = append(diags, lsp.Diagnostic{
+			Range:    rnge,
+			Severity: HCLSeverityToLSP(hclDiag.Severity),
+			Source:   source,
+			Message:  msg,
+		})
+
+	}
+	return diags
+}

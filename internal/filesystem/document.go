@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/source"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/spf13/afero"
 )
 
@@ -30,7 +31,7 @@ func (d *document) Filename() string {
 }
 
 func (d *document) URI() string {
-	return URIFromPath(d.meta.dh.FullPath())
+	return uri.FromPath(d.meta.dh.FullPath())
 }
 
 func (d *document) Lines() source.Lines {

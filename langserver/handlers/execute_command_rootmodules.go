@@ -7,8 +7,8 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -30,12 +30,12 @@ func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (in
 		return nil, err
 	}
 
-	uri, ok := args.GetString("uri")
-	if !ok || uri == "" {
+	fileUri, ok := args.GetString("uri")
+	if !ok || fileUri == "" {
 		return nil, fmt.Errorf("%w: expected uri argument to be set", code.InvalidParams.Err())
 	}
 
-	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(uri))
+	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(fileUri))
 
 	cf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
@@ -47,7 +47,7 @@ func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (in
 	rootModules := make([]rootModuleInfo, len(candidates))
 	for i, candidate := range candidates {
 		rootModules[i] = rootModuleInfo{
-			URI: filesystem.URIFromPath(candidate.Path()),
+			URI: uri.FromPath(candidate.Path()),
 		}
 	}
 	sort.SliceStable(rootModules, func(i, j int) bool {

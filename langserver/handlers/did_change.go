@@ -49,17 +49,6 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
-	// now that the file content has been sync'd run diagnostics
-	diags, err := lsctx.Diagnostics(ctx)
-	if err != nil {
-		return err
-	}
-	text, err := f.Text()
-	if err != nil {
-		return err
-	}
-	diags.DiagnoseHCL(ctx, params.TextDocument.URI, text)
-
 	rmf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return err
@@ -75,7 +64,11 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 		return err
 	}
 
-	// TODO: publish/update diags from rm.ParsedDiagnostics()
+	diags, err := lsctx.Diagnostics(ctx)
+	if err != nil {
+		return err
+	}
+	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
 	return nil
 }

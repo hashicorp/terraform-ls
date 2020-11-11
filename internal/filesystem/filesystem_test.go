@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func TestFilesystem_Change_notOpen(t *testing.T) {
@@ -454,7 +455,7 @@ func TempDir(t *testing.T) string {
 }
 
 func testHandlerFromPath(path string) DocumentHandler {
-	return &testHandler{uri: URIFromPath(path), fullPath: path}
+	return &testHandler{uri: uri.FromPath(path), fullPath: path}
 }
 
 type testHandler struct {

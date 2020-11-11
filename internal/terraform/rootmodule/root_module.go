@@ -72,7 +72,7 @@ type rootModule struct {
 	isParsed    bool
 	isParsedMu  *sync.RWMutex
 	pFilesMap   map[string]*hcl.File
-	parsedDiags hcl.Diagnostics
+	parsedDiags map[string]hcl.Diagnostics
 	parserMu    *sync.RWMutex
 	filesystem  filesystem.Filesystem
 }
@@ -433,7 +433,7 @@ func (rm *rootModule) ParseFiles() error {
 	defer rm.parserMu.Unlock()
 
 	files := make(map[string]*hcl.File, 0)
-	var diags hcl.Diagnostics
+	diags := make(map[string]hcl.Diagnostics, 0)
 
 	infos, err := rm.filesystem.ReadDir(rm.Path())
 	if err != nil {
@@ -462,7 +462,7 @@ func (rm *rootModule) ParseFiles() error {
 
 		rm.logger.Printf("parsing file %q", name)
 		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
-		diags = append(diags, pDiags...)
+		diags[name] = pDiags
 		if f != nil {
 			files[name] = f
 		}
@@ -475,7 +475,7 @@ func (rm *rootModule) ParseFiles() error {
 	return nil
 }
 
-func (rm *rootModule) ParsedDiagnostics() hcl.Diagnostics {
+func (rm *rootModule) ParsedDiagnostics() map[string]hcl.Diagnostics {
 	rm.parserMu.Lock()
 	defer rm.parserMu.Unlock()
 	return rm.parsedDiags
