@@ -1,3 +1,9 @@
+## 0.10.0 (Unreleased)
+
+FEATURES:
+
+ - Support rootmodule wide diagnostics ([#288](https://github.com/hashicorp/terraform-ls/pull/288))
+
 ## 0.9.0 (10 November 2020)
 
 FEATURES:
