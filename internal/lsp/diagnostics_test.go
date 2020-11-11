@@ -7,12 +7,12 @@ import (
 )
 
 func TestHCLDiagsToLSP_NeverReturnsNil(t *testing.T) {
-	diags := HCLDiagsToLSP(nil)
+	diags := HCLDiagsToLSP(nil, "test")
 	if diags == nil {
 		t.Fatal("diags should not be nil")
 	}
 
-	diags = HCLDiagsToLSP(hcl.Diagnostics{})
+	diags = HCLDiagsToLSP(hcl.Diagnostics{}, "test")
 	if diags == nil {
 		t.Fatal("diags should not be nil")
 	}
@@ -21,7 +21,7 @@ func TestHCLDiagsToLSP_NeverReturnsNil(t *testing.T) {
 		{
 			Severity: hcl.DiagError,
 		},
-	})
+	}, "source")
 	if diags == nil {
 		t.Fatal("diags should not be nil")
 	}

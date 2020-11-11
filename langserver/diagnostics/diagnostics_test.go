@@ -22,7 +22,7 @@ func TestDiags_Closes(t *testing.T) {
 				Severity: hcl.DiagError,
 			},
 		},
-	})
+	}, "test")
 
 	if _, open := <-n.diags; open {
 		t.Fatal("channel should be closed")
@@ -46,5 +46,5 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 				Severity: hcl.DiagError,
 			},
 		},
-	})
+	}, "test")
 }

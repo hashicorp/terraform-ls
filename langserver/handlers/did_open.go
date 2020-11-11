@@ -67,7 +67,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if err != nil {
 		return err
 	}
-	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics())
+	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
 	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
 

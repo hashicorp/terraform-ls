@@ -17,19 +17,6 @@ func HCLRangeToLSP(hclRng hcl.Range) lsp.Range {
 		},
 	}
 
-	if r.Start.Character < 0 {
-		r.Start.Character = 0
-	}
-	if r.Start.Line < 0 {
-		r.Start.Line = 0
-	}
-	if r.End.Character < 0 {
-		r.End.Character = 0
-	}
-	if r.End.Line < 0 {
-		r.End.Line = 0
-	}
-
 	return r
 }
 

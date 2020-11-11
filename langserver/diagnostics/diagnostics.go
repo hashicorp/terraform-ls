@@ -14,9 +14,10 @@ import (
 )
 
 type diagContext struct {
-	ctx   context.Context
-	uri   lsp.DocumentURI
-	diags hcl.Diagnostics
+	ctx    context.Context
+	uri    lsp.DocumentURI
+	diags  hcl.Diagnostics
+	source string
 }
 
 // Notifier is a type responsible for queueing hcl diagnostics to be converted
@@ -34,7 +35,7 @@ func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 }
 
 // Publish accepts a map of diagnostics per file and queues them for publishing
-func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]hcl.Diagnostics) {
+func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]hcl.Diagnostics, source string) {
 	select {
 	case <-n.sessCtx.Done():
 		n.closeDiagsOnce.Do(func() {
@@ -44,8 +45,12 @@ func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]h
 	default:
 	}
 
+	if source == "" {
+		source = "Terraform"
+	}
+
 	for path, ds := range diags {
-		n.diags <- diagContext{ctx: ctx, diags: ds, uri: lsp.DocumentURI(uri.FromPath(filepath.Join(rmDir, path)))}
+		n.diags <- diagContext{ctx: ctx, diags: ds, source: source, uri: lsp.DocumentURI(uri.FromPath(filepath.Join(rmDir, path)))}
 	}
 }
 
@@ -53,7 +58,7 @@ func notify(diags <-chan diagContext, logger *log.Logger) {
 	for d := range diags {
 		if err := jrpc2.PushNotify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         d.uri,
-			Diagnostics: ilsp.HCLDiagsToLSP(d.diags),
+			Diagnostics: ilsp.HCLDiagsToLSP(d.diags, d.source),
 		}); err != nil {
 			logger.Printf("Error pushing diagnostics: %s", err)
 		}
