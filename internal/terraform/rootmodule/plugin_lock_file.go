@@ -7,6 +7,10 @@ import (
 
 func pluginLockFilePaths(dir string) []string {
 	return []string{
+		// Terraform >= 0.14
+		filepath.Join(dir,
+			".terraform.lock.hcl",
+		),
 		// Terraform >= v0.13
 		filepath.Join(dir,
 			".terraform",
