@@ -34,7 +34,6 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 
 func TestCompletion_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	t.Logf("will init at %s", tmpDir.Dir())
 	InitPluginCache(t, tmpDir.Dir())
 
 	var testSchema tfjson.ProviderSchemas
