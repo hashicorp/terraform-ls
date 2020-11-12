@@ -57,7 +57,7 @@ the language server
 
 ```
 cd terraform-ls
-make build
+go install
 ```
 
 Once the compilation process succeeds, you can find a `terraform-ls` executable in
@@ -89,10 +89,7 @@ go test ./langserver
 ## External Dependencies
 
 Terraform uses [Go Modules]((https://blog.golang.org/using-go-modules))
-for dependency management, but currently uses "vendoring" to include
-copies of all of the external library dependencies in the repository
-to allow builds to complete even if third-party dependency sources
-are unavailable.
+for dependency management.
 
 If you need to add a new dependency to Terraform or update the selected version
 for an existing one, use `go get` from the root of the Terraform repository
@@ -107,20 +104,10 @@ and record that version selection in the `go.mod` file. It will also record
 checksums for the module in the `go.sum`.
 
 To complete the dependency change, clean up any redundancy in the module
-metadata files and resynchronize the `vendor` directory with the new package
-selections by running the following commands:
+metadata files by running the following command:
 
 ```
 go mod tidy
-go mod vendor
-```
-
-To ensure that the vendoring has worked correctly, be sure to run the unit
-test suite at least once in _vendoring_ mode, where Go will use the vendored
-dependencies to build the test programs:
-
-```
-go test -mod=vendor ./...
 ```
 
 Because dependency changes affect a shared, top-level file, they are more likely
@@ -132,8 +119,8 @@ minimal set of changes to the language server's own code for compatibility
 with the new version:
 
 ```
-git add go.mod go.sum vendor
-git commit -m "vendor: go get github.com/hashicorp/hcl/v2@2.0.0"
+git add go.mod go.sum
+git commit -m "deps: go get github.com/hashicorp/hcl/v2@2.0.0"
 ```
 
 You can then make use of the new or updated dependency in new code added in
