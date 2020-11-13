@@ -86,7 +86,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
 		// TODO: if there is any change for the provider/module, ask for init. The did change handler should also implement this
-		if !rm.ParsedDiagnostics().HasErrors() && len(f.Text()) != 0 {
+		if len(f.Text()) != 0 {
 			go askInitForEmptyRootModule(ctx, lh.logger, w, rootDir, f.Dir())
 		}
 	}
