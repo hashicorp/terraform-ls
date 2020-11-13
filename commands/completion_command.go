@@ -127,7 +127,7 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	cc := &lsp.ClientCapabilities{}
-	items := ilsp.CompletionList(candidates, cc.TextDocument)
+	items := ilsp.ToCompletionList(candidates, cc.TextDocument)
 
 	c.Ui.Output(fmt.Sprintf("%#v", items))
 	return 0

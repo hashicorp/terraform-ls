@@ -6,9 +6,19 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func CompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
-	list := lsp.CompletionList{
-		Items:        make([]lsp.CompletionItem, len(candidates.List)),
+type CompletionList struct {
+	IsIncomplete bool             `json:"isIncomplete"`
+	Items        []CompletionItem `json:"items"`
+}
+
+type CompletionItem struct {
+	lsp.CompletionItem
+	Command *lsp.Command `json:"command,omitempty"`
+}
+
+func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapabilities) CompletionList {
+	list := CompletionList{
+		Items:        make([]CompletionItem, len(candidates.List)),
 		IsIncomplete: !candidates.IsComplete,
 	}
 
@@ -21,13 +31,13 @@ func CompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapab
 	}
 
 	for i, c := range candidates.List {
-		list.Items[i] = CompletionItem(c, snippetSupport, markdown)
+		list.Items[i] = toCompletionItem(c, snippetSupport, markdown)
 	}
 
 	return list
 }
 
-func CompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.CompletionItem {
+func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) CompletionItem {
 	doc := candidate.Description.Value
 
 	// TODO: revisit once go-lsp supports markdown in CompletionItem
@@ -44,14 +54,24 @@ func CompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.Comple
 	}
 
 	te, format := textEdit(candidate.TextEdit, snippet)
+	var cmd *lsp.Command
+	if candidate.TriggerSuggest {
+		cmd = &lsp.Command{
+			Command: "editor.action.triggerSuggest",
+			Title:   "Suggest",
+		}
+	}
 
-	return lsp.CompletionItem{
-		Label:            candidate.Label,
-		Kind:             kind,
-		InsertTextFormat: format,
-		Detail:           candidate.Detail,
-		Documentation:    doc,
-		TextEdit:         te,
+	return CompletionItem{
+		CompletionItem: lsp.CompletionItem{
+			Label:            candidate.Label,
+			Kind:             kind,
+			InsertTextFormat: format,
+			Detail:           candidate.Detail,
+			Documentation:    doc,
+			TextEdit:         te,
+		},
+		Command: cmd,
 	}
 }
 
