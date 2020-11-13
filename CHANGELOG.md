@@ -3,6 +3,7 @@
 FEATURES:
 
  - Support module wide diagnostics ([#288](https://github.com/hashicorp/terraform-ls/pull/288))
+ - Provide documentation on hover ([#294](https://github.com/hashicorp/terraform-ls/pull/294))
 
 ENHANCEMENTS:
 
