@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-ls/commands"
 )
 
+//go:generate go run schemas/gen.go
+
 func main() {
 	c := &cli.CLI{
 		Name:    "terraform-ls",
