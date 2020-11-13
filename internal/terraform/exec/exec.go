@@ -87,6 +87,17 @@ func (e *Executor) setLogPath(method string) error {
 	return e.tf.SetLogPath(logPath)
 }
 
+func (e *Executor) Init(ctx context.Context) error {
+	ctx, cancel := e.withTimeout(ctx)
+	defer cancel()
+	err := e.setLogPath("Init")
+	if err != nil {
+		return err
+	}
+
+	return e.contextfulError(ctx, "Init", e.tf.Init(ctx))
+}
+
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()

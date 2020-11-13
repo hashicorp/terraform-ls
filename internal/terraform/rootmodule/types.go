@@ -40,6 +40,7 @@ type RootModuleManager interface {
 	SetTerraformExecLogPath(logPath string)
 	SetTerraformExecTimeout(timeout time.Duration)
 
+	InitAndUpdateRootModule(ctx context.Context, dir string) (RootModule, error)
 	AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error)
 	WorkerPoolSize() int
 	WorkerQueueSize() int
@@ -81,6 +82,7 @@ type RootModule interface {
 	TerraformFormatter() (exec.Formatter, error)
 	HasTerraformDiscoveryFinished() bool
 	IsTerraformAvailable() bool
+	ExecuteTerraformInit(ctx context.Context) error
 	Modules() []ModuleRecord
 }
 

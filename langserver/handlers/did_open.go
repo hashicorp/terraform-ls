@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"path/filepath"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/watcher"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
@@ -38,6 +40,11 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	}
 
 	walker, err := lsctx.RootModuleWalker(ctx)
+	if err != nil {
+		return err
+	}
+
+	w, err := lsctx.Watcher(ctx)
 	if err != nil {
 		return err
 	}
@@ -78,16 +85,10 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
-		msg := fmt.Sprintf("No root module found for %q."+
-			" Functionality may be limited."+
-			// Unfortunately we can't be any more specific wrt where
-			// because we don't gather "init-able folders" in any way
-			" You may need to run terraform init"+
-			" and reload your editor.", readableDir)
-		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
-			Type:    lsp.MTWarning,
-			Message: msg,
-		})
+		// TODO: if there is any change for the provider/module, ask for init. The did change handler should also implement this
+		if !rm.ParsedDiagnostics().HasErrors() && len(f.Text()) != 0 {
+			go askInitForEmptyRootModule(ctx, lh.logger, w, rootDir, f.Dir())
+		}
 	}
 
 	if len(candidates) > 1 {
@@ -133,4 +134,51 @@ func humanReadablePath(rootDir, path string) string {
 	}
 
 	return relDir
+}
+
+func askInitForEmptyRootModule(ctx context.Context, logger *log.Logger, w watcher.Watcher, rootDir, dir string) {
+	msg := fmt.Sprintf("No root module found for %q."+
+		" Functionality may be limited."+
+		// Unfortunately we can't be any more specific wrt where
+		// because we don't gather "init-able folders" in any way
+		" You may need to run terraform init.", humanReadablePath(rootDir, dir))
+	title := "run `terraform init`"
+	resp, err := jrpc2.PushCall(ctx, "window/showMessageRequest", lsp.ShowMessageRequestParams{
+		Type:    lsp.MTWarning,
+		Message: msg,
+		Actions: []lsp.MessageActionItem{
+			{
+				Title: title,
+			},
+		},
+	})
+	if err != nil {
+		logger.Printf("%+v", err)
+		return
+	}
+	var action lsp.MessageActionItem
+	if err := resp.UnmarshalResult(&action); err != nil {
+		logger.Printf("unmarshal MessageActionItem: %+v", err)
+		return
+	}
+	if action.Title == title {
+		rmm, err := lsctx.RootModuleManager(ctx)
+		if err != nil {
+			logger.Printf("%+v", err)
+			return
+		}
+
+		rm, err := rmm.InitAndUpdateRootModule(ctx, dir)
+		if err != nil {
+			logger.Printf("failed to init root module %+v", err)
+			return
+		}
+
+		paths := rm.PathsToWatch()
+		logger.Printf("Adding %d paths of root module for watching (%s)", len(paths), dir)
+		err = w.AddPaths(paths)
+		if err != nil {
+			logger.Printf("failed to add watch for dir (%s): %+v", dir, err)
+		}
+	}
 }

@@ -22,6 +22,7 @@ type TerraformExecutor interface {
 	SetExecLogPath(path string) error
 	SetTimeout(duration time.Duration)
 	GetExecPath() string
+	Init(ctx context.Context) error
 	Format(ctx context.Context, input []byte) ([]byte, error)
 	Version(ctx context.Context) (*version.Version, error)
 	ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error)
