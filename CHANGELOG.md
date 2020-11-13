@@ -8,6 +8,10 @@ ENHANCEMENTS:
 
  - Add support for upcoming Terraform v0.14 ([#289](https://github.com/hashicorp/terraform-ls/pull/289))
 
+BUG FIXES:
+
+ - textDocument/completion: Fix wrong range computation near EOF ([#298](https://github.com/hashicorp/terraform-ls/pull/298))
+
 ## 0.9.0 (10 November 2020)
 
 FEATURES:
