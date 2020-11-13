@@ -32,6 +32,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"openClose": true,
 					"change": 2
 				},
+				"hoverProvider": true,
 				"completionProvider": {},
 				"documentSymbolProvider":true,
 				"documentFormattingProvider":true,
