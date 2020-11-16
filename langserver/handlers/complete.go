@@ -8,8 +8,8 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (lsp.CompletionList, error) {
-	var list lsp.CompletionList
+func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (ilsp.CompletionList, error) {
+	var list ilsp.CompletionList
 
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
@@ -54,5 +54,5 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	h.logger.Printf("Looking for candidates at %q -> %#v", file.Filename(), fPos.Position())
 	candidates, err := d.CandidatesAtPos(file.Filename(), fPos.Position())
 	h.logger.Printf("received candidates: %#v", candidates)
-	return ilsp.CompletionList(candidates, cc.TextDocument), err
+	return ilsp.ToCompletionList(candidates, cc.TextDocument), err
 }
