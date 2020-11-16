@@ -457,6 +457,27 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 	}
 }
 
+func TestSchemaForPath_uninitialized(t *testing.T) {
+	rmm := testRootModuleManager(t)
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(testData, "uninitialized-root")
+
+	// model is added automatically during didOpen
+	_, err = rmm.AddAndStartLoadingRootModule(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = rmm.SchemaForPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func testRootModuleManager(t *testing.T) *rootModuleManager {
 	fs := filesystem.NewFilesystem()
 	rmm := newRootModuleManager(fs)
