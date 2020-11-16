@@ -142,7 +142,13 @@ func (rmm *rootModuleManager) SchemaForPath(path string) (*schema.BodySchema, er
 			return schema, nil
 		}
 	}
-	return nil, fmt.Errorf("failed to find schema for %s", path)
+
+	rm, err := rmm.RootModuleByPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return rm.MergedSchema()
 }
 
 func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
