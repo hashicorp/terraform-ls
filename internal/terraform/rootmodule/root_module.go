@@ -2,6 +2,7 @@ package rootmodule
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -22,8 +23,28 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	preloadedSchemas "github.com/hashicorp/terraform-ls/schemas"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
+
+var preloadedProviderSchemas tfjson.ProviderSchemas
+
+func init() {
+	f, err := preloadedSchemas.Files.Open("schemas.json")
+	if err != nil {
+		panic(err)
+	}
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	if len(b) == 0 {
+		panic("preloaded provider schemas is empty")
+	}
+	if err := json.Unmarshal(b, &preloadedProviderSchemas); err != nil {
+		panic(err)
+	}
+}
 
 type rootModule struct {
 	path   string
@@ -482,19 +503,24 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 	defer rm.coreSchemaMu.RUnlock()
 	mergedSchema := rm.coreSchema
 
-	if rm.IsProviderSchemaLoaded() {
-		if !rm.IsParsed() {
-			err := rm.ParseFiles()
-			if err != nil {
-				return nil, err
-			}
-		}
-		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, rm.providerSchema)
+	if !rm.IsParsed() {
+		err := rm.ParseFiles()
 		if err != nil {
 			return nil, err
 		}
-		mergedSchema = s
 	}
+
+	ps := &preloadedProviderSchemas
+	if rm.IsProviderSchemaLoaded() {
+		rm.providerSchemaMu.RLock()
+		defer rm.providerSchemaMu.RUnlock()
+		ps = rm.providerSchema
+	}
+	s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
+	if err != nil {
+		return nil, err
+	}
+	mergedSchema = s
 
 	return mergedSchema, nil
 }

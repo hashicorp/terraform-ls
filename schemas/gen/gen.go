@@ -14,9 +14,8 @@ import (
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
+	"github.com/shurcooL/vfsgen"
 )
-
-const workingDir = "schemas" // this is relative to where go generate was called, should be project root
 
 const terraformBlock = `terraform {
   required_providers {
@@ -56,7 +55,7 @@ func gen() error {
 	}
 
 	log.Println("creating config file")
-	configFile, err := os.Create(filepath.Join(workingDir, "providers.tf"))
+	configFile, err := os.Create(filepath.Join("schemas", "providers.tf"))
 	if err != nil {
 		return err
 	}
@@ -74,7 +73,7 @@ func gen() error {
 	}
 
 	log.Println("creating tfexec instance")
-	tf, err := tfexec.NewTerraform(workingDir, execPath)
+	tf, err := tfexec.NewTerraform("schemas", execPath)
 	if err != nil {
 		return err
 	}
@@ -92,14 +91,31 @@ func gen() error {
 		return err
 	}
 
+	log.Println("creating schemas/data dir")
+	err = os.MkdirAll(filepath.Join("schemas", "data"), 0755)
+	if err != nil {
+		return err
+	}
+
 	log.Println("creating schemas file")
-	schemasFile, err := os.Create(filepath.Join(workingDir, "schemas.json"))
+	schemasFile, err := os.Create(filepath.Join("schemas", "data", "schemas.json"))
 	if err != nil {
 		return err
 	}
 
 	log.Println("writing schemas to file")
 	err = json.NewEncoder(schemasFile).Encode(ps)
+	if err != nil {
+		return err
+	}
+
+	var fs http.FileSystem = http.Dir(filepath.Join("schemas", "data"))
+	log.Println("generating embedded go file")
+	err = vfsgen.Generate(fs, vfsgen.Options{
+		Filename:     filepath.Join("schemas", "data.go"),
+		PackageName:  "schemas",
+		VariableName: "Files",
+	})
 	if err != nil {
 		return err
 	}

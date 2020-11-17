@@ -20,6 +20,8 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.2
 	github.com/pmezard/go-difflib v1.0.0
+	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
+	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
 	github.com/sourcegraph/go-lsp v0.0.0-20200117082640-b19bb38222e2
 	github.com/spf13/afero v1.3.2
 	github.com/stretchr/testify v1.4.0
