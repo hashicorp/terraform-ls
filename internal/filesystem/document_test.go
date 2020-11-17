@@ -200,6 +200,99 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 	}
 }
 
+func TestFile_ApplyChange_partialUpdateMultipleChanges(t *testing.T) {
+	testData := []struct {
+		Content     string
+		FileChanges DocumentChanges
+		Expect      string
+	}{
+		{
+			Content: `variable "service_host" {
+  default = "blah"
+}
+
+module "app" {
+  source = "./sub"
+  service_listeners = [
+    {
+      hosts    = [var.service_host]
+      listener = ""
+    }
+  ]
+}
+`,
+			FileChanges: DocumentChanges{
+				&testChange{
+					text: "\n",
+					rng: &Range{
+						Start: Pos{Line: 8, Column: 18},
+						End:   Pos{Line: 8, Column: 18},
+					},
+				},
+				&testChange{
+					text: "      ",
+					rng: &Range{
+						Start: Pos{Line: 9, Column: 0},
+						End:   Pos{Line: 9, Column: 0},
+					},
+				},
+				&testChange{
+					text: "  ",
+					rng: &Range{
+						Start: Pos{Line: 9, Column: 6},
+						End:   Pos{Line: 9, Column: 6},
+					},
+				},
+			},
+			Expect: `variable "service_host" {
+  default = "blah"
+}
+
+module "app" {
+  source = "./sub"
+  service_listeners = [
+    {
+      hosts    = [
+        var.service_host]
+      listener = ""
+    }
+  ]
+}
+`,
+		},
+	}
+
+	for _, v := range testData {
+		fs := testDocumentStorage()
+		dh := &testHandler{uri: "file:///test.tf"}
+
+		err := fs.CreateAndOpenDocument(dh, []byte(v.Content))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		changes := v.FileChanges
+		err = fs.ChangeDocument(dh, changes)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		doc, err := fs.GetDocument(dh)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		text, err := doc.Text()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff(v.Expect, string(text)); diff != "" {
+			t.Fatalf("content mismatch: %s", diff)
+		}
+	}
+}
+
 func testDocument(t *testing.T, dh DocumentHandler, meta *documentMetadata, b []byte) Document {
 	fs := afero.NewMemMapFs()
 	f, err := fs.Create(dh.FullPath())

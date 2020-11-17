@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
@@ -15,6 +16,7 @@ import (
 
 type MockSessionInput struct {
 	RootModules       map[string]*rootmodule.RootModuleMock
+	Filesystem        filesystem.Filesystem
 	TfExecutorFactory exec.ExecutorFactory
 }
 
@@ -37,11 +39,19 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		}
 	}
 
+	var fs filesystem.Filesystem
+	if ms.mockInput != nil && ms.mockInput.Filesystem != nil {
+		fs = ms.mockInput.Filesystem
+	} else {
+		fs = filesystem.NewFilesystem()
+	}
+
 	svc := &service{
 		logger:               testLogger(),
 		srvCtx:               srvCtx,
 		sessCtx:              sessCtx,
 		stopSession:          ms.stop,
+		fs:                   fs,
 		newRootModuleManager: rootmodule.NewRootModuleManagerMock(input),
 		newWatcher:           watcher.MockWatcher(),
 		newWalker:            rootmodule.MockWalker,
