@@ -23,3 +23,7 @@ which the language server supports and is tested against.
  - `multi-root-no-modules`
  - `multi-root-local-modules-down`
  - `multi-root-local-modules-up` - e.g. https://github.com/terraform-aws-modules/terraform-aws-security-group
+
+## Uninitialized Root
+
+ - `uninitialized-root`
