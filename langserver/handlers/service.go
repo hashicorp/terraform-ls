@@ -71,8 +71,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, fmt.Errorf("Unable to prepare session: %w", err)
 	}
 
-	// TODO
-	// svc.fs.SetLogger(svc.logger)
+	svc.fs.SetLogger(svc.logger)
 
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}

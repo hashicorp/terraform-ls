@@ -9,7 +9,7 @@ import (
 
 type fileChange struct {
 	newText string
-	rng     hcl.Range
+	rng     *hcl.Range
 	opCode  difflib.OpCode
 }
 
@@ -17,8 +17,21 @@ func (ch *fileChange) Text() string {
 	return ch.newText
 }
 
-func (ch *fileChange) Range() hcl.Range {
-	return ch.rng
+func (ch *fileChange) Range() *filesystem.Range {
+	if ch.rng == nil {
+		return nil
+	}
+
+	return &filesystem.Range{
+		Start: filesystem.Pos{
+			Line:   ch.rng.Start.Line - 1,
+			Column: ch.rng.Start.Column - 1,
+		},
+		End: filesystem.Pos{
+			Line:   ch.rng.End.Line - 1,
+			Column: ch.rng.End.Column - 1,
+		},
+	}
 }
 
 const (
@@ -57,12 +70,13 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 			}
 
 			if c.Tag == OpReplace {
-				var rng hcl.Range
+				var rng *hcl.Range
 				var newBytes []byte
 
 				for i, line := range beforeLines[beforeStart:beforeEnd] {
 					if i == 0 {
-						rng = line.Range()
+						lr := line.Range()
+						rng = &lr
 						continue
 					}
 					rng.End = line.Range().End
@@ -80,10 +94,11 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 			}
 
 			if c.Tag == OpDelete {
-				var deleteRng hcl.Range
+				var deleteRng *hcl.Range
 				for i, line := range beforeLines[beforeStart:beforeEnd] {
 					if i == 0 {
-						deleteRng = line.Range()
+						lr := line.Range()
+						deleteRng = &lr
 						continue
 					}
 					deleteRng.End = line.Range().End
@@ -97,7 +112,7 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 			}
 
 			if c.Tag == OpInsert {
-				var insertRng hcl.Range
+				insertRng := &hcl.Range{}
 				insertRng.Start = beforeLines[beforeStart-1].Range().End
 				insertRng.End = beforeLines[beforeStart-1].Range().End
 				var newBytes []byte
