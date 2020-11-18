@@ -18,6 +18,10 @@ BUG FIXES:
  - fix synchronization issues affecting any clients which support partial updates ([#304](https://github.com/hashicorp/terraform-ls/pull/304))
  - Avoid panic by initing universal schema early ([#307](https://github.com/hashicorp/terraform-ls/pull/307))
 
+INTERNAL:
+
+- Bump jrpc2 (JSON-RPC library) to latest version ([#309](https://github.com/hashicorp/terraform-ls/pull/309))
+
 ## 0.9.0 (10 November 2020)
 
 FEATURES:
