@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,30 +22,14 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	preloadedSchemas "github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	preloadedSchemas "github.com/hashicorp/terraform-ls/schemas"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
 var preloadedProviderSchemas tfjson.ProviderSchemas
-
-func init() {
-	f, err := preloadedSchemas.Files.Open("schemas.json")
-	if err != nil {
-		panic(err)
-	}
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
-	if len(b) == 0 {
-		panic("preloaded provider schemas is empty")
-	}
-	if err := json.Unmarshal(b, &preloadedProviderSchemas); err != nil {
-		panic(err)
-	}
-}
+var preloadProviderSchemasOnce sync.Once
 
 type rootModule struct {
 	path   string
@@ -499,6 +484,20 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 }
 
 func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
+	var err error
+	preloadProviderSchemasOnce.Do(func() {
+		var f http.File
+		f, err = preloadedSchemas.Files.Open("schemas.json")
+		if err != nil {
+			return
+		}
+
+		err = json.NewDecoder(f).Decode(&preloadedProviderSchemas)
+	})
+	if err != nil {
+		rm.logger.Printf("decoding of the preloaded provider schemas has errored and will not be retried: %s", err)
+	}
+
 	rm.coreSchemaMu.RLock()
 	defer rm.coreSchemaMu.RUnlock()
 	mergedSchema := rm.coreSchema
@@ -516,11 +515,14 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 		defer rm.providerSchemaMu.RUnlock()
 		ps = rm.providerSchema
 	}
-	s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
-	if err != nil {
-		return nil, err
+
+	if ps == nil {
+		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
+		if err != nil {
+			return nil, err
+		}
+		mergedSchema = s
 	}
-	mergedSchema = s
 
 	return mergedSchema, nil
 }

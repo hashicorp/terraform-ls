@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -30,8 +31,7 @@ const terraformBlock = `terraform {
 
 func main() {
 	os.Exit(func() int {
-		err := gen()
-		if err != nil {
+		if err := gen(); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			return 1
 		}
@@ -55,7 +55,7 @@ func gen() error {
 	}
 
 	log.Println("creating config file")
-	configFile, err := os.Create(filepath.Join("schemas", "providers.tf"))
+	configFile, err := os.Create("providers.tf")
 	if err != nil {
 		return err
 	}
@@ -69,16 +69,32 @@ func gen() error {
 	log.Println("finding terraform in path")
 	execPath, err := tfinstall.Find(ctx, tfinstall.LookPath())
 	if err != nil {
-		return err
+		log.Println("terraform not found in path, attempting install to temp")
+
+		tmpDir, err := ioutil.TempDir("", "tfinstall")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmpDir)
+
+		execPath, err = tfinstall.Find(ctx, tfinstall.LatestVersion(tmpDir, false))
+		if err != nil {
+			return err
+		}
 	}
 
-	log.Println("creating tfexec instance")
-	tf, err := tfexec.NewTerraform("schemas", execPath)
+	log.Println("running terraform init")
+
+	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	log.Println("running terraform init")
+	tf, err := tfexec.NewTerraform(cwd, execPath)
+	if err != nil {
+		return err
+	}
+
 	err = tf.Init(ctx, tfexec.Upgrade(true), tfexec.LockTimeout("120s"))
 	if err != nil {
 		return err
@@ -92,13 +108,13 @@ func gen() error {
 	}
 
 	log.Println("creating schemas/data dir")
-	err = os.MkdirAll(filepath.Join("schemas", "data"), 0755)
+	err = os.MkdirAll("data", 0755)
 	if err != nil {
 		return err
 	}
 
 	log.Println("creating schemas file")
-	schemasFile, err := os.Create(filepath.Join("schemas", "data", "schemas.json"))
+	schemasFile, err := os.Create(filepath.Join("data", "schemas.json"))
 	if err != nil {
 		return err
 	}
@@ -109,18 +125,13 @@ func gen() error {
 		return err
 	}
 
-	var fs http.FileSystem = http.Dir(filepath.Join("schemas", "data"))
 	log.Println("generating embedded go file")
-	err = vfsgen.Generate(fs, vfsgen.Options{
-		Filename:     filepath.Join("schemas", "data.go"),
+	var fs http.FileSystem = http.Dir("data")
+	return vfsgen.Generate(fs, vfsgen.Options{
+		Filename:     "schemas.go",
 		PackageName:  "schemas",
 		VariableName: "Files",
 	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 type providerAttributes struct {
