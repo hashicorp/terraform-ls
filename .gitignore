@@ -1,3 +1,7 @@
 dist/
 .idea/
 coverage.txt
+internal/schemas/.terraform/
+internal/schemas/dev.log
+internal/schemas/providers.tf
+internal/schemas/data/

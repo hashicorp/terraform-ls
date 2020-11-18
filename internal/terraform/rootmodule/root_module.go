@@ -2,6 +2,7 @@ package rootmodule
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -20,10 +21,15 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	preloadedSchemas "github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
+
+var _preloadedProviderSchemas *tfjson.ProviderSchemas
+var _preloadedProviderSchemasOnce sync.Once
+var _preloadedProviderSchemasErr error
 
 type rootModule struct {
 	path   string
@@ -74,6 +80,21 @@ type rootModule struct {
 	parsedDiags map[string]hcl.Diagnostics
 	parserMu    *sync.RWMutex
 	filesystem  filesystem.Filesystem
+}
+
+func preloadedProviderSchemas() (*tfjson.ProviderSchemas, error) {
+	_preloadedProviderSchemasOnce.Do(func() {
+		f, fErr := preloadedSchemas.Files.Open("schemas.json")
+		if fErr != nil {
+			_preloadedProviderSchemasErr = fErr
+			return
+		}
+
+		_preloadedProviderSchemas = &tfjson.ProviderSchemas{}
+		_preloadedProviderSchemasErr = json.NewDecoder(f).Decode(_preloadedProviderSchemas)
+	})
+
+	return _preloadedProviderSchemas, _preloadedProviderSchemasErr
 }
 
 func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
@@ -482,19 +503,28 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 	defer rm.coreSchemaMu.RUnlock()
 	mergedSchema := rm.coreSchema
 
-	if rm.IsProviderSchemaLoaded() {
-		if !rm.IsParsed() {
-			err := rm.ParseFiles()
-			if err != nil {
-				return nil, err
-			}
-		}
-		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, rm.providerSchema)
+	if !rm.IsParsed() {
+		err := rm.ParseFiles()
 		if err != nil {
 			return nil, err
 		}
-		mergedSchema = s
 	}
+
+	ps, err := preloadedProviderSchemas()
+	if err != nil {
+		return nil, err
+	}
+	if rm.IsProviderSchemaLoaded() {
+		rm.providerSchemaMu.RLock()
+		defer rm.providerSchemaMu.RUnlock()
+		ps = rm.providerSchema
+	}
+
+	s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
+	if err != nil {
+		return nil, err
+	}
+	mergedSchema = s
 
 	return mergedSchema, nil
 }
