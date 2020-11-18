@@ -64,9 +64,8 @@ type rootModule struct {
 	tfVersionErr error
 
 	// core schema
-	coreSchemaLoaded bool
-	coreSchema       *schema.BodySchema
-	coreSchemaMu     *sync.RWMutex
+	coreSchema   *schema.BodySchema
+	coreSchemaMu *sync.RWMutex
 
 	// decoder
 	isParsed    bool
@@ -88,6 +87,7 @@ func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
 		pluginMu:         &sync.RWMutex{},
 		providerSchemaMu: &sync.RWMutex{},
 		tfLoadingMu:      &sync.RWMutex{},
+		coreSchema:       tfschema.UniversalCoreModuleSchema(),
 		coreSchemaMu:     &sync.RWMutex{},
 		isParsedMu:       &sync.RWMutex{},
 		pFilesMap:        make(map[string]*hcl.File, 0),
@@ -327,8 +327,9 @@ func (rm *rootModule) findAndSetCoreSchema() error {
 		return err
 	}
 
+	rm.coreSchemaMu.Lock()
 	rm.coreSchema = coreSchema
-	rm.setCoreSchemaLoaded(true)
+	rm.coreSchemaMu.Unlock()
 
 	return nil
 }
@@ -396,18 +397,6 @@ func (rm *rootModule) Decoder() (*decoder.Decoder, error) {
 		}
 	}
 	return d, nil
-}
-
-func (rm *rootModule) IsCoreSchemaLoaded() bool {
-	rm.coreSchemaMu.RLock()
-	defer rm.coreSchemaMu.RUnlock()
-	return rm.coreSchemaLoaded
-}
-
-func (rm *rootModule) setCoreSchemaLoaded(isLoaded bool) {
-	rm.coreSchemaMu.Lock()
-	defer rm.coreSchemaMu.Unlock()
-	rm.coreSchemaLoaded = isLoaded
 }
 
 func (rm *rootModule) IsProviderSchemaLoaded() bool {
@@ -489,11 +478,9 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 }
 
 func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
-	var mergedSchema *schema.BodySchema
-
-	if rm.IsCoreSchemaLoaded() {
-		mergedSchema = rm.coreSchema
-	}
+	rm.coreSchemaMu.RLock()
+	defer rm.coreSchemaMu.RUnlock()
+	mergedSchema := rm.coreSchema
 
 	if rm.IsProviderSchemaLoaded() {
 		if !rm.IsParsed() {

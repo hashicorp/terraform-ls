@@ -77,7 +77,6 @@ type RootModule interface {
 	IsParsed() bool
 	ParseFiles() error
 	ParsedDiagnostics() map[string]hcl.Diagnostics
-	IsCoreSchemaLoaded() bool
 	TerraformFormatter() (exec.Formatter, error)
 	HasTerraformDiscoveryFinished() bool
 	IsTerraformAvailable() bool

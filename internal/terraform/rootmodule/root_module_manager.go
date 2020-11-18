@@ -219,15 +219,6 @@ func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) 
 	return nil, &RootModuleNotFoundErr{path}
 }
 
-func (rmm *rootModuleManager) IsCoreSchemaLoaded(path string) (bool, error) {
-	rm, err := rmm.RootModuleByPath(path)
-	if err != nil {
-		return false, err
-	}
-
-	return rm.IsCoreSchemaLoaded(), nil
-}
-
 func (rmm *rootModuleManager) IsProviderSchemaLoaded(path string) (bool, error) {
 	rm, err := rmm.RootModuleByPath(path)
 	if err != nil {
