@@ -499,7 +499,6 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 }
 
 func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
-
 	rm.coreSchemaMu.RLock()
 	defer rm.coreSchemaMu.RUnlock()
 	mergedSchema := rm.coreSchema
