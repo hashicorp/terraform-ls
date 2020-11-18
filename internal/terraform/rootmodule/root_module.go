@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,8 +27,9 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-var preloadedProviderSchemas tfjson.ProviderSchemas
-var preloadProviderSchemasOnce sync.Once
+var _preloadedProviderSchemas *tfjson.ProviderSchemas
+var _preloadedProviderSchemasOnce sync.Once
+var _preloadedProviderSchemasErr error
 
 type rootModule struct {
 	path   string
@@ -80,6 +80,21 @@ type rootModule struct {
 	parsedDiags map[string]hcl.Diagnostics
 	parserMu    *sync.RWMutex
 	filesystem  filesystem.Filesystem
+}
+
+func preloadedProviderSchemas() (*tfjson.ProviderSchemas, error) {
+	_preloadedProviderSchemasOnce.Do(func() {
+		f, fErr := preloadedSchemas.Files.Open("schemas.json")
+		if fErr != nil {
+			_preloadedProviderSchemasErr = fErr
+			return
+		}
+
+		_preloadedProviderSchemas = &tfjson.ProviderSchemas{}
+		_preloadedProviderSchemasErr = json.NewDecoder(f).Decode(_preloadedProviderSchemas)
+	})
+
+	return _preloadedProviderSchemas, _preloadedProviderSchemasErr
 }
 
 func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
@@ -484,19 +499,6 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 }
 
 func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
-	var err error
-	preloadProviderSchemasOnce.Do(func() {
-		var f http.File
-		f, err = preloadedSchemas.Files.Open("schemas.json")
-		if err != nil {
-			return
-		}
-
-		err = json.NewDecoder(f).Decode(&preloadedProviderSchemas)
-	})
-	if err != nil {
-		rm.logger.Printf("decoding of the preloaded provider schemas has errored and will not be retried: %s", err)
-	}
 
 	rm.coreSchemaMu.RLock()
 	defer rm.coreSchemaMu.RUnlock()
@@ -509,20 +511,21 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 		}
 	}
 
-	ps := &preloadedProviderSchemas
+	ps, err := preloadedProviderSchemas()
+	if err != nil {
+		return nil, err
+	}
 	if rm.IsProviderSchemaLoaded() {
 		rm.providerSchemaMu.RLock()
 		defer rm.providerSchemaMu.RUnlock()
 		ps = rm.providerSchema
 	}
 
-	if ps == nil {
-		s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
-		if err != nil {
-			return nil, err
-		}
-		mergedSchema = s
+	s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
+	if err != nil {
+		return nil, err
 	}
+	mergedSchema = s
 
 	return mergedSchema, nil
 }
