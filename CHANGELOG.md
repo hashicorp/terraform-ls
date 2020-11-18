@@ -8,6 +8,7 @@ FEATURES:
 ENHANCEMENTS:
 
  - Add support for upcoming Terraform v0.14 ([#289](https://github.com/hashicorp/terraform-ls/pull/289))
+ - completion: Prompt picking type of provider/data/resource automatically ([#300](https://github.com/hashicorp/terraform-ls/pull/300))
 
 BUG FIXES:
 
