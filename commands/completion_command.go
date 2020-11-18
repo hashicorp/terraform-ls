@@ -12,10 +12,10 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type CompletionCommand struct {

@@ -7,7 +7,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentParams) error {

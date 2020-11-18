@@ -5,7 +5,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func TextDocumentDidClose(ctx context.Context, params lsp.DidCloseTextDocumentParams) error {

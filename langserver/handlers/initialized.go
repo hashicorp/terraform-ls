@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func Initialized(ctx context.Context, params lsp.None) error {

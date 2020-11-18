@@ -8,7 +8,7 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 type executeCommandHandler func(context.Context, commandArgs) (interface{}, error)

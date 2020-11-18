@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"github.com/hashicorp/hcl-lang/decoder"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func ConvertSymbols(uri lsp.DocumentURI, sbs []decoder.Symbol) []lsp.SymbolInformation {

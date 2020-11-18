@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 	"github.com/hashicorp/terraform-ls/langserver/diagnostics"
-	"github.com/sourcegraph/go-lsp"
 )
 
 type contextKey struct {

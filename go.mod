@@ -22,10 +22,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
-	github.com/sourcegraph/go-lsp v0.0.0-20200117082640-b19bb38222e2
 	github.com/spf13/afero v1.3.2
 	github.com/stretchr/testify v1.4.0
 	github.com/vektra/mockery/v2 v2.3.0
 )
-
-replace github.com/sourcegraph/go-lsp => github.com/radeksimko/go-lsp v0.1.0

@@ -1,8 +1,8 @@
 package lsp
 
 import (
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/source"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type File interface {

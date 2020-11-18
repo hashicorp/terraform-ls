@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/creachadair/jrpc2"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func CancelRequest(ctx context.Context, params lsp.CancelParams) error {

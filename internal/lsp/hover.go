@@ -3,7 +3,7 @@ package lsp
 import (
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
-	"github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func HoverData(data *lang.HoverData, cc lsp.TextDocumentClientCapabilities) lsp.Hover {

@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 type contentChange struct {

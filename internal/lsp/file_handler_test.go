@@ -3,7 +3,7 @@ package lsp
 import (
 	"testing"
 
-	"github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 var (
