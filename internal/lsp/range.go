@@ -2,38 +2,53 @@ package lsp
 
 import (
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	lsp "github.com/sourcegraph/go-lsp"
 )
 
-func HCLRangeToLSP(hclRng hcl.Range) lsp.Range {
-	r := lsp.Range{
+func fsRangeToLSP(fsRng *filesystem.Range) lsp.Range {
+	if fsRng == nil {
+		return lsp.Range{}
+	}
+
+	return lsp.Range{
 		Start: lsp.Position{
-			Character: hclRng.Start.Column - 1,
-			Line:      hclRng.Start.Line - 1,
+			Character: fsRng.Start.Column,
+			Line:      fsRng.Start.Line,
 		},
 		End: lsp.Position{
-			Character: hclRng.End.Column - 1,
-			Line:      hclRng.End.Line - 1,
+			Character: fsRng.End.Column,
+			Line:      fsRng.End.Line,
 		},
 	}
-
-	return r
 }
 
-func lspRangeToHCL(lspRng lsp.Range, f File) (*hcl.Range, error) {
-	startPos, err := lspPositionToHCL(f.Lines(), lspRng.Start)
-	if err != nil {
-		return nil, err
+func lspRangeToFsRange(rng *lsp.Range) *filesystem.Range {
+	if rng == nil {
+		return nil
 	}
 
-	endPos, err := lspPositionToHCL(f.Lines(), lspRng.End)
-	if err != nil {
-		return nil, err
+	return &filesystem.Range{
+		Start: filesystem.Pos{
+			Line:   rng.Start.Line,
+			Column: rng.Start.Character,
+		},
+		End: filesystem.Pos{
+			Line:   rng.End.Line,
+			Column: rng.End.Character,
+		},
 	}
+}
 
-	return &hcl.Range{
-		Filename: f.Filename(),
-		Start:    startPos,
-		End:      endPos,
-	}, nil
+func HCLRangeToLSP(rng hcl.Range) lsp.Range {
+	return lsp.Range{
+		Start: lsp.Position{
+			Line:      rng.Start.Line - 1,
+			Character: rng.Start.Column - 1,
+		},
+		End: lsp.Position{
+			Line:      rng.End.Line - 1,
+			Character: rng.End.Column - 1,
+		},
+	}
 }

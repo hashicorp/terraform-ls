@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/hashicorp/terraform-ls/internal/source"
 	"github.com/spf13/afero"
 )
 
@@ -107,19 +108,28 @@ func (fs *fsystem) ChangeDocument(dh VersionedDocumentHandler, changes DocumentC
 
 func (fs *fsystem) applyDocumentChange(buf *bytes.Buffer, change DocumentChange) error {
 	// if the range is nil, we assume it is full content change
-	if rangeIsNil(change.Range()) {
+	if change.Range() == nil {
 		buf.Reset()
 		_, err := buf.WriteString(change.Text())
 		return err
 	}
 
-	// apply partial change
-	diff := diffLen(change)
+	lines := source.MakeSourceLines("", buf.Bytes())
+
+	startByte, err := ByteOffsetForPos(lines, change.Range().Start)
+	if err != nil {
+		return err
+	}
+	endByte, err := ByteOffsetForPos(lines, change.Range().End)
+	if err != nil {
+		return err
+	}
+
+	diff := endByte - startByte
 	if diff > 0 {
 		buf.Grow(diff)
 	}
 
-	startByte, endByte := change.Range().Start.Byte, change.Range().End.Byte
 	beforeChange := make([]byte, startByte, startByte)
 	copy(beforeChange, buf.Bytes())
 	afterBytes := buf.Bytes()[endByte:]
@@ -128,7 +138,7 @@ func (fs *fsystem) applyDocumentChange(buf *bytes.Buffer, change DocumentChange)
 
 	buf.Reset()
 
-	_, err := buf.Write(beforeChange)
+	_, err = buf.Write(beforeChange)
 	if err != nil {
 		return err
 	}
@@ -142,11 +152,6 @@ func (fs *fsystem) applyDocumentChange(buf *bytes.Buffer, change DocumentChange)
 	}
 
 	return nil
-}
-
-func diffLen(change DocumentChange) int {
-	rangeLen := change.Range().End.Byte - change.Range().Start.Byte
-	return len(change.Text()) - rangeLen
 }
 
 func (fs *fsystem) CloseAndRemoveDocument(dh DocumentHandler) error {

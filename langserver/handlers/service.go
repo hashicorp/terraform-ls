@@ -28,6 +28,7 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
+	fs                   filesystem.Filesystem
 	watcher              watcher.Watcher
 	walker               *rootmodule.Walker
 	modMgr               rootmodule.RootModuleManager
@@ -39,9 +40,12 @@ type service struct {
 var discardLogs = log.New(ioutil.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
+	fs := filesystem.NewFilesystem()
+
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
 		logger:               discardLogs,
+		fs:                   fs,
 		srvCtx:               srvCtx,
 		sessCtx:              sessCtx,
 		stopSession:          stopSession,
@@ -67,12 +71,12 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, fmt.Errorf("Unable to prepare session: %w", err)
 	}
 
-	fs := filesystem.NewFilesystem()
-	fs.SetLogger(svc.logger)
+	svc.fs.SetLogger(svc.logger)
+
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	svc.modMgr = svc.newRootModuleManager(fs)
+	svc.modMgr = svc.newRootModuleManager(svc.fs)
 	svc.modMgr.SetLogger(svc.logger)
 
 	svc.logger.Printf("Worker pool size set to %d", svc.modMgr.WorkerPoolSize())
@@ -153,7 +157,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilitiesSetter(ctx, cc)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
@@ -178,7 +182,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithDiagnostics(ctx, diags)
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
@@ -188,7 +192,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 			ctx = lsctx.WithDiagnostics(ctx, diags)
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
@@ -199,7 +203,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
 		"textDocument/documentSymbol": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -208,7 +212,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentSymbol)
@@ -219,7 +223,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
@@ -231,7 +235,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
@@ -243,7 +247,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithTerraformFormatterFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
@@ -265,7 +269,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, fs)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			svc.shutdown()
 			return handle(ctx, req, Shutdown)
 		},

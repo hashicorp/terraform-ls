@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/afero"
 )
 
@@ -52,16 +51,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello world",
 			FileChange: &testChange{
 				text: "terraform",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 6,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 12,
-						Byte:   11,
+					End: Pos{
+						Line:   0,
+						Column: 11,
 					},
 				},
 			},
@@ -72,16 +69,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello world",
 			FileChange: &testChange{
 				text: "earth",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 6,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 12,
-						Byte:   11,
+					End: Pos{
+						Line:   0,
+						Column: 11,
 					},
 				},
 			},
@@ -92,16 +87,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello world",
 			FileChange: &testChange{
 				text: "HCL",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 6,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 12,
-						Byte:   11,
+					End: Pos{
+						Line:   0,
+						Column: 11,
 					},
 				},
 			},
@@ -112,16 +105,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello world",
 			FileChange: &testChange{
 				text: "abc ",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 6,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+					End: Pos{
+						Line:   0,
+						Column: 6,
 					},
 				},
 			},
@@ -132,16 +123,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello world",
 			FileChange: &testChange{
 				text: "𐐀𐐀 ",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 6,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 7,
-						Byte:   6,
+					End: Pos{
+						Line:   0,
+						Column: 6,
 					},
 				},
 			},
@@ -152,16 +141,14 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 			Content: "hello 𐐀𐐀 world",
 			FileChange: &testChange{
 				text: "aa𐐀",
-				rng: hcl.Range{
-					Start: hcl.Pos{
-						Line:   1,
-						Column: 9,
-						Byte:   10,
+				rng: &Range{
+					Start: Pos{
+						Line:   0,
+						Column: 8,
 					},
-					End: hcl.Pos{
-						Line:   1,
-						Column: 11,
-						Byte:   14,
+					End: Pos{
+						Line:   0,
+						Column: 10,
 					},
 				},
 			},
@@ -200,6 +187,99 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 	}
 }
 
+func TestFile_ApplyChange_partialUpdateMultipleChanges(t *testing.T) {
+	testData := []struct {
+		Content     string
+		FileChanges DocumentChanges
+		Expect      string
+	}{
+		{
+			Content: `variable "service_host" {
+  default = "blah"
+}
+
+module "app" {
+  source = "./sub"
+  service_listeners = [
+    {
+      hosts    = [var.service_host]
+      listener = ""
+    }
+  ]
+}
+`,
+			FileChanges: DocumentChanges{
+				&testChange{
+					text: "\n",
+					rng: &Range{
+						Start: Pos{Line: 8, Column: 18},
+						End:   Pos{Line: 8, Column: 18},
+					},
+				},
+				&testChange{
+					text: "      ",
+					rng: &Range{
+						Start: Pos{Line: 9, Column: 0},
+						End:   Pos{Line: 9, Column: 0},
+					},
+				},
+				&testChange{
+					text: "  ",
+					rng: &Range{
+						Start: Pos{Line: 9, Column: 6},
+						End:   Pos{Line: 9, Column: 6},
+					},
+				},
+			},
+			Expect: `variable "service_host" {
+  default = "blah"
+}
+
+module "app" {
+  source = "./sub"
+  service_listeners = [
+    {
+      hosts    = [
+        var.service_host]
+      listener = ""
+    }
+  ]
+}
+`,
+		},
+	}
+
+	for _, v := range testData {
+		fs := testDocumentStorage()
+		dh := &testHandler{uri: "file:///test.tf"}
+
+		err := fs.CreateAndOpenDocument(dh, []byte(v.Content))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		changes := v.FileChanges
+		err = fs.ChangeDocument(dh, changes)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		doc, err := fs.GetDocument(dh)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		text, err := doc.Text()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if diff := cmp.Diff(v.Expect, string(text)); diff != "" {
+			t.Fatalf("content mismatch: %s", diff)
+		}
+	}
+}
+
 func testDocument(t *testing.T, dh DocumentHandler, meta *documentMetadata, b []byte) Document {
 	fs := afero.NewMemMapFs()
 	f, err := fs.Create(dh.FullPath())
@@ -220,13 +300,13 @@ func testDocument(t *testing.T, dh DocumentHandler, meta *documentMetadata, b []
 
 type testChange struct {
 	text string
-	rng  hcl.Range
+	rng  *Range
 }
 
 func (fc *testChange) Text() string {
 	return fc.text
 }
 
-func (fc *testChange) Range() hcl.Range {
+func (fc *testChange) Range() *Range {
 	return fc.rng
 }

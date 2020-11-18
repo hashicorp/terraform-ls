@@ -50,7 +50,7 @@ ccc`,
 				&fileChange{
 					newText: `    "key"  = "value"
 `,
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 4, Column: 1, Byte: 60},
 						End:      hcl.Pos{Line: 5, Column: 1, Byte: 80},
@@ -59,7 +59,7 @@ ccc`,
 				&fileChange{
 					newText: `    s      = 3
 `,
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 6, Column: 1, Byte: 95},
 						End:      hcl.Pos{Line: 7, Column: 1, Byte: 105},
@@ -90,7 +90,7 @@ ccc`,
 			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "",
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 7, Column: 1, Byte: 111},
 						End:      hcl.Pos{Line: 9, Column: 1, Byte: 113},
@@ -109,7 +109,7 @@ ccc`,
 			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "\n",
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 28},
 						End:      hcl.Pos{Line: 3, Column: 1, Byte: 31},
@@ -126,7 +126,7 @@ ccc`,
 				&fileChange{
 					newText: `resource "aws_vpc" "name" {
 }`,
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
 						End:      hcl.Pos{Line: 1, Column: 29, Byte: 28},
@@ -146,7 +146,7 @@ ccc`,
 			filesystem.DocumentChanges{
 				&fileChange{
 					newText: "\n",
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Start: hcl.Pos{Line: 3, Column: 1, Byte: 30},
 						End:   hcl.Pos{Line: 3, Column: 1, Byte: 30},
 					},
@@ -169,7 +169,7 @@ ccc`,
 				&fileChange{
 					newText: `  attr2 = "two"
 `,
-					rng: hcl.Range{
+					rng: &hcl.Range{
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 3, Column: 1, Byte: 44},
 						End:      hcl.Pos{Line: 4, Column: 1, Byte: 45},

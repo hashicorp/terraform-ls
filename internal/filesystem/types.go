@@ -1,9 +1,9 @@
 package filesystem
 
 import (
+	"log"
 	"os"
 
-	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
 
@@ -28,7 +28,7 @@ type VersionedDocumentHandler interface {
 
 type DocumentChange interface {
 	Text() string
-	Range() hcl.Range
+	Range() *Range
 }
 
 type DocumentChanges []DocumentChange
@@ -44,6 +44,8 @@ type DocumentStorage interface {
 
 type Filesystem interface {
 	DocumentStorage
+
+	SetLogger(*log.Logger)
 
 	// direct FS methods
 	ReadFile(name string) ([]byte, error)

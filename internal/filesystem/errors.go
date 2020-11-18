@@ -27,3 +27,11 @@ type UnknownDocumentErr struct {
 func (e *UnknownDocumentErr) Error() string {
 	return fmt.Sprintf("unknown document: %s", e.DocumentHandler.URI())
 }
+
+type InvalidPosErr struct {
+	Pos Pos
+}
+
+func (e *InvalidPosErr) Error() string {
+	return fmt.Sprintf("invalid position: %s", e.Pos)
+}

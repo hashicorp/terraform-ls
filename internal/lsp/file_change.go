@@ -1,41 +1,26 @@
 package lsp
 
 import (
-	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/sourcegraph/go-lsp"
 )
 
 type contentChange struct {
 	text string
-	rng  hcl.Range
+	rng  *filesystem.Range
 }
 
-func ContentChange(chEvent lsp.TextDocumentContentChangeEvent, f File) (*contentChange, error) {
-	if chEvent.Range != nil {
-		rng, err := lspRangeToHCL(*chEvent.Range, f)
-		if err != nil {
-			return nil, err
-		}
-
-		return &contentChange{
-			text: chEvent.Text,
-			rng:  *rng,
-		}, nil
-	}
-
+func ContentChange(chEvent lsp.TextDocumentContentChangeEvent) filesystem.DocumentChange {
 	return &contentChange{
 		text: chEvent.Text,
-	}, nil
+		rng:  lspRangeToFsRange(chEvent.Range),
+	}
 }
 
 func DocumentChanges(events []lsp.TextDocumentContentChangeEvent, f File) (filesystem.DocumentChanges, error) {
 	changes := make(filesystem.DocumentChanges, len(events))
 	for i, event := range events {
-		ch, err := ContentChange(event, f)
-		if err != nil {
-			return nil, err
-		}
+		ch := ContentChange(event)
 		changes[i] = ch
 	}
 	return changes, nil
@@ -46,7 +31,7 @@ func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
 
 	for i, change := range changes {
 		edits[i] = lsp.TextEdit{
-			Range:   HCLRangeToLSP(change.Range()),
+			Range:   fsRangeToLSP(change.Range()),
 			NewText: change.Text(),
 		}
 	}
@@ -58,6 +43,6 @@ func (fc *contentChange) Text() string {
 	return fc.text
 }
 
-func (fc *contentChange) Range() hcl.Range {
+func (fc *contentChange) Range() *filesystem.Range {
 	return fc.rng
 }
