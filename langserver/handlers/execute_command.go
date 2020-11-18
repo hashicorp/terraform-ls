@@ -44,6 +44,13 @@ func (h executeCommandHandlers) Get(name, commandPrefix string) (executeCommandH
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
+	if params.Command == "editor.action.triggerSuggest" {
+		// If this was actually received by the server, it means the client
+		// does not support explicit suggest triggering, so we fail silently
+		// TODO: Revisit once https://github.com/microsoft/language-server-protocol/issues/1117 is addressed
+		return nil, nil
+	}
+
 	commandPrefix, _ := lsctx.CommandPrefix(ctx)
 	handler, ok := handlers.Get(params.Command, commandPrefix)
 	if !ok {
