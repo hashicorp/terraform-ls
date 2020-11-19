@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -97,14 +98,16 @@ func (c commandArgs) GetBool(variable string) (bool, bool) {
 	return v, true
 }
 
-func parseCommandArgs(arguments []interface{}) commandArgs {
+func parseCommandArgs(arguments []json.RawMessage) commandArgs {
 	args := make(map[string]interface{})
 	if arguments == nil {
 		return args
 	}
 	for _, rawArg := range arguments {
-		arg, ok := rawArg.(string)
-		if !ok {
+		var arg string
+		err := json.Unmarshal(rawArg, &arg)
+		if err != nil {
+			// TODO: Log error
 			continue
 		}
 		if arg == "" {

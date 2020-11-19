@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"context"
-
-	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func Shutdown(ctx context.Context, vs lsp.None) error {
+func Shutdown(ctx context.Context, _ interface{}) error {
 	return nil
 }

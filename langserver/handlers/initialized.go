@@ -6,6 +6,6 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func Initialized(ctx context.Context, params lsp.None) error {
+func Initialized(ctx context.Context, params lsp.InitializedParams) error {
 	return nil
 }

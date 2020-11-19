@@ -17,13 +17,11 @@ import (
 func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.InitializeResult, error) {
 	serverCaps := lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
-			TextDocumentSync: &lsp.TextDocumentSyncOptionsOrKind{
-				Options: &lsp.TextDocumentSyncOptions{
-					OpenClose: true,
-					Change:    lsp.TDSKIncremental,
-				},
+			TextDocumentSync: lsp.TextDocumentSyncOptions{
+				OpenClose: true,
+				Change:    lsp.Incremental,
 			},
-			CompletionProvider: &lsp.CompletionOptions{
+			CompletionProvider: lsp.CompletionOptions{
 				ResolveProvider: false,
 			},
 			HoverProvider:              true,
@@ -79,13 +77,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// set commandPrefix for session
 	lsctx.SetCommandPrefix(ctx, out.Options.CommandPrefix)
 	// apply prefix to executeCommand handler names
-	serverCaps.Capabilities.ExecuteCommandProvider = &lsp.ExecuteCommandOptions{
+	serverCaps.Capabilities.ExecuteCommandProvider = lsp.ExecuteCommandOptions{
 		Commands: handlers.Names(out.Options.CommandPrefix),
 	}
 
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
-			Type:    lsp.MTWarning,
+			Type:    lsp.Warning,
 			Message: fmt.Sprintf("Unknown configuration options: %q", out.UnusedKeys),
 		})
 	}
@@ -98,7 +96,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			rmPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
-					Type:    lsp.MTWarning,
+					Type:    lsp.Warning,
 					Message: fmt.Sprintf("Ignoring root module path %s: %s", rawPath, err),
 				})
 				continue

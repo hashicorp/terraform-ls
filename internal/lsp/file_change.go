@@ -26,19 +26,6 @@ func DocumentChanges(events []lsp.TextDocumentContentChangeEvent, f File) (files
 	return changes, nil
 }
 
-func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
-	edits := make([]lsp.TextEdit, len(changes))
-
-	for i, change := range changes {
-		edits[i] = lsp.TextEdit{
-			Range:   fsRangeToLSP(change.Range()),
-			NewText: change.Text(),
-		}
-	}
-
-	return edits
-}
-
 func (fc *contentChange) Text() string {
 	return fc.text
 }

@@ -86,7 +86,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			err := askInitForEmptyRootModule(ctx, w, rootDir, f.Dir())
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
-					Type:    lsp.MTError,
+					Type:    lsp.Error,
 					Message: err.Error(),
 				})
 			}
@@ -101,7 +101,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 			readableDir, candidatePaths(rootDir, candidates[1:]),
 			candidateDir)
 		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
-			Type:    lsp.MTWarning,
+			Type:    lsp.Warning,
 			Message: msg,
 		})
 	}

@@ -48,7 +48,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 
 	changes := hcl.Diff(file, original, formatted)
 
-	return ilsp.TextEdits(changes), nil
+	return ilsp.TextEditsFromDocumentChanges(changes), nil
 }
 
 func findTerraformFormatter(ctx context.Context, tff rootmodule.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
