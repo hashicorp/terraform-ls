@@ -323,6 +323,16 @@ func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 	return nil
 }
 
+func (rm *rootModule) ExecuteTerraformInit(ctx context.Context) error {
+	if !rm.IsTerraformAvailable() {
+		if err := rm.discoverTerraformExecutor(ctx); err != nil {
+			return err
+		}
+	}
+
+	return rm.tfExec.Init(ctx)
+}
+
 func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 	if rm.tfExec == nil {
 		return errors.New("no terraform executor - unable to read version")

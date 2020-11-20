@@ -98,6 +98,21 @@ func (rmm *rootModuleManager) SetLogger(logger *log.Logger) {
 	rmm.logger = logger
 }
 
+func (rmm *rootModuleManager) InitAndUpdateRootModule(ctx context.Context, dir string) (RootModule, error) {
+	rm, err := rmm.RootModuleByPath(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get root module: %+v", err)
+	}
+
+	if err := rm.ExecuteTerraformInit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to init root module: %+v", err)
+	}
+
+	rootModule := rm.(*rootModule)
+	rootModule.discoverCaches(ctx, dir)
+	return rm, rootModule.UpdateProviderSchemaCache(ctx, rootModule.pluginLockFile)
+}
+
 func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error) {
 	dir = filepath.Clean(dir)
 
