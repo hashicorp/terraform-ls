@@ -4,6 +4,10 @@ ENHANCEMENTS:
 
  - Ask for init if current folder is empty root module ([#257](https://github.com/hashicorp/terraform-ls/pull/257))
 
+INTERNAL:
+
+ - Replace `sourcegraph/go-lsp` with gopls' `internal/lsp/protocol` ([#311](https://github.com/hashicorp/terraform-ls/pull/311))
+
 ## 0.10.0 (19 November 2020)
 
 FEATURES:
