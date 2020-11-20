@@ -66,21 +66,17 @@ func gen() error {
 		return err
 	}
 
-	log.Println("finding terraform in path")
-	execPath, err := tfinstall.Find(ctx, tfinstall.LookPath())
+	log.Println("ensuring terraform is installed")
+
+	tmpDir, err := ioutil.TempDir("", "tfinstall")
 	if err != nil {
-		log.Println("terraform not found in path, attempting install to temp")
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
 
-		tmpDir, err := ioutil.TempDir("", "tfinstall")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(tmpDir)
-
-		execPath, err = tfinstall.Find(ctx, tfinstall.LatestVersion(tmpDir, false))
-		if err != nil {
-			return err
-		}
+	execPath, err := tfinstall.Find(ctx, tfinstall.LookPath(), tfinstall.LatestVersion(tmpDir, false))
+	if err != nil {
+		return err
 	}
 
 	log.Println("running terraform init")
@@ -135,7 +131,7 @@ func gen() error {
 }
 
 type providerAttributes struct {
-	Alias    string `json:"alias"`
+	Name     string `json:"name"`
 	FullName string `json:"full-name"`
 }
 
@@ -144,12 +140,12 @@ type provider struct {
 }
 
 func (p provider) Name() string {
-	return p.Attributes.Alias
+	return p.Attributes.Name
 }
 
 func (p provider) Source() string {
 	// terraform provider is builtin and has special source
-	if p.Attributes.Alias == "terraform" {
+	if p.Attributes.Name == "terraform" {
 		return "terraform.io/builtin/terraform"
 	}
 	return p.Attributes.FullName
