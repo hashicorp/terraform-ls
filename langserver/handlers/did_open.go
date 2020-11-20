@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -85,10 +84,15 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
-		// TODO: if there is any change for the provider/module, ask for init. The did change handler should also implement this
-		if len(f.Text()) != 0 {
-			go askInitForEmptyRootModule(ctx, lh.logger, w, rootDir, f.Dir())
-		}
+		go func() {
+			err := askInitForEmptyRootModule(ctx, w, rootDir, f.Dir())
+			if err != nil {
+				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
+					Type:    lsp.MTError,
+					Message: err.Error(),
+				})
+			}
+		}()
 	}
 
 	if len(candidates) > 1 {
@@ -136,15 +140,15 @@ func humanReadablePath(rootDir, path string) string {
 	return relDir
 }
 
-func askInitForEmptyRootModule(ctx context.Context, logger *log.Logger, w watcher.Watcher, rootDir, dir string) {
+func askInitForEmptyRootModule(ctx context.Context, w watcher.Watcher, rootDir, dir string) error {
 	msg := fmt.Sprintf("No root module found for %q."+
 		" Functionality may be limited."+
 		// Unfortunately we can't be any more specific wrt where
 		// because we don't gather "init-able folders" in any way
 		" You may need to run terraform init.", humanReadablePath(rootDir, dir))
-	title := "run `terraform init`"
+	title := "terraform init"
 	resp, err := jrpc2.PushCall(ctx, "window/showMessageRequest", lsp.ShowMessageRequestParams{
-		Type:    lsp.MTWarning,
+		Type:    lsp.Info,
 		Message: msg,
 		Actions: []lsp.MessageActionItem{
 			{
@@ -153,32 +157,28 @@ func askInitForEmptyRootModule(ctx context.Context, logger *log.Logger, w watche
 		},
 	})
 	if err != nil {
-		logger.Printf("%+v", err)
-		return
+		return err
 	}
 	var action lsp.MessageActionItem
 	if err := resp.UnmarshalResult(&action); err != nil {
-		logger.Printf("unmarshal MessageActionItem: %+v", err)
-		return
+		return fmt.Errorf("unmarshal MessageActionItem: %+v", err)
 	}
 	if action.Title == title {
 		rmm, err := lsctx.RootModuleManager(ctx)
 		if err != nil {
-			logger.Printf("%+v", err)
-			return
+			return err
 		}
 
 		rm, err := rmm.InitAndUpdateRootModule(ctx, dir)
 		if err != nil {
-			logger.Printf("failed to init root module %+v", err)
-			return
+			return fmt.Errorf("failed to init root module %+v", err)
 		}
 
 		paths := rm.PathsToWatch()
-		logger.Printf("Adding %d paths of root module for watching (%s)", len(paths), dir)
 		err = w.AddPaths(paths)
 		if err != nil {
-			logger.Printf("failed to add watch for dir (%s): %+v", dir, err)
+			return fmt.Errorf("failed to add watch for dir (%s): %+v", dir, err)
 		}
 	}
+	return nil
 }
