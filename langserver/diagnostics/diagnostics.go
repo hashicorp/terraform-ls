@@ -9,8 +9,8 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/hcl/v2"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/uri"
-	"github.com/sourcegraph/go-lsp"
 )
 
 type diagContext struct {

@@ -1,8 +1,8 @@
 package lsp
 
 import (
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/source"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type File interface {
@@ -59,6 +59,6 @@ func FileFromDocumentItem(doc lsp.TextDocumentItem) *file {
 	return &file{
 		fh:      FileHandlerFromDocumentURI(doc.URI),
 		text:    []byte(doc.Text),
-		version: doc.Version,
+		version: int(doc.Version),
 	}
 }

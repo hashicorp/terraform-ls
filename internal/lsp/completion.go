@@ -3,22 +3,12 @@ package lsp
 import (
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-type CompletionList struct {
-	IsIncomplete bool             `json:"isIncomplete"`
-	Items        []CompletionItem `json:"items"`
-}
-
-type CompletionItem struct {
-	lsp.CompletionItem
-	Command *lsp.Command `json:"command,omitempty"`
-}
-
-func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapabilities) CompletionList {
-	list := CompletionList{
-		Items:        make([]CompletionItem, len(candidates.List)),
+func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCapabilities) lsp.CompletionList {
+	list := lsp.CompletionList{
+		Items:        make([]lsp.CompletionItem, len(candidates.List)),
 		IsIncomplete: !candidates.IsComplete,
 	}
 
@@ -26,7 +16,7 @@ func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCap
 
 	markdown := false
 	docsFormat := caps.Completion.CompletionItem.DocumentationFormat
-	if len(docsFormat) > 0 && docsFormat[0] == "markdown" {
+	if len(docsFormat) > 0 && docsFormat[0] == lsp.Markdown {
 		markdown = true
 	}
 
@@ -37,23 +27,23 @@ func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCap
 	return list
 }
 
-func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) CompletionItem {
+func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.CompletionItem {
 	doc := candidate.Description.Value
 
-	// TODO: revisit once go-lsp supports markdown in CompletionItem
+	// TODO: Revisit when MarkupContent is allowed as Documentation
+	// https://github.com/golang/tools/blob/4783bc9b/internal/lsp/protocol/tsprotocol.go#L753
 	doc = mdplain.Clean(doc)
 
 	var kind lsp.CompletionItemKind
 	switch candidate.Kind {
 	case lang.AttributeCandidateKind:
-		kind = lsp.CIKProperty
+		kind = lsp.PropertyCompletion
 	case lang.BlockCandidateKind:
-		kind = lsp.CIKClass
+		kind = lsp.ClassCompletion
 	case lang.LabelCandidateKind:
-		kind = lsp.CIKField
+		kind = lsp.FieldCompletion
 	}
 
-	te, format := textEdit(candidate.TextEdit, snippet)
 	var cmd *lsp.Command
 	if candidate.TriggerSuggest {
 		cmd = &lsp.Command{
@@ -62,29 +52,14 @@ func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) Completi
 		}
 	}
 
-	return CompletionItem{
-		CompletionItem: lsp.CompletionItem{
-			Label:            candidate.Label,
-			Kind:             kind,
-			InsertTextFormat: format,
-			Detail:           candidate.Detail,
-			Documentation:    doc,
-			TextEdit:         te,
-		},
-		Command: cmd,
+	return lsp.CompletionItem{
+		Label:               candidate.Label,
+		Kind:                kind,
+		InsertTextFormat:    insertTextFormat(snippet),
+		Detail:              candidate.Detail,
+		Documentation:       doc,
+		TextEdit:            textEdit(candidate.TextEdit, snippet),
+		Command:             cmd,
+		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippet),
 	}
-}
-
-func textEdit(te lang.TextEdit, snippetSupport bool) (*lsp.TextEdit, lsp.InsertTextFormat) {
-	if snippetSupport {
-		return &lsp.TextEdit{
-			NewText: te.Snippet,
-			Range:   HCLRangeToLSP(te.Range),
-		}, lsp.ITFSnippet
-	}
-
-	return &lsp.TextEdit{
-		NewText: te.NewText,
-		Range:   HCLRangeToLSP(te.Range),
-	}, lsp.ITFPlainText
 }

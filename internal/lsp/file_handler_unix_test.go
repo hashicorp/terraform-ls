@@ -5,7 +5,7 @@ package lsp
 import (
 	"testing"
 
-	"github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func TestFileHandler_valid_unix(t *testing.T) {

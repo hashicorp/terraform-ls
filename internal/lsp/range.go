@@ -3,7 +3,7 @@ package lsp
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func fsRangeToLSP(fsRng *filesystem.Range) lsp.Range {
@@ -13,12 +13,12 @@ func fsRangeToLSP(fsRng *filesystem.Range) lsp.Range {
 
 	return lsp.Range{
 		Start: lsp.Position{
-			Character: fsRng.Start.Column,
-			Line:      fsRng.Start.Line,
+			Character: float64(fsRng.Start.Column),
+			Line:      float64(fsRng.Start.Line),
 		},
 		End: lsp.Position{
-			Character: fsRng.End.Column,
-			Line:      fsRng.End.Line,
+			Character: float64(fsRng.End.Column),
+			Line:      float64(fsRng.End.Line),
 		},
 	}
 }
@@ -30,12 +30,12 @@ func lspRangeToFsRange(rng *lsp.Range) *filesystem.Range {
 
 	return &filesystem.Range{
 		Start: filesystem.Pos{
-			Line:   rng.Start.Line,
-			Column: rng.Start.Character,
+			Line:   int(rng.Start.Line),
+			Column: int(rng.Start.Character),
 		},
 		End: filesystem.Pos{
-			Line:   rng.End.Line,
-			Column: rng.End.Character,
+			Line:   int(rng.End.Line),
+			Column: int(rng.End.Character),
 		},
 	}
 }
@@ -43,12 +43,12 @@ func lspRangeToFsRange(rng *lsp.Range) *filesystem.Range {
 func HCLRangeToLSP(rng hcl.Range) lsp.Range {
 	return lsp.Range{
 		Start: lsp.Position{
-			Line:      rng.Start.Line - 1,
-			Character: rng.Start.Column - 1,
+			Line:      float64(rng.Start.Line - 1),
+			Character: float64(rng.Start.Column - 1),
 		},
 		End: lsp.Position{
-			Line:      rng.End.Line - 1,
-			Character: rng.End.Column - 1,
+			Line:      float64(rng.End.Line - 1),
+			Character: float64(rng.End.Column - 1),
 		},
 	}
 }

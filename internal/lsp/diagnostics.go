@@ -2,16 +2,16 @@ package lsp
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func HCLSeverityToLSP(severity hcl.DiagnosticSeverity) lsp.DiagnosticSeverity {
 	var sev lsp.DiagnosticSeverity
 	switch severity {
 	case hcl.DiagError:
-		sev = lsp.Error
+		sev = lsp.SeverityError
 	case hcl.DiagWarning:
-		sev = lsp.Warning
+		sev = lsp.SeverityWarning
 	case hcl.DiagInvalid:
 		panic("invalid diagnostic")
 	}

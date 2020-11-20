@@ -117,9 +117,10 @@ func TestHover_withValidData(t *testing.T) {
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
-				"contents": [
-					"provider Block\n\nA provider block is used to specify a provider configuration"
-				],
+				"contents": {
+					"kind": "plaintext",
+					"value": "provider Block\n\nA provider block is used to specify a provider configuration"
+				},
 				"range": {
 					"start": { "line":0, "character":0 },
 					"end": { "line":0, "character":8 }

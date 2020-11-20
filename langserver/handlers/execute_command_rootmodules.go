@@ -8,8 +8,8 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/uri"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 const rootmodulesCommandResponseVersion = 0

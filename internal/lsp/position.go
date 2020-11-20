@@ -3,7 +3,7 @@ package lsp
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 type filePosition struct {
@@ -40,8 +40,8 @@ func FilePositionFromDocumentPosition(params lsp.TextDocumentPositionParams, f F
 	return &filePosition{
 		fh: FileHandlerFromDocumentURI(params.TextDocument.URI),
 		pos: hcl.Pos{
-			Line:   params.Position.Line + 1,
-			Column: params.Position.Character + 1,
+			Line:   int(params.Position.Line) + 1,
+			Column: int(params.Position.Character) + 1,
 			Byte:   byteOffset,
 		},
 	}, nil
@@ -49,7 +49,7 @@ func FilePositionFromDocumentPosition(params lsp.TextDocumentPositionParams, f F
 
 func lspPosToFsPos(pos lsp.Position) filesystem.Pos {
 	return filesystem.Pos{
-		Line:   pos.Line,
-		Column: pos.Character,
+		Line:   int(pos.Line),
+		Column: int(pos.Character),
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/uri"
-	"github.com/sourcegraph/go-lsp"
 )
 
 func FileHandlerFromDocumentURI(docUri lsp.DocumentURI) *fileHandler {
@@ -86,7 +86,7 @@ type versionedFileHandler struct {
 func VersionedFileHandler(doc lsp.VersionedTextDocumentIdentifier) *versionedFileHandler {
 	return &versionedFileHandler{
 		fileHandler: fileHandler{uri: string(doc.URI)},
-		v:           doc.Version,
+		v:           int(doc.Version),
 	}
 }
 

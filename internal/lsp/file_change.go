@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 type contentChange struct {
@@ -24,19 +24,6 @@ func DocumentChanges(events []lsp.TextDocumentContentChangeEvent, f File) (files
 		changes[i] = ch
 	}
 	return changes, nil
-}
-
-func TextEdits(changes filesystem.DocumentChanges) []lsp.TextEdit {
-	edits := make([]lsp.TextEdit, len(changes))
-
-	for i, change := range changes {
-		edits[i] = lsp.TextEdit{
-			Range:   fsRangeToLSP(change.Range()),
-			NewText: change.Text(),
-		}
-	}
-
-	return edits
 }
 
 func (fc *contentChange) Text() string {

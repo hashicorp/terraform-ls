@@ -5,11 +5,11 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (ilsp.CompletionList, error) {
-	var list ilsp.CompletionList
+func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (lsp.CompletionList, error) {
+	var list lsp.CompletionList
 
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {

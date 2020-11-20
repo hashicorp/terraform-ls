@@ -12,10 +12,10 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
-	lsp "github.com/sourcegraph/go-lsp"
 )
 
 type CompletionCommand struct {
@@ -77,7 +77,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		c.Ui.Error(fmt.Sprintf("Error parsing column: %s (expected number)", err))
 		return 1
 	}
-	lspPos := lsp.Position{Line: line, Character: col}
+	lspPos := lsp.Position{Line: float64(line), Character: float64(col)}
 
 	logger := logging.NewLogger(os.Stderr)
 

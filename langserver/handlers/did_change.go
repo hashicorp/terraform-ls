@@ -2,15 +2,14 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	lsp "github.com/sourcegraph/go-lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentParams) error {
+func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
 	p := lsp.DidChangeTextDocumentParams{
 		TextDocument: lsp.VersionedTextDocumentIdentifier{
 			TextDocumentIdentifier: lsp.TextDocumentIdentifier{
@@ -33,11 +32,11 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 	}
 
 	// Versions don't have to be consecutive, but they must be increasing
-	if p.TextDocument.Version <= f.Version() {
+	if int(p.TextDocument.Version) <= f.Version() {
 		fs.CloseAndRemoveDocument(fh)
 		return fmt.Errorf("Old version (%d) received, current version is %d. "+
 			"Unable to update %s. This is likely a bug, please report it.",
-			p.TextDocument.Version, f.Version(), p.TextDocument.URI)
+			int(p.TextDocument.Version), f.Version(), p.TextDocument.URI)
 	}
 
 	changes, err := ilsp.DocumentChanges(params.ContentChanges, f)
@@ -71,31 +70,4 @@ func TextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentPara
 	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
 	return nil
-}
-
-// TODO: Revisit after https://github.com/hashicorp/terraform-ls/issues/118 is addressed
-// Then we could switch back to upstream go-lsp
-type DidChangeTextDocumentParams struct {
-	TextDocument   VersionedTextDocumentIdentifier      `json:"textDocument"`
-	ContentChanges []lsp.TextDocumentContentChangeEvent `json:"contentChanges"`
-}
-
-type VersionedTextDocumentIdentifier struct {
-	URI lsp.DocumentURI `json:"uri"`
-	/**
-	 * The version number of this document.
-	 */
-	Version int `json:"version"`
-}
-
-// UnmarshalJSON implements non-strict json.Unmarshaler.
-func (v *DidChangeTextDocumentParams) UnmarshalJSON(b []byte) error {
-	type t DidChangeTextDocumentParams
-	return json.Unmarshal(b, (*t)(v))
-}
-
-// UnmarshalJSON implements non-strict json.Unmarshaler.
-func (v *VersionedTextDocumentIdentifier) UnmarshalJSON(b []byte) error {
-	type t VersionedTextDocumentIdentifier
-	return json.Unmarshal(b, (*t)(v))
 }
