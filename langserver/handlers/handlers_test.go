@@ -51,7 +51,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				}
 			},
 			"serverInfo": {
-				"name": ""
+				"name": "terraform-ls"
 			}
 		}
 	}`, string(jsonArray))

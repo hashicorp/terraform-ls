@@ -30,6 +30,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		},
 	}
 
+	serverCaps.ServerInfo.Name = "terraform-ls"
+	version, ok := lsctx.LanguageServerVersion(ctx)
+	if ok {
+		serverCaps.ServerInfo.Version = version
+	}
+
 	fh := ilsp.FileHandlerFromDirURI(params.RootURI)
 	if fh.URI() == "" || !fh.IsDir() {
 		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +
