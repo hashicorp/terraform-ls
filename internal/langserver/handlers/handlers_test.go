@@ -47,6 +47,13 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"commands": %s,
 					"workDoneProgress":true
 				},
+				"semanticTokensProvider": {
+					"legend": {
+						"tokenTypes": [],
+						"tokenModifiers": []
+					},
+					"full": false
+				},
 				"workspace": {
 					"workspaceFolders": {}
 				}

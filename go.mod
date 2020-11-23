@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-version v1.2.1
-	github.com/hashicorp/hcl-lang v0.0.0-20201116081236-948e43712a65
+	github.com/hashicorp/hcl-lang v0.0.0-20201209145723-0c4061e492db
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform-exec v0.11.1-0.20201207223938-9186a7c3bb24
 	github.com/hashicorp/terraform-json v0.7.0

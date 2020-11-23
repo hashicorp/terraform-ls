@@ -185,10 +185,9 @@ github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f h1:UdxlrJz4JOnY8W+Db
 github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f/go.mod h1:oZtUIOe8dh44I2q6ScRibXws4Ajl+d+nod3AaR9vL5w=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hashicorp/hcl-lang v0.0.0-20201110071249-4e412924f52b h1:EjnMRaTQlomBMNRQfyWoLEg9IdqxeN1R2mb3ZZetCBs=
 github.com/hashicorp/hcl-lang v0.0.0-20201110071249-4e412924f52b/go.mod h1:vd3BPEDWrYMAgAnB0MRlBdZknrpUXf8Jk2PNaHIbwhg=
-github.com/hashicorp/hcl-lang v0.0.0-20201116081236-948e43712a65 h1:kF6Dxt2kPNj8+Px7LyK7nxPDQjYKwGrKxxYnSu+LOXM=
-github.com/hashicorp/hcl-lang v0.0.0-20201116081236-948e43712a65/go.mod h1:vd3BPEDWrYMAgAnB0MRlBdZknrpUXf8Jk2PNaHIbwhg=
+github.com/hashicorp/hcl-lang v0.0.0-20201209145723-0c4061e492db h1:Euxzz3x8BlYyNKiENK5LdOjA3i9C0UiqALp3TnWbkck=
+github.com/hashicorp/hcl-lang v0.0.0-20201209145723-0c4061e492db/go.mod h1:TZ5tpvmgJSHfmIndN4WP9SpZvyWK8tHPBY8LDRyU+pI=
 github.com/hashicorp/hcl/v2 v2.0.0/go.mod h1:oVVDG71tEinNGYCxinCYadcmKU9bglqW9pV3txagJ90=
 github.com/hashicorp/hcl/v2 v2.6.0 h1:3krZOfGY6SziUXa6H9PJU6TyohHn7I+ARYnhbeNBz+o=
 github.com/hashicorp/hcl/v2 v2.6.0/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
@@ -202,8 +201,6 @@ github.com/hashicorp/terraform-exec v0.11.1-0.20201207223938-9186a7c3bb24 h1:kMl
 github.com/hashicorp/terraform-exec v0.11.1-0.20201207223938-9186a7c3bb24/go.mod h1:o1PZgrOpDMiDeKT0Hcr2oo6KoVKyaeTN867jcaXMg4E=
 github.com/hashicorp/terraform-json v0.7.0 h1:DgkfLARKMQ/xmzVtSRX9Vz/fzPCL3vskHIgj6s+SQwQ=
 github.com/hashicorp/terraform-json v0.7.0/go.mod h1:3defM4kkMfttwiE7VakJDwCd4R+umhSQnvJwORXbprE=
-github.com/hashicorp/terraform-schema v0.0.0-20201208004742-b5e321a36f41 h1:FvVpjaQJXT9AH70Vs9i90QDTLz92BsL69N9kaLGK8qE=
-github.com/hashicorp/terraform-schema v0.0.0-20201208004742-b5e321a36f41/go.mod h1:eRHMO4QL4TTka07aC7fH+AXvi/tYlv6udrA8nSFOl6g=
 github.com/hashicorp/terraform-schema v0.0.0-20201208163444-44d0347ab290 h1:kAs5ZG+cgtWy3+81Z7G/Blj2imiDLfFBRaqmNs8mD4o=
 github.com/hashicorp/terraform-schema v0.0.0-20201208163444-44d0347ab290/go.mod h1:eRHMO4QL4TTka07aC7fH+AXvi/tYlv6udrA8nSFOl6g=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=

@@ -51,7 +51,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	err = lsctx.SetClientCapabilities(ctx, &params.Capabilities)
+	clientCaps := params.Capabilities
+	err = lsctx.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -79,6 +80,20 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	if err != nil {
 		return serverCaps, err
 	}
+
+	stCaps := clientCaps.TextDocument.SemanticTokens
+	caps := ilsp.SemanticTokensClientCapabilities{
+		SemanticTokensClientCapabilities: clientCaps.TextDocument.SemanticTokens,
+	}
+	semanticTokensOpts := lsp.SemanticTokensOptions{
+		Legend: lsp.SemanticTokensLegend{
+			TokenTypes:     ilsp.TokenTypesLegend(stCaps.TokenTypes).AsStrings(),
+			TokenModifiers: ilsp.TokenModifiersLegend(stCaps.TokenModifiers).AsStrings(),
+		},
+		Full: caps.FullRequest(),
+	}
+
+	serverCaps.Capabilities.SemanticTokensProvider = semanticTokensOpts
 
 	// set commandPrefix for session
 	lsctx.SetCommandPrefix(ctx, out.Options.CommandPrefix)

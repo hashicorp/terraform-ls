@@ -260,6 +260,18 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
+		"textDocument/semanticTokens/full": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = lsctx.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+
+			return handle(ctx, req, lh.TextDocumentSemanticTokensFull)
+		},
 		"workspace/executeCommand": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
