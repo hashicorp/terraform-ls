@@ -166,6 +166,11 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleLoader(ctx, rmLoader)
 
+			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
+			if ok {
+				ctx = lsctx.WithLanguageServerVersion(ctx, version)
+			}
+
 			return handle(ctx, req, lh.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {

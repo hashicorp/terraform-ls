@@ -35,6 +35,7 @@ var (
 	ctxRootDir           = &contextKey{"root directory"}
 	ctxCommandPrefix     = &contextKey{"command prefix"}
 	ctxDiags             = &contextKey{"diagnostics"}
+	ctxLsVersion         = &contextKey{"language server version"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -235,4 +236,16 @@ func Diagnostics(ctx context.Context) (*diagnostics.Notifier, error) {
 	}
 
 	return diags, nil
+}
+
+func WithLanguageServerVersion(ctx context.Context, version string) context.Context {
+	return context.WithValue(ctx, ctxLsVersion, version)
+}
+
+func LanguageServerVersion(ctx context.Context) (string, bool) {
+	version, ok := ctx.Value(ctxLsVersion).(string)
+	if !ok {
+		return "", false
+	}
+	return version, true
 }
