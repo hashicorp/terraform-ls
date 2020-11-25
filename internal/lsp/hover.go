@@ -5,7 +5,10 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func HoverData(data *lang.HoverData, cc lsp.TextDocumentClientCapabilities) lsp.Hover {
+func HoverData(data *lang.HoverData, cc lsp.TextDocumentClientCapabilities) *lsp.Hover {
+	if data == nil {
+		return nil
+	}
 	mdSupported := len(cc.Hover.ContentFormat) > 0 &&
 		cc.Hover.ContentFormat[0] == "markdown"
 
@@ -15,7 +18,7 @@ func HoverData(data *lang.HoverData, cc lsp.TextDocumentClientCapabilities) lsp.
 	//
 	// We choose to follow gopls' approach (i.e. cut off old clients).
 
-	return lsp.Hover{
+	return &lsp.Hover{
 		Contents: markupContent(data.Content, mdSupported),
 		Range:    HCLRangeToLSP(data.Range),
 	}
