@@ -128,6 +128,29 @@ func (_m *Executor) SetTimeout(duration time.Duration) {
 	_m.Called(duration)
 }
 
+// Validate provides a mock function with given fields: ctx
+func (_m *Executor) Validate(ctx context.Context) ([]tfexec.Diagnostic, error) {
+	ret := _m.Called(ctx)
+
+	var r0 []tfexec.Diagnostic
+	if rf, ok := ret.Get(0).(func(context.Context) []tfexec.Diagnostic); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]tfexec.Diagnostic)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Version provides a mock function with given fields: ctx
 func (_m *Executor) Version(ctx context.Context) (*version.Version, map[string]*version.Version, error) {
 	ret := _m.Called(ctx)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -67,7 +68,7 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.Publish(ctx, rm.Path(), diagnostics.FromHCLMap(rm.ParsedDiagnostics()), "hcl")
 
 	return nil
 }

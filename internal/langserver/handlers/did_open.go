@@ -14,6 +14,7 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
@@ -70,7 +71,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if err != nil {
 		return err
 	}
-	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.Publish(ctx, rm.Path(), diagnostics.FromHCLMap(rm.ParsedDiagnostics()), "hcl")
 
 	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
 

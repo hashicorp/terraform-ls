@@ -214,6 +214,16 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
+		"textDocument/didSave": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			return handle(ctx, req, lh.TextDocumentDidSave)
+		},
 		"textDocument/documentSymbol": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {

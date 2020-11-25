@@ -82,8 +82,10 @@ type RootModule interface {
 	HasTerraformDiscoveryFinished() bool
 	IsTerraformAvailable() bool
 	ExecuteTerraformInit(ctx context.Context) error
+	ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error)
 	Modules() []ModuleRecord
 	HumanReadablePath(string) string
+	WasInitialized() (bool, error)
 }
 
 type RootModuleFactory func(context.Context, string) (*rootModule, error)
