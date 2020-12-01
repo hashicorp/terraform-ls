@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,11 @@ func (h Handlers) Names(commandPrefix string) (names []string) {
 	for name := range h {
 		names = append(names, commandPrefix+name)
 	}
+
+	sort.SliceStable(names, func(i, j int) bool {
+		return names[i] < names[j]
+	})
+
 	return names
 }
 

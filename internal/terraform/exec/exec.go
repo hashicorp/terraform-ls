@@ -87,7 +87,7 @@ func (e *Executor) setLogPath(method string) error {
 	return e.tf.SetLogPath(logPath)
 }
 
-func (e *Executor) Init(ctx context.Context) error {
+func (e *Executor) Init(ctx context.Context, opts ...tfexec.InitOption) error {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()
 	err := e.setLogPath("Init")
@@ -95,7 +95,7 @@ func (e *Executor) Init(ctx context.Context) error {
 		return err
 	}
 
-	return e.contextfulError(ctx, "Init", e.tf.Init(ctx))
+	return e.contextfulError(ctx, "Init", e.tf.Init(ctx, opts...))
 }
 
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {

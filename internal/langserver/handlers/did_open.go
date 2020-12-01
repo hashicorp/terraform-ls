@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2"
+	"github.com/google/uuid"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
@@ -33,11 +35,6 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	}
 
 	walker, err := lsctx.RootModuleWalker(ctx)
-	if err != nil {
-		return err
-	}
-
-	w, err := lsctx.Watcher(ctx)
 	if err != nil {
 		return err
 	}
@@ -83,7 +80,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
 		go func() {
-			err := askInitForEmptyRootModule(ctx, w, rootDir, f.Dir())
+			err := askInitForEmptyRootModule(ctx, rootDir, f)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 					Type:    lsp.Error,
@@ -138,12 +135,12 @@ func humanReadablePath(rootDir, path string) string {
 	return relDir
 }
 
-func askInitForEmptyRootModule(ctx context.Context, w watcher.Watcher, rootDir, dir string) error {
+func askInitForEmptyRootModule(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
 	msg := fmt.Sprintf("No root module found for %q."+
 		" Functionality may be limited."+
 		// Unfortunately we can't be any more specific wrt where
 		// because we don't gather "init-able folders" in any way
-		" You may need to run terraform init.", humanReadablePath(rootDir, dir))
+		" You may need to run terraform init.", humanReadablePath(rootDir, dh.Dir()))
 	title := "terraform init"
 	resp, err := jrpc2.PushCall(ctx, "window/showMessageRequest", lsp.ShowMessageRequestParams{
 		Type:    lsp.Info,
@@ -162,21 +159,44 @@ func askInitForEmptyRootModule(ctx context.Context, w watcher.Watcher, rootDir, 
 		return fmt.Errorf("unmarshal MessageActionItem: %+v", err)
 	}
 	if action.Title == title {
-		rmm, err := lsctx.RootModuleManager(ctx)
+		ctx, err := initiateProgress(ctx)
 		if err != nil {
 			return err
 		}
-
-		rm, err := rmm.InitAndUpdateRootModule(ctx, dir)
+		_, err = command.TerraformInitHandler(ctx, cmd.CommandArgs{
+			"uri": dh.URI(),
+		})
 		if err != nil {
-			return fmt.Errorf("failed to init root module %+v", err)
+			return fmt.Errorf("Initialization failed: %w", err)
 		}
-
-		paths := rm.PathsToWatch()
-		err = w.AddPaths(paths)
-		if err != nil {
-			return fmt.Errorf("failed to add watch for dir (%s): %+v", dir, err)
-		}
+		return nil
 	}
 	return nil
+}
+
+func initiateProgress(ctx context.Context) (context.Context, error) {
+	cc, err := lsctx.ClientCapabilities(ctx)
+	if err != nil {
+		return ctx, err
+	}
+
+	if !cc.Window.WorkDoneProgress {
+		// server-side reporting not supported
+		return ctx, nil
+	}
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+	token := lsp.ProgressToken(id.String())
+
+	_, err = jrpc2.PushCall(ctx, "window/workDoneProgress/create", lsp.WorkDoneProgressCreateParams{
+		Token: token,
+	})
+	if err == nil {
+		return lsctx.WithProgressToken(ctx, token), nil
+	}
+
+	return ctx, err
 }
