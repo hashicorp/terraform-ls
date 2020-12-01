@@ -7,6 +7,7 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 )
@@ -52,7 +53,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, prefixCommandName("rootmodules"))}, code.InvalidParams.Err())
+	}`, cmd.Name("rootmodules"))}, code.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
@@ -97,7 +98,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, prefixCommandName("rootmodules"), testFileURI)}, fmt.Sprintf(`{
+	}`, cmd.Name("rootmodules"), testFileURI)}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": {
@@ -160,7 +161,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, prefixCommandName("rootmodules"), module.URI())}, fmt.Sprintf(`{
+	}`, cmd.Name("rootmodules"), module.URI())}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {
