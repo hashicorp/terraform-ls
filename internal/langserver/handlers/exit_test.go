@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-ls/langserver"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
 )
 
 func TestExit(t *testing.T) {

@@ -1,4 +1,4 @@
-package commands
+package cmd
 
 import (
 	"context"
@@ -15,8 +15,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
 )
 

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
-	"github.com/hashicorp/terraform-ls/logging"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 )
 
 var defaultExecTimeout = 30 * time.Second

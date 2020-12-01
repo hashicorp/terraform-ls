@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing.T) {

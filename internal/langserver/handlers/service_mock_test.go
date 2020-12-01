@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
-	"github.com/hashicorp/terraform-ls/langserver/session"
 )
 
 type MockSessionInput struct {

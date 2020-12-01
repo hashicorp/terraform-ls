@@ -7,10 +7,10 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/langserver"
-	"github.com/hashicorp/terraform-ls/langserver/session"
 	"github.com/stretchr/testify/mock"
 )
 

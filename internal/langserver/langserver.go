@@ -12,7 +12,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/creachadair/jrpc2/server"
-	"github.com/hashicorp/terraform-ls/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 )
 
 type langServer struct {

@@ -1,4 +1,4 @@
-package commands
+package cmd
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/logging"
 	"github.com/mitchellh/cli"
 )
 

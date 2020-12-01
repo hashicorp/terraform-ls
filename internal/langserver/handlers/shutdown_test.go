@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 func TestShutdown_twice(t *testing.T) {
