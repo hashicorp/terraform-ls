@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gammazero/workerpool v1.0.0
 	github.com/google/go-cmp v0.5.1
+	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl-lang v0.0.0-20201116081236-948e43712a65

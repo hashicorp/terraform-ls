@@ -12,7 +12,8 @@ import (
 )
 
 var handlers = cmd.Handlers{
-	cmd.Name("rootmodules"): command.RootModulesHandler,
+	cmd.Name("rootmodules"):    command.RootModulesHandler,
+	cmd.Name("terraform.init"): command.TerraformInitHandler,
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
@@ -28,5 +29,11 @@ func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.Ex
 	if !ok {
 		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}
+
+	pt, ok := params.WorkDoneToken.(lsp.ProgressToken)
+	if ok {
+		ctx = lsctx.WithProgressToken(ctx, pt)
+	}
+
 	return handler(ctx, cmd.ParseCommandArgs(params.Arguments))
 }

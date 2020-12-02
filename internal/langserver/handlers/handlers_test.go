@@ -44,7 +44,8 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"firstTriggerCharacter": ""
 				},
 				"executeCommandProvider": {
-					"commands": %s
+					"commands": %s,
+					"workDoneProgress":true
 				},
 				"workspace": {
 					"workspaceFolders": {}

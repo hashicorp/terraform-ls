@@ -196,10 +196,12 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
@@ -267,6 +269,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
+			ctx = lsctx.WithWatcher(ctx, ww)
 
 			return handle(ctx, req, lh.WorkspaceExecuteCommand)
 		},

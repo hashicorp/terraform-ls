@@ -36,6 +36,7 @@ var (
 	ctxCommandPrefix     = &contextKey{"command prefix"}
 	ctxDiags             = &contextKey{"diagnostics"}
 	ctxLsVersion         = &contextKey{"language server version"}
+	ctxProgressToken     = &contextKey{"progress token"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -248,4 +249,16 @@ func LanguageServerVersion(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return version, true
+}
+
+func WithProgressToken(ctx context.Context, pt lsp.ProgressToken) context.Context {
+	return context.WithValue(ctx, ctxProgressToken, pt)
+}
+
+func ProgressToken(ctx context.Context) (lsp.ProgressToken, bool) {
+	pt, ok := ctx.Value(ctxProgressToken).(lsp.ProgressToken)
+	if !ok {
+		return "", false
+	}
+	return pt, true
 }

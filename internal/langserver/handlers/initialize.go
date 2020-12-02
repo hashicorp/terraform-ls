@@ -85,6 +85,9 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// apply prefix to executeCommand handler names
 	serverCaps.Capabilities.ExecuteCommandProvider = lsp.ExecuteCommandOptions{
 		Commands: handlers.Names(out.Options.CommandPrefix),
+		WorkDoneProgressOptions: lsp.WorkDoneProgressOptions{
+			WorkDoneProgress: true,
+		},
 	}
 
 	if len(out.UnusedKeys) > 0 {
