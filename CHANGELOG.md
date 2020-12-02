@@ -12,6 +12,7 @@ INTERNAL:
 
  - Replace `sourcegraph/go-lsp` with gopls' `internal/lsp/protocol` ([#311](https://github.com/hashicorp/terraform-ls/pull/311))
  - Expose server version via LSP ([#318](https://github.com/hashicorp/terraform-ls/pull/318))
+ - Expose `terraform.init` as command for language clients ([#325](https://github.com/hashicorp/terraform-ls/pull/325))
 
 ## 0.10.0 (19 November 2020)
 
