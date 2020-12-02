@@ -1,4 +1,4 @@
-package handlers
+package command
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/uri"
@@ -24,7 +25,7 @@ type rootModuleInfo struct {
 	URI string `json:"uri"`
 }
 
-func executeCommandRootModulesHandler(ctx context.Context, args commandArgs) (interface{}, error) {
+func RootModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	walker, err := lsctx.RootModuleWalker(ctx)
 	if err != nil {
 		return nil, err
