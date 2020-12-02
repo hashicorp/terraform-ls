@@ -1,4 +1,4 @@
-package commands
+package cmd
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/langserver"
-	"github.com/hashicorp/terraform-ls/langserver/handlers"
-	"github.com/hashicorp/terraform-ls/logging"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/langserver/handlers"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 	"github.com/mitchellh/cli"
 )
 

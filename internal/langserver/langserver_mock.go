@@ -15,7 +15,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 )
 
 type langServerMock struct {

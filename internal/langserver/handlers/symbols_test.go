@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/langserver"
 )
 
-func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) {
+func TestLangServer_symbols_basic(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
-
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -43,13 +40,15 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 			"version": 0,
 			"languageId": "terraform",
 			"text": "provider \"github\" {}",
-			"uri": %q
+			"uri": "%s/main.tf"
 		}
-	}`, testFileURI)})
+	}`, tmpDir.URI())})
 
-	ls.CallAndExpectError(t, &langserver.CallRequest{
-		Method: "workspace/executeCommand",
-		ReqParams: `{
-		"command": "notfound"
-	}`}, code.MethodNotFound.Err())
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/documentSymbol",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI())})
 }

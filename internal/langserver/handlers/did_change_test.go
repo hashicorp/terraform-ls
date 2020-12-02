@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
-	"github.com/hashicorp/terraform-ls/langserver"
 )
 
 func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {

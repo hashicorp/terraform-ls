@@ -5,7 +5,7 @@ import (
 
 	"github.com/mitchellh/cli"
 
-	"github.com/hashicorp/terraform-ls/commands"
+	"github.com/hashicorp/terraform-ls/internal/cmd"
 )
 
 func main() {
@@ -27,18 +27,18 @@ func main() {
 
 	c.Commands = map[string]cli.CommandFactory{
 		"completion": func() (cli.Command, error) {
-			return &commands.CompletionCommand{
+			return &cmd.CompletionCommand{
 				Ui: ui,
 			}, nil
 		},
 		"serve": func() (cli.Command, error) {
-			return &commands.ServeCommand{
+			return &cmd.ServeCommand{
 				Ui:      ui,
 				Version: VersionString(),
 			}, nil
 		},
 		"inspect-module": func() (cli.Command, error) {
-			return &commands.InspectModuleCommand{
+			return &cmd.InspectModuleCommand{
 				Ui: ui,
 			}, nil
 		},

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/terraform-ls/langserver"
-	"github.com/hashicorp/terraform-ls/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 )
 
 func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
