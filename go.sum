@@ -202,8 +202,8 @@ github.com/hashicorp/terraform-json v0.5.0 h1:7TV3/F3y7QVSuN4r9BEXqnWqrAyeOtON8f
 github.com/hashicorp/terraform-json v0.5.0/go.mod h1:eAbqb4w0pSlRmdvl8fOyHAi/+8jnkVYN28gJkSJrLhU=
 github.com/hashicorp/terraform-json v0.6.0 h1:nMTj4t9ysC7xJ72rvVsDqhUccvbUINrjhPqafeUeREk=
 github.com/hashicorp/terraform-json v0.6.0/go.mod h1:eAbqb4w0pSlRmdvl8fOyHAi/+8jnkVYN28gJkSJrLhU=
-github.com/hashicorp/terraform-schema v0.0.0-20201110191417-e2e5d08913c4 h1:yNsRZ4dH6psVLdh9KnjEKGafrv4KAbvhK1cXrT+Ow50=
-github.com/hashicorp/terraform-schema v0.0.0-20201110191417-e2e5d08913c4/go.mod h1:tU5zEQwdtUJbMQXh5+s0TnBOFshXSAcdAx8Ki8p2S4w=
+github.com/hashicorp/terraform-schema v0.0.0-20201204171308-0c9744a02c65 h1:CFZI/uaZCoAN0SI4A9edORfj+tnq+Hg0v9PH2AZ+1tA=
+github.com/hashicorp/terraform-schema v0.0.0-20201204171308-0c9744a02c65/go.mod h1:tU5zEQwdtUJbMQXh5+s0TnBOFshXSAcdAx8Ki8p2S4w=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=
 github.com/imdario/mergo v0.3.9 h1:UauaLniWCFHWd+Jp9oCEkTBj8VO/9DKg3PV3VCNMDIg=

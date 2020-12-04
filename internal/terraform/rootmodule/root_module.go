@@ -21,15 +21,24 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	preloadedSchemas "github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-var _preloadedProviderSchemas *tfjson.ProviderSchemas
-var _preloadedProviderSchemasOnce sync.Once
-var _preloadedProviderSchemasErr error
+var (
+	_preloadedProviderSchemas     *tfjson.ProviderSchemas
+	_preloadedVersionOutput       *versionOutput
+	_preloadedProviderSchemasOnce sync.Once
+	_preloadedProviderSchemasErr  error
+)
+
+type versionOutput struct {
+	Core      *version.Version
+	Providers map[string]*version.Version
+}
 
 type rootModule struct {
 	path   string
@@ -53,6 +62,7 @@ type rootModule struct {
 	pluginLockFile   File
 	providerSchema   *tfjson.ProviderSchemas
 	providerSchemaMu *sync.RWMutex
+	providerVersions map[string]*version.Version
 
 	// terraform executor
 	tfLoadingDone bool
@@ -82,19 +92,53 @@ type rootModule struct {
 	filesystem  filesystem.Filesystem
 }
 
-func preloadedProviderSchemas() (*tfjson.ProviderSchemas, error) {
+func preloadedProviderSchemas() (*tfjson.ProviderSchemas, *versionOutput, error) {
 	_preloadedProviderSchemasOnce.Do(func() {
-		f, fErr := preloadedSchemas.Files.Open("schemas.json")
+		schemasFile, fErr := preloadedSchemas.Files.Open("schemas.json")
 		if fErr != nil {
 			_preloadedProviderSchemasErr = fErr
 			return
 		}
 
 		_preloadedProviderSchemas = &tfjson.ProviderSchemas{}
-		_preloadedProviderSchemasErr = json.NewDecoder(f).Decode(_preloadedProviderSchemas)
+		_preloadedProviderSchemasErr = json.NewDecoder(schemasFile).Decode(_preloadedProviderSchemas)
+
+		versionFile, fErr := preloadedSchemas.Files.Open("versions.json")
+		if fErr != nil {
+			_preloadedProviderSchemasErr = fErr
+			return
+		}
+
+		output := &schemas.VersionOutput{}
+		err := json.NewDecoder(versionFile).Decode(output)
+		if err != nil {
+			_preloadedProviderSchemasErr = err
+			return
+		}
+
+		coreVersion, err := version.NewVersion(output.CoreVersion)
+		if err != nil {
+			_preloadedProviderSchemasErr = err
+			return
+		}
+
+		pVersions := make(map[string]*version.Version, 0)
+		for addr, versionString := range output.Providers {
+			v, err := version.NewVersion(versionString)
+			if err != nil {
+				_preloadedProviderSchemasErr = err
+				return
+			}
+			pVersions[addr] = v
+		}
+
+		_preloadedVersionOutput = &versionOutput{
+			Core:      coreVersion,
+			Providers: pVersions,
+		}
 	})
 
-	return _preloadedProviderSchemas, _preloadedProviderSchemasErr
+	return _preloadedProviderSchemas, _preloadedVersionOutput, _preloadedProviderSchemasErr
 }
 
 func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
@@ -112,6 +156,7 @@ func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
 		coreSchemaMu:     &sync.RWMutex{},
 		isParsedMu:       &sync.RWMutex{},
 		pFilesMap:        make(map[string]*hcl.File, 0),
+		providerVersions: make(map[string]*version.Version, 0),
 		parserMu:         &sync.RWMutex{},
 	}
 }
@@ -338,13 +383,16 @@ func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 		return errors.New("no terraform executor - unable to read version")
 	}
 
-	version, err := rm.tfExec.Version(ctx)
+	version, providerVersions, err := rm.tfExec.Version(ctx)
 	if err != nil {
 		return err
 	}
 	rm.logger.Printf("Terraform version %s found at %s for %s", version,
 		rm.tfExec.GetExecPath(), rm.Path())
 	rm.tfVersion = version
+
+	rm.providerVersions = providerVersions
+
 	return nil
 }
 
@@ -511,7 +559,6 @@ func (rm *rootModule) parsedFiles() map[string]*hcl.File {
 func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 	rm.coreSchemaMu.RLock()
 	defer rm.coreSchemaMu.RUnlock()
-	mergedSchema := rm.coreSchema
 
 	if !rm.IsParsed() {
 		err := rm.ParseFiles()
@@ -520,23 +567,31 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 		}
 	}
 
-	ps, err := preloadedProviderSchemas()
+	ps, vOut, err := preloadedProviderSchemas()
 	if err != nil {
 		return nil, err
 	}
+	providerVersions := vOut.Providers
+	tfVersion := vOut.Core
+
 	if rm.IsProviderSchemaLoaded() {
 		rm.providerSchemaMu.RLock()
 		defer rm.providerSchemaMu.RUnlock()
 		ps = rm.providerSchema
+		providerVersions = rm.providerVersions
+		tfVersion = rm.tfVersion
 	}
 
-	s, err := tfschema.MergeCoreWithJsonProviderSchemas(rm.parsedFiles(), mergedSchema, ps)
+	sm := tfschema.NewSchemaMerger(rm.coreSchema)
+	sm.SetCoreVersion(tfVersion)
+	sm.SetParsedFiles(rm.parsedFiles())
+
+	err = sm.SetProviderVersions(providerVersions)
 	if err != nil {
 		return nil, err
 	}
-	mergedSchema = s
 
-	return mergedSchema, nil
+	return sm.MergeWithJsonProviderSchemas(ps)
 }
 
 // IsIgnoredFile returns true if the given filename (which must not have a

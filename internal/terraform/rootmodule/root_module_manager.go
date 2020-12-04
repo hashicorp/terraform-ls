@@ -280,7 +280,7 @@ func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, workDir
 		tf.SetTimeout(rmm.tfExecTimeout)
 	}
 
-	version, err := tf.Version(ctx)
+	version, _, err := tf.Version(ctx)
 	if err != nil {
 		return nil, err
 	}

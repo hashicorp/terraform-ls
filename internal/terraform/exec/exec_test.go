@@ -18,7 +18,7 @@ func TestExec_timeout(t *testing.T) {
 
 	expectedErr := ExecTimeoutError("Version", timeout)
 
-	_, err := e.Version(context.Background())
+	_, _, err := e.Version(context.Background())
 	if err != nil {
 		if errors.Is(err, expectedErr) {
 			return
@@ -39,7 +39,7 @@ func TestExec_cancel(t *testing.T) {
 
 	expectedErr := ExecCanceledError("Version")
 
-	_, err := e.Version(ctx)
+	_, _, err := e.Version(ctx)
 	if err != nil {
 		if errors.Is(err, expectedErr) {
 			return

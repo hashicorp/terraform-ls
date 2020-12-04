@@ -55,6 +55,7 @@ func TestHover_withValidData(t *testing.T) {
 						ReturnArguments: []interface{}{
 							version.Must(version.NewVersion("0.12.0")),
 							nil,
+							nil,
 						},
 					},
 					{

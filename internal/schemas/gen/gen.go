@@ -13,12 +13,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-exec/tfinstall"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/shurcooL/vfsgen"
 )
 
 const terraformBlock = `terraform {
+	required_version = "~> 0.13"
   required_providers {
   {{ range $p := . }}
     {{ $p.Name }} = {
@@ -91,7 +94,35 @@ func gen() error {
 		return err
 	}
 
-	err = tf.Init(ctx, tfexec.Upgrade(true), tfexec.LockTimeout("120s"))
+	err = tf.Init(ctx, tfexec.Upgrade(true))
+	if err != nil {
+		return err
+	}
+
+	log.Println("creating schemas/data dir")
+	err = os.MkdirAll("data", 0755)
+	if err != nil {
+		return err
+	}
+	fs := http.Dir("data")
+
+	coreVersion, providerVersions, err := tf.Version(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	log.Println("creating version file")
+	versionFile, err := os.Create(filepath.Join("data", "versions.json"))
+	if err != nil {
+		return err
+	}
+	versionOutput := &schemas.VersionOutput{
+		CoreVersion: coreVersion.String(),
+		Providers:   stringifyProviderVersions(providerVersions),
+	}
+
+	log.Println("writing versions to file")
+	err = json.NewEncoder(versionFile).Encode(versionOutput)
 	if err != nil {
 		return err
 	}
@@ -99,12 +130,6 @@ func gen() error {
 	// TODO upstream change to have tfexec write to file directly instead of unmarshal/remarshal
 	log.Println("running terraform providers schema")
 	ps, err := tf.ProvidersSchema(ctx)
-	if err != nil {
-		return err
-	}
-
-	log.Println("creating schemas/data dir")
-	err = os.MkdirAll("data", 0755)
 	if err != nil {
 		return err
 	}
@@ -122,12 +147,21 @@ func gen() error {
 	}
 
 	log.Println("generating embedded go file")
-	var fs http.FileSystem = http.Dir("data")
 	return vfsgen.Generate(fs, vfsgen.Options{
 		Filename:     "schemas.go",
 		PackageName:  "schemas",
 		VariableName: "Files",
 	})
+}
+
+func stringifyProviderVersions(m map[string]*version.Version) map[string]string {
+	versions := make(map[string]string, 0)
+
+	for addr, ver := range m {
+		versions[addr] = ver.String()
+	}
+
+	return versions
 }
 
 type providerAttributes struct {

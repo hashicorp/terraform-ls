@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform-exec v0.11.1-0.20201007122305-ea2094d52cb5
 	github.com/hashicorp/terraform-json v0.6.0
-	github.com/hashicorp/terraform-schema v0.0.0-20201110191417-e2e5d08913c4
+	github.com/hashicorp/terraform-schema v0.0.0-20201204171308-0c9744a02c65
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.1
 	github.com/mitchellh/go-homedir v1.1.0
