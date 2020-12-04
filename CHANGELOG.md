@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - Ask for init if current folder is empty root module ([#257](https://github.com/hashicorp/terraform-ls/pull/257))
+ - Display provider versions in completion/hover detail ([#329](https://github.com/hashicorp/terraform-ls/pull/329))
 
 BUG FIXES:
 
