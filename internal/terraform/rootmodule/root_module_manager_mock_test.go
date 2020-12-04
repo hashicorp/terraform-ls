@@ -49,6 +49,7 @@ func validTfMockCalls(t *testing.T, workDir string) exec.ExecutorFactory {
 			ReturnArguments: []interface{}{
 				version.Must(version.NewVersion("0.12.0")),
 				nil,
+				nil,
 			},
 		},
 		{

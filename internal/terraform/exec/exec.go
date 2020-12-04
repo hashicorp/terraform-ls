@@ -114,16 +114,16 @@ func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	return buf.Bytes(), e.contextfulError(ctx, "Format", err)
 }
 
-func (e *Executor) Version(ctx context.Context) (*version.Version, error) {
+func (e *Executor) Version(ctx context.Context) (*version.Version, map[string]*version.Version, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()
 	err := e.setLogPath("Version")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	ver, _, err := e.tf.Version(ctx, true)
-	return ver, e.contextfulError(ctx, "Version", err)
+	ver, pv, err := e.tf.Version(ctx, true)
+	return ver, pv, e.contextfulError(ctx, "Version", err)
 }
 
 func (e *Executor) ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error) {

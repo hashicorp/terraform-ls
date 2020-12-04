@@ -129,7 +129,7 @@ func (_m *Executor) SetTimeout(duration time.Duration) {
 }
 
 // Version provides a mock function with given fields: ctx
-func (_m *Executor) Version(ctx context.Context) (*version.Version, error) {
+func (_m *Executor) Version(ctx context.Context) (*version.Version, map[string]*version.Version, error) {
 	ret := _m.Called(ctx)
 
 	var r0 *version.Version
@@ -141,12 +141,21 @@ func (_m *Executor) Version(ctx context.Context) (*version.Version, error) {
 		}
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+	var r1 map[string]*version.Version
+	if rf, ok := ret.Get(1).(func(context.Context) map[string]*version.Version); ok {
 		r1 = rf(ctx)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(map[string]*version.Version)
+		}
 	}
 
-	return r0, r1
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context) error); ok {
+		r2 = rf(ctx)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }

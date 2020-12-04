@@ -71,6 +71,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 			ReturnArguments: []interface{}{
 				version.Must(version.NewVersion("0.12.0")),
 				nil,
+				nil,
 			},
 		},
 		{
@@ -149,6 +150,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 			},
 			ReturnArguments: []interface{}{
 				version.Must(version.NewVersion("0.12.0")),
+				nil,
 				nil,
 			},
 		},

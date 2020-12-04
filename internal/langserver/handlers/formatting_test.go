@@ -47,6 +47,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 						ReturnArguments: []interface{}{
 							version.Must(version.NewVersion("0.12.0")),
 							nil,
+							nil,
 						},
 					},
 					{
@@ -131,6 +132,7 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 						},
 						ReturnArguments: []interface{}{
 							version.Must(version.NewVersion("0.7.6")),
+							nil,
 							nil,
 						},
 					},
