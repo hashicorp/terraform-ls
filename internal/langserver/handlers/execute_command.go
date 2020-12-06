@@ -12,8 +12,9 @@ import (
 )
 
 var handlers = cmd.Handlers{
-	cmd.Name("rootmodules"):    command.RootModulesHandler,
-	cmd.Name("terraform.init"): command.TerraformInitHandler,
+	cmd.Name("rootmodules"):        command.RootModulesHandler,
+	cmd.Name("terraform.init"):     command.TerraformInitHandler,
+	cmd.Name("terraform.validate"): command.TerraformValidateHandler,
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {

@@ -6,7 +6,7 @@ import (
 	"log"
 	"testing"
 
-	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/hcl/v2"
 )
 
 var discardLogger = log.New(ioutil.Discard, "", 0)
@@ -16,10 +16,10 @@ func TestDiags_Closes(t *testing.T) {
 	n := NewNotifier(ctx, discardLogger)
 
 	cancel()
-	n.Publish(context.Background(), "", map[string][]lsp.Diagnostic{
+	n.PublishHCLDiags(context.Background(), "", map[string]hcl.Diagnostics{
 		"test": {
 			{
-				Severity: lsp.SeverityError,
+				Severity: hcl.DiagError,
 			},
 		},
 	}, "test")
@@ -40,10 +40,10 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 	n := NewNotifier(ctx, discardLogger)
 
 	cancel()
-	n.Publish(context.Background(), "", map[string][]lsp.Diagnostic{
+	n.PublishHCLDiags(context.Background(), "", map[string]hcl.Diagnostics{
 		"test": {
 			{
-				Severity: lsp.SeverityError,
+				Severity: hcl.DiagError,
 			},
 		},
 	}, "test")

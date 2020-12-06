@@ -36,8 +36,10 @@ func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 	return n
 }
 
-// Publish accepts a map of diagnostics per file and queues them for publishing
-func (n *Notifier) Publish(ctx context.Context, dir string, diags map[string][]lsp.Diagnostic, source string) {
+// PublishHCLDiags accepts a map of hcl diagnostics per file and queues them for publishing.
+// A dir path is passed which is joined with the filename keys of the map, to form a file URI.
+// A source string is passed and set for each diagnostic, this is typically displayed in the client UI.
+func (n *Notifier) PublishHCLDiags(ctx context.Context, dir string, diags map[string]hcl.Diagnostics, source string) {
 	select {
 	case <-n.sessCtx.Done():
 		n.closeDiagsOnce.Do(func() {
@@ -48,7 +50,7 @@ func (n *Notifier) Publish(ctx context.Context, dir string, diags map[string][]l
 	}
 
 	for filename, ds := range diags {
-		n.diags <- diagContext{ctx: ctx, source: source, diags: ds, uri: lsp.DocumentURI(uri.FromPath(filepath.Join(dir, filename)))}
+		n.diags <- diagContext{ctx: ctx, source: source, diags: ilsp.HCLDiagsToLSP(ds, source), uri: lsp.DocumentURI(uri.FromPath(filepath.Join(dir, filename)))}
 	}
 }
 
@@ -80,12 +82,4 @@ func (n *Notifier) mergeDiags(uri string, source string, diags []lsp.Diagnostic)
 		all = append(all, diags...)
 	}
 	return all
-}
-
-func FromHCLMap(hclDiags map[string]hcl.Diagnostics) map[string][]lsp.Diagnostic {
-	diags := make(map[string][]lsp.Diagnostic, len(hclDiags))
-	for file, ds := range hclDiags {
-		diags[file] = ilsp.HCLDiagsToLSP(ds, "HCL")
-	}
-	return diags
 }
