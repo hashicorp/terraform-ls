@@ -130,7 +130,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"]
-	}`, cmd.Name("terraform.init"), testFileURI)}, `{
+	}`, cmd.Name("terraform.init"), tmpDir.URI())}, `{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": null
