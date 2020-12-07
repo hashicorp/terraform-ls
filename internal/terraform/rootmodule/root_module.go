@@ -385,6 +385,27 @@ func (rm *rootModule) MatchesPath(path string) bool {
 	return filepath.Clean(rm.path) == filepath.Clean(path)
 }
 
+// HumanReadablePath helps display shorter, but still relevant paths
+func (rm *rootModule) HumanReadablePath(rootDir string) string {
+	if rootDir == "" {
+		return rm.path
+	}
+
+	// absolute paths can be too long for UI/messages,
+	// so we just display relative to root dir
+	relDir, err := filepath.Rel(rootDir, rm.path)
+	if err != nil {
+		return rm.path
+	}
+
+	if relDir == "." {
+		// Name of the root dir is more helpful than "."
+		return filepath.Base(rootDir)
+	}
+
+	return relDir
+}
+
 func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
 	rm.moduleMu.Lock()
 	defer rm.moduleMu.Unlock()
