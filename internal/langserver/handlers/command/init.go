@@ -12,19 +12,19 @@ import (
 )
 
 func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
-	fileUri, ok := args.GetString("uri")
-	if !ok || fileUri == "" {
-		return nil, fmt.Errorf("%w: expected uri argument to be set", code.InvalidParams.Err())
+	dirUri, ok := args.GetString("uri")
+	if !ok || dirUri == "" {
+		return nil, fmt.Errorf("%w: expected dir uri argument to be set", code.InvalidParams.Err())
 	}
 
-	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(fileUri))
+	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
 	cf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rm, err := cf.RootModuleByPath(fh.Dir())
+	rm, err := cf.RootModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 	}
 	err = w.AddPaths(paths)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add watch for dir (%s): %+v", fh.Dir(), err)
+		return nil, fmt.Errorf("failed to add watch for dir (%s): %+v", dh.Dir(), err)
 	}
 
 	return nil, nil
