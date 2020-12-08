@@ -17,14 +17,14 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, fmt.Errorf("%w: expected dir uri argument to be set", code.InvalidParams.Err())
 	}
 
-	fh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
+	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
 	cf, err := lsctx.RootModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rm, err := cf.RootModuleByPath(fh.Dir())
+	rm, err := cf.RootModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}
