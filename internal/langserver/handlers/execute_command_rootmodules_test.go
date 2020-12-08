@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -184,5 +183,5 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 				}
 			]
 		}
-	}`, dev.URI(), path.Join("env", "dev"), prod.URI(), path.Join("env", "prod"), staging.URI(), path.Join("env", "staging")))
+	}`, dev.URI(), filepath.Join("env", "dev"), prod.URI(), filepath.Join("env", "prod"), staging.URI(), filepath.Join("env", "staging")))
 }
