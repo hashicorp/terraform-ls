@@ -403,7 +403,7 @@ func (rm *rootModule) ExecuteTerraformValidate(ctx context.Context) (map[string]
 		return diagsMap, err
 	}
 
-	// tfexec.Diagnostic is a conversion of an internal diag to terraform core,
+	// tfjson.Diagnostic is a conversion of an internal diag to terraform core,
 	// tfdiags, which is effectively based on hcl.Diagnostic.
 	// This process is really just converting it back to hcl.Diagnotic
 	// since it is the defacto diagnostic type for our codebase currently
