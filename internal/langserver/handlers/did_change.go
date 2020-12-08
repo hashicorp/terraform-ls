@@ -67,7 +67,7 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	diags.Publish(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
 	return nil
 }

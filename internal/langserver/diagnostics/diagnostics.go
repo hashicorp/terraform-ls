@@ -16,26 +16,39 @@ import (
 type diagContext struct {
 	ctx    context.Context
 	uri    lsp.DocumentURI
-	diags  hcl.Diagnostics
 	source string
+	diags  []lsp.Diagnostic
 }
+
+type diagnosticSource string
+
+type fileDiagnostics map[diagnosticSource][]lsp.Diagnostic
 
 // Notifier is a type responsible for queueing hcl diagnostics to be converted
 // and sent to the client
 type Notifier struct {
+	logger         *log.Logger
 	sessCtx        context.Context
 	diags          chan diagContext
+	diagsCache     map[lsp.DocumentURI]fileDiagnostics
 	closeDiagsOnce sync.Once
 }
 
 func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
-	diags := make(chan diagContext, 50)
-	go notify(diags, logger)
-	return &Notifier{sessCtx: sessCtx, diags: diags}
+	n := &Notifier{
+		logger:     logger,
+		sessCtx:    sessCtx,
+		diags:      make(chan diagContext, 50),
+		diagsCache: make(map[lsp.DocumentURI]fileDiagnostics),
+	}
+	go n.notify()
+	return n
 }
 
-// Publish accepts a map of diagnostics per file and queues them for publishing
-func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]hcl.Diagnostics, source string) {
+// PublishHCLDiags accepts a map of hcl diagnostics per file and queues them for publishing.
+// A dir path is passed which is joined with the filename keys of the map, to form a file URI.
+// A source string is passed and set for each diagnostic, this is typically displayed in the client UI.
+func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags map[string]hcl.Diagnostics, source string) {
 	select {
 	case <-n.sessCtx.Done():
 		n.closeDiagsOnce.Do(func() {
@@ -45,22 +58,42 @@ func (n *Notifier) Publish(ctx context.Context, rmDir string, diags map[string]h
 	default:
 	}
 
-	if source == "" {
-		source = "Terraform"
-	}
-
-	for path, ds := range diags {
-		n.diags <- diagContext{ctx: ctx, diags: ds, source: source, uri: lsp.DocumentURI(uri.FromPath(filepath.Join(rmDir, path)))}
+	for filename, ds := range diags {
+		n.diags <- diagContext{
+			ctx: ctx, source: source,
+			diags: ilsp.HCLDiagsToLSP(ds, source),
+			uri:   lsp.DocumentURI(uri.FromPath(filepath.Join(dirPath, filename))),
+		}
 	}
 }
 
-func notify(diags <-chan diagContext, logger *log.Logger) {
-	for d := range diags {
+func (n *Notifier) notify() {
+	for d := range n.diags {
 		if err := jrpc2.PushNotify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         d.uri,
-			Diagnostics: ilsp.HCLDiagsToLSP(d.diags, d.source),
+			Diagnostics: n.mergeDiags(d.uri, d.source, d.diags),
 		}); err != nil {
-			logger.Printf("Error pushing diagnostics: %s", err)
+			n.logger.Printf("Error pushing diagnostics: %s", err)
 		}
 	}
+}
+
+// mergeDiags will return all diags from all cached sources for a given uri.
+// the passed diags overwrites the cached entry for the passed source key
+// even if empty
+func (n *Notifier) mergeDiags(uri lsp.DocumentURI, source string, diags []lsp.Diagnostic) []lsp.Diagnostic {
+
+	fileDiags, ok := n.diagsCache[uri]
+	if !ok {
+		fileDiags = make(fileDiagnostics)
+	}
+
+	fileDiags[diagnosticSource(source)] = diags
+	n.diagsCache[uri] = fileDiags
+
+	all := []lsp.Diagnostic{}
+	for _, diags := range fileDiags {
+		all = append(all, diags...)
+	}
+	return all
 }

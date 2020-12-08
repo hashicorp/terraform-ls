@@ -114,6 +114,19 @@ func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	return buf.Bytes(), e.contextfulError(ctx, "Format", err)
 }
 
+func (e *Executor) Validate(ctx context.Context) ([]tfjson.Diagnostic, error) {
+	ctx, cancel := e.withTimeout(ctx)
+	defer cancel()
+	err := e.setLogPath("Validate")
+	if err != nil {
+		return []tfjson.Diagnostic{}, err
+	}
+
+	validation, err := e.tf.Validate(ctx)
+
+	return validation.Diagnostics, e.contextfulError(ctx, "Validate", err)
+}
+
 func (e *Executor) Version(ctx context.Context) (*version.Version, map[string]*version.Version, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()
