@@ -114,12 +114,12 @@ func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	return buf.Bytes(), e.contextfulError(ctx, "Format", err)
 }
 
-func (e *Executor) Validate(ctx context.Context) ([]tfexec.Diagnostic, error) {
+func (e *Executor) Validate(ctx context.Context) ([]tfjson.Diagnostic, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()
 	err := e.setLogPath("Validate")
 	if err != nil {
-		return []tfexec.Diagnostic{}, err
+		return []tfjson.Diagnostic{}, err
 	}
 
 	validation, err := e.tf.Validate(ctx)
