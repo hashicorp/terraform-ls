@@ -32,9 +32,9 @@ type Notifier struct {
 
 func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 	n := &Notifier{
-		logger: logger,
-		sessCtx: sessCtx,
-		diags: make(chan diagContext, 50),
+		logger:     logger,
+		sessCtx:    sessCtx,
+		diags:      make(chan diagContext, 50),
 		diagsCache: make(map[string]map[string][]lsp.Diagnostic),
 	}
 	go n.notify()
@@ -58,7 +58,7 @@ func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags ma
 		n.diags <- diagContext{
 			ctx: ctx, source: source,
 			diags: ilsp.HCLDiagsToLSP(ds, source),
-			uri: lsp.DocumentURI(uri.FromPath(filepath.Join(dir, filename))),
+			uri:   lsp.DocumentURI(uri.FromPath(filepath.Join(dirPath, filename))),
 		}
 	}
 }
