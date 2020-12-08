@@ -106,11 +106,12 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 			"doneLoading": true,
 			"rootModules": [
 				{
-					"uri": %q
+					"uri": %q,
+					"name": %q
 				}
 			]
 		}
-	}`, tmpDir.URI()))
+	}`, tmpDir.URI(), t.Name()))
 }
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
@@ -169,15 +170,18 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 			"doneLoading": true,
 			"rootModules": [
 				{
-					"uri": %q
+					"uri": %q,
+					"name": %q
 				},
 				{
-					"uri": %q
+					"uri": %q,
+					"name": %q
 				},
 				{
-					"uri": %q
+					"uri": %q,
+					"name": %q
 				}
 			]
 		}
-	}`, dev.URI(), prod.URI(), staging.URI()))
+	}`, dev.URI(), "env/dev", prod.URI(), "env/prod", staging.URI(), "env/staging"))
 }
