@@ -20,13 +20,17 @@ type diagContext struct {
 	diags  []lsp.Diagnostic
 }
 
+type diagnosticSource string
+
+type fileDiagnostics map[diagnosticSource][]lsp.Diagnostic
+
 // Notifier is a type responsible for queueing hcl diagnostics to be converted
 // and sent to the client
 type Notifier struct {
 	logger         *log.Logger
 	sessCtx        context.Context
 	diags          chan diagContext
-	diagsCache     map[string]map[string][]lsp.Diagnostic
+	diagsCache     map[lsp.DocumentURI]fileDiagnostics
 	closeDiagsOnce sync.Once
 }
 
@@ -35,7 +39,7 @@ func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 		logger:     logger,
 		sessCtx:    sessCtx,
 		diags:      make(chan diagContext, 50),
-		diagsCache: make(map[string]map[string][]lsp.Diagnostic),
+		diagsCache: make(map[lsp.DocumentURI]fileDiagnostics),
 	}
 	go n.notify()
 	return n
@@ -67,7 +71,7 @@ func (n *Notifier) notify() {
 	for d := range n.diags {
 		if err := jrpc2.PushNotify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         d.uri,
-			Diagnostics: n.mergeDiags(string(d.uri), d.source, d.diags),
+			Diagnostics: n.mergeDiags(d.uri, d.source, d.diags),
 		}); err != nil {
 			n.logger.Printf("Error pushing diagnostics: %s", err)
 		}
@@ -77,13 +81,14 @@ func (n *Notifier) notify() {
 // mergeDiags will return all diags from all cached sources for a given uri.
 // the passed diags overwrites the cached entry for the passed source key
 // even if empty
-func (n *Notifier) mergeDiags(uri string, source string, diags []lsp.Diagnostic) []lsp.Diagnostic {
+func (n *Notifier) mergeDiags(uri lsp.DocumentURI, source string, diags []lsp.Diagnostic) []lsp.Diagnostic {
+
 	fileDiags, ok := n.diagsCache[uri]
 	if !ok {
-		fileDiags = make(map[string][]lsp.Diagnostic)
+		fileDiags = make(fileDiagnostics)
 	}
 
-	fileDiags[source] = diags
+	fileDiags[diagnosticSource(source)] = diags
 	n.diagsCache[uri] = fileDiags
 
 	all := []lsp.Diagnostic{}

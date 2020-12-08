@@ -51,7 +51,7 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 }
 
 func TestMergeDiags_CachesMultipleSourcesPerURI(t *testing.T) {
-	uri := "test.tf"
+	uri := lsp.DocumentURI("test.tf")
 
 	n := NewNotifier(context.Background(), discardLogger)
 
@@ -77,7 +77,7 @@ func TestMergeDiags_CachesMultipleSourcesPerURI(t *testing.T) {
 }
 
 func TestMergeDiags_OverwritesSource_EvenWithEmptySlice(t *testing.T) {
-	uri := "test.tf"
+	uri := lsp.DocumentURI("test.tf")
 
 	n := NewNotifier(context.Background(), discardLogger)
 

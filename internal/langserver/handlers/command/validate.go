@@ -29,7 +29,10 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, err
 	}
 
-	wasInit, _ := rm.WasInitialized()
+	wasInit, err := rm.WasInitialized()
+	if err != nil {
+		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirUri, err)
+	}
 	if !wasInit {
 		return nil, fmt.Errorf("%s is not an initialized module, terraform validate cannot be called", dirUri)
 	}
