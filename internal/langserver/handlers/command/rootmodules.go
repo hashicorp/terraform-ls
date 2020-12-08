@@ -22,7 +22,8 @@ type rootmodulesCommandResponse struct {
 }
 
 type rootModuleInfo struct {
-	URI string `json:"uri"`
+	URI  string `json:"uri"`
+	Name string `json:"name"`
 }
 
 func RootModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -44,11 +45,13 @@ func RootModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{},
 	}
 	doneLoading := !walker.IsWalking()
 	candidates := cf.RootModuleCandidatesByPath(fh.Dir())
+	rootDir, _ := lsctx.RootDirectory(ctx)
 
 	rootModules := make([]rootModuleInfo, len(candidates))
 	for i, candidate := range candidates {
 		rootModules[i] = rootModuleInfo{
-			URI: uri.FromPath(candidate.Path()),
+			URI:  uri.FromPath(candidate.Path()),
+			Name: candidate.HumanReadablePath(rootDir),
 		}
 	}
 	sort.SliceStable(rootModules, func(i, j int) bool {
