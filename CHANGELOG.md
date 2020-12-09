@@ -4,7 +4,7 @@ ENHANCEMENTS:
 
  - Ask for init if current folder is empty root module ([#257](https://github.com/hashicorp/terraform-ls/pull/257))
  - Display provider versions in completion/hover detail ([#329](https://github.com/hashicorp/terraform-ls/pull/329))
- - Expose validate `workspace/executeCommand` ([#323](https://github.com/hashicorp/terraform-ls/pull/323))
+ - Expose `terraform.validate` as command for language clients ([#323](https://github.com/hashicorp/terraform-ls/pull/323))
  - Expose `terraform.init` as command for language clients ([#325](https://github.com/hashicorp/terraform-ls/pull/325))
  - Add human readable name to `rootmodules` command API ([#332](https://github.com/hashicorp/terraform-ls/pull/332))
  - Expose server version via LSP ([#318](https://github.com/hashicorp/terraform-ls/pull/318))
