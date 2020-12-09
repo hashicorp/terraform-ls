@@ -79,8 +79,9 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
 	} else if len(candidates) == 0 {
 		// TODO: Only notify once per f.Dir() per session
+		dh := ilsp.FileHandlerFromDirPath(f.Dir())
 		go func() {
-			err := askInitForEmptyRootModule(ctx, rootDir, f)
+			err := askInitForEmptyRootModule(ctx, rootDir, dh)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 					Type:    lsp.Error,
