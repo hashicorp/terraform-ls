@@ -1,4 +1,4 @@
-## 0.11.0 (Unreleased)
+## 0.11.0 (9 December 2020)
 
 ENHANCEMENTS:
 
