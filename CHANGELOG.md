@@ -1,3 +1,9 @@
+## 0.12.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Report progress for validate command ([#336](https://github.com/hashicorp/terraform-ls/pull/336))
+
 ## 0.11.0 (9 December 2020)
 
 ENHANCEMENTS:
