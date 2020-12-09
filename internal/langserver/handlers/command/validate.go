@@ -42,6 +42,11 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, err
 	}
 
+	progressBegin(ctx, "Validating")
+	defer func() {
+		progressEnd(ctx, "Finished")
+	}()
+	progressReport(ctx, "Running terraform validate ...")
 	hclDiags, err := rm.ExecuteTerraformValidate(ctx)
 	if err != nil {
 		return nil, err
