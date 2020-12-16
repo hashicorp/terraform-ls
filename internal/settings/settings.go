@@ -6,11 +6,18 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+type OptIn struct {
+	ValidateOnSave bool `mapstructure:"validateOnSave"`
+}
+
 type Options struct {
 	// RootModulePaths describes a list of absolute paths to root modules
 	RootModulePaths    []string `mapstructure:"rootModulePaths"`
 	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 	CommandPrefix      string   `mapstructure:"commandPrefix"`
+
+	// OptIn encapsulates features users can opt into.
+	OptIn OptIn `mapstructure:"optIn"`
 
 	// TODO: Need to check for conflict with CLI flags
 	// TerraformExecPath string

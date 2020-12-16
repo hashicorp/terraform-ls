@@ -1,4 +1,4 @@
-package command
+package progress
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func progressBegin(ctx context.Context, title string) error {
+func Begin(ctx context.Context, title string) error {
 	token, ok := lsctx.ProgressToken(ctx)
 	if !ok {
 		return nil
@@ -23,7 +23,7 @@ func progressBegin(ctx context.Context, title string) error {
 	})
 }
 
-func progressReport(ctx context.Context, message string) error {
+func Report(ctx context.Context, message string) error {
 	token, ok := lsctx.ProgressToken(ctx)
 	if !ok {
 		return nil
@@ -38,7 +38,7 @@ func progressReport(ctx context.Context, message string) error {
 	})
 }
 
-func progressEnd(ctx context.Context, message string) error {
+func End(ctx context.Context, message string) error {
 	token, ok := lsctx.ProgressToken(ctx)
 	if !ok {
 		return nil

@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
@@ -37,6 +38,7 @@ var (
 	ctxDiags             = &contextKey{"diagnostics"}
 	ctxLsVersion         = &contextKey{"language server version"}
 	ctxProgressToken     = &contextKey{"progress token"}
+	ctxOptIn             = &contextKey{"opt-in"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -261,4 +263,26 @@ func ProgressToken(ctx context.Context) (lsp.ProgressToken, bool) {
 		return "", false
 	}
 	return pt, true
+}
+
+func WithOptIn(ctx context.Context, optIn *settings.OptIn) context.Context {
+	return context.WithValue(ctx, ctxOptIn, optIn)
+}
+
+func SetOptIn(ctx context.Context, optIn settings.OptIn) error {
+	o, ok := ctx.Value(ctxOptIn).(*settings.OptIn)
+	if !ok {
+		return missingContextErr(ctxOptIn)
+	}
+
+	*o = optIn
+	return nil
+}
+
+func OptIn(ctx context.Context) (settings.OptIn, error) {
+	optIn, ok := ctx.Value(ctxOptIn).(*settings.OptIn)
+	if !ok {
+		return settings.OptIn{}, missingContextErr(ctxOptIn)
+	}
+	return *optIn, nil
 }
