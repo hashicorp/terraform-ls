@@ -12,12 +12,12 @@ import (
 
 var (
 	_preloadedProviderSchemas     *tfjson.ProviderSchemas
-	_preloadedVersionOutput       *versionOutput
+	_preloadedVersionOutput       Version
 	_preloadedProviderSchemasOnce sync.Once
 	_preloadedProviderSchemasErr  error
 )
 
-func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, *VersionOutput, error) {
+func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, Version, error) {
 	_preloadedProviderSchemasOnce.Do(func() {
 		schemasFile, fErr := files.Open("schemas.json")
 		if fErr != nil {
@@ -57,7 +57,7 @@ func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, *VersionOutput, error)
 			pVersions[addr] = v
 		}
 
-		_preloadedVersionOutput = &versionOutput{
+		_preloadedVersionOutput = Version{
 			Core:      coreVersion,
 			Providers: pVersions,
 		}
