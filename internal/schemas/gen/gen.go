@@ -148,9 +148,9 @@ func gen() error {
 
 	log.Println("generating embedded go file")
 	return vfsgen.Generate(fs, vfsgen.Options{
-		Filename:     "schemas.go",
+		Filename:     "schemas_gen.go",
 		PackageName:  "schemas",
-		VariableName: "Files",
+		VariableName: "files",
 	})
 }
 
@@ -190,7 +190,7 @@ type registryResponse struct {
 }
 
 func listProviders(tier string) ([]provider, error) {
-	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 82
+	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 93
 	resp, err := http.Get(fmt.Sprintf("https://registry.terraform.io/v2/providers?page[size]=100&filter[tier]=%s", tier))
 	if err != nil {
 		return nil, err

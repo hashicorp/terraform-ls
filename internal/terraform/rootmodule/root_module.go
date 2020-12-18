@@ -2,7 +2,6 @@ package rootmodule
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -22,23 +21,10 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
-	preloadedSchemas "github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
-
-var (
-	_preloadedProviderSchemas     *tfjson.ProviderSchemas
-	_preloadedVersionOutput       *versionOutput
-	_preloadedProviderSchemasOnce sync.Once
-	_preloadedProviderSchemasErr  error
-)
-
-type versionOutput struct {
-	Core      *version.Version
-	Providers map[string]*version.Version
-}
 
 type rootModule struct {
 	path   string
@@ -90,55 +76,6 @@ type rootModule struct {
 	parsedDiags map[string]hcl.Diagnostics
 	parserMu    *sync.RWMutex
 	filesystem  filesystem.Filesystem
-}
-
-func preloadedProviderSchemas() (*tfjson.ProviderSchemas, *versionOutput, error) {
-	_preloadedProviderSchemasOnce.Do(func() {
-		schemasFile, fErr := preloadedSchemas.Files.Open("schemas.json")
-		if fErr != nil {
-			_preloadedProviderSchemasErr = fErr
-			return
-		}
-
-		_preloadedProviderSchemas = &tfjson.ProviderSchemas{}
-		_preloadedProviderSchemasErr = json.NewDecoder(schemasFile).Decode(_preloadedProviderSchemas)
-
-		versionFile, fErr := preloadedSchemas.Files.Open("versions.json")
-		if fErr != nil {
-			_preloadedProviderSchemasErr = fErr
-			return
-		}
-
-		output := &schemas.VersionOutput{}
-		err := json.NewDecoder(versionFile).Decode(output)
-		if err != nil {
-			_preloadedProviderSchemasErr = err
-			return
-		}
-
-		coreVersion, err := version.NewVersion(output.CoreVersion)
-		if err != nil {
-			_preloadedProviderSchemasErr = err
-			return
-		}
-
-		pVersions := make(map[string]*version.Version, 0)
-		for addr, versionString := range output.Providers {
-			v, err := version.NewVersion(versionString)
-			if err != nil {
-				_preloadedProviderSchemasErr = err
-				return
-			}
-			pVersions[addr] = v
-		}
-
-		_preloadedVersionOutput = &versionOutput{
-			Core:      coreVersion,
-			Providers: pVersions,
-		}
-	})
-
-	return _preloadedProviderSchemas, _preloadedVersionOutput, _preloadedProviderSchemasErr
 }
 
 func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
@@ -684,7 +621,7 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 		}
 	}
 
-	ps, vOut, err := preloadedProviderSchemas()
+	ps, vOut, err := schemas.PreloadedProviderSchemas()
 	if err != nil {
 		return nil, err
 	}
@@ -697,6 +634,11 @@ func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
 		ps = rm.providerSchema
 		providerVersions = rm.providerVersions
 		tfVersion = rm.tfVersion
+	}
+
+	if ps == nil {
+		rm.logger.Print("provider schemas is nil... skipping merge with core schema")
+		return rm.coreSchema, nil
 	}
 
 	sm := tfschema.NewSchemaMerger(rm.coreSchema)
