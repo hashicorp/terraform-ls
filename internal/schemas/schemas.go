@@ -1,3 +1,5 @@
+// +build !release
+
 package schemas
 
 import tfjson "github.com/hashicorp/terraform-json"
