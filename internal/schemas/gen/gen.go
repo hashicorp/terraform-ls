@@ -207,5 +207,22 @@ func listProviders(tier string) ([]provider, error) {
 	var response registryResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 
-	return response.Data, err
+	return filter(response.Data), err
+}
+
+var ignore = map[string]bool{
+	"icinga2":  true,
+	"vthunder": true,
+	"sematext": true,
+}
+
+// certain providers are problematic/fail to download on terraform init
+func filter(providers []provider) (filtered []provider) {
+	for _, provider := range providers {
+		if ok := ignore[provider.Attributes.Name]; ok {
+			continue
+		}
+		filtered = append(filtered, provider)
+	}
+	return filtered
 }
