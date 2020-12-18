@@ -51,6 +51,14 @@ func gen() error {
 		return err
 	}
 
+	log.Println("fetching verified partner providers from registry")
+	partnerProviders, err := listProviders("partner")
+	if err != nil {
+		return err
+	}
+
+	providers = append(providers, partnerProviders...)
+
 	log.Println("parsing template")
 	tmpl, err := template.New("providers").Parse(terraformBlock)
 	if err != nil {

@@ -4,4 +4,5 @@ coverage.txt
 internal/schemas/.terraform/
 internal/schemas/dev.log
 internal/schemas/providers.tf
+internal/schemas/schemas_gen.go
 internal/schemas/data/
