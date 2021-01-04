@@ -1,5 +1,9 @@
 ## 0.12.0 (Unreleased)
 
+FEATURES:
+
+ - Implement `textDocument/semanticTokens` (semantic highlighting) ([#331](https://github.com/hashicorp/terraform-ls/pull/331))
+
 ENHANCEMENTS:
 
  - Report progress for validate command ([#336](https://github.com/hashicorp/terraform-ls/pull/336))
