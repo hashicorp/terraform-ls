@@ -12,22 +12,16 @@ func ToCompletionList(candidates lang.Candidates, caps lsp.TextDocumentClientCap
 		IsIncomplete: !candidates.IsComplete,
 	}
 
-	snippetSupport := caps.Completion.CompletionItem.SnippetSupport
-
-	markdown := false
-	docsFormat := caps.Completion.CompletionItem.DocumentationFormat
-	if len(docsFormat) > 0 && docsFormat[0] == lsp.Markdown {
-		markdown = true
-	}
-
 	for i, c := range candidates.List {
-		list.Items[i] = toCompletionItem(c, snippetSupport, markdown)
+		list.Items[i] = toCompletionItem(c, caps.Completion)
 	}
 
 	return list
 }
 
-func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.CompletionItem {
+func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabilities) lsp.CompletionItem {
+	snippetSupport := caps.CompletionItem.SnippetSupport
+
 	doc := candidate.Description.Value
 
 	// TODO: Revisit when MarkupContent is allowed as Documentation
@@ -44,6 +38,8 @@ func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.Comp
 		kind = lsp.FieldCompletion
 	}
 
+	// TODO: Omit item which uses kind unsupported by the client
+
 	var cmd *lsp.Command
 	if candidate.TriggerSuggest {
 		cmd = &lsp.Command{
@@ -52,14 +48,35 @@ func toCompletionItem(candidate lang.Candidate, snippet, markdown bool) lsp.Comp
 		}
 	}
 
-	return lsp.CompletionItem{
+	item := lsp.CompletionItem{
 		Label:               candidate.Label,
 		Kind:                kind,
-		InsertTextFormat:    insertTextFormat(snippet),
+		InsertTextFormat:    insertTextFormat(snippetSupport),
 		Detail:              candidate.Detail,
 		Documentation:       doc,
-		TextEdit:            textEdit(candidate.TextEdit, snippet),
+		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
-		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippet),
+		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippetSupport),
 	}
+
+	if caps.CompletionItem.DeprecatedSupport {
+		item.Deprecated = candidate.IsDeprecated
+	}
+	if tagSliceContains(caps.CompletionItem.TagSupport.ValueSet,
+		lsp.ComplDeprecated) && candidate.IsDeprecated {
+		item.Tags = []lsp.CompletionItemTag{
+			lsp.ComplDeprecated,
+		}
+	}
+
+	return item
+}
+
+func tagSliceContains(supported []lsp.CompletionItemTag, tag lsp.CompletionItemTag) bool {
+	for _, item := range supported {
+		if item == tag {
+			return true
+		}
+	}
+	return false
 }
