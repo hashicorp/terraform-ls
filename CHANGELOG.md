@@ -9,6 +9,10 @@ ENHANCEMENTS:
  - Report progress for validate command ([#336](https://github.com/hashicorp/terraform-ls/pull/336))
  - Report deprecated completion items as such ([#337](https://github.com/hashicorp/terraform-ls/pull/337))
 
+INTERNAL:
+
+ - Use Go `1.15.2` (previously `1.14.9`) ([#348](https://github.com/hashicorp/terraform-ls/pull/348))
+
 ## 0.11.0 (9 December 2020)
 
 ENHANCEMENTS:
