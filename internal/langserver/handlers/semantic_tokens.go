@@ -25,6 +25,7 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		// This would indicate a buggy client which sent a request
 		// it didn't claim to support, so we just strictly follow
 		// the protocol here and avoid serving buggy clients.
+		lh.logger.Printf("semantic tokens full request support not announced by client")
 		return tks, code.MethodNotFound.Err()
 	}
 
