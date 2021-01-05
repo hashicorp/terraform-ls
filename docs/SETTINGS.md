@@ -50,6 +50,16 @@ Or if left empty
 This setting should be deprecated once the language server supports multiple workspaces,
 as this arises in VS code because a server instance is started per VS Code workspace.
 
+## `experimentalFeatures`
+
+This setting contains inner settings used to opt into experimental features not yet ready to be on by default.
+
+### `experimentalFeatures.validateOnSave`
+
+Enabling this feature will run terraform validate within the folder of the file saved. This comes with some user experience caveats.
+ - Validation is not run on file open, only once it's saved.
+ - When editing a module file, validation is not run due to not knowing which "rootmodule" to run validation from (there could be multiple). This creates an awkward workflow where when saving a file in a rootmodule, a diagnostic is raised in a module file. Editing the module file will not clear the diagnostic for the reason mentioned above, it will only clear once a file is saved back in the original "rootmodule". We will continue to attempt improve this user experience.
+
 ## How to pass settings
 
 The server expects static settings to be passed as part of LSP `initialize` call,

@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
@@ -150,6 +151,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	rootDir := ""
 	commandPrefix := ""
+	var expFeatures settings.ExperimentalFeatures
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -165,6 +167,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleLoader(ctx, rmLoader)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
 			if ok {
@@ -271,6 +274,18 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentSemanticTokensFull)
+		},
+		"textDocument/didSave": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+
+			return handle(ctx, req, lh.TextDocumentDidSave)
 		},
 		"workspace/executeCommand": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()

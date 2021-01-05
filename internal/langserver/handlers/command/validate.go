@@ -7,6 +7,7 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -42,11 +43,11 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, err
 	}
 
-	progressBegin(ctx, "Validating")
+	progress.Begin(ctx, "Validating")
 	defer func() {
-		progressEnd(ctx, "Finished")
+		progress.End(ctx, "Finished")
 	}()
-	progressReport(ctx, "Running terraform validate ...")
+	progress.Report(ctx, "Running terraform validate ...")
 	hclDiags, err := rm.ExecuteTerraformValidate(ctx)
 	if err != nil {
 		return nil, err

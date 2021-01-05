@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
@@ -20,23 +21,24 @@ func (k *contextKey) String() string {
 }
 
 var (
-	ctxDs                = &contextKey{"document storage"}
-	ctxClientCapsSetter  = &contextKey{"client capabilities setter"}
-	ctxClientCaps        = &contextKey{"client capabilities"}
-	ctxTfExecPath        = &contextKey{"terraform executable path"}
-	ctxTfExecLogPath     = &contextKey{"terraform executor log path"}
-	ctxTfExecTimeout     = &contextKey{"terraform execution timeout"}
-	ctxWatcher           = &contextKey{"watcher"}
-	ctxRootModuleMngr    = &contextKey{"root module manager"}
-	ctxTfFormatterFinder = &contextKey{"terraform formatter finder"}
-	ctxRootModuleCaFi    = &contextKey{"root module candidate finder"}
-	ctxRootModuleWalker  = &contextKey{"root module walker"}
-	ctxRootModuleLoader  = &contextKey{"root module loader"}
-	ctxRootDir           = &contextKey{"root directory"}
-	ctxCommandPrefix     = &contextKey{"command prefix"}
-	ctxDiags             = &contextKey{"diagnostics"}
-	ctxLsVersion         = &contextKey{"language server version"}
-	ctxProgressToken     = &contextKey{"progress token"}
+	ctxDs                   = &contextKey{"document storage"}
+	ctxClientCapsSetter     = &contextKey{"client capabilities setter"}
+	ctxClientCaps           = &contextKey{"client capabilities"}
+	ctxTfExecPath           = &contextKey{"terraform executable path"}
+	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
+	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
+	ctxWatcher              = &contextKey{"watcher"}
+	ctxRootModuleMngr       = &contextKey{"root module manager"}
+	ctxTfFormatterFinder    = &contextKey{"terraform formatter finder"}
+	ctxRootModuleCaFi       = &contextKey{"root module candidate finder"}
+	ctxRootModuleWalker     = &contextKey{"root module walker"}
+	ctxRootModuleLoader     = &contextKey{"root module loader"}
+	ctxRootDir              = &contextKey{"root directory"}
+	ctxCommandPrefix        = &contextKey{"command prefix"}
+	ctxDiags                = &contextKey{"diagnostics"}
+	ctxLsVersion            = &contextKey{"language server version"}
+	ctxProgressToken        = &contextKey{"progress token"}
+	ctxExperimentalFeatures = &contextKey{"experimental features"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -261,4 +263,26 @@ func ProgressToken(ctx context.Context) (lsp.ProgressToken, bool) {
 		return "", false
 	}
 	return pt, true
+}
+
+func WithExperimentalFeatures(ctx context.Context, expFeatures *settings.ExperimentalFeatures) context.Context {
+	return context.WithValue(ctx, ctxExperimentalFeatures, expFeatures)
+}
+
+func SetExperimentalFeatures(ctx context.Context, expFeatures settings.ExperimentalFeatures) error {
+	e, ok := ctx.Value(ctxExperimentalFeatures).(*settings.ExperimentalFeatures)
+	if !ok {
+		return missingContextErr(ctxExperimentalFeatures)
+	}
+
+	*e = expFeatures
+	return nil
+}
+
+func ExperimentalFeatures(ctx context.Context) (settings.ExperimentalFeatures, error) {
+	expFeatures, ok := ctx.Value(ctxExperimentalFeatures).(*settings.ExperimentalFeatures)
+	if !ok {
+		return settings.ExperimentalFeatures{}, missingContextErr(ctxExperimentalFeatures)
+	}
+	return *expFeatures, nil
 }

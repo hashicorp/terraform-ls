@@ -394,8 +394,43 @@ func (rm *rootModule) ExecuteTerraformValidate(ctx context.Context) (map[string]
 	}
 
 	// an entry for each file should exist, even if there are no diags
-	for filename := range rm.pFilesMap {
+	for filename := range rm.parsedFiles() {
 		diagsMap[filename] = make(hcl.Diagnostics, 0)
+	}
+	// since validation applies to linked modules, create an entry for all
+	// files of linked modules
+	for _, m := range rm.moduleManifest.Records {
+		if m.IsRoot() {
+			// skip root modules
+			continue
+		}
+		if m.IsExternal() {
+			// skip external modules
+			continue
+		}
+
+		absPath := filepath.Join(rm.moduleManifest.rootDir, m.Dir)
+		infos, err := rm.filesystem.ReadDir(absPath)
+		if err != nil {
+			return diagsMap, fmt.Errorf("failed to read module at %q: %w", absPath, err)
+		}
+
+		for _, info := range infos {
+			if info.IsDir() {
+				// We only care about files
+				continue
+			}
+
+			name := info.Name()
+			if !strings.HasSuffix(name, ".tf") || IsIgnoredFile(name) {
+				continue
+			}
+
+			// map entries are relative to the parent module path
+			filename := filepath.Join(m.Dir, name)
+
+			diagsMap[filename] = make(hcl.Diagnostics, 0)
+		}
 	}
 
 	validationDiags, err := rm.tfExec.Validate(ctx)

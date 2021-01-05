@@ -7,6 +7,7 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -29,18 +30,18 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		return nil, err
 	}
 
-	progressBegin(ctx, "Initializing")
+	progress.Begin(ctx, "Initializing")
 	defer func() {
-		progressEnd(ctx, "Finished")
+		progress.End(ctx, "Finished")
 	}()
 
-	progressReport(ctx, "Running terraform init ...")
+	progress.Report(ctx, "Running terraform init ...")
 	err = rm.ExecuteTerraformInit(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	progressReport(ctx, "Detecting paths to watch ...")
+	progress.Report(ctx, "Detecting paths to watch ...")
 	paths := rm.PathsToWatch()
 
 	w, err := lsctx.Watcher(ctx)

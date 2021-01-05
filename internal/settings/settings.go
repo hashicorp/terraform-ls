@@ -6,11 +6,18 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+type ExperimentalFeatures struct {
+	ValidateOnSave bool `mapstructure:"validateOnSave"`
+}
+
 type Options struct {
 	// RootModulePaths describes a list of absolute paths to root modules
 	RootModulePaths    []string `mapstructure:"rootModulePaths"`
 	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 	CommandPrefix      string   `mapstructure:"commandPrefix"`
+
+	// ExperimentalFeatures encapsulates experimental features users can opt into.
+	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
 
 	// TODO: Need to check for conflict with CLI flags
 	// TerraformExecPath string
