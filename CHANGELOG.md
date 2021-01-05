@@ -3,6 +3,7 @@
 FEATURES:
 
  - Implement `textDocument/semanticTokens` (semantic highlighting) ([#331](https://github.com/hashicorp/terraform-ls/pull/331))
+ - Implement experimental validate on save feature ([#340](https://github.com/hashicorp/terraform-ls/pull/340))
 
 ENHANCEMENTS:
 
