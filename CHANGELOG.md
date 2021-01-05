@@ -13,6 +13,7 @@ ENHANCEMENTS:
 INTERNAL:
 
  - Use Go `1.15.2` (previously `1.14.9`) ([#348](https://github.com/hashicorp/terraform-ls/pull/348))
+ - Provide package for linux/arm64 ([#351](https://github.com/hashicorp/terraform-ls/pull/351))
 
 ## 0.11.0 (9 December 2020)
 
