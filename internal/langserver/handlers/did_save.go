@@ -11,11 +11,11 @@ import (
 )
 
 func (lh *logHandler) TextDocumentDidSave(ctx context.Context, params lsp.DidSaveTextDocumentParams) error {
-	optIn, err := lsctx.ExperimentalFeatures(ctx)
+	expFeatures, err := lsctx.ExperimentalFeatures(ctx)
 	if err != nil {
 		return err
 	}
-	if !optIn.ValidateOnSave {
+	if !expFeatures.ValidateOnSave {
 		return nil
 	}
 
