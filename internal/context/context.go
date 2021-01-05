@@ -21,24 +21,24 @@ func (k *contextKey) String() string {
 }
 
 var (
-	ctxDs                = &contextKey{"document storage"}
-	ctxClientCapsSetter  = &contextKey{"client capabilities setter"}
-	ctxClientCaps        = &contextKey{"client capabilities"}
-	ctxTfExecPath        = &contextKey{"terraform executable path"}
-	ctxTfExecLogPath     = &contextKey{"terraform executor log path"}
-	ctxTfExecTimeout     = &contextKey{"terraform execution timeout"}
-	ctxWatcher           = &contextKey{"watcher"}
-	ctxRootModuleMngr    = &contextKey{"root module manager"}
-	ctxTfFormatterFinder = &contextKey{"terraform formatter finder"}
-	ctxRootModuleCaFi    = &contextKey{"root module candidate finder"}
-	ctxRootModuleWalker  = &contextKey{"root module walker"}
-	ctxRootModuleLoader  = &contextKey{"root module loader"}
-	ctxRootDir           = &contextKey{"root directory"}
-	ctxCommandPrefix     = &contextKey{"command prefix"}
-	ctxDiags             = &contextKey{"diagnostics"}
-	ctxLsVersion         = &contextKey{"language server version"}
-	ctxProgressToken     = &contextKey{"progress token"}
-	ctxOptIn             = &contextKey{"opt-in"}
+	ctxDs                   = &contextKey{"document storage"}
+	ctxClientCapsSetter     = &contextKey{"client capabilities setter"}
+	ctxClientCaps           = &contextKey{"client capabilities"}
+	ctxTfExecPath           = &contextKey{"terraform executable path"}
+	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
+	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
+	ctxWatcher              = &contextKey{"watcher"}
+	ctxRootModuleMngr       = &contextKey{"root module manager"}
+	ctxTfFormatterFinder    = &contextKey{"terraform formatter finder"}
+	ctxRootModuleCaFi       = &contextKey{"root module candidate finder"}
+	ctxRootModuleWalker     = &contextKey{"root module walker"}
+	ctxRootModuleLoader     = &contextKey{"root module loader"}
+	ctxRootDir              = &contextKey{"root directory"}
+	ctxCommandPrefix        = &contextKey{"command prefix"}
+	ctxDiags                = &contextKey{"diagnostics"}
+	ctxLsVersion            = &contextKey{"language server version"}
+	ctxProgressToken        = &contextKey{"progress token"}
+	ctxExperimentalFeatures = &contextKey{"experimental features"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -265,24 +265,24 @@ func ProgressToken(ctx context.Context) (lsp.ProgressToken, bool) {
 	return pt, true
 }
 
-func WithOptIn(ctx context.Context, optIn *settings.OptIn) context.Context {
-	return context.WithValue(ctx, ctxOptIn, optIn)
+func WithExperimentalFeatures(ctx context.Context, expFeatures *settings.ExperimentalFeatures) context.Context {
+	return context.WithValue(ctx, ctxExperimentalFeatures, expFeatures)
 }
 
-func SetOptIn(ctx context.Context, optIn settings.OptIn) error {
-	o, ok := ctx.Value(ctxOptIn).(*settings.OptIn)
+func SetExperimentalFeatures(ctx context.Context, expFeatures settings.ExperimentalFeatures) error {
+	e, ok := ctx.Value(ctxExperimentalFeatures).(*settings.ExperimentalFeatures)
 	if !ok {
-		return missingContextErr(ctxOptIn)
+		return missingContextErr(ctxExperimentalFeatures)
 	}
 
-	*o = optIn
+	*e = expFeatures
 	return nil
 }
 
-func OptIn(ctx context.Context) (settings.OptIn, error) {
-	optIn, ok := ctx.Value(ctxOptIn).(*settings.OptIn)
+func ExperimentalFeatures(ctx context.Context) (settings.ExperimentalFeatures, error) {
+	expFeatures, ok := ctx.Value(ctxExperimentalFeatures).(*settings.ExperimentalFeatures)
 	if !ok {
-		return settings.OptIn{}, missingContextErr(ctxOptIn)
+		return settings.ExperimentalFeatures{}, missingContextErr(ctxExperimentalFeatures)
 	}
-	return *optIn, nil
+	return *expFeatures, nil
 }

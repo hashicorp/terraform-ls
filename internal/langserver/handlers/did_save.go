@@ -11,7 +11,7 @@ import (
 )
 
 func (lh *logHandler) TextDocumentDidSave(ctx context.Context, params lsp.DidSaveTextDocumentParams) error {
-	optIn, err := lsctx.OptIn(ctx)
+	optIn, err := lsctx.ExperimentalFeatures(ctx)
 	if err != nil {
 		return err
 	}

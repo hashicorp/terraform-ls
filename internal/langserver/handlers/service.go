@@ -151,7 +151,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	rootDir := ""
 	commandPrefix := ""
-	var optIn settings.OptIn
+	var optIn settings.ExperimentalFeatures
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -167,7 +167,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithRootModuleLoader(ctx, rmLoader)
-			ctx = lsctx.WithOptIn(ctx, &optIn)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &optIn)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
 			if ok {
@@ -282,7 +282,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDiagnostics(ctx, diags)
-			ctx = lsctx.WithOptIn(ctx, &optIn)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &optIn)
 			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentDidSave)

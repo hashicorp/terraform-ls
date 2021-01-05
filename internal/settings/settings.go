@@ -6,7 +6,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type OptIn struct {
+type ExperimentalFeatures struct {
 	ValidateOnSave bool `mapstructure:"validateOnSave"`
 }
 
@@ -16,8 +16,8 @@ type Options struct {
 	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 	CommandPrefix      string   `mapstructure:"commandPrefix"`
 
-	// OptIn encapsulates features users can opt into.
-	OptIn OptIn `mapstructure:"optIn"`
+	// ExperimentalFeatures encapsulates experimental features users can opt into.
+	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
 
 	// TODO: Need to check for conflict with CLI flags
 	// TerraformExecPath string

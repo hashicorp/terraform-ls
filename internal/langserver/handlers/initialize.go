@@ -105,8 +105,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		},
 	}
 
-	// set opt-in flags
-	lsctx.SetOptIn(ctx, out.Options.OptIn)
+	// set experimental feature flags
+	lsctx.SetExperimentalFeatures(ctx, out.Options.ExperimentalFeatures)
 
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
