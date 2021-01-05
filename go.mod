@@ -6,7 +6,7 @@ require (
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.11.0
 	github.com/fsnotify/fsnotify v1.4.9
-	github.com/gammazero/workerpool v1.0.0
+	github.com/gammazero/workerpool v1.1.1
 	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-multierror v1.1.0
