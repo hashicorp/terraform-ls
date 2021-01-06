@@ -38,7 +38,7 @@ jobs:
           go-version: ${{ steps.go-version.outputs.content }}
       -
         name: Snapshot build (cross-platform)
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: build --snapshot --skip-post-hooks
