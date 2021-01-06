@@ -12,7 +12,7 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
-      - -tags=preload
+      - -tags=preloadschema
     ldflags:
       - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     goarch:
@@ -37,7 +37,7 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
-      - -tags=preload
+      - -tags=preloadschema
     ldflags:
       - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     goarch:

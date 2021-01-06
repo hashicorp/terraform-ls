@@ -1,4 +1,4 @@
-// +build preload
+// +build preloadschema
 
 package schemas
 
