@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.11.0
+	github.com/creachadair/jrpc2 v0.11.1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gammazero/workerpool v1.1.1
 	github.com/google/go-cmp v0.5.2
