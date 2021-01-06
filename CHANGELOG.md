@@ -9,7 +9,11 @@ ENHANCEMENTS:
 
  - Report progress for validate command ([#336](https://github.com/hashicorp/terraform-ls/pull/336))
  - Report deprecated completion items as such ([#337](https://github.com/hashicorp/terraform-ls/pull/337))
- - Preloaded schemas now includes official+partner providers. A change in the implementation now means only HashiCorp releases will include the preloaded schemas. Manual builds or `go get` will compile and run correctly however users in uninitalized projects will not receive resource completion with such builds, unless built with `-tags=preloadschema`. ([#341](https://github.com/hashicorp/terraform-ls/pull/341))
+ - Preloaded schemas now include partner providers in addition to official ones ([#341](https://github.com/hashicorp/terraform-ls/pull/341))
+
+NOTES:
+
+ - Preloaded schemas are now being generated at release time (as opposed to being committed to the repo). Therefore availability of these schemas is dependent on particular release process [tracked in this repository](https://github.com/hashicorp/terraform-ls/blob/main/.github/workflows/release.yml). This may interest anyone who does not use the official builds from `releases.hashicorp.com` and has its own build process. Plain `go get` still compiles and runs server correctly, however it won't automatically generate and embed the schemas. ([#341](https://github.com/hashicorp/terraform-ls/pull/341))
 
 INTERNAL:
 
