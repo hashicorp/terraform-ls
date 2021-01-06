@@ -198,7 +198,7 @@ type registryResponse struct {
 }
 
 func listProviders(tier string) ([]provider, error) {
-	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 93
+	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 95
 	resp, err := http.Get(fmt.Sprintf("https://registry.terraform.io/v2/providers?page[size]=100&filter[tier]=%s", tier))
 	if err != nil {
 		return nil, err

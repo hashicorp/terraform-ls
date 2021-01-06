@@ -1,4 +1,4 @@
-// +build release
+// +build preload
 
 package schemas
 
@@ -12,12 +12,12 @@ import (
 
 var (
 	_preloadedProviderSchemas     *tfjson.ProviderSchemas
-	_preloadedVersionOutput       Version
+	_preloadedVersionOutput       VersionOutput
 	_preloadedProviderSchemasOnce sync.Once
 	_preloadedProviderSchemasErr  error
 )
 
-func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, Version, error) {
+func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, VersionOutput, error) {
 	_preloadedProviderSchemasOnce.Do(func() {
 		schemasFile, fErr := files.Open("schemas.json")
 		if fErr != nil {
@@ -34,7 +34,7 @@ func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, Version, error) {
 			return
 		}
 
-		output := &VersionOutput{}
+		output := &RawVersionOutput{}
 		err := json.NewDecoder(versionFile).Decode(output)
 		if err != nil {
 			_preloadedProviderSchemasErr = err
@@ -57,7 +57,7 @@ func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, Version, error) {
 			pVersions[addr] = v
 		}
 
-		_preloadedVersionOutput = Version{
+		_preloadedVersionOutput = VersionOutput{
 			Core:      coreVersion,
 			Providers: pVersions,
 		}
