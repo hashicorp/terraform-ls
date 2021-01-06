@@ -32,6 +32,9 @@ jobs:
           # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version.outputs.content }}
       -
+        name: Generate provider schemas
+        run: go generate ./internal/schemas
+      -
         name: Install hc-codesign
         run: |
           docker login docker.pkg.github.com -u docker -p '${{ secrets.CODESIGN_GITHUB_TOKEN }}' && \

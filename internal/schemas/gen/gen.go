@@ -51,6 +51,14 @@ func gen() error {
 		return err
 	}
 
+	log.Println("fetching verified partner providers from registry")
+	partnerProviders, err := listProviders("partner")
+	if err != nil {
+		return err
+	}
+
+	providers = append(providers, partnerProviders...)
+
 	log.Println("parsing template")
 	tmpl, err := template.New("providers").Parse(terraformBlock)
 	if err != nil {
@@ -116,7 +124,7 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	versionOutput := &schemas.VersionOutput{
+	versionOutput := &schemas.RawVersionOutput{
 		CoreVersion: coreVersion.String(),
 		Providers:   stringifyProviderVersions(providerVersions),
 	}
@@ -148,9 +156,9 @@ func gen() error {
 
 	log.Println("generating embedded go file")
 	return vfsgen.Generate(fs, vfsgen.Options{
-		Filename:     "schemas.go",
+		Filename:     "schemas_gen.go",
 		PackageName:  "schemas",
-		VariableName: "Files",
+		VariableName: "files",
 	})
 }
 
@@ -190,7 +198,7 @@ type registryResponse struct {
 }
 
 func listProviders(tier string) ([]provider, error) {
-	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 82
+	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 95
 	resp, err := http.Get(fmt.Sprintf("https://registry.terraform.io/v2/providers?page[size]=100&filter[tier]=%s", tier))
 	if err != nil {
 		return nil, err
@@ -199,5 +207,38 @@ func listProviders(tier string) ([]provider, error) {
 	var response registryResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 
-	return response.Data, err
+	return filter(response.Data), err
+}
+
+// these providers fail to download
+// Error: Failed to query available provider packages
+
+// Could not retrieve the list of available versions for provider icinga/icinga2:
+// no available releases match the given constraints
+
+// Error: Failed to install provider
+
+// Error while installing a10networks/vthunder v0.4.21: could not query provider
+// registry for registry.terraform.io/a10networks/vthunder: failed to retrieve
+// authentication checksums for provider: 404 Not Found
+
+// Error: Failed to install provider
+
+// Error while installing sematext/sematext v0.1.9: checksum list has unexpected
+// SHA-256 hash f323df96ca63ead7cd57e2f58e2061199cd36568837863fde44af2e60949c5c2
+// (expected ce87fc7c44222b5f679d7dc1e2cbff7984e5a05fb011739ff92b747b39ea1528)
+var ignore = map[string]bool{
+	"icinga2":  true,
+	"vthunder": true,
+	"sematext": true,
+}
+
+func filter(providers []provider) (filtered []provider) {
+	for _, provider := range providers {
+		if ok := ignore[provider.Attributes.Name]; ok {
+			continue
+		}
+		filtered = append(filtered, provider)
+	}
+	return filtered
 }
