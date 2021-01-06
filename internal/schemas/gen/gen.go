@@ -124,7 +124,7 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	versionOutput := &schemas.VersionOutput{
+	versionOutput := &schemas.RawVersionOutput{
 		CoreVersion: coreVersion.String(),
 		Providers:   stringifyProviderVersions(providerVersions),
 	}
