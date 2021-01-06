@@ -210,13 +210,29 @@ func listProviders(tier string) ([]provider, error) {
 	return filter(response.Data), err
 }
 
+// these providers fail to download
+// Error: Failed to query available provider packages
+
+// Could not retrieve the list of available versions for provider icinga/icinga2:
+// no available releases match the given constraints
+
+// Error: Failed to install provider
+
+// Error while installing a10networks/vthunder v0.4.21: could not query provider
+// registry for registry.terraform.io/a10networks/vthunder: failed to retrieve
+// authentication checksums for provider: 404 Not Found
+
+// Error: Failed to install provider
+
+// Error while installing sematext/sematext v0.1.9: checksum list has unexpected
+// SHA-256 hash f323df96ca63ead7cd57e2f58e2061199cd36568837863fde44af2e60949c5c2
+// (expected ce87fc7c44222b5f679d7dc1e2cbff7984e5a05fb011739ff92b747b39ea1528)
 var ignore = map[string]bool{
 	"icinga2":  true,
 	"vthunder": true,
 	"sematext": true,
 }
 
-// certain providers are problematic/fail to download on terraform init
 func filter(providers []provider) (filtered []provider) {
 	for _, provider := range providers {
 		if ok := ignore[provider.Attributes.Name]; ok {
