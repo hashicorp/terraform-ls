@@ -375,8 +375,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/ulikunitz/xz v0.5.5 h1:pFrO0lVpTBXLpYw+pnLj6TbvHuyjXMfjGeCwSqCVwok=
 github.com/ulikunitz/xz v0.5.5/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
-github.com/vektra/mockery/v2 v2.3.0 h1:AHHAbvKortfmW7QOqB+Y8gm49TLZu+fJ0s+yJVd6KBc=
-github.com/vektra/mockery/v2 v2.3.0/go.mod h1:rBZUbbhMbiSX1WlCGsOgAi6xjuJGxB7KKbnoL0XNYW8=
+github.com/vektra/mockery/v2 v2.5.1 h1:1jgutkliv32D2HQF27slAfkQ1nS7jUN8V3BfSC6sfCM=
+github.com/vektra/mockery/v2 v2.5.1/go.mod h1:rBZUbbhMbiSX1WlCGsOgAi6xjuJGxB7KKbnoL0XNYW8=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
