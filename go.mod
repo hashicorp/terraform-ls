@@ -23,7 +23,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
-	github.com/spf13/afero v1.3.2
+	github.com/spf13/afero v1.5.1
 	github.com/stretchr/testify v1.6.1
 	github.com/vektra/mockery/v2 v2.3.0
 )
