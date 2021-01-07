@@ -10,9 +10,10 @@ import (
 
 func main() {
 	c := &cli.CLI{
-		Name:    "terraform-ls",
-		Version: VersionString(),
-		Args:    os.Args[1:],
+		Name:       "terraform-ls",
+		Version:    VersionString(),
+		Args:       os.Args[1:],
+		HelpWriter: os.Stdout,
 	}
 
 	ui := &cli.ColoredUi{
