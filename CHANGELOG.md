@@ -1,3 +1,9 @@
+## 0.13.0 (Unreleased)
+
+BUG FIXES:
+
+ - Print help (and version) to stdout ([#296](https://github.com/hashicorp/terraform-ls/pull/296))
+
 ## 0.12.0 (6 January 2021)
 
 FEATURES:
