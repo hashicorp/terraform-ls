@@ -7,13 +7,13 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
-type RootModuleMock struct {
+type ModuleMock struct {
 	TfExecFactory   exec.ExecutorFactory
 	ProviderSchemas *tfjson.ProviderSchemas
 }
 
-func NewRootModuleMock(rmm *RootModuleMock, fs filesystem.Filesystem, dir string) *rootModule {
-	rm := newRootModule(fs, dir)
+func NewModuleMock(rmm *ModuleMock, fs filesystem.Filesystem, dir string) *module {
+	rm := newModule(fs, dir)
 
 	// mock terraform discovery
 	md := &discovery.MockDiscovery{Path: "tf-mock"}

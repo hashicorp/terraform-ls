@@ -54,7 +54,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 func findTerraformFormatter(ctx context.Context, tff module.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
 	discoveryDone, err := tff.HasTerraformDiscoveryFinished(dir)
 	if err != nil {
-		if module.IsRootModuleNotFound(err) {
+		if module.IsModuleNotFound(err) {
 			return tff.TerraformFormatterForDir(ctx, dir)
 		}
 		return nil, err
@@ -65,7 +65,7 @@ func findTerraformFormatter(ctx context.Context, tff module.TerraformFormatterFi
 		}
 		available, err := tff.IsTerraformAvailable(dir)
 		if err != nil {
-			if module.IsRootModuleNotFound(err) {
+			if module.IsModuleNotFound(err) {
 				return tff.TerraformFormatterForDir(ctx, dir)
 			}
 		}

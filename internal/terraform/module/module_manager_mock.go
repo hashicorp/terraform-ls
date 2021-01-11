@@ -10,35 +10,35 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
-type RootModuleMockFactory struct {
-	rmm    map[string]*RootModuleMock
+type ModuleMockFactory struct {
+	rmm    map[string]*ModuleMock
 	logger *log.Logger
 	fs     filesystem.Filesystem
 }
 
-func (rmf *RootModuleMockFactory) New(ctx context.Context, dir string) (*rootModule, error) {
+func (rmf *ModuleMockFactory) New(ctx context.Context, dir string) (*module, error) {
 	rmm, ok := rmf.rmm[dir]
 	if !ok {
-		return nil, fmt.Errorf("unexpected root module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
+		return nil, fmt.Errorf("unexpected module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
 	}
 
-	mock := NewRootModuleMock(rmm, rmf.fs, dir)
+	mock := NewModuleMock(rmm, rmf.fs, dir)
 	mock.SetLogger(rmf.logger)
 	return mock, mock.discoverCaches(ctx, dir)
 }
 
-type RootModuleManagerMockInput struct {
-	RootModules       map[string]*RootModuleMock
+type ModuleManagerMockInput struct {
+	Modules           map[string]*ModuleMock
 	TfExecutorFactory exec.ExecutorFactory
 }
 
-func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManagerFactory {
-	return func(fs filesystem.Filesystem) RootModuleManager {
-		rmm := newRootModuleManager(fs)
+func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
+	return func(fs filesystem.Filesystem) ModuleManager {
+		rmm := newModuleManager(fs)
 		rmm.syncLoading = true
 
-		rmf := &RootModuleMockFactory{
-			rmm:    make(map[string]*RootModuleMock, 0),
+		rmf := &ModuleMockFactory{
+			rmm:    make(map[string]*ModuleMock, 0),
 			logger: rmm.logger,
 			fs:     fs,
 		}
@@ -51,12 +51,12 @@ func NewRootModuleManagerMock(input *RootModuleManagerMockInput) RootModuleManag
 		if input != nil {
 			rmm.tfNewExecutor = input.TfExecutorFactory
 
-			if input.RootModules != nil {
-				rmf.rmm = input.RootModules
+			if input.Modules != nil {
+				rmf.rmm = input.Modules
 			}
 		}
 
-		rmm.newRootModule = rmf.New
+		rmm.newModule = rmf.New
 
 		return rmm
 	}

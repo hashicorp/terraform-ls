@@ -35,7 +35,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{
@@ -121,7 +121,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 func TestLangServer_formatting_oldVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{

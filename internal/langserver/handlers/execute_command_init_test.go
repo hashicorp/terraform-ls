@@ -19,7 +19,7 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -94,7 +94,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	})
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: tfMockCalls,
 			},
@@ -174,7 +174,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	})
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: tfMockCalls,
 			},

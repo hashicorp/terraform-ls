@@ -20,12 +20,12 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
-	cf, err := lsctx.RootModuleFinder(ctx)
+	cf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rm, err := cf.RootModuleByPath(dh.Dir())
+	rm, err := cf.ModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}

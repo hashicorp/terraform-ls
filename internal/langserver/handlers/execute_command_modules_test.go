@@ -12,13 +12,13 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
-func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing.T) {
+func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) {
 	tmpDir := TempDir(t)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -56,13 +56,13 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 	}`, cmd.Name("rootmodules"))}, code.InvalidParams.Err())
 }
 
-func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
+func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -114,7 +114,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 	}`, tmpDir.URI(), t.Name()))
 }
 
-func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
+func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)
@@ -128,7 +128,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 	prod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "prod"))
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			dev.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -155,7 +155,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: "{}",
 	})
 
-	// expect module definition to be associated to three rootmodules
+	// expect module definition to be associated to three modules
 	// expect modules to be alphabetically sorted on uri
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",

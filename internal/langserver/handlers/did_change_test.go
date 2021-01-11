@@ -18,7 +18,7 @@ func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {
 	fs := filesystem.NewFilesystem()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},

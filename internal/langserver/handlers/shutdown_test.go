@@ -11,7 +11,7 @@ import (
 
 func TestShutdown_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)

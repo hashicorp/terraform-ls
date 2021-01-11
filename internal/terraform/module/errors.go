@@ -4,21 +4,21 @@ import (
 	"fmt"
 )
 
-type RootModuleNotFoundErr struct {
+type ModuleNotFoundErr struct {
 	Dir string
 }
 
-func (e *RootModuleNotFoundErr) Error() string {
+func (e *ModuleNotFoundErr) Error() string {
 	if e.Dir != "" {
-		return fmt.Sprintf("root module not found for %s", e.Dir)
+		return fmt.Sprintf("module not found for %s", e.Dir)
 	}
-	return "root module not found"
+	return "module not found"
 }
 
-func IsRootModuleNotFound(err error) bool {
+func IsModuleNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*RootModuleNotFoundErr)
+	_, ok := err.(*ModuleNotFoundErr)
 	return ok
 }

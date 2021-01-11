@@ -57,12 +57,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	rmm, err := lsctx.RootModuleManager(ctx)
+	rmm, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
 
-	addAndLoadRootModule, err := lsctx.RootModuleLoader(ctx)
+	addAndLoadModule, err := lsctx.ModuleLoader(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -117,24 +117,24 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	cfgOpts := out.Options
 
 	// Static user-provided paths take precedence over dynamic discovery
-	if len(cfgOpts.RootModulePaths) > 0 {
-		lh.logger.Printf("Attempting to add %d static root module paths", len(cfgOpts.RootModulePaths))
-		for _, rawPath := range cfgOpts.RootModulePaths {
+	if len(cfgOpts.ModulePaths) > 0 {
+		lh.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
+		for _, rawPath := range cfgOpts.ModulePaths {
 			rmPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type:    lsp.Warning,
-					Message: fmt.Sprintf("Ignoring root module path %s: %s", rawPath, err),
+					Message: fmt.Sprintf("Ignoring module path %s: %s", rawPath, err),
 				})
 				continue
 			}
-			rm, err := addAndLoadRootModule(rmPath)
+			rm, err := addAndLoadModule(rmPath)
 			if err != nil {
 				return serverCaps, err
 			}
 
 			paths := rm.PathsToWatch()
-			lh.logger.Printf("Adding %d paths of root module for watching (%s)", len(paths), rmPath)
+			lh.logger.Printf("Adding %d module paths for watching (%s)", len(paths), rmPath)
 			err = w.AddPaths(paths)
 			if err != nil {
 				return serverCaps, err
@@ -148,13 +148,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	for _, rawPath := range cfgOpts.ExcludeModulePaths {
 		rmPath, err := resolvePath(rootDir, rawPath)
 		if err != nil {
-			lh.logger.Printf("Ignoring exclude root module path %s: %s", rawPath, err)
+			lh.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
 			continue
 		}
 		excludeModulePaths = append(excludeModulePaths, rmPath)
 	}
 
-	walker, err := lsctx.RootModuleWalker(ctx)
+	walker, err := lsctx.ModuleWalker(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -165,14 +165,14 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// passing the request context here
 	bCtx := context.Background()
 	err = walker.StartWalking(bCtx, fh.Dir(), func(ctx context.Context, dir string) error {
-		lh.logger.Printf("Adding root module: %s", dir)
-		rm, err := rmm.AddAndStartLoadingRootModule(ctx, dir)
+		lh.logger.Printf("Adding module: %s", dir)
+		rm, err := rmm.AddAndStartLoadingModule(ctx, dir)
 		if err != nil {
 			return err
 		}
 
 		paths := rm.PathsToWatch()
-		lh.logger.Printf("Adding %d paths of root module for watching (%s)", len(paths), dir)
+		lh.logger.Printf("Adding %d paths of module for watching (%s)", len(paths), dir)
 		err = w.AddPaths(paths)
 		if err != nil {
 			return err

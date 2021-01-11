@@ -26,7 +26,7 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-type rootModule struct {
+type module struct {
 	path   string
 	logger *log.Logger
 
@@ -78,8 +78,8 @@ type rootModule struct {
 	filesystem  filesystem.Filesystem
 }
 
-func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
-	return &rootModule{
+func newModule(fs filesystem.Filesystem, dir string) *module {
+	return &module{
 		path:             dir,
 		filesystem:       fs,
 		logger:           defaultLogger,
@@ -100,8 +100,8 @@ func newRootModule(fs filesystem.Filesystem, dir string) *rootModule {
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
-func NewRootModule(ctx context.Context, fs filesystem.Filesystem, dir string) (RootModule, error) {
-	rm := newRootModule(fs, dir)
+func NewModule(ctx context.Context, fs filesystem.Filesystem, dir string) (Module, error) {
+	rm := newModule(fs, dir)
 
 	d := &discovery.Discovery{}
 	rm.tfDiscoFunc = d.LookPath
@@ -116,7 +116,7 @@ func NewRootModule(ctx context.Context, fs filesystem.Filesystem, dir string) (R
 	return rm, rm.load(ctx)
 }
 
-func (rm *rootModule) discoverCaches(ctx context.Context, dir string) error {
+func (rm *module) discoverCaches(ctx context.Context, dir string) error {
 	var errs *multierror.Error
 	err := rm.discoverPluginCache(dir)
 	if err != nil {
@@ -131,7 +131,7 @@ func (rm *rootModule) discoverCaches(ctx context.Context, dir string) error {
 	return errs.ErrorOrNil()
 }
 
-func (rm *rootModule) WasInitialized() (bool, error) {
+func (rm *module) WasInitialized() (bool, error) {
 	tfDirPath := filepath.Join(rm.Path(), ".terraform")
 
 	f, err := rm.filesystem.Open(tfDirPath)
@@ -150,7 +150,7 @@ func (rm *rootModule) WasInitialized() (bool, error) {
 	return true, nil
 }
 
-func (rm *rootModule) discoverPluginCache(dir string) error {
+func (rm *module) discoverPluginCache(dir string) error {
 	rm.pluginMu.Lock()
 	defer rm.pluginMu.Unlock()
 
@@ -168,7 +168,7 @@ func (rm *rootModule) discoverPluginCache(dir string) error {
 	return nil
 }
 
-func (rm *rootModule) discoverModuleCache(dir string) error {
+func (rm *module) discoverModuleCache(dir string) error {
 	rm.moduleMu.Lock()
 	defer rm.moduleMu.Unlock()
 
@@ -185,7 +185,7 @@ func (rm *rootModule) discoverModuleCache(dir string) error {
 	return nil
 }
 
-func (rm *rootModule) Modules() []ModuleRecord {
+func (rm *module) Modules() []ModuleRecord {
 	rm.moduleMu.Lock()
 	defer rm.moduleMu.Unlock()
 	if rm.moduleManifest == nil {
@@ -195,13 +195,13 @@ func (rm *rootModule) Modules() []ModuleRecord {
 	return rm.moduleManifest.Records
 }
 
-func (rm *rootModule) SetLogger(logger *log.Logger) {
+func (rm *module) SetLogger(logger *log.Logger) {
 	rm.logger = logger
 }
 
-func (rm *rootModule) StartLoading() error {
+func (rm *module) StartLoading() error {
 	if !rm.IsLoadingDone() {
-		return fmt.Errorf("root module is already being loaded")
+		return fmt.Errorf("module is already being loaded")
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	rm.cancelLoading = cancelFunc
@@ -213,18 +213,18 @@ func (rm *rootModule) StartLoading() error {
 	return nil
 }
 
-func (rm *rootModule) CancelLoading() {
+func (rm *module) CancelLoading() {
 	if !rm.IsLoadingDone() && rm.cancelLoading != nil {
 		rm.cancelLoading()
 	}
 	rm.setLoadingState(false)
 }
 
-func (rm *rootModule) LoadingDone() <-chan struct{} {
+func (rm *module) LoadingDone() <-chan struct{} {
 	return rm.loadingDone
 }
 
-func (rm *rootModule) load(ctx context.Context) error {
+func (rm *module) load(ctx context.Context) error {
 	var errs *multierror.Error
 	defer rm.CancelLoading()
 
@@ -254,24 +254,24 @@ func (rm *rootModule) load(ctx context.Context) error {
 	err = rm.UpdateProviderSchemaCache(ctx, rm.pluginLockFile)
 	errs = multierror.Append(errs, err)
 
-	rm.logger.Printf("loading of root module %s finished: %s",
+	rm.logger.Printf("loading of module %s finished: %s",
 		rm.Path(), errs)
 	return errs.ErrorOrNil()
 }
 
-func (rm *rootModule) setLoadingState(isLoading bool) {
+func (rm *module) setLoadingState(isLoading bool) {
 	rm.isLoadingMu.Lock()
 	defer rm.isLoadingMu.Unlock()
 	rm.isLoading = isLoading
 }
 
-func (rm *rootModule) IsLoadingDone() bool {
+func (rm *module) IsLoadingDone() bool {
 	rm.isLoadingMu.RLock()
 	defer rm.isLoadingMu.RUnlock()
 	return !rm.isLoading
 }
 
-func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
+func (rm *module) discoverTerraformExecutor(ctx context.Context) error {
 	defer func() {
 		rm.setTfDiscoveryFinished(true)
 	}()
@@ -305,7 +305,7 @@ func (rm *rootModule) discoverTerraformExecutor(ctx context.Context) error {
 	return nil
 }
 
-func (rm *rootModule) ExecuteTerraformInit(ctx context.Context) error {
+func (rm *module) ExecuteTerraformInit(ctx context.Context) error {
 	if !rm.IsTerraformAvailable() {
 		if err := rm.discoverTerraformExecutor(ctx); err != nil {
 			return err
@@ -315,7 +315,7 @@ func (rm *rootModule) ExecuteTerraformInit(ctx context.Context) error {
 	return rm.tfExec.Init(ctx)
 }
 
-func (rm *rootModule) ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error) {
+func (rm *module) ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error) {
 	diagsMap := make(map[string]hcl.Diagnostics)
 
 	if !rm.IsTerraformAvailable() {
@@ -338,11 +338,11 @@ func (rm *rootModule) ExecuteTerraformValidate(ctx context.Context) (map[string]
 	// files of linked modules
 	for _, m := range rm.moduleManifest.Records {
 		if m.IsRoot() {
-			// skip root modules
+			// skip module
 			continue
 		}
 		if m.IsExternal() {
-			// skip external modules
+			// skip external module
 			continue
 		}
 
@@ -411,7 +411,7 @@ func (rm *rootModule) ExecuteTerraformValidate(ctx context.Context) (map[string]
 	return diagsMap, nil
 }
 
-func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
+func (rm *module) discoverTerraformVersion(ctx context.Context) error {
 	if rm.tfExec == nil {
 		return errors.New("no terraform executor - unable to read version")
 	}
@@ -429,7 +429,7 @@ func (rm *rootModule) discoverTerraformVersion(ctx context.Context) error {
 	return nil
 }
 
-func (rm *rootModule) findAndSetCoreSchema() error {
+func (rm *module) findAndSetCoreSchema() error {
 	if rm.tfVersion == nil {
 		return errors.New("unable to find core schema without version")
 	}
@@ -446,28 +446,28 @@ func (rm *rootModule) findAndSetCoreSchema() error {
 	return nil
 }
 
-func (rm *rootModule) LoadError() error {
+func (rm *module) LoadError() error {
 	rm.loadErrMu.RLock()
 	defer rm.loadErrMu.RUnlock()
 	return rm.loadErr
 }
 
-func (rm *rootModule) setLoadErr(err error) {
+func (rm *module) setLoadErr(err error) {
 	rm.loadErrMu.Lock()
 	defer rm.loadErrMu.Unlock()
 	rm.loadErr = err
 }
 
-func (rm *rootModule) Path() string {
+func (rm *module) Path() string {
 	return rm.path
 }
 
-func (rm *rootModule) MatchesPath(path string) bool {
+func (rm *module) MatchesPath(path string) bool {
 	return filepath.Clean(rm.path) == filepath.Clean(path)
 }
 
 // HumanReadablePath helps display shorter, but still relevant paths
-func (rm *rootModule) HumanReadablePath(rootDir string) string {
+func (rm *module) HumanReadablePath(rootDir string) string {
 	if rootDir == "" {
 		return rm.path
 	}
@@ -487,7 +487,7 @@ func (rm *rootModule) HumanReadablePath(rootDir string) string {
 	return relDir
 }
 
-func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
+func (rm *module) UpdateModuleManifest(lockFile File) error {
 	rm.moduleMu.Lock()
 	defer rm.moduleMu.Unlock()
 
@@ -509,7 +509,7 @@ func (rm *rootModule) UpdateModuleManifest(lockFile File) error {
 	return nil
 }
 
-func (rm *rootModule) DecoderWithSchema(schema *schema.BodySchema) (*decoder.Decoder, error) {
+func (rm *module) DecoderWithSchema(schema *schema.BodySchema) (*decoder.Decoder, error) {
 	d, err := rm.Decoder()
 	if err != nil {
 		return nil, err
@@ -520,7 +520,7 @@ func (rm *rootModule) DecoderWithSchema(schema *schema.BodySchema) (*decoder.Dec
 	return d, nil
 }
 
-func (rm *rootModule) Decoder() (*decoder.Decoder, error) {
+func (rm *module) Decoder() (*decoder.Decoder, error) {
 	d := decoder.NewDecoder()
 
 	for name, f := range rm.parsedFiles() {
@@ -532,25 +532,25 @@ func (rm *rootModule) Decoder() (*decoder.Decoder, error) {
 	return d, nil
 }
 
-func (rm *rootModule) IsProviderSchemaLoaded() bool {
+func (rm *module) IsProviderSchemaLoaded() bool {
 	rm.providerSchemaMu.RLock()
 	defer rm.providerSchemaMu.RUnlock()
 	return rm.providerSchema != nil
 }
 
-func (rm *rootModule) IsParsed() bool {
+func (rm *module) IsParsed() bool {
 	rm.isParsedMu.RLock()
 	defer rm.isParsedMu.RUnlock()
 	return rm.isParsed
 }
 
-func (rm *rootModule) setIsParsed(parsed bool) {
+func (rm *module) setIsParsed(parsed bool) {
 	rm.isParsedMu.Lock()
 	defer rm.isParsedMu.Unlock()
 	rm.isParsed = parsed
 }
 
-func (rm *rootModule) ParseFiles() error {
+func (rm *module) ParseFiles() error {
 	rm.parserMu.Lock()
 	defer rm.parserMu.Unlock()
 
@@ -597,20 +597,20 @@ func (rm *rootModule) ParseFiles() error {
 	return nil
 }
 
-func (rm *rootModule) ParsedDiagnostics() map[string]hcl.Diagnostics {
+func (rm *module) ParsedDiagnostics() map[string]hcl.Diagnostics {
 	rm.parserMu.Lock()
 	defer rm.parserMu.Unlock()
 	return rm.parsedDiags
 }
 
-func (rm *rootModule) parsedFiles() map[string]*hcl.File {
+func (rm *module) parsedFiles() map[string]*hcl.File {
 	rm.parserMu.RLock()
 	defer rm.parserMu.RUnlock()
 
 	return rm.pFilesMap
 }
 
-func (rm *rootModule) MergedSchema() (*schema.BodySchema, error) {
+func (rm *module) MergedSchema() (*schema.BodySchema, error) {
 	rm.coreSchemaMu.RLock()
 	defer rm.coreSchemaMu.RUnlock()
 
@@ -661,7 +661,7 @@ func IsIgnoredFile(name string) bool {
 		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }
 
-func (rm *rootModule) ReferencesModulePath(path string) bool {
+func (rm *module) ReferencesModulePath(path string) bool {
 	rm.moduleMu.Lock()
 	defer rm.moduleMu.Unlock()
 	if rm.moduleManifest == nil {
@@ -686,7 +686,7 @@ func (rm *rootModule) ReferencesModulePath(path string) bool {
 	return false
 }
 
-func (rm *rootModule) TerraformFormatter() (exec.Formatter, error) {
+func (rm *module) TerraformFormatter() (exec.Formatter, error) {
 	if !rm.HasTerraformDiscoveryFinished() {
 		return nil, fmt.Errorf("terraform is not loaded yet")
 	}
@@ -698,23 +698,23 @@ func (rm *rootModule) TerraformFormatter() (exec.Formatter, error) {
 	return rm.tfExec.Format, nil
 }
 
-func (rm *rootModule) HasTerraformDiscoveryFinished() bool {
+func (rm *module) HasTerraformDiscoveryFinished() bool {
 	rm.tfLoadingMu.RLock()
 	defer rm.tfLoadingMu.RUnlock()
 	return rm.tfLoadingDone
 }
 
-func (rm *rootModule) setTfDiscoveryFinished(isLoaded bool) {
+func (rm *module) setTfDiscoveryFinished(isLoaded bool) {
 	rm.tfLoadingMu.Lock()
 	defer rm.tfLoadingMu.Unlock()
 	rm.tfLoadingDone = isLoaded
 }
 
-func (rm *rootModule) IsTerraformAvailable() bool {
+func (rm *module) IsTerraformAvailable() bool {
 	return rm.HasTerraformDiscoveryFinished() && rm.tfExec != nil
 }
 
-func (rm *rootModule) UpdateProviderSchemaCache(ctx context.Context, lockFile File) error {
+func (rm *module) UpdateProviderSchemaCache(ctx context.Context, lockFile File) error {
 	rm.pluginMu.Lock()
 	defer rm.pluginMu.Unlock()
 
@@ -742,7 +742,7 @@ func (rm *rootModule) UpdateProviderSchemaCache(ctx context.Context, lockFile Fi
 	return nil
 }
 
-func (rm *rootModule) PathsToWatch() []string {
+func (rm *module) PathsToWatch() []string {
 	rm.pluginMu.RLock()
 	rm.moduleMu.RLock()
 	defer rm.moduleMu.RUnlock()
@@ -759,7 +759,7 @@ func (rm *rootModule) PathsToWatch() []string {
 	return files
 }
 
-func (rm *rootModule) IsKnownModuleManifestFile(path string) bool {
+func (rm *module) IsKnownModuleManifestFile(path string) bool {
 	rm.moduleMu.RLock()
 	defer rm.moduleMu.RUnlock()
 
@@ -770,7 +770,7 @@ func (rm *rootModule) IsKnownModuleManifestFile(path string) bool {
 	return pathEquals(rm.moduleManifestFile.Path(), path)
 }
 
-func (rm *rootModule) IsKnownPluginLockFile(path string) bool {
+func (rm *module) IsKnownPluginLockFile(path string) bool {
 	rm.pluginMu.RLock()
 	defer rm.pluginMu.RUnlock()
 

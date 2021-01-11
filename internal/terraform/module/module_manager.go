@@ -17,10 +17,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
-type rootModuleManager struct {
-	rms           []*rootModule
-	newRootModule RootModuleFactory
-	filesystem    filesystem.Filesystem
+type moduleManager struct {
+	rms        []*module
+	newModule  ModuleFactory
+	filesystem filesystem.Filesystem
 
 	syncLoading bool
 	workerPool  *workerpool.WorkerPool
@@ -36,38 +36,38 @@ type rootModuleManager struct {
 	tfExecLogPath string
 }
 
-func NewRootModuleManager(fs filesystem.Filesystem) RootModuleManager {
-	return newRootModuleManager(fs)
+func NewModuleManager(fs filesystem.Filesystem) ModuleManager {
+	return newModuleManager(fs)
 }
 
-func newRootModuleManager(fs filesystem.Filesystem) *rootModuleManager {
+func newModuleManager(fs filesystem.Filesystem) *moduleManager {
 	d := &discovery.Discovery{}
 
 	defaultSize := 3 * runtime.NumCPU()
 	wp := workerpool.New(defaultSize)
 
-	rmm := &rootModuleManager{
-		rms:           make([]*rootModule, 0),
+	rmm := &moduleManager{
+		rms:           make([]*module, 0),
 		filesystem:    fs,
 		workerPool:    wp,
 		logger:        defaultLogger,
 		tfDiscoFunc:   d.LookPath,
 		tfNewExecutor: exec.NewExecutor,
 	}
-	rmm.newRootModule = rmm.defaultRootModuleFactory
+	rmm.newModule = rmm.defaultModuleFactory
 	return rmm
 }
 
-func (rmm *rootModuleManager) WorkerPoolSize() int {
+func (rmm *moduleManager) WorkerPoolSize() int {
 	return rmm.workerPool.Size()
 }
 
-func (rmm *rootModuleManager) WorkerQueueSize() int {
+func (rmm *moduleManager) WorkerQueueSize() int {
 	return rmm.workerPool.WaitingQueueSize()
 }
 
-func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir string) (*rootModule, error) {
-	rm := newRootModule(rmm.filesystem, dir)
+func (rmm *moduleManager) defaultModuleFactory(ctx context.Context, dir string) (*module, error) {
+	rm := newModule(rmm.filesystem, dir)
 
 	rm.SetLogger(rmm.logger)
 
@@ -82,47 +82,47 @@ func (rmm *rootModuleManager) defaultRootModuleFactory(ctx context.Context, dir 
 	return rm, rm.discoverCaches(ctx, dir)
 }
 
-func (rmm *rootModuleManager) SetTerraformExecPath(path string) {
+func (rmm *moduleManager) SetTerraformExecPath(path string) {
 	rmm.tfExecPath = path
 }
 
-func (rmm *rootModuleManager) SetTerraformExecLogPath(logPath string) {
+func (rmm *moduleManager) SetTerraformExecLogPath(logPath string) {
 	rmm.tfExecLogPath = logPath
 }
 
-func (rmm *rootModuleManager) SetTerraformExecTimeout(timeout time.Duration) {
+func (rmm *moduleManager) SetTerraformExecTimeout(timeout time.Duration) {
 	rmm.tfExecTimeout = timeout
 }
 
-func (rmm *rootModuleManager) SetLogger(logger *log.Logger) {
+func (rmm *moduleManager) SetLogger(logger *log.Logger) {
 	rmm.logger = logger
 }
 
-func (rmm *rootModuleManager) InitAndUpdateRootModule(ctx context.Context, dir string) (RootModule, error) {
-	rm, err := rmm.RootModuleByPath(dir)
+func (rmm *moduleManager) InitAndUpdateModule(ctx context.Context, dir string) (Module, error) {
+	rm, err := rmm.ModuleByPath(dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get root module: %+v", err)
+		return nil, fmt.Errorf("failed to get module: %+v", err)
 	}
 
 	if err := rm.ExecuteTerraformInit(ctx); err != nil {
-		return nil, fmt.Errorf("failed to init root module: %+v", err)
+		return nil, fmt.Errorf("failed to init module: %+v", err)
 	}
 
-	rootModule := rm.(*rootModule)
-	rootModule.discoverCaches(ctx, dir)
-	return rm, rootModule.UpdateProviderSchemaCache(ctx, rootModule.pluginLockFile)
+	m := rm.(*module)
+	m.discoverCaches(ctx, dir)
+	return rm, m.UpdateProviderSchemaCache(ctx, m.pluginLockFile)
 }
 
-func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error) {
+func (rmm *moduleManager) AddAndStartLoadingModule(ctx context.Context, dir string) (Module, error) {
 	dir = filepath.Clean(dir)
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	if _, ok := rmm.rootModuleByPath(dir); ok {
-		return nil, fmt.Errorf("root module %s was already added", dir)
+	if _, ok := rmm.moduleByPath(dir); ok {
+		return nil, fmt.Errorf("module %s was already added", dir)
 	}
 
-	rm, err := rmm.newRootModule(context.Background(), dir)
+	rm, err := rmm.newModule(context.Background(), dir)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +130,11 @@ func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, 
 	rmm.rms = append(rmm.rms, rm)
 
 	if rmm.syncLoading {
-		rmm.logger.Printf("synchronously loading root module %s", dir)
+		rmm.logger.Printf("synchronously loading module %s", dir)
 		return rm, rm.load(ctx)
 	}
 
-	rmm.logger.Printf("asynchronously loading root module %s", dir)
+	rmm.logger.Printf("asynchronously loading module %s", dir)
 	rmm.workerPool.Submit(func() {
 		rm := rm
 		err := rm.load(context.Background())
@@ -144,8 +144,8 @@ func (rmm *rootModuleManager) AddAndStartLoadingRootModule(ctx context.Context, 
 	return rm, nil
 }
 
-func (rmm *rootModuleManager) SchemaForPath(path string) (*schema.BodySchema, error) {
-	candidates := rmm.RootModuleCandidatesByPath(path)
+func (rmm *moduleManager) SchemaForPath(path string) (*schema.BodySchema, error) {
+	candidates := rmm.ModuleCandidatesByPath(path)
 	for _, rm := range candidates {
 		schema, err := rm.MergedSchema()
 		if err != nil {
@@ -158,7 +158,7 @@ func (rmm *rootModuleManager) SchemaForPath(path string) (*schema.BodySchema, er
 		}
 	}
 
-	rm, err := rmm.RootModuleByPath(path)
+	rm, err := rmm.ModuleByPath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (rmm *rootModuleManager) SchemaForPath(path string) (*schema.BodySchema, er
 	return rm.MergedSchema()
 }
 
-func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
+func (rmm *moduleManager) moduleByPath(dir string) (*module, bool) {
 	for _, rm := range rmm.rms {
 		if pathEquals(rm.Path(), dir) {
 			return rm, true
@@ -175,15 +175,15 @@ func (rmm *rootModuleManager) rootModuleByPath(dir string) (*rootModule, bool) {
 	return nil, false
 }
 
-// RootModuleCandidatesByPath finds any initialized root modules
-func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModules {
+// ModuleCandidatesByPath finds any initialized modules
+func (rmm *moduleManager) ModuleCandidatesByPath(path string) Modules {
 	path = filepath.Clean(path)
 
-	candidates := make([]RootModule, 0)
+	candidates := make([]Module, 0)
 
 	// TODO: Follow symlinks (requires proper test data)
 
-	rm, foundPath := rmm.rootModuleByPath(path)
+	rm, foundPath := rmm.moduleByPath(path)
 	if foundPath {
 		inited, _ := rm.WasInitialized()
 		if inited {
@@ -193,7 +193,7 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModule
 
 	if !foundPath {
 		dir := trimLockFilePath(path)
-		rm, ok := rmm.rootModuleByPath(dir)
+		rm, ok := rmm.moduleByPath(dir)
 		if ok {
 			inited, _ := rm.WasInitialized()
 			if inited {
@@ -211,31 +211,31 @@ func (rmm *rootModuleManager) RootModuleCandidatesByPath(path string) RootModule
 	return candidates
 }
 
-func (rmm *rootModuleManager) ListRootModules() RootModules {
-	modules := make([]RootModule, 0)
+func (rmm *moduleManager) ListModules() Modules {
+	modules := make([]Module, 0)
 	for _, rm := range rmm.rms {
 		modules = append(modules, rm)
 	}
 	return modules
 }
-func (rmm *rootModuleManager) RootModuleByPath(path string) (RootModule, error) {
+func (rmm *moduleManager) ModuleByPath(path string) (Module, error) {
 	path = filepath.Clean(path)
 
-	if rm, ok := rmm.rootModuleByPath(path); ok {
+	if rm, ok := rmm.moduleByPath(path); ok {
 		return rm, nil
 	}
 
 	dir := trimLockFilePath(path)
 
-	if rm, ok := rmm.rootModuleByPath(dir); ok {
+	if rm, ok := rmm.moduleByPath(dir); ok {
 		return rm, nil
 	}
 
-	return nil, &RootModuleNotFoundErr{path}
+	return nil, &ModuleNotFoundErr{path}
 }
 
-func (rmm *rootModuleManager) IsProviderSchemaLoaded(path string) (bool, error) {
-	rm, err := rmm.RootModuleByPath(path)
+func (rmm *moduleManager) IsProviderSchemaLoaded(path string) (bool, error) {
+	rm, err := rmm.ModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
@@ -243,10 +243,10 @@ func (rmm *rootModuleManager) IsProviderSchemaLoaded(path string) (bool, error) 
 	return rm.IsProviderSchemaLoaded(), nil
 }
 
-func (rmm *rootModuleManager) TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error) {
-	rm, err := rmm.RootModuleByPath(path)
+func (rmm *moduleManager) TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error) {
+	rm, err := rmm.ModuleByPath(path)
 	if err != nil {
-		if IsRootModuleNotFound(err) {
+		if IsModuleNotFound(err) {
 			return rmm.newTerraformFormatter(ctx, path)
 		}
 		return nil, err
@@ -255,7 +255,7 @@ func (rmm *rootModuleManager) TerraformFormatterForDir(ctx context.Context, path
 	return rm.TerraformFormatter()
 }
 
-func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, workDir string) (exec.Formatter, error) {
+func (rmm *moduleManager) newTerraformFormatter(ctx context.Context, workDir string) (exec.Formatter, error) {
 	tfPath := rmm.tfExecPath
 	if tfPath == "" {
 		var err error
@@ -289,8 +289,8 @@ func (rmm *rootModuleManager) newTerraformFormatter(ctx context.Context, workDir
 	return tf.Format, nil
 }
 
-func (rmm *rootModuleManager) IsTerraformAvailable(path string) (bool, error) {
-	rm, err := rmm.RootModuleByPath(path)
+func (rmm *moduleManager) IsTerraformAvailable(path string) (bool, error) {
+	rm, err := rmm.ModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
@@ -298,8 +298,8 @@ func (rmm *rootModuleManager) IsTerraformAvailable(path string) (bool, error) {
 	return rm.IsTerraformAvailable(), nil
 }
 
-func (rmm *rootModuleManager) HasTerraformDiscoveryFinished(path string) (bool, error) {
-	rm, err := rmm.RootModuleByPath(path)
+func (rmm *moduleManager) HasTerraformDiscoveryFinished(path string) (bool, error) {
+	rm, err := rmm.ModuleByPath(path)
 	if err != nil {
 		return false, err
 	}
@@ -307,7 +307,7 @@ func (rmm *rootModuleManager) HasTerraformDiscoveryFinished(path string) (bool, 
 	return rm.HasTerraformDiscoveryFinished(), nil
 }
 
-func (rmm *rootModuleManager) CancelLoading() {
+func (rmm *moduleManager) CancelLoading() {
 	for _, rm := range rmm.rms {
 		rmm.logger.Printf("cancelling loading for %s", rm.Path())
 		rm.CancelLoading()
@@ -316,8 +316,8 @@ func (rmm *rootModuleManager) CancelLoading() {
 	rmm.workerPool.Stop()
 }
 
-// rootModuleDirFromPath strips known lock file paths and filenames
-// to get the directory path of the relevant rootModule
+// trimLockFilePath strips known lock file paths and filenames
+// to get the directory path of the relevant module
 func trimLockFilePath(filePath string) string {
 	pluginLockFileSuffixes := pluginLockFilePaths(string(os.PathSeparator))
 	for _, s := range pluginLockFileSuffixes {
@@ -334,7 +334,7 @@ func trimLockFilePath(filePath string) string {
 	return filePath
 }
 
-func (rmm *rootModuleManager) PathsToWatch() []string {
+func (rmm *moduleManager) PathsToWatch() []string {
 	paths := make([]string, 0)
 	for _, rm := range rmm.rms {
 		ptw := rm.PathsToWatch()
@@ -345,13 +345,13 @@ func (rmm *rootModuleManager) PathsToWatch() []string {
 	return paths
 }
 
-// NewRootModuleLoader allows adding & loading root modules
+// NewModuleLoader allows adding & loading modules
 // with a given context. This can be passed down to any handler
 // which itself will have short-lived context
-// therefore couldn't finish loading the root module asynchronously
+// therefore couldn't finish loading the module asynchronously
 // after it responds to the client
-func NewRootModuleLoader(ctx context.Context, rmm RootModuleManager) RootModuleLoader {
-	return func(dir string) (RootModule, error) {
-		return rmm.AddAndStartLoadingRootModule(ctx, dir)
+func NewModuleLoader(ctx context.Context, rmm ModuleManager) ModuleLoader {
+	return func(dir string) (Module, error) {
+		return rmm.AddAndStartLoadingModule(ctx, dir)
 	}
 }

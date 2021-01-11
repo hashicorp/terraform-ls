@@ -84,7 +84,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	fs := filesystem.NewFilesystem()
 
-	rmm := module.NewRootModuleManager(fs)
+	rmm := module.NewModuleManager(fs)
 	rmm.SetLogger(c.logger)
 	walker := module.NewWalker()
 	walker.SetLogger(c.logger)
@@ -94,7 +94,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	defer cancel()
 
 	err = walker.StartWalking(ctx, rootPath, func(ctx context.Context, dir string) error {
-		rm, err := rmm.AddAndStartLoadingRootModule(ctx, dir)
+		rm, err := rmm.AddAndStartLoadingModule(ctx, dir)
 		if err != nil {
 			return err
 		}
@@ -108,8 +108,8 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	<-walker.Done()
 
-	modules := rmm.ListRootModules()
-	c.Ui.Output(fmt.Sprintf("%d root modules found in total at %s", len(modules), rootPath))
+	modules := rmm.ListModules()
+	c.Ui.Output(fmt.Sprintf("%d modules found in total at %s", len(modules), rootPath))
 	for _, rm := range modules {
 		errs := &multierror.Error{}
 

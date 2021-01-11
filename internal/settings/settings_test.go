@@ -13,8 +13,8 @@ func TestDecodeOptions_nil(t *testing.T) {
 	}
 	opts := out.Options
 
-	if opts.RootModulePaths != nil {
-		t.Fatalf("expected no options for nil, %#v given", opts.RootModulePaths)
+	if opts.ModulePaths != nil {
+		t.Fatalf("expected no options for nil, %#v given", opts.ModulePaths)
 	}
 }
 
@@ -36,7 +36,7 @@ func TestDecodeOptions_success(t *testing.T) {
 	}
 	opts := out.Options
 	expectedPaths := []string{"/random/path"}
-	if diff := cmp.Diff(expectedPaths, opts.RootModulePaths); diff != "" {
+	if diff := cmp.Diff(expectedPaths, opts.ModulePaths); diff != "" {
 		t.Fatalf("options mismatch: %s", diff)
 	}
 }

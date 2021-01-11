@@ -69,7 +69,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
@@ -95,7 +95,7 @@ func TestInitalizeWithCommandPrefix(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
@@ -117,7 +117,7 @@ func TestEOF(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ms := newMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}})
 	ls := langserver.NewLangServerMock(t, ms.new)

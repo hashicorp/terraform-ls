@@ -139,7 +139,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 		}
 
 		if info.Name() == ".terraform" {
-			w.logger.Printf("found root module %s", dir)
+			w.logger.Printf("found module %s", dir)
 			return wf(ctx, dir)
 		}
 

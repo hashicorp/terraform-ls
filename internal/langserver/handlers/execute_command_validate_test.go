@@ -15,7 +15,7 @@ func TestLangServer_workspaceExecuteCommand_validate_argumentError(t *testing.T)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*module.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},

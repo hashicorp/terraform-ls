@@ -13,26 +13,26 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestNewRootModuleManagerMock_noMocks(t *testing.T) {
-	f := NewRootModuleManagerMock(nil)
+func TestNewModuleManagerMock_noMocks(t *testing.T) {
+	f := NewModuleManagerMock(nil)
 	rmm := f(filesystem.NewFilesystem())
-	_, err := rmm.AddAndStartLoadingRootModule(context.Background(), "any-path")
+	_, err := rmm.AddAndStartLoadingModule(context.Background(), "any-path")
 	if err == nil {
 		t.Fatal("expected unmocked path addition to fail")
 	}
 }
 
-func TestNewRootModuleManagerMock_mocks(t *testing.T) {
+func TestNewModuleManagerMock_mocks(t *testing.T) {
 	tmpDir := filepath.Clean(os.TempDir())
 
-	f := NewRootModuleManagerMock(&RootModuleManagerMockInput{
-		RootModules: map[string]*RootModuleMock{
+	f := NewModuleManagerMock(&ModuleManagerMockInput{
+		Modules: map[string]*ModuleMock{
 			tmpDir: {
 				TfExecFactory: validTfMockCalls(t, tmpDir),
 			},
 		}})
 	rmm := f(filesystem.NewFilesystem())
-	_, err := rmm.AddAndStartLoadingRootModule(context.Background(), tmpDir)
+	_, err := rmm.AddAndStartLoadingModule(context.Background(), tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

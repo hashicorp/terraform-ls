@@ -21,7 +21,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
-	rmf, err := lsctx.RootModuleFinder(ctx)
+	rmf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return list, err
 	}
@@ -31,7 +31,7 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
-	rm, err := rmf.RootModuleByPath(file.Dir())
+	rm, err := rmf.ModuleByPath(file.Dir())
 	if err != nil {
 		return list, err
 	}

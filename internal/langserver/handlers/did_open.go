@@ -29,12 +29,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return err
 	}
 
-	rmm, err := lsctx.RootModuleManager(ctx)
+	rmm, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return err
 	}
 
-	walker, err := lsctx.RootModuleWalker(ctx)
+	walker, err := lsctx.ModuleWalker(ctx)
 	if err != nil {
 		return err
 	}
@@ -42,12 +42,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	rootDir, _ := lsctx.RootDirectory(ctx)
 	readableDir := humanReadablePath(rootDir, f.Dir())
 
-	var rm module.RootModule
+	var rm module.Module
 
-	rm, err = rmm.RootModuleByPath(f.Dir())
+	rm, err = rmm.ModuleByPath(f.Dir())
 	if err != nil {
-		if module.IsRootModuleNotFound(err) {
-			rm, err = rmm.AddAndStartLoadingRootModule(ctx, f.Dir())
+		if module.IsModuleNotFound(err) {
+			rm, err = rmm.AddAndStartLoadingModule(ctx, f.Dir())
 			if err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
-	lh.logger.Printf("opened root module: %s", rm.Path())
+	lh.logger.Printf("opened module: %s", rm.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
@@ -72,7 +72,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	}
 	diags.PublishHCLDiags(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
 
-	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
+	candidates := rmm.ModuleCandidatesByPath(f.Dir())
 
 	if walker.IsWalking() {
 		// avoid raising false warnings if walker hasn't finished yet
@@ -81,7 +81,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		// TODO: Only notify once per f.Dir() per session
 		dh := ilsp.FileHandlerFromDirPath(f.Dir())
 		go func() {
-			err := askInitForEmptyRootModule(ctx, rootDir, dh)
+			err := askInitForNoModuleCandidates(ctx, rootDir, dh)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 					Type:    lsp.Error,
@@ -94,8 +94,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if len(candidates) > 1 {
 		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
 
-		msg := fmt.Sprintf("Alternative root modules found for %s (%s), picked: %s."+
-			" You can try setting paths to root modules explicitly in settings.",
+		msg := fmt.Sprintf("Alternative schema source found for %s (%s), picked: %s."+
+			" You can try setting path to a module explicitly in settings.",
 			readableDir, candidatePaths(rootDir, candidates[1:]),
 			candidateDir)
 		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
@@ -107,7 +107,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	return nil
 }
 
-func candidatePaths(rootDir string, candidates []module.RootModule) string {
+func candidatePaths(rootDir string, candidates []module.Module) string {
 	paths := make([]string, len(candidates))
 	for i, rm := range candidates {
 		paths[i] = humanReadablePath(rootDir, rm.Path())
@@ -136,8 +136,8 @@ func humanReadablePath(rootDir, path string) string {
 	return relDir
 }
 
-func askInitForEmptyRootModule(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
-	msg := fmt.Sprintf("No root module found for %q."+
+func askInitForNoModuleCandidates(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
+	msg := fmt.Sprintf("No schema found for %q."+
 		" Functionality may be limited."+
 		// Unfortunately we can't be any more specific wrt where
 		// because we don't gather "init-able folders" in any way

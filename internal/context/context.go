@@ -28,11 +28,11 @@ var (
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
 	ctxWatcher              = &contextKey{"watcher"}
-	ctxRootModuleMngr       = &contextKey{"root module manager"}
+	ctxModuleMngr           = &contextKey{"module manager"}
 	ctxTfFormatterFinder    = &contextKey{"terraform formatter finder"}
-	ctxRootModuleCaFi       = &contextKey{"root module candidate finder"}
-	ctxRootModuleWalker     = &contextKey{"root module walker"}
-	ctxRootModuleLoader     = &contextKey{"root module loader"}
+	ctxModuleCaFi           = &contextKey{"module candidate finder"}
+	ctxModuleWalker         = &contextKey{"module walker"}
+	ctxModuleLoader         = &contextKey{"module loader"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
 	ctxDiags                = &contextKey{"diagnostics"}
@@ -115,14 +115,14 @@ func Watcher(ctx context.Context) (watcher.Watcher, error) {
 	return w, nil
 }
 
-func WithRootModuleManager(ctx context.Context, wm module.RootModuleManager) context.Context {
-	return context.WithValue(ctx, ctxRootModuleMngr, wm)
+func WithModuleManager(ctx context.Context, wm module.ModuleManager) context.Context {
+	return context.WithValue(ctx, ctxModuleMngr, wm)
 }
 
-func RootModuleManager(ctx context.Context) (module.RootModuleManager, error) {
-	wm, ok := ctx.Value(ctxRootModuleMngr).(module.RootModuleManager)
+func ModuleManager(ctx context.Context) (module.ModuleManager, error) {
+	wm, ok := ctx.Value(ctxModuleMngr).(module.ModuleManager)
 	if !ok {
-		return nil, missingContextErr(ctxRootModuleMngr)
+		return nil, missingContextErr(ctxModuleMngr)
 	}
 	return wm, nil
 }
@@ -148,14 +148,14 @@ func TerraformExecPath(ctx context.Context) (string, bool) {
 	return path, ok
 }
 
-func WithRootModuleFinder(ctx context.Context, rmcf module.RootModuleFinder) context.Context {
-	return context.WithValue(ctx, ctxRootModuleCaFi, rmcf)
+func WithModuleFinder(ctx context.Context, rmcf module.ModuleFinder) context.Context {
+	return context.WithValue(ctx, ctxModuleCaFi, rmcf)
 }
 
-func RootModuleFinder(ctx context.Context) (module.RootModuleFinder, error) {
-	cf, ok := ctx.Value(ctxRootModuleCaFi).(module.RootModuleFinder)
+func ModuleFinder(ctx context.Context) (module.ModuleFinder, error) {
+	cf, ok := ctx.Value(ctxModuleCaFi).(module.ModuleFinder)
 	if !ok {
-		return nil, missingContextErr(ctxRootModuleCaFi)
+		return nil, missingContextErr(ctxModuleCaFi)
 	}
 	return cf, nil
 }
@@ -204,26 +204,26 @@ func CommandPrefix(ctx context.Context) (string, bool) {
 	return *commandPrefix, true
 }
 
-func WithRootModuleWalker(ctx context.Context, w *module.Walker) context.Context {
-	return context.WithValue(ctx, ctxRootModuleWalker, w)
+func WithModuleWalker(ctx context.Context, w *module.Walker) context.Context {
+	return context.WithValue(ctx, ctxModuleWalker, w)
 }
 
-func RootModuleWalker(ctx context.Context) (*module.Walker, error) {
-	w, ok := ctx.Value(ctxRootModuleWalker).(*module.Walker)
+func ModuleWalker(ctx context.Context) (*module.Walker, error) {
+	w, ok := ctx.Value(ctxModuleWalker).(*module.Walker)
 	if !ok {
-		return nil, missingContextErr(ctxRootModuleWalker)
+		return nil, missingContextErr(ctxModuleWalker)
 	}
 	return w, nil
 }
 
-func WithRootModuleLoader(ctx context.Context, rml module.RootModuleLoader) context.Context {
-	return context.WithValue(ctx, ctxRootModuleLoader, rml)
+func WithModuleLoader(ctx context.Context, rml module.ModuleLoader) context.Context {
+	return context.WithValue(ctx, ctxModuleLoader, rml)
 }
 
-func RootModuleLoader(ctx context.Context) (module.RootModuleLoader, error) {
-	w, ok := ctx.Value(ctxRootModuleLoader).(module.RootModuleLoader)
+func ModuleLoader(ctx context.Context) (module.ModuleLoader, error) {
+	w, ok := ctx.Value(ctxModuleLoader).(module.ModuleLoader)
 	if !ok {
-		return nil, missingContextErr(ctxRootModuleLoader)
+		return nil, missingContextErr(ctxModuleLoader)
 	}
 	return w, nil
 }

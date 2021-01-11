@@ -29,13 +29,13 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	fs                   filesystem.Filesystem
-	watcher              watcher.Watcher
-	walker               *module.Walker
-	modMgr               module.RootModuleManager
-	newRootModuleManager module.RootModuleManagerFactory
-	newWatcher           watcher.WatcherFactory
-	newWalker            module.WalkerFactory
+	fs               filesystem.Filesystem
+	watcher          watcher.Watcher
+	walker           *module.Walker
+	modMgr           module.ModuleManager
+	newModuleManager module.ModuleManagerFactory
+	newWatcher       watcher.WatcherFactory
+	newWalker        module.WalkerFactory
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
@@ -45,14 +45,14 @@ func NewSession(srvCtx context.Context) session.Session {
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
-		logger:               discardLogs,
-		fs:                   fs,
-		srvCtx:               srvCtx,
-		sessCtx:              sessCtx,
-		stopSession:          stopSession,
-		newRootModuleManager: module.NewRootModuleManager,
-		newWatcher:           watcher.NewWatcher,
-		newWalker:            module.NewWalker,
+		logger:           discardLogs,
+		fs:               fs,
+		srvCtx:           srvCtx,
+		sessCtx:          sessCtx,
+		stopSession:      stopSession,
+		newModuleManager: module.NewModuleManager,
+		newWatcher:       watcher.NewWatcher,
+		newWalker:        module.NewWalker,
 	}
 }
 
@@ -77,7 +77,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	svc.modMgr = svc.newRootModuleManager(svc.fs)
+	svc.modMgr = svc.newModuleManager(svc.fs)
 	svc.modMgr.SetLogger(svc.logger)
 
 	svc.logger.Printf("Worker pool size set to %d", svc.modMgr.WorkerPoolSize())
@@ -112,7 +112,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
 	svc.watcher.AddChangeHook(func(ctx context.Context, file watcher.TrackedFile) error {
-		rm, err := svc.modMgr.RootModuleByPath(file.Path())
+		rm, err := svc.modMgr.ModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil
 	})
 	svc.watcher.AddChangeHook(func(_ context.Context, file watcher.TrackedFile) error {
-		rm, err := svc.modMgr.RootModuleByPath(file.Path())
+		rm, err := svc.modMgr.ModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
@@ -146,7 +146,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, err
 	}
 
-	rmLoader := module.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
+	rmLoader := module.NewModuleLoader(svc.sessCtx, svc.modMgr)
 	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
@@ -162,11 +162,11 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilitiesSetter(ctx, cc)
 			ctx = lsctx.WithWatcher(ctx, ww)
-			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
+			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithRootModuleLoader(ctx, rmLoader)
+			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleLoader(ctx, rmLoader)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
@@ -191,7 +191,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -203,9 +203,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
-			ctx = lsctx.WithRootModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
-			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
+			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},
@@ -224,7 +224,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentSymbol)
 		},
@@ -236,7 +236,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
@@ -248,7 +248,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentHover)
 		},
@@ -271,7 +271,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentSemanticTokensFull)
 		},
@@ -283,7 +283,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentDidSave)
 		},
@@ -294,8 +294,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithRootModuleFinder(ctx, svc.modMgr)
-			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 
@@ -360,9 +360,9 @@ func (svc *service) shutdown() {
 	}
 
 	if svc.modMgr != nil {
-		svc.logger.Println("cancelling any root module loading ...")
+		svc.logger.Println("cancelling any module loading ...")
 		svc.modMgr.CancelLoading()
-		svc.logger.Println("root module loading cancelled")
+		svc.logger.Println("module loading cancelled")
 	}
 }
 

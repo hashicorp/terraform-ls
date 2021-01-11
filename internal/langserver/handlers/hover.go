@@ -19,7 +19,7 @@ func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocum
 		return nil, err
 	}
 
-	rmf, err := lsctx.RootModuleFinder(ctx)
+	rmf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocum
 		return nil, err
 	}
 
-	rm, err := rmf.RootModuleByPath(file.Dir())
+	rm, err := rmf.ModuleByPath(file.Dir())
 	if err != nil {
 		return nil, err
 	}

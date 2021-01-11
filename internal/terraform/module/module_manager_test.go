@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
+func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +31,7 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 		expectedCandidates []string
 	}{
 		{
-			// outside of watcher, root modules are always looked up by dir
+			// outside of watcher, modules are always looked up by dir
 			"tf-file-based lookup",
 			filepath.Join(testData, "single-root-ext-modules-only"),
 			filepath.Join(testData, "single-root-ext-modules-only", "main.tf"),
@@ -437,19 +437,19 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 	for i, tc := range testCases {
 		base := filepath.Base(tc.walkerRoot)
 		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
-			rmm := testRootModuleManager(t)
+			rmm := testModuleManager(t)
 			w := MockWalker()
 			w.SetLogger(testLogger())
 			ctx := context.Background()
 			err := w.StartWalking(ctx, tc.walkerRoot, func(ctx context.Context, rmPath string) error {
-				_, err := rmm.AddAndStartLoadingRootModule(ctx, rmPath)
+				_, err := rmm.AddAndStartLoadingModule(ctx, rmPath)
 				return err
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			candidates := rmm.RootModuleCandidatesByPath(tc.lookupPath)
+			candidates := rmm.ModuleCandidatesByPath(tc.lookupPath)
 			if diff := cmp.Diff(tc.expectedCandidates, candidates.Paths()); diff != "" {
 				t.Fatalf("candidates don't match: %s", diff)
 			}
@@ -458,7 +458,7 @@ func TestRootModuleManager_RootModuleCandidatesByPath(t *testing.T) {
 }
 
 func TestSchemaForPath_uninitialized(t *testing.T) {
-	rmm := testRootModuleManager(t)
+	rmm := testModuleManager(t)
 
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
@@ -467,7 +467,7 @@ func TestSchemaForPath_uninitialized(t *testing.T) {
 	path := filepath.Join(testData, "uninitialized-root")
 
 	// model is added automatically during didOpen
-	_, err = rmm.AddAndStartLoadingRootModule(context.Background(), path)
+	_, err = rmm.AddAndStartLoadingModule(context.Background(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -478,16 +478,16 @@ func TestSchemaForPath_uninitialized(t *testing.T) {
 	}
 }
 
-func testRootModuleManager(t *testing.T) *rootModuleManager {
+func testModuleManager(t *testing.T) *moduleManager {
 	fs := filesystem.NewFilesystem()
-	rmm := newRootModuleManager(fs)
+	rmm := newModuleManager(fs)
 	rmm.syncLoading = true
 	rmm.logger = testLogger()
 
-	rmm.newRootModule = func(ctx context.Context, dir string) (*rootModule, error) {
+	rmm.newModule = func(ctx context.Context, dir string) (*module, error) {
 		// TODO(RS): Should be just 1, unsure why it requires 2
 		repeatability := 2
-		rm := NewRootModuleMock(&RootModuleMock{
+		rm := NewModuleMock(&ModuleMock{
 			TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 				{
 					Method:        "Version",

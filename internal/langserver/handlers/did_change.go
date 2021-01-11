@@ -48,12 +48,12 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	rmf, err := lsctx.RootModuleFinder(ctx)
+	rmf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return err
 	}
 
-	rm, err := rmf.RootModuleByPath(fh.Dir())
+	rm, err := rmf.ModuleByPath(fh.Dir())
 	if err != nil {
 		return err
 	}
