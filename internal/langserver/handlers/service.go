@@ -298,6 +298,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
+			ctx = lsctx.WithDiagnostics(ctx, diags)
 
 			return handle(ctx, req, lh.WorkspaceExecuteCommand)
 		},
