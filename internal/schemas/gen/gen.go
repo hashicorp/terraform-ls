@@ -50,14 +50,14 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("len=%d", len(providers))
+	log.Printf("fetched official providers: %d", len(providers))
 
 	log.Println("fetching verified partner providers from registry")
 	partnerProviders, err := listProviders("partner")
 	if err != nil {
 		return err
 	}
-	log.Printf("len=%d", len(partnerProviders))
+	log.Printf("fetched partner providers: %d", len(partnerProviders))
 
 	providers = append(providers, partnerProviders...)
 
