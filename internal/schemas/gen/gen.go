@@ -50,12 +50,14 @@ func gen() error {
 	if err != nil {
 		return err
 	}
+	log.Printf("fetched official providers: %d", len(providers))
 
 	log.Println("fetching verified partner providers from registry")
 	partnerProviders, err := listProviders("partner")
 	if err != nil {
 		return err
 	}
+	log.Printf("fetched partner providers: %d", len(partnerProviders))
 
 	providers = append(providers, partnerProviders...)
 
@@ -193,21 +195,37 @@ func (p provider) Source() string {
 	return p.Attributes.FullName
 }
 
+type pagination struct {
+	NextPage int `json:"next-page"`
+}
+
+type meta struct {
+	Pagination pagination `json:"pagination"`
+}
+
 type registryResponse struct {
 	Data []provider `json:"data"`
+	Meta meta       `json:"meta"`
 }
 
 func listProviders(tier string) ([]provider, error) {
-	// TODO will eventually need to paginate, for now "official" is 33 and "partner" is 95
-	resp, err := http.Get(fmt.Sprintf("https://registry.terraform.io/v2/providers?page[size]=100&filter[tier]=%s", tier))
-	if err != nil {
-		return nil, err
+	var providers []provider
+	page := 1
+	for page > 0 {
+		resp, err := http.Get(fmt.Sprintf("https://registry.terraform.io/v2/providers?page[size]=100&filter[tier]=%s&page[number]=%d", tier, page))
+		if err != nil {
+			return nil, err
+		}
+
+		var response registryResponse
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, response.Data...)
+		page = response.Meta.Pagination.NextPage
 	}
-
-	var response registryResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
-
-	return filter(response.Data), err
+	return filter(providers), nil
 }
 
 // these providers fail to download
