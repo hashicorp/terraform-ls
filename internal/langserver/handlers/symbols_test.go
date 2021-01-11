@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TestLangServer_symbols_basic(t *testing.T) {
@@ -13,7 +13,7 @@ func TestLangServer_symbols_basic(t *testing.T) {
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},

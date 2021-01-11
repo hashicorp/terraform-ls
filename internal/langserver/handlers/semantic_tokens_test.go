@@ -9,7 +9,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -24,7 +24,7 @@ func TestSemanticTokensFull(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{
@@ -131,7 +131,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{

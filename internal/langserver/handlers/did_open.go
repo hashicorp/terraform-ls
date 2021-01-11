@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
@@ -42,11 +42,11 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	rootDir, _ := lsctx.RootDirectory(ctx)
 	readableDir := humanReadablePath(rootDir, f.Dir())
 
-	var rm rootmodule.RootModule
+	var rm module.RootModule
 
 	rm, err = rmm.RootModuleByPath(f.Dir())
 	if err != nil {
-		if rootmodule.IsRootModuleNotFound(err) {
+		if module.IsRootModuleNotFound(err) {
 			rm, err = rmm.AddAndStartLoadingRootModule(ctx, f.Dir())
 			if err != nil {
 				return err
@@ -107,7 +107,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	return nil
 }
 
-func candidatePaths(rootDir string, candidates []rootmodule.RootModule) string {
+func candidatePaths(rootDir string, candidates []module.RootModule) string {
 	paths := make([]string, len(candidates))
 	for i, rm := range candidates {
 		paths[i] = humanReadablePath(rootDir, rm.Path())

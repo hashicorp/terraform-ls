@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 import (
 	tfjson "github.com/hashicorp/terraform-json"

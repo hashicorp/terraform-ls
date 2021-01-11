@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -35,7 +35,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{
@@ -121,7 +121,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 func TestLangServer_formatting_oldVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{

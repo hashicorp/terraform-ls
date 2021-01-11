@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
 )
 
@@ -102,7 +102,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	rm, err := rootmodule.NewRootModule(context.Background(), fs, fh.Dir())
+	rm, err := module.NewRootModule(context.Background(), fs, fh.Dir())
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to load root module: %s", err.Error()))
 		return 1

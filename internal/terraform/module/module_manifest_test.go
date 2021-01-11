@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 const moduleManifestRecord_external = `{
     "Key": "web_server_sg",

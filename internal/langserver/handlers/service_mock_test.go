@@ -10,12 +10,12 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 type MockSessionInput struct {
-	RootModules       map[string]*rootmodule.RootModuleMock
+	RootModules       map[string]*module.RootModuleMock
 	Filesystem        filesystem.Filesystem
 	TfExecutorFactory exec.ExecutorFactory
 }
@@ -31,9 +31,9 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
 
-	var input *rootmodule.RootModuleManagerMockInput
+	var input *module.RootModuleManagerMockInput
 	if ms.mockInput != nil {
-		input = &rootmodule.RootModuleManagerMockInput{
+		input = &module.RootModuleManagerMockInput{
 			RootModules:       ms.mockInput.RootModules,
 			TfExecutorFactory: ms.mockInput.TfExecutorFactory,
 		}
@@ -52,9 +52,9 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		sessCtx:              sessCtx,
 		stopSession:          ms.stop,
 		fs:                   fs,
-		newRootModuleManager: rootmodule.NewRootModuleManagerMock(input),
+		newRootModuleManager: module.NewRootModuleManagerMock(input),
 		newWatcher:           watcher.MockWatcher(),
-		newWalker:            rootmodule.MockWalker,
+		newWalker:            module.MockWalker,
 	}
 
 	return svc

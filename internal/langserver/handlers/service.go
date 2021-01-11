@@ -17,7 +17,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
@@ -31,11 +31,11 @@ type service struct {
 
 	fs                   filesystem.Filesystem
 	watcher              watcher.Watcher
-	walker               *rootmodule.Walker
-	modMgr               rootmodule.RootModuleManager
-	newRootModuleManager rootmodule.RootModuleManagerFactory
+	walker               *module.Walker
+	modMgr               module.RootModuleManager
+	newRootModuleManager module.RootModuleManagerFactory
 	newWatcher           watcher.WatcherFactory
-	newWalker            rootmodule.WalkerFactory
+	newWalker            module.WalkerFactory
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
@@ -50,9 +50,9 @@ func NewSession(srvCtx context.Context) session.Session {
 		srvCtx:               srvCtx,
 		sessCtx:              sessCtx,
 		stopSession:          stopSession,
-		newRootModuleManager: rootmodule.NewRootModuleManager,
+		newRootModuleManager: module.NewRootModuleManager,
 		newWatcher:           watcher.NewWatcher,
-		newWalker:            rootmodule.NewWalker,
+		newWalker:            module.NewWalker,
 	}
 }
 
@@ -146,7 +146,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, err
 	}
 
-	rmLoader := rootmodule.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
+	rmLoader := module.NewRootModuleLoader(svc.sessCtx, svc.modMgr)
 	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {
@@ -18,7 +18,7 @@ func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {
 	fs := filesystem.NewFilesystem()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},

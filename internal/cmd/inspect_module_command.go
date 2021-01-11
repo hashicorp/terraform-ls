@@ -16,7 +16,7 @@ import (
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
 )
 
@@ -84,9 +84,9 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	fs := filesystem.NewFilesystem()
 
-	rmm := rootmodule.NewRootModuleManager(fs)
+	rmm := module.NewRootModuleManager(fs)
 	rmm.SetLogger(c.logger)
-	walker := rootmodule.NewWalker()
+	walker := module.NewWalker()
 	walker.SetLogger(c.logger)
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),
@@ -153,7 +153,7 @@ func formatErrors(errors []error) string {
 	return strings.TrimSpace(out)
 }
 
-func formatModuleRecords(mds []rootmodule.ModuleRecord) []string {
+func formatModuleRecords(mds []module.ModuleRecord) []string {
 	out := make([]string, 0)
 	for _, m := range mds {
 		if m.IsRoot() {

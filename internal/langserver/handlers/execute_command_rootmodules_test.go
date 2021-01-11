@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing.T) {
@@ -18,7 +18,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_argumentError(t *testing
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -62,7 +62,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_basic(t *testing.T) {
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -121,14 +121,14 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 	}
 
 	root := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv"))
-	module := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "main", "main.tf"))
+	mod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "main", "main.tf"))
 
 	dev := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "dev"))
 	staging := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "staging"))
 	prod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "prod"))
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		RootModules: map[string]*module.RootModuleMock{
 			dev.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -162,7 +162,7 @@ func TestLangServer_workspaceExecuteCommand_rootmodules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, cmd.Name("rootmodules"), module.URI())}, fmt.Sprintf(`{
+	}`, cmd.Name("rootmodules"), mod.URI())}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {
