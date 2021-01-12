@@ -1,8 +1,9 @@
-## 0.13.0 (Unreleased)
+## 0.12.1 (Unreleased)
 
 BUG FIXES:
 
  - Print help (and version) to stdout ([#296](https://github.com/hashicorp/terraform-ls/pull/296))
+ - Fix broken executable `validate` command ([#373](https://github.com/hashicorp/terraform-ls/pull/373))
 
 ## 0.12.0 (6 January 2021)
 
