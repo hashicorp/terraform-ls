@@ -13,21 +13,21 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-const rootmodulesCommandResponseVersion = 0
+const modulesCommandResponseVersion = 0
 
-type rootmodulesCommandResponse struct {
-	ResponseVersion int              `json:"responseVersion"`
-	DoneLoading     bool             `json:"doneLoading"`
-	RootModules     []rootModuleInfo `json:"rootModules"`
+type modulesCommandResponse struct {
+	ResponseVersion int          `json:"responseVersion"`
+	DoneLoading     bool         `json:"doneLoading"`
+	Modules         []moduleInfo `json:"rootModules"`
 }
 
-type rootModuleInfo struct {
+type moduleInfo struct {
 	URI  string `json:"uri"`
 	Name string `json:"name"`
 }
 
-func RootModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
-	walker, err := lsctx.RootModuleWalker(ctx)
+func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+	walker, err := lsctx.ModuleWalker(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,27 +39,27 @@ func RootModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{},
 
 	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(fileUri))
 
-	cf, err := lsctx.RootModuleFinder(ctx)
+	cf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 	doneLoading := !walker.IsWalking()
-	candidates := cf.RootModuleCandidatesByPath(fh.Dir())
+	candidates := cf.ModuleCandidatesByPath(fh.Dir())
 	rootDir, _ := lsctx.RootDirectory(ctx)
 
-	rootModules := make([]rootModuleInfo, len(candidates))
+	modules := make([]moduleInfo, len(candidates))
 	for i, candidate := range candidates {
-		rootModules[i] = rootModuleInfo{
+		modules[i] = moduleInfo{
 			URI:  uri.FromPath(candidate.Path()),
 			Name: candidate.HumanReadablePath(rootDir),
 		}
 	}
-	sort.SliceStable(rootModules, func(i, j int) bool {
-		return rootModules[i].URI < rootModules[j].URI
+	sort.SliceStable(modules, func(i, j int) bool {
+		return modules[i].URI < modules[j].URI
 	})
-	return rootmodulesCommandResponse{
-		ResponseVersion: rootmodulesCommandResponseVersion,
+	return modulesCommandResponse{
+		ResponseVersion: modulesCommandResponseVersion,
 		DoneLoading:     doneLoading,
-		RootModules:     rootModules,
+		Modules:         modules,
 	}, nil
 }

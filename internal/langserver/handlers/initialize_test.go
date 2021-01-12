@@ -8,13 +8,13 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestInitialize_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)
@@ -39,7 +39,7 @@ func TestInitialize_twice(t *testing.T) {
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{
@@ -70,7 +70,7 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 
 func TestInitialize_withInvalidRootURI(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)

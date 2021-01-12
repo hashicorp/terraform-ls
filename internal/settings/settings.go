@@ -11,8 +11,8 @@ type ExperimentalFeatures struct {
 }
 
 type Options struct {
-	// RootModulePaths describes a list of absolute paths to root modules
-	RootModulePaths    []string `mapstructure:"rootModulePaths"`
+	// ModulePaths describes a list of absolute paths to modules to load
+	ModulePaths        []string `mapstructure:"rootModulePaths"`
 	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 	CommandPrefix      string   `mapstructure:"commandPrefix"`
 
@@ -26,7 +26,7 @@ type Options struct {
 }
 
 func (o *Options) Validate() error {
-	if len(o.RootModulePaths) != 0 && len(o.ExcludeModulePaths) != 0 {
+	if len(o.ModulePaths) != 0 && len(o.ExcludeModulePaths) != 0 {
 		return fmt.Errorf("at most one of `rootModulePaths` and `excludeModulePaths` could be set")
 	}
 	return nil

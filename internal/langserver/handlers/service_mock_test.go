@@ -10,12 +10,12 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 type MockSessionInput struct {
-	RootModules       map[string]*rootmodule.RootModuleMock
+	Modules           map[string]*module.ModuleMock
 	Filesystem        filesystem.Filesystem
 	TfExecutorFactory exec.ExecutorFactory
 }
@@ -31,10 +31,10 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
 
-	var input *rootmodule.RootModuleManagerMockInput
+	var input *module.ModuleManagerMockInput
 	if ms.mockInput != nil {
-		input = &rootmodule.RootModuleManagerMockInput{
-			RootModules:       ms.mockInput.RootModules,
+		input = &module.ModuleManagerMockInput{
+			Modules:           ms.mockInput.Modules,
 			TfExecutorFactory: ms.mockInput.TfExecutorFactory,
 		}
 	}
@@ -47,14 +47,14 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	}
 
 	svc := &service{
-		logger:               testLogger(),
-		srvCtx:               srvCtx,
-		sessCtx:              sessCtx,
-		stopSession:          ms.stop,
-		fs:                   fs,
-		newRootModuleManager: rootmodule.NewRootModuleManagerMock(input),
-		newWatcher:           watcher.MockWatcher(),
-		newWalker:            rootmodule.MockWalker,
+		logger:           testLogger(),
+		srvCtx:           srvCtx,
+		sessCtx:          sessCtx,
+		stopSession:      ms.stop,
+		fs:               fs,
+		newModuleManager: module.NewModuleManagerMock(input),
+		newWatcher:       watcher.MockWatcher(),
+		newWalker:        module.MockWalker,
 	}
 
 	return svc

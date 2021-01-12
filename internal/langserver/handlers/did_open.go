@@ -13,11 +13,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
-
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
@@ -29,12 +28,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return err
 	}
 
-	rmm, err := lsctx.RootModuleManager(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return err
 	}
 
-	walker, err := lsctx.RootModuleWalker(ctx)
+	walker, err := lsctx.ModuleWalker(ctx)
 	if err != nil {
 		return err
 	}
@@ -42,12 +41,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	rootDir, _ := lsctx.RootDirectory(ctx)
 	readableDir := humanReadablePath(rootDir, f.Dir())
 
-	var rm rootmodule.RootModule
+	var mod module.Module
 
-	rm, err = rmm.RootModuleByPath(f.Dir())
+	mod, err = modMgr.ModuleByPath(f.Dir())
 	if err != nil {
-		if rootmodule.IsRootModuleNotFound(err) {
-			rm, err = rmm.AddAndStartLoadingRootModule(ctx, f.Dir())
+		if module.IsModuleNotFound(err) {
+			mod, err = modMgr.AddAndStartLoadingModule(ctx, f.Dir())
 			if err != nil {
 				return err
 			}
@@ -56,12 +55,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
-	lh.logger.Printf("opened root module: %s", rm.Path())
+	lh.logger.Printf("opened module: %s", mod.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	err = rm.ParseFiles()
+	err = mod.ParseFiles()
 	if err != nil {
 		return fmt.Errorf("failed to parse files: %w", err)
 	}
@@ -70,9 +69,9 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, mod.Path(), mod.ParsedDiagnostics(), "HCL")
 
-	candidates := rmm.RootModuleCandidatesByPath(f.Dir())
+	candidates := modMgr.ModuleCandidatesByPath(f.Dir())
 
 	if walker.IsWalking() {
 		// avoid raising false warnings if walker hasn't finished yet
@@ -81,7 +80,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		// TODO: Only notify once per f.Dir() per session
 		dh := ilsp.FileHandlerFromDirPath(f.Dir())
 		go func() {
-			err := askInitForEmptyRootModule(ctx, rootDir, dh)
+			err := askInitForNoModuleCandidates(ctx, rootDir, dh)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 					Type:    lsp.Error,
@@ -94,8 +93,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if len(candidates) > 1 {
 		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
 
-		msg := fmt.Sprintf("Alternative root modules found for %s (%s), picked: %s."+
-			" You can try setting paths to root modules explicitly in settings.",
+		msg := fmt.Sprintf("Alternative schema source found for %s (%s), picked: %s."+
+			" You can set an explicit module path in your settings.",
 			readableDir, candidatePaths(rootDir, candidates[1:]),
 			candidateDir)
 		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
@@ -107,10 +106,10 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	return nil
 }
 
-func candidatePaths(rootDir string, candidates []rootmodule.RootModule) string {
+func candidatePaths(rootDir string, candidates []module.Module) string {
 	paths := make([]string, len(candidates))
-	for i, rm := range candidates {
-		paths[i] = humanReadablePath(rootDir, rm.Path())
+	for i, mod := range candidates {
+		paths[i] = humanReadablePath(rootDir, mod.Path())
 	}
 	return strings.Join(paths, ", ")
 }
@@ -136,8 +135,8 @@ func humanReadablePath(rootDir, path string) string {
 	return relDir
 }
 
-func askInitForEmptyRootModule(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
-	msg := fmt.Sprintf("No root module found for %q."+
+func askInitForNoModuleCandidates(ctx context.Context, rootDir string, dh ilsp.DirHandler) error {
+	msg := fmt.Sprintf("No schema found for %q."+
 		" Functionality may be limited."+
 		// Unfortunately we can't be any more specific wrt where
 		// because we don't gather "init-able folders" in any way

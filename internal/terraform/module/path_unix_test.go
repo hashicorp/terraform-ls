@@ -1,6 +1,6 @@
 // +build !windows
 
-package rootmodule
+package module
 
 import (
 	"fmt"

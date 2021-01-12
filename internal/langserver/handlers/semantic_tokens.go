@@ -34,7 +34,7 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, err
 	}
 
-	rmf, err := lsctx.RootModuleFinder(ctx)
+	mf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return tks, err
 	}
@@ -45,17 +45,17 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, err
 	}
 
-	rm, err := rmf.RootModuleByPath(doc.Dir())
+	mod, err := mf.ModuleByPath(doc.Dir())
 	if err != nil {
 		return tks, fmt.Errorf("finding compatible decoder failed: %w", err)
 	}
 
-	schema, err := rmf.SchemaForPath(doc.Dir())
+	schema, err := mf.SchemaForPath(doc.Dir())
 	if err != nil {
 		return tks, err
 	}
 
-	d, err := rm.DecoderWithSchema(schema)
+	d, err := mod.DecoderWithSchema(schema)
 	if err != nil {
 		return tks, err
 	}

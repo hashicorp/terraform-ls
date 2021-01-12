@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 func MockWalker() *Walker {
 	w := NewWalker()

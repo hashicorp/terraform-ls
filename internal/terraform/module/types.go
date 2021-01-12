@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 import (
 	"context"
@@ -22,16 +22,16 @@ type TerraformFormatterFinder interface {
 	IsTerraformAvailable(path string) (bool, error)
 }
 
-type RootModuleFinder interface {
-	RootModuleCandidatesByPath(path string) RootModules
-	RootModuleByPath(path string) (RootModule, error)
+type ModuleFinder interface {
+	ModuleCandidatesByPath(path string) Modules
+	ModuleByPath(path string) (Module, error)
 	SchemaForPath(path string) (*schema.BodySchema, error)
 }
 
-type RootModuleLoader func(dir string) (RootModule, error)
+type ModuleLoader func(dir string) (Module, error)
 
-type RootModuleManager interface {
-	RootModuleFinder
+type ModuleManager interface {
+	ModuleFinder
 	TerraformFormatterFinder
 
 	SetLogger(logger *log.Logger)
@@ -40,26 +40,26 @@ type RootModuleManager interface {
 	SetTerraformExecLogPath(logPath string)
 	SetTerraformExecTimeout(timeout time.Duration)
 
-	InitAndUpdateRootModule(ctx context.Context, dir string) (RootModule, error)
-	AddAndStartLoadingRootModule(ctx context.Context, dir string) (RootModule, error)
+	InitAndUpdateModule(ctx context.Context, dir string) (Module, error)
+	AddAndStartLoadingModule(ctx context.Context, dir string) (Module, error)
 	WorkerPoolSize() int
 	WorkerQueueSize() int
-	ListRootModules() RootModules
+	ListModules() Modules
 	PathsToWatch() []string
 	CancelLoading()
 }
 
-type RootModules []RootModule
+type Modules []Module
 
-func (rms RootModules) Paths() []string {
-	paths := make([]string, len(rms))
-	for i, rm := range rms {
-		paths[i] = rm.Path()
+func (mods Modules) Paths() []string {
+	paths := make([]string, len(mods))
+	for i, mod := range mods {
+		paths[i] = mod.Path()
 	}
 	return paths
 }
 
-type RootModule interface {
+type Module interface {
 	Path() string
 	MatchesPath(path string) bool
 	LoadError() error
@@ -88,8 +88,8 @@ type RootModule interface {
 	WasInitialized() (bool, error)
 }
 
-type RootModuleFactory func(context.Context, string) (*rootModule, error)
+type ModuleFactory func(context.Context, string) (*module, error)
 
-type RootModuleManagerFactory func(filesystem.Filesystem) RootModuleManager
+type ModuleManagerFactory func(filesystem.Filesystem) ModuleManager
 
 type WalkerFactory func() *Walker

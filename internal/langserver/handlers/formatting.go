@@ -9,7 +9,7 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.DocumentFormattingParams) ([]lsp.TextEdit, error) {
@@ -51,10 +51,10 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 	return ilsp.TextEditsFromDocumentChanges(changes), nil
 }
 
-func findTerraformFormatter(ctx context.Context, tff rootmodule.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
+func findTerraformFormatter(ctx context.Context, tff module.TerraformFormatterFinder, dir string) (exec.Formatter, error) {
 	discoveryDone, err := tff.HasTerraformDiscoveryFinished(dir)
 	if err != nil {
-		if rootmodule.IsRootModuleNotFound(err) {
+		if module.IsModuleNotFound(err) {
 			return tff.TerraformFormatterForDir(ctx, dir)
 		}
 		return nil, err
@@ -65,7 +65,7 @@ func findTerraformFormatter(ctx context.Context, tff rootmodule.TerraformFormatt
 		}
 		available, err := tff.IsTerraformAvailable(dir)
 		if err != nil {
-			if rootmodule.IsRootModuleNotFound(err) {
+			if module.IsModuleNotFound(err) {
 				return tff.TerraformFormatterForDir(ctx, dir)
 			}
 		}

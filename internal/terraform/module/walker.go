@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 import (
 	"context"
@@ -134,12 +134,11 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 		}
 
 		if _, ok := w.excludeModulePaths[dir]; ok {
-			w.logger.Printf("successfully exclude root_module: %s", dir)
 			return filepath.SkipDir
 		}
 
 		if info.Name() == ".terraform" {
-			w.logger.Printf("found root module %s", dir)
+			w.logger.Printf("found module %s", dir)
 			return wf(ctx, dir)
 		}
 

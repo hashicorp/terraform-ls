@@ -6,12 +6,12 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TestShutdown_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
 		}}))
 	stop := ls.Start(t)

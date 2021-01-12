@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -19,7 +19,7 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: validTfMockCalls(),
 			},
@@ -94,7 +94,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	})
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: tfMockCalls,
 			},
@@ -174,7 +174,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	})
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: tfMockCalls,
 			},

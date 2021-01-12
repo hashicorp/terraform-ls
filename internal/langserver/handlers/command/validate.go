@@ -20,17 +20,17 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
-	cf, err := lsctx.RootModuleFinder(ctx)
+	cf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rm, err := cf.RootModuleByPath(dh.Dir())
+	mod, err := cf.ModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}
 
-	wasInit, err := rm.WasInitialized()
+	wasInit, err := mod.WasInitialized()
 	if err != nil {
 		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirUri, err)
 	}
@@ -48,11 +48,11 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		progress.End(ctx, "Finished")
 	}()
 	progress.Report(ctx, "Running terraform validate ...")
-	hclDiags, err := rm.ExecuteTerraformValidate(ctx)
+	hclDiags, err := mod.ExecuteTerraformValidate(ctx)
 	if err != nil {
 		return nil, err
 	}
-	diags.PublishHCLDiags(ctx, rm.Path(), hclDiags, "terraform validate")
+	diags.PublishHCLDiags(ctx, mod.Path(), hclDiags, "terraform validate")
 
 	return nil, nil
 }

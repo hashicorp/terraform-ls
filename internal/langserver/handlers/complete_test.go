@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -43,7 +43,7 @@ func TestCompletion_withValidData(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
 					{

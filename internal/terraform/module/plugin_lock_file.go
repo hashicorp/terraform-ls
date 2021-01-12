@@ -1,4 +1,4 @@
-package rootmodule
+package module
 
 import (
 	"path/filepath"
