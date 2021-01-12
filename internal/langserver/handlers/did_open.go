@@ -94,7 +94,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
 
 		msg := fmt.Sprintf("Alternative schema source found for %s (%s), picked: %s."+
-			" You can try setting path to a module explicitly in settings.",
+			" You can set an explicit module path in your settings.",
 			readableDir, candidatePaths(rootDir, candidates[1:]),
 			candidateDir)
 		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
