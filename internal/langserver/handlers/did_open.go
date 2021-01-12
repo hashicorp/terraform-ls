@@ -17,7 +17,6 @@ import (
 )
 
 func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
-
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return err
@@ -29,7 +28,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return err
 	}
 
-	rmm, err := lsctx.ModuleManager(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return err
 	}
@@ -42,12 +41,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	rootDir, _ := lsctx.RootDirectory(ctx)
 	readableDir := humanReadablePath(rootDir, f.Dir())
 
-	var rm module.Module
+	var mod module.Module
 
-	rm, err = rmm.ModuleByPath(f.Dir())
+	mod, err = modMgr.ModuleByPath(f.Dir())
 	if err != nil {
 		if module.IsModuleNotFound(err) {
-			rm, err = rmm.AddAndStartLoadingModule(ctx, f.Dir())
+			mod, err = modMgr.AddAndStartLoadingModule(ctx, f.Dir())
 			if err != nil {
 				return err
 			}
@@ -56,12 +55,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
-	lh.logger.Printf("opened module: %s", rm.Path())
+	lh.logger.Printf("opened module: %s", mod.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	err = rm.ParseFiles()
+	err = mod.ParseFiles()
 	if err != nil {
 		return fmt.Errorf("failed to parse files: %w", err)
 	}
@@ -70,9 +69,9 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, mod.Path(), mod.ParsedDiagnostics(), "HCL")
 
-	candidates := rmm.ModuleCandidatesByPath(f.Dir())
+	candidates := modMgr.ModuleCandidatesByPath(f.Dir())
 
 	if walker.IsWalking() {
 		// avoid raising false warnings if walker hasn't finished yet
@@ -109,8 +108,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 
 func candidatePaths(rootDir string, candidates []module.Module) string {
 	paths := make([]string, len(candidates))
-	for i, rm := range candidates {
-		paths[i] = humanReadablePath(rootDir, rm.Path())
+	for i, mod := range candidates {
+		paths[i] = humanReadablePath(rootDir, mod.Path())
 	}
 	return strings.Join(paths, ", ")
 }

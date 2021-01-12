@@ -148,8 +148,8 @@ func TerraformExecPath(ctx context.Context) (string, bool) {
 	return path, ok
 }
 
-func WithModuleFinder(ctx context.Context, rmcf module.ModuleFinder) context.Context {
-	return context.WithValue(ctx, ctxModuleCaFi, rmcf)
+func WithModuleFinder(ctx context.Context, mf module.ModuleFinder) context.Context {
+	return context.WithValue(ctx, ctxModuleCaFi, mf)
 }
 
 func ModuleFinder(ctx context.Context) (module.ModuleFinder, error) {
@@ -216,8 +216,8 @@ func ModuleWalker(ctx context.Context) (*module.Walker, error) {
 	return w, nil
 }
 
-func WithModuleLoader(ctx context.Context, rml module.ModuleLoader) context.Context {
-	return context.WithValue(ctx, ctxModuleLoader, rml)
+func WithModuleLoader(ctx context.Context, ml module.ModuleLoader) context.Context {
+	return context.WithValue(ctx, ctxModuleLoader, ml)
 }
 
 func ModuleLoader(ctx context.Context) (module.ModuleLoader, error) {

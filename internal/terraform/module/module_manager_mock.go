@@ -11,19 +11,19 @@ import (
 )
 
 type ModuleMockFactory struct {
-	rmm    map[string]*ModuleMock
+	mmocks map[string]*ModuleMock
 	logger *log.Logger
 	fs     filesystem.Filesystem
 }
 
-func (rmf *ModuleMockFactory) New(ctx context.Context, dir string) (*module, error) {
-	rmm, ok := rmf.rmm[dir]
+func (mmf *ModuleMockFactory) New(ctx context.Context, dir string) (*module, error) {
+	mmocks, ok := mmf.mmocks[dir]
 	if !ok {
-		return nil, fmt.Errorf("unexpected module requested: %s (%d available: %#v)", dir, len(rmf.rmm), rmf.rmm)
+		return nil, fmt.Errorf("unexpected module requested: %s (%d available: %#v)", dir, len(mmf.mmocks), mmf.mmocks)
 	}
 
-	mock := NewModuleMock(rmm, rmf.fs, dir)
-	mock.SetLogger(rmf.logger)
+	mock := NewModuleMock(mmocks, mmf.fs, dir)
+	mock.SetLogger(mmf.logger)
 	return mock, mock.discoverCaches(ctx, dir)
 }
 
@@ -34,30 +34,30 @@ type ModuleManagerMockInput struct {
 
 func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
 	return func(fs filesystem.Filesystem) ModuleManager {
-		rmm := newModuleManager(fs)
-		rmm.syncLoading = true
+		mm := newModuleManager(fs)
+		mm.syncLoading = true
 
-		rmf := &ModuleMockFactory{
-			rmm:    make(map[string]*ModuleMock, 0),
-			logger: rmm.logger,
+		mmf := &ModuleMockFactory{
+			mmocks: make(map[string]*ModuleMock, 0),
+			logger: mm.logger,
 			fs:     fs,
 		}
 
 		// mock terraform discovery
 		md := &discovery.MockDiscovery{Path: "tf-mock"}
-		rmm.tfDiscoFunc = md.LookPath
+		mm.tfDiscoFunc = md.LookPath
 
 		// mock terraform executor
 		if input != nil {
-			rmm.tfNewExecutor = input.TfExecutorFactory
+			mm.tfNewExecutor = input.TfExecutorFactory
 
 			if input.Modules != nil {
-				rmf.rmm = input.Modules
+				mmf.mmocks = input.Modules
 			}
 		}
 
-		rmm.newModule = rmf.New
+		mm.newModule = mmf.New
 
-		return rmm
+		return mm
 	}
 }

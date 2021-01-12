@@ -51,10 +51,10 @@ type ModuleManager interface {
 
 type Modules []Module
 
-func (rms Modules) Paths() []string {
-	paths := make([]string, len(rms))
-	for i, rm := range rms {
-		paths[i] = rm.Path()
+func (mods Modules) Paths() []string {
+	paths := make([]string, len(mods))
+	for i, mod := range mods {
+		paths[i] = mod.Path()
 	}
 	return paths
 }

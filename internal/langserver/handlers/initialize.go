@@ -57,7 +57,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	rmm, err := lsctx.ModuleManager(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -120,7 +120,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	if len(cfgOpts.ModulePaths) > 0 {
 		lh.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
 		for _, rawPath := range cfgOpts.ModulePaths {
-			rmPath, err := resolvePath(rootDir, rawPath)
+			modPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
 				jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type:    lsp.Warning,
@@ -128,13 +128,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				})
 				continue
 			}
-			rm, err := addAndLoadModule(rmPath)
+			mod, err := addAndLoadModule(modPath)
 			if err != nil {
 				return serverCaps, err
 			}
 
-			paths := rm.PathsToWatch()
-			lh.logger.Printf("Adding %d module paths for watching (%s)", len(paths), rmPath)
+			paths := mod.PathsToWatch()
+			lh.logger.Printf("Adding %d module paths for watching (%s)", len(paths), modPath)
 			err = w.AddPaths(paths)
 			if err != nil {
 				return serverCaps, err
@@ -146,12 +146,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	var excludeModulePaths []string
 	for _, rawPath := range cfgOpts.ExcludeModulePaths {
-		rmPath, err := resolvePath(rootDir, rawPath)
+		modPath, err := resolvePath(rootDir, rawPath)
 		if err != nil {
 			lh.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
 			continue
 		}
-		excludeModulePaths = append(excludeModulePaths, rmPath)
+		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
 	walker, err := lsctx.ModuleWalker(ctx)
@@ -166,12 +166,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	bCtx := context.Background()
 	err = walker.StartWalking(bCtx, fh.Dir(), func(ctx context.Context, dir string) error {
 		lh.logger.Printf("Adding module: %s", dir)
-		rm, err := rmm.AddAndStartLoadingModule(ctx, dir)
+		mod, err := modMgr.AddAndStartLoadingModule(ctx, dir)
 		if err != nil {
 			return err
 		}
 
-		paths := rm.PathsToWatch()
+		paths := mod.PathsToWatch()
 		lh.logger.Printf("Adding %d paths of module for watching (%s)", len(paths), dir)
 		err = w.AddPaths(paths)
 		if err != nil {

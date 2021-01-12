@@ -25,7 +25,7 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		return nil, err
 	}
 
-	rm, err := cf.ModuleByPath(dh.Dir())
+	mod, err := cf.ModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}
@@ -36,13 +36,13 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 	}()
 
 	progress.Report(ctx, "Running terraform init ...")
-	err = rm.ExecuteTerraformInit(ctx)
+	err = mod.ExecuteTerraformInit(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	progress.Report(ctx, "Detecting paths to watch ...")
-	paths := rm.PathsToWatch()
+	paths := mod.PathsToWatch()
 
 	w, err := lsctx.Watcher(ctx)
 	if err != nil {

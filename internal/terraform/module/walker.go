@@ -134,7 +134,6 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 		}
 
 		if _, ok := w.excludeModulePaths[dir]; ok {
-			w.logger.Printf("successfully exclude root_module: %s", dir)
 			return filepath.SkipDir
 		}
 

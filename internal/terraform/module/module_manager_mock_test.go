@@ -15,8 +15,8 @@ import (
 
 func TestNewModuleManagerMock_noMocks(t *testing.T) {
 	f := NewModuleManagerMock(nil)
-	rmm := f(filesystem.NewFilesystem())
-	_, err := rmm.AddAndStartLoadingModule(context.Background(), "any-path")
+	mm := f(filesystem.NewFilesystem())
+	_, err := mm.AddAndStartLoadingModule(context.Background(), "any-path")
 	if err == nil {
 		t.Fatal("expected unmocked path addition to fail")
 	}
@@ -31,8 +31,8 @@ func TestNewModuleManagerMock_mocks(t *testing.T) {
 				TfExecFactory: validTfMockCalls(t, tmpDir),
 			},
 		}})
-	rmm := f(filesystem.NewFilesystem())
-	_, err := rmm.AddAndStartLoadingModule(context.Background(), tmpDir)
+	mm := f(filesystem.NewFilesystem())
+	_, err := mm.AddAndStartLoadingModule(context.Background(), tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

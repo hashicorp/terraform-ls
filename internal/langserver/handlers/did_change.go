@@ -48,17 +48,17 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	rmf, err := lsctx.ModuleFinder(ctx)
+	mf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return err
 	}
 
-	rm, err := rmf.ModuleByPath(fh.Dir())
+	module, err := mf.ModuleByPath(fh.Dir())
 	if err != nil {
 		return err
 	}
 
-	err = rm.ParseFiles()
+	err = module.ParseFiles()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, rm.Path(), rm.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, module.Path(), module.ParsedDiagnostics(), "HCL")
 
 	return nil
 }

@@ -84,8 +84,8 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	fs := filesystem.NewFilesystem()
 
-	rmm := module.NewModuleManager(fs)
-	rmm.SetLogger(c.logger)
+	modMgr := module.NewModuleManager(fs)
+	modMgr.SetLogger(c.logger)
 	walker := module.NewWalker()
 	walker.SetLogger(c.logger)
 
@@ -94,11 +94,11 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	defer cancel()
 
 	err = walker.StartWalking(ctx, rootPath, func(ctx context.Context, dir string) error {
-		rm, err := rmm.AddAndStartLoadingModule(ctx, dir)
+		mod, err := modMgr.AddAndStartLoadingModule(ctx, dir)
 		if err != nil {
 			return err
 		}
-		<-rm.LoadingDone()
+		<-mod.LoadingDone()
 
 		return nil
 	})
@@ -108,12 +108,12 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	<-walker.Done()
 
-	modules := rmm.ListModules()
+	modules := modMgr.ListModules()
 	c.Ui.Output(fmt.Sprintf("%d modules found in total at %s", len(modules), rootPath))
-	for _, rm := range modules {
+	for _, mod := range modules {
 		errs := &multierror.Error{}
 
-		err := rm.LoadError()
+		err := mod.LoadError()
 		if err != nil {
 			var ok bool
 			errs, ok = err.(*multierror.Error)
@@ -123,7 +123,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		}
 		errs.ErrorFormat = formatErrors
 
-		modules := formatModuleRecords(rm.Modules())
+		modules := formatModuleRecords(mod.Modules())
 		subModules := fmt.Sprintf("%d modules", len(modules))
 		if len(modules) > 0 {
 			subModules += "\n"
@@ -134,7 +134,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 		c.Ui.Output(fmt.Sprintf(` - %s
    - %s
-   - %s`, rm.Path(), errs, subModules))
+   - %s`, mod.Path(), errs, subModules))
 	}
 	c.Ui.Output("")
 

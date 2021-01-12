@@ -112,13 +112,13 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
 	svc.watcher.AddChangeHook(func(ctx context.Context, file watcher.TrackedFile) error {
-		rm, err := svc.modMgr.ModuleByPath(file.Path())
+		mod, err := svc.modMgr.ModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
-		if rm.IsKnownPluginLockFile(file.Path()) {
+		if mod.IsKnownPluginLockFile(file.Path()) {
 			svc.logger.Printf("detected plugin cache change, updating schema ...")
-			err := rm.UpdateProviderSchemaCache(ctx, file)
+			err := mod.UpdateProviderSchemaCache(ctx, file)
 			if err != nil {
 				svc.logger.Printf(err.Error())
 			}
@@ -127,13 +127,13 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil
 	})
 	svc.watcher.AddChangeHook(func(_ context.Context, file watcher.TrackedFile) error {
-		rm, err := svc.modMgr.ModuleByPath(file.Path())
+		mod, err := svc.modMgr.ModuleByPath(file.Path())
 		if err != nil {
 			return err
 		}
-		if rm.IsKnownModuleManifestFile(file.Path()) {
+		if mod.IsKnownModuleManifestFile(file.Path()) {
 			svc.logger.Printf("detected module manifest change, updating ...")
-			err := rm.UpdateModuleManifest(file)
+			err := mod.UpdateModuleManifest(file)
 			if err != nil {
 				svc.logger.Printf(err.Error())
 			}
@@ -146,7 +146,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, err
 	}
 
-	rmLoader := module.NewModuleLoader(svc.sessCtx, svc.modMgr)
+	modLoader := module.NewModuleLoader(svc.sessCtx, svc.modMgr)
 	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
@@ -166,7 +166,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithModuleLoader(ctx, rmLoader)
+			ctx = lsctx.WithModuleLoader(ctx, modLoader)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)

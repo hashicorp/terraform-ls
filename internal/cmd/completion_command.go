@@ -102,17 +102,17 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	rm, err := module.NewModule(context.Background(), fs, fh.Dir())
+	module, err := module.NewModule(context.Background(), fs, fh.Dir())
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to load module: %s", err.Error()))
 		return 1
 	}
-	schema, err := rm.MergedSchema()
+	schema, err := module.MergedSchema()
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find schema: %s", err.Error()))
 		return 1
 	}
-	d, err := rm.DecoderWithSchema(schema)
+	d, err := module.DecoderWithSchema(schema)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find parser: %s", err.Error()))
 		return 1

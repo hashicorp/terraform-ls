@@ -12,19 +12,19 @@ type ModuleMock struct {
 	ProviderSchemas *tfjson.ProviderSchemas
 }
 
-func NewModuleMock(rmm *ModuleMock, fs filesystem.Filesystem, dir string) *module {
-	rm := newModule(fs, dir)
+func NewModuleMock(modMock *ModuleMock, fs filesystem.Filesystem, dir string) *module {
+	module := newModule(fs, dir)
 
 	// mock terraform discovery
 	md := &discovery.MockDiscovery{Path: "tf-mock"}
-	rm.tfDiscoFunc = md.LookPath
+	module.tfDiscoFunc = md.LookPath
 
 	// mock terraform executor
-	rm.tfNewExecutor = rmm.TfExecFactory
+	module.tfNewExecutor = modMock.TfExecFactory
 
-	if rmm.ProviderSchemas != nil {
-		rm.providerSchema = rmm.ProviderSchemas
+	if modMock.ProviderSchemas != nil {
+		module.providerSchema = modMock.ProviderSchemas
 	}
 
-	return rm
+	return module
 }
