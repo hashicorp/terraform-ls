@@ -35,7 +35,7 @@ func TerraformPlanHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirUri, err)
 	}
 	if !wasInit {
-		return nil, fmt.Errorf("%s is not an initialized module, terraform validate cannot be called", dirUri)
+		return nil, fmt.Errorf("%s is not an initialized module, terraform plan cannot be called", dirUri)
 	}
 
 	progress.Begin(ctx, "Planning")
