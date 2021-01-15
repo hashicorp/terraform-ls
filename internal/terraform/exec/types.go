@@ -25,6 +25,7 @@ type TerraformExecutor interface {
 	GetExecPath() string
 	Init(ctx context.Context, opts ...tfexec.InitOption) error
 	Format(ctx context.Context, input []byte) ([]byte, error)
+	Plan(ctx context.Context) error
 	Version(ctx context.Context) (*version.Version, map[string]*version.Version, error)
 	Validate(ctx context.Context) ([]tfjson.Diagnostic, error)
 	ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas, error)

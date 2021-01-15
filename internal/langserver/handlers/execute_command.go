@@ -14,6 +14,7 @@ import (
 var handlers = cmd.Handlers{
 	cmd.Name("rootmodules"):        command.ModulesHandler,
 	cmd.Name("terraform.init"):     command.TerraformInitHandler,
+	cmd.Name("terraform.plan"):     command.TerraformPlanHandler,
 	cmd.Name("terraform.validate"): command.TerraformValidateHandler,
 }
 

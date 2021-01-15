@@ -114,6 +114,18 @@ func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	return buf.Bytes(), e.contextfulError(ctx, "Format", err)
 }
 
+func (e *Executor) Plan(ctx context.Context) error {
+	ctx, cancel := e.withTimeout(ctx)
+	defer cancel()
+	err := e.setLogPath("Plan")
+	if err != nil {
+		return err
+	}
+
+	_, err = e.tf.Plan(ctx)
+	return e.contextfulError(ctx, "Plan", err)
+}
+
 func (e *Executor) Validate(ctx context.Context) ([]tfjson.Diagnostic, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()
