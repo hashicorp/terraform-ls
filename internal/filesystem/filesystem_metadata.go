@@ -1,7 +1,10 @@
 package filesystem
 
 import (
+	"path/filepath"
+
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func (fs *fsystem) markDocumentAsOpen(dh DocumentHandler) error {
@@ -14,6 +17,26 @@ func (fs *fsystem) markDocumentAsOpen(dh DocumentHandler) error {
 
 	fs.docMeta[dh.URI()].setOpen(true)
 	return nil
+}
+
+func (fs *fsystem) HasOpenFiles(dirPath string) (bool, error) {
+	files, err := fs.ReadDir(dirPath)
+	if err != nil {
+		return false, err
+	}
+
+	fs.docMetaMu.RLock()
+	defer fs.docMetaMu.RUnlock()
+
+	for _, fi := range files {
+		u := uri.FromPath(filepath.Join(dirPath, fi.Name()))
+		dm, ok := fs.docMeta[u]
+		if ok && dm.IsOpen() {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (fs *fsystem) createDocumentMetadata(dh DocumentHandler, text []byte) error {

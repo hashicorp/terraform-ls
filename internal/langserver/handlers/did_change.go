@@ -7,6 +7,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
@@ -48,17 +49,17 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return err
 	}
 
-	module, err := mf.ModuleByPath(fh.Dir())
+	mod, err := modMgr.ModuleByPath(fh.Dir())
 	if err != nil {
 		return err
 	}
 
-	err = module.ParseFiles()
+	err = modMgr.EnqueueModuleOpWait(mod.Path(), module.OpTypeParseConfiguration)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, module.Path(), module.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, mod.Path(), mod.Diagnostics(), "HCL")
 
 	return nil
 }

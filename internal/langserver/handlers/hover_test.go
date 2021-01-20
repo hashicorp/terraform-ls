@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -43,9 +42,9 @@ func TestHover_withValidData(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -76,9 +75,10 @@ func TestHover_withValidData(t *testing.T) {
 							nil,
 						},
 					},
-				}),
+				},
 			},
-		}}))
+		},
+	}))
 	stop := ls.Start(t)
 	defer stop()
 

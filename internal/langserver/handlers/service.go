@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"time"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
@@ -17,8 +16,9 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
-	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 type service struct {
@@ -30,18 +30,21 @@ type service struct {
 	stopSession context.CancelFunc
 
 	fs               filesystem.Filesystem
-	watcher          watcher.Watcher
+	watcher          module.Watcher
 	walker           *module.Walker
 	modMgr           module.ModuleManager
 	newModuleManager module.ModuleManagerFactory
-	newWatcher       watcher.WatcherFactory
+	newWatcher       module.WatcherFactory
 	newWalker        module.WalkerFactory
+	tfDiscoFunc      discovery.DiscoveryFunc
+	tfExecFactory    exec.ExecutorFactory
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
 	fs := filesystem.NewFilesystem()
+	d := &discovery.Discovery{}
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
@@ -51,8 +54,10 @@ func NewSession(srvCtx context.Context) session.Session {
 		sessCtx:          sessCtx,
 		stopSession:      stopSession,
 		newModuleManager: module.NewModuleManager,
-		newWatcher:       watcher.NewWatcher,
+		newWatcher:       module.NewWatcher,
 		newWalker:        module.NewWalker,
+		tfDiscoFunc:      d.LookPath,
+		tfExecFactory:    exec.NewExecutor,
 	}
 }
 
@@ -77,76 +82,42 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	svc.modMgr = svc.newModuleManager(svc.fs)
-	svc.modMgr.SetLogger(svc.logger)
-
-	svc.logger.Printf("Worker pool size set to %d", svc.modMgr.WorkerPoolSize())
-
-	tr := newTickReporter(5 * time.Second)
-	tr.AddReporter(func() {
-		queueSize := svc.modMgr.WorkerQueueSize()
-		if queueSize < 1 {
-			return
-		}
-		svc.logger.Printf("Root modules waiting to be loaded: %d", queueSize)
-	})
-	tr.StartReporting(svc.sessCtx)
-
-	svc.walker = svc.newWalker()
-
 	// The following is set via CLI flags, hence available in the server context
+	execOpts := &exec.ExecutorOpts{}
 	if path, ok := lsctx.TerraformExecPath(svc.srvCtx); ok {
-		svc.modMgr.SetTerraformExecPath(path)
+		execOpts.ExecPath = path
+	} else {
+		tfExecPath, err := svc.tfDiscoFunc()
+		if err == nil {
+			execOpts.ExecPath = tfExecPath
+		}
 	}
 	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
-		svc.modMgr.SetTerraformExecLogPath(path)
+		execOpts.ExecLogPath = path
 	}
 	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
-		svc.modMgr.SetTerraformExecTimeout(timeout)
+		execOpts.Timeout = timeout
 	}
 
-	ww, err := svc.newWatcher()
+	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
+	svc.sessCtx = exec.WithExecutorFactory(svc.sessCtx, svc.tfExecFactory)
+
+	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs)
+	svc.modMgr.SetLogger(svc.logger)
+
+	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
+
+	ww, err := svc.newWatcher(svc.fs, svc.modMgr)
 	if err != nil {
 		return nil, err
 	}
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
-	svc.watcher.AddChangeHook(func(ctx context.Context, file watcher.TrackedFile) error {
-		mod, err := svc.modMgr.ModuleByPath(file.Path())
-		if err != nil {
-			return err
-		}
-		if mod.IsKnownPluginLockFile(file.Path()) {
-			svc.logger.Printf("detected plugin cache change, updating schema ...")
-			err := mod.UpdateProviderSchemaCache(ctx, file)
-			if err != nil {
-				svc.logger.Printf(err.Error())
-			}
-		}
-
-		return nil
-	})
-	svc.watcher.AddChangeHook(func(_ context.Context, file watcher.TrackedFile) error {
-		mod, err := svc.modMgr.ModuleByPath(file.Path())
-		if err != nil {
-			return err
-		}
-		if mod.IsKnownModuleManifestFile(file.Path()) {
-			svc.logger.Printf("detected module manifest change, updating ...")
-			err := mod.UpdateModuleManifest(file)
-			if err != nil {
-				svc.logger.Printf(err.Error())
-			}
-		}
-
-		return nil
-	})
 	err = svc.watcher.Start()
 	if err != nil {
 		return nil, err
 	}
 
-	modLoader := module.NewModuleLoader(svc.sessCtx, svc.modMgr)
 	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
@@ -166,7 +137,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithModuleLoader(ctx, modLoader)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
@@ -191,7 +161,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -259,7 +229,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithTerraformFormatterFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
 		},
@@ -284,6 +256,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = exec.WithExecutorOpts(ctx, execOpts)
 
 			return handle(ctx, req, lh.TextDocumentDidSave)
 		},
@@ -294,11 +267,13 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
 			return handle(ctx, req, lh.WorkspaceExecuteCommand)
 		},

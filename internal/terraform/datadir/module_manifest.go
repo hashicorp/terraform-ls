@@ -1,4 +1,4 @@
-package module
+package datadir
 
 import (
 	"encoding/json"
@@ -8,14 +8,19 @@ import (
 	"strings"
 
 	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
-func moduleManifestFilePath(dir string) string {
-	return filepath.Join(
-		dir,
-		".terraform",
-		"modules",
-		"modules.json")
+func ModuleManifestFilePath(fs filesystem.Filesystem, modulePath string) (string, bool) {
+	manifestPath := filepath.Join(
+		append([]string{modulePath},
+			manifestPathElements...)...)
+
+	fi, err := fs.Stat(manifestPath)
+	if err == nil && fi.Mode().IsRegular() {
+		return manifestPath, true
+	}
+	return "", false
 }
 
 // The following structs were copied from terraform's
@@ -90,15 +95,16 @@ func (r *ModuleRecord) IsExternal() bool {
 	return false
 }
 
-// moduleManifest is an internal struct used only to assist in our JSON
-// serialization of manifest snapshots. It should not be used for any other
-// purpose.
-type moduleManifest struct {
+type ModuleManifest struct {
 	rootDir string
 	Records []ModuleRecord `json:"Modules"`
 }
 
-func ParseModuleManifestFromFile(path string) (*moduleManifest, error) {
+func (mm *ModuleManifest) RootDir() string {
+	return mm.rootDir
+}
+
+func ParseModuleManifestFromFile(path string) (*ModuleManifest, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -108,13 +114,17 @@ func ParseModuleManifestFromFile(path string) (*moduleManifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	mm.rootDir = trimLockFilePath(path)
+	rootDir, ok := ModulePath(path)
+	if !ok {
+		return nil, fmt.Errorf("failed to detect module path: %s", path)
+	}
+	mm.rootDir = filepath.Clean(rootDir)
 
 	return mm, nil
 }
 
-func parseModuleManifest(b []byte) (*moduleManifest, error) {
-	mm := moduleManifest{}
+func parseModuleManifest(b []byte) (*ModuleManifest, error) {
+	mm := ModuleManifest{}
 	err := json.Unmarshal(b, &mm)
 	if err != nil {
 		return nil, err

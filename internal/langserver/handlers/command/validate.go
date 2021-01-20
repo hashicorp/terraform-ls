@@ -7,9 +7,11 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -20,25 +22,29 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
-	cf, err := lsctx.ModuleFinder(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mod, err := cf.ModuleByPath(dh.Dir())
+	mod, err := modMgr.ModuleByPath(dh.Dir())
+	if err != nil {
+		if module.IsModuleNotFound(err) {
+			mod, err = modMgr.AddModule(dh.Dir())
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
 	if err != nil {
 		return nil, err
 	}
 
-	wasInit, err := mod.WasInitialized()
-	if err != nil {
-		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirUri, err)
-	}
-	if !wasInit {
-		return nil, fmt.Errorf("%s is not an initialized module, terraform validate cannot be called", dirUri)
-	}
-
-	diags, err := lsctx.Diagnostics(ctx)
+	notifier, err := lsctx.Diagnostics(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +54,14 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		progress.End(ctx, "Finished")
 	}()
 	progress.Report(ctx, "Running terraform validate ...")
-	hclDiags, err := mod.ExecuteTerraformValidate(ctx)
+	jsonDiags, err := tfExec.Validate(ctx)
 	if err != nil {
 		return nil, err
 	}
-	diags.PublishHCLDiags(ctx, mod.Path(), hclDiags, "terraform validate")
+
+	diags := diagnostics.HCLDiagsFromJSON(jsonDiags)
+
+	notifier.PublishHCLDiags(ctx, mod.Path(), diags, "terraform validate")
 
 	return nil, nil
 }

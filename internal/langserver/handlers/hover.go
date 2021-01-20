@@ -6,6 +6,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocumentPositionParams) (*lsp.Hover, error) {
@@ -34,15 +35,16 @@ func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocum
 		return nil, err
 	}
 
-	schema, err := mf.SchemaForPath(file.Dir())
+	schema, err := mf.SchemaForModule(file.Dir())
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := mod.DecoderWithSchema(schema)
+	d, err := module.DecoderForModule(mod)
 	if err != nil {
 		return nil, err
 	}
+	d.SetSchema(schema)
 
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params, file)
 	if err != nil {

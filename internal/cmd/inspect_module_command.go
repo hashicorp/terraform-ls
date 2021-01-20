@@ -16,6 +16,7 @@ import (
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
 )
@@ -84,46 +85,50 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	fs := filesystem.NewFilesystem()
 
-	modMgr := module.NewModuleManager(fs)
+	ctx := context.Background()
+	modMgr := module.NewSyncModuleManager(ctx, fs)
 	modMgr.SetLogger(c.logger)
-	walker := module.NewWalker()
+
+	walker := module.SyncWalker(fs, modMgr)
 	walker.SetLogger(c.logger)
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),
 		c.logger, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	err = walker.StartWalking(ctx, rootPath, func(ctx context.Context, dir string) error {
-		mod, err := modMgr.AddAndStartLoadingModule(ctx, dir)
-		if err != nil {
-			return err
-		}
-		<-mod.LoadingDone()
-
-		return nil
-	})
+	err = walker.StartWalking(ctx, rootPath)
 	if err != nil {
 		return err
 	}
-
-	<-walker.Done()
 
 	modules := modMgr.ListModules()
 	c.Ui.Output(fmt.Sprintf("%d modules found in total at %s", len(modules), rootPath))
 	for _, mod := range modules {
 		errs := &multierror.Error{}
 
-		err := mod.LoadError()
+		_, err = mod.TerraformVersion()
 		if err != nil {
-			var ok bool
-			errs, ok = err.(*multierror.Error)
-			if !ok {
-				return err
-			}
+			multierror.Append(errs, err)
 		}
+
+		_, err := mod.ProviderSchema()
+		if err != nil {
+			multierror.Append(errs, err)
+		}
+
+		_, err = mod.ModuleManifest()
+		if err != nil {
+			multierror.Append(errs, err)
+		}
+
+		_, err = mod.ParsedFiles()
+		if err != nil {
+			multierror.Append(errs, err)
+		}
+
 		errs.ErrorFormat = formatErrors
 
-		modules := formatModuleRecords(mod.Modules())
+		modules := formatModuleRecords(mod.ModuleCalls())
 		subModules := fmt.Sprintf("%d modules", len(modules))
 		if len(modules) > 0 {
 			subModules += "\n"
@@ -153,7 +158,7 @@ func formatErrors(errors []error) string {
 	return strings.TrimSpace(out)
 }
 
-func formatModuleRecords(mds []module.ModuleRecord) []string {
+func formatModuleRecords(mds []datadir.ModuleRecord) []string {
 	out := make([]string, 0)
 	for _, m := range mds {
 		if m.IsRoot() {

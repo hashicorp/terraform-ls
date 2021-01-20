@@ -9,7 +9,8 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) {
@@ -18,9 +19,9 @@ func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) 
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -62,9 +63,9 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -128,15 +129,11 @@ func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 	prod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "prod"))
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			dev.Dir(): {
-				TfExecFactory: validTfMockCalls(),
-			},
-			staging.Dir(): {
-				TfExecFactory: validTfMockCalls(),
-			},
-			prod.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				dev.Dir():     validTfMockCalls(),
+				staging.Dir(): validTfMockCalls(),
+				prod.Dir():    validTfMockCalls(),
 			},
 		},
 	}))

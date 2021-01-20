@@ -57,16 +57,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	modMgr, err := lsctx.ModuleManager(ctx)
-	if err != nil {
-		return serverCaps, err
-	}
-
-	addAndLoadModule, err := lsctx.ModuleLoader(ctx)
-	if err != nil {
-		return serverCaps, err
-	}
-
 	w, err := lsctx.Watcher(ctx)
 	if err != nil {
 		return serverCaps, err
@@ -128,14 +118,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				})
 				continue
 			}
-			mod, err := addAndLoadModule(modPath)
-			if err != nil {
-				return serverCaps, err
-			}
 
-			paths := mod.PathsToWatch()
-			lh.logger.Printf("Adding %d module paths for watching (%s)", len(paths), modPath)
-			err = w.AddPaths(paths)
+			err = w.AddModule(modPath)
 			if err != nil {
 				return serverCaps, err
 			}
@@ -164,22 +148,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
 	bCtx := context.Background()
-	err = walker.StartWalking(bCtx, fh.Dir(), func(ctx context.Context, dir string) error {
-		lh.logger.Printf("Adding module: %s", dir)
-		mod, err := modMgr.AddAndStartLoadingModule(ctx, dir)
-		if err != nil {
-			return err
-		}
-
-		paths := mod.PathsToWatch()
-		lh.logger.Printf("Adding %d paths of module for watching (%s)", len(paths), dir)
-		err = w.AddPaths(paths)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	err = walker.StartWalking(bCtx, fh.Dir())
 
 	return serverCaps, err
 }

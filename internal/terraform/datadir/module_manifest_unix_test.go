@@ -1,4 +1,6 @@
-package module
+// +build !windows
+
+package datadir
 
 import (
 	"encoding/json"
@@ -24,7 +26,7 @@ func TestRecord_UnmarshalJSON_basic(t *testing.T) {
 		SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
 		VersionStr: "3.10.0",
 		Version:    expectedVersion,
-		Dir:        `.terraform\modules\web_server_sg\terraform-aws-security-group-3.10.0\modules\http-80`,
+		Dir:        ".terraform/modules/web_server_sg/terraform-aws-security-group-3.10.0/modules/http-80",
 	}
 	if diff := cmp.Diff(expectedRecord, record); diff != "" {
 		t.Fatalf("version mismatch: %s", diff)
@@ -38,7 +40,7 @@ func TestRecord_UnmarshalJSON_dirtyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedDir := `.terraform\modules\web_server_sg\terraform-aws-security-group-3.10.0\modules\http-80`
+	expectedDir := ".terraform/modules/web_server_sg/terraform-aws-security-group-3.10.0/modules/http-80"
 	if expectedDir != record.Dir {
 		t.Fatalf("expected dir: %s, given: %s", expectedDir, record.Dir)
 	}

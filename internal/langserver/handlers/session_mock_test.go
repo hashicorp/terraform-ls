@@ -9,15 +9,14 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
-	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 type MockSessionInput struct {
-	Modules           map[string]*module.ModuleMock
-	Filesystem        filesystem.Filesystem
-	TfExecutorFactory exec.ExecutorFactory
+	Filesystem     filesystem.Filesystem
+	TerraformCalls *exec.TerraformMockCalls
 }
 
 type mockSession struct {
@@ -34,8 +33,7 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	var input *module.ModuleManagerMockInput
 	if ms.mockInput != nil {
 		input = &module.ModuleManagerMockInput{
-			Modules:           ms.mockInput.Modules,
-			TfExecutorFactory: ms.mockInput.TfExecutorFactory,
+			Logger: testLogger(),
 		}
 	}
 
@@ -46,6 +44,15 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		fs = filesystem.NewFilesystem()
 	}
 
+	var tfCalls *exec.TerraformMockCalls
+	if ms.mockInput != nil && ms.mockInput.TerraformCalls != nil {
+		tfCalls = ms.mockInput.TerraformCalls
+	}
+
+	d := &discovery.MockDiscovery{
+		Path: "tf-mock",
+	}
+
 	svc := &service{
 		logger:           testLogger(),
 		srvCtx:           srvCtx,
@@ -53,8 +60,10 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		stopSession:      ms.stop,
 		fs:               fs,
 		newModuleManager: module.NewModuleManagerMock(input),
-		newWatcher:       watcher.MockWatcher(),
-		newWalker:        module.MockWalker,
+		newWatcher:       module.MockWatcher(),
+		newWalker:        module.SyncWalker,
+		tfDiscoFunc:      d.LookPath,
+		tfExecFactory:    exec.NewMockExecutor(tfCalls),
 	}
 
 	return svc

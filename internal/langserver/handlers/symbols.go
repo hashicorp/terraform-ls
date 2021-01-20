@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.DocumentSymbolParams) ([]lsp.SymbolInformation, error) {
@@ -29,10 +29,10 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 
 	mod, err := mf.ModuleByPath(file.Dir())
 	if err != nil {
-		return symbols, fmt.Errorf("finding compatible decoder failed: %w", err)
+		return symbols, err
 	}
 
-	d, err := mod.Decoder()
+	d, err := module.DecoderForModule(mod)
 	if err != nil {
 		return symbols, err
 	}

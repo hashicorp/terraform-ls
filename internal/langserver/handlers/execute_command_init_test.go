@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -19,9 +18,9 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -61,7 +60,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
-	tfMockCalls := exec.NewMockExecutor([]*mock.Call{
+	tfMockCalls := []*mock.Call{
 		{
 			Method:        "Version",
 			Repeatability: 1,
@@ -91,12 +90,12 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 				nil,
 			},
 		},
-	})
+	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: tfMockCalls,
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): tfMockCalls,
 			},
 		},
 	}))
@@ -141,7 +140,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	tmpDir := TempDir(t)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
-	tfMockCalls := exec.NewMockExecutor([]*mock.Call{
+	tfMockCalls := []*mock.Call{
 		{
 			Method:        "Version",
 			Repeatability: 1,
@@ -171,12 +170,12 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 				errors.New("something bad happened"),
 			},
 		},
-	})
+	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: tfMockCalls,
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): tfMockCalls,
 			},
 		},
 	}))

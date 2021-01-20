@@ -40,6 +40,7 @@ type DocumentStorage interface {
 	GetDocument(DocumentHandler) (Document, error)
 	CloseAndRemoveDocument(DocumentHandler) error
 	ChangeDocument(VersionedDocumentHandler, DocumentChanges) error
+	HasOpenFiles(path string) (bool, error)
 }
 
 type Filesystem interface {
@@ -51,6 +52,7 @@ type Filesystem interface {
 	ReadFile(name string) ([]byte, error)
 	ReadDir(name string) ([]os.FileInfo, error)
 	Open(name string) (File, error)
+	Stat(name string) (os.FileInfo, error)
 }
 
 // File represents an open file in FS

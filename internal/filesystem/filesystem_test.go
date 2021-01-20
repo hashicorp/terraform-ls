@@ -294,6 +294,29 @@ func TestFilesystem_ReadDir(t *testing.T) {
 	}
 }
 
+func TestFilesystem_ReadDir_memFsOnly(t *testing.T) {
+	fs := NewFilesystem()
+
+	tmpDir := t.TempDir()
+
+	fh := testHandlerFromPath(filepath.Join(tmpDir, "memfile"))
+	err := fs.CreateDocument(fh, []byte("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fis, err := fs.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedFis := []string{"memfile"}
+	names := namesFromFileInfos(fis)
+	if diff := cmp.Diff(expectedFis, names); diff != "" {
+		t.Fatalf("file list mismatch: %s", diff)
+	}
+}
+
 func namesFromFileInfos(fis []os.FileInfo) []string {
 	names := make([]string, len(fis), len(fis))
 	for i, fi := range fis {
@@ -433,6 +456,86 @@ func TestFilesystem_Create_memOnly(t *testing.T) {
 	}
 }
 
+func TestFilesystem_CreateDocument_missingParentDir(t *testing.T) {
+	fs := NewFilesystem()
+
+	tmpDir := t.TempDir()
+	testPath := filepath.Join(tmpDir, "foo", "bar", "test.tf")
+	fh := testHandlerFromPath(testPath)
+
+	err := fs.CreateDocument(fh, []byte("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fooPath := filepath.Join(tmpDir, "foo")
+	fi, err := fs.memFs.Stat(fooPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fi.IsDir() {
+		t.Fatalf("expected %q to be a dir", fooPath)
+	}
+
+	barPath := filepath.Join(tmpDir, "foo", "bar")
+	fi, err = fs.memFs.Stat(barPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fi.IsDir() {
+		t.Fatalf("expected %q to be a dir", barPath)
+	}
+}
+
+func TestFilesystem_HasOpenFiles(t *testing.T) {
+	fs := NewFilesystem()
+
+	tmpDir := t.TempDir()
+
+	notOpenHandler := filepath.Join(tmpDir, "not-open.tf")
+	noFh := testHandlerFromPath(notOpenHandler)
+	err := fs.CreateDocument(noFh, []byte("test1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	of, err := fs.HasOpenFiles(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if of {
+		t.Fatalf("expected no open files for %s", tmpDir)
+	}
+
+	openHandler := filepath.Join(tmpDir, "open.tf")
+	ofh := testHandlerFromPath(openHandler)
+	err = fs.CreateAndOpenDocument(ofh, []byte("test2"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	of, err = fs.HasOpenFiles(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !of {
+		t.Fatalf("expected open files for %s", tmpDir)
+	}
+
+	err = fs.CloseAndRemoveDocument(ofh)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	of, err = fs.HasOpenFiles(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if of {
+		t.Fatalf("expected no open files for %s", tmpDir)
+	}
+}
+
 func TempDir(t *testing.T) string {
 	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
 
@@ -478,6 +581,11 @@ func (fh *testHandler) Dir() string {
 func (fh *testHandler) Filename() string {
 	return ""
 }
+
+func (fh *testHandler) IsOpen() bool {
+	return false
+}
+
 func (fh *testHandler) Version() int {
 	return 0
 }

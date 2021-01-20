@@ -46,7 +46,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	mod, err = modMgr.ModuleByPath(f.Dir())
 	if err != nil {
 		if module.IsModuleNotFound(err) {
-			mod, err = modMgr.AddAndStartLoadingModule(ctx, f.Dir())
+			mod, err = modMgr.AddModule(f.Dir())
 			if err != nil {
 				return err
 			}
@@ -60,23 +60,39 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	err = mod.ParseFiles()
+	modMgr.EnqueueModuleOpWait(mod.Path(), module.OpTypeParseConfiguration)
+
+	if mod.TerraformVersionState() == module.OpStateUnknown {
+		modMgr.EnqueueModuleOp(mod.Path(), module.OpTypeGetTerraformVersion)
+	}
+
+	watcher, err := lsctx.Watcher(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to parse files: %w", err)
+		return err
+	}
+
+	if !watcher.IsModuleWatched(mod.Path()) {
+		err := watcher.AddModule(mod.Path())
+		if err != nil {
+			return err
+		}
 	}
 
 	diags, err := lsctx.Diagnostics(ctx)
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, mod.Path(), mod.ParsedDiagnostics(), "HCL")
+	diags.PublishHCLDiags(ctx, mod.Path(), mod.Diagnostics(), "HCL")
 
-	candidates := modMgr.ModuleCandidatesByPath(f.Dir())
+	sources, err := modMgr.SchemaSourcesForModule(f.Dir())
+	if err != nil {
+		return err
+	}
 
-	if walker.IsWalking() {
-		// avoid raising false warnings if walker hasn't finished yet
+	if walker.IsWalking() || mod.ProviderSchemaState() == module.OpStateLoading {
+		// avoid raising false warnings if operations are still in-flight
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
-	} else if len(candidates) == 0 {
+	} else if len(sources) == 0 {
 		// TODO: Only notify once per f.Dir() per session
 		dh := ilsp.FileHandlerFromDirPath(f.Dir())
 		go func() {
@@ -90,12 +106,12 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}()
 	}
 
-	if len(candidates) > 1 {
-		candidateDir := humanReadablePath(rootDir, candidates[0].Path())
+	if len(sources) > 1 {
+		candidateDir := humanReadablePath(rootDir, sources[0].Path())
 
 		msg := fmt.Sprintf("Alternative schema source found for %s (%s), picked: %s."+
 			" You can set an explicit module path in your settings.",
-			readableDir, candidatePaths(rootDir, candidates[1:]),
+			readableDir, candidatePaths(rootDir, sources[1:]),
 			candidateDir)
 		return jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
 			Type:    lsp.Warning,
@@ -106,10 +122,10 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	return nil
 }
 
-func candidatePaths(rootDir string, candidates []module.Module) string {
-	paths := make([]string, len(candidates))
-	for i, mod := range candidates {
-		paths[i] = humanReadablePath(rootDir, mod.Path())
+func candidatePaths(rootDir string, sources []module.SchemaSource) string {
+	paths := make([]string, len(sources))
+	for i, source := range sources {
+		paths[i] = humanReadablePath(rootDir, source.Path())
 	}
 	return strings.Join(paths, ", ")
 }

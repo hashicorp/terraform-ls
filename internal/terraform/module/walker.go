@@ -8,6 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 )
 
 var (
@@ -24,8 +27,11 @@ var (
 )
 
 type Walker struct {
-	logger *log.Logger
-	sync   bool
+	fs      filesystem.Filesystem
+	modMgr  ModuleManager
+	watcher Watcher
+	logger  *log.Logger
+	sync    bool
 
 	walking    bool
 	walkingMu  *sync.RWMutex
@@ -35,8 +41,10 @@ type Walker struct {
 	excludeModulePaths map[string]bool
 }
 
-func NewWalker() *Walker {
+func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
 	return &Walker{
+		fs:        fs,
+		modMgr:    modMgr,
 		logger:    discardLogger,
 		walkingMu: &sync.RWMutex{},
 		doneCh:    make(chan struct{}, 0),
@@ -47,14 +55,16 @@ func (w *Walker) SetLogger(logger *log.Logger) {
 	w.logger = logger
 }
 
+func (w *Walker) SetWatcher(watcher Watcher) {
+	w.watcher = watcher
+}
+
 func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
 	w.excludeModulePaths = make(map[string]bool)
 	for _, path := range excludeModulePaths {
 		w.excludeModulePaths[path] = true
 	}
 }
-
-type WalkFunc func(ctx context.Context, rootModulePath string) error
 
 func (w *Walker) Stop() {
 	if w.cancelFunc != nil {
@@ -73,11 +83,7 @@ func (w *Walker) setWalking(isWalking bool) {
 	w.walking = isWalking
 }
 
-func (w *Walker) Done() <-chan struct{} {
-	return w.doneCh
-}
-
-func (w *Walker) StartWalking(ctx context.Context, path string, wf WalkFunc) error {
+func (w *Walker) StartWalking(ctx context.Context, path string) error {
 	if w.IsWalking() {
 		return fmt.Errorf("walker is already running")
 	}
@@ -89,18 +95,18 @@ func (w *Walker) StartWalking(ctx context.Context, path string, wf WalkFunc) err
 
 	if w.sync {
 		w.logger.Printf("synchronously walking through %s", path)
-		return w.walk(ctx, path, wf)
+		return w.walk(ctx, path)
 	}
 
-	go func(w *Walker, path string, wf WalkFunc) {
+	go func(w *Walker, path string) {
 		w.logger.Printf("asynchronously walking through %s", path)
-		err := w.walk(ctx, path, wf)
+		err := w.walk(ctx, path)
 		if err != nil {
 			w.logger.Printf("async walking through %s failed: %s", path, err)
 			return
 		}
 		w.logger.Printf("async walking through %s finished", path)
-	}(w, path, wf)
+	}(w, path)
 
 	return nil
 }
@@ -112,9 +118,12 @@ func (w *Walker) IsWalking() bool {
 	return w.walking
 }
 
-func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
+func (w *Walker) walk(ctx context.Context, rootPath string) error {
 	defer w.Stop()
 
+	// We ignore the passed FS and instead read straight from OS FS
+	// because that would require reimplementing filepath.Walk and
+	// the data directory should never be on the virtual filesystem anyway
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		select {
 		case <-w.doneCh:
@@ -137,9 +146,45 @@ func (w *Walker) walk(ctx context.Context, rootPath string, wf WalkFunc) error {
 			return filepath.SkipDir
 		}
 
-		if info.Name() == ".terraform" {
+		if info.Name() == datadir.DataDirName {
 			w.logger.Printf("found module %s", dir)
-			return wf(ctx, dir)
+
+			_, err := w.modMgr.ModuleByPath(dir)
+			if err != nil {
+				if IsModuleNotFound(err) {
+					_, err := w.modMgr.AddModule(dir)
+					if err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
+			}
+
+			err = w.modMgr.EnqueueModuleOp(dir, OpTypeGetTerraformVersion)
+			if err != nil {
+				return err
+			}
+
+			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
+			if dataDir.ModuleManifestPath != "" {
+				err = w.modMgr.EnqueueModuleOp(dir, OpTypeParseModuleManifest)
+				if err != nil {
+					return err
+				}
+			}
+			if dataDir.PluginLockFilePath != "" {
+				err = w.modMgr.EnqueueModuleOp(dir, OpTypeObtainSchema)
+				if err != nil {
+					return err
+				}
+			}
+
+			if w.watcher != nil {
+				w.watcher.AddModule(dir)
+			}
+
+			return nil
 		}
 
 		if !info.IsDir() {

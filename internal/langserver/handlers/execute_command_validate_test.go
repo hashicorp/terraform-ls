@@ -7,7 +7,8 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestLangServer_workspaceExecuteCommand_validate_argumentError(t *testing.T) {
@@ -15,9 +16,9 @@ func TestLangServer_workspaceExecuteCommand_validate_argumentError(t *testing.T)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
 			},
 		},
 	}))
