@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -48,7 +49,7 @@ func TestLangServer_workspaceExecuteCommand_plan_basic(t *testing.T) {
 	})
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		RootModules: map[string]*rootmodule.RootModuleMock{
+		Modules: map[string]*module.ModuleMock{
 			tmpDir.Dir(): {
 				TfExecFactory: tfMockCalls,
 			},
