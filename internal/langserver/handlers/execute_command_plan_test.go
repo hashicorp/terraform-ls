@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/rootmodule"
 	"github.com/stretchr/testify/mock"
 )
 
