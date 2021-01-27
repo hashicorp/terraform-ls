@@ -315,14 +315,14 @@ func (m *module) ExecuteTerraformInit(ctx context.Context) error {
 	return m.tfExec.Init(ctx)
 }
 
-func (rm *rootModule) ExecuteTerraformPlan(ctx context.Context) error {
-	if !rm.IsTerraformAvailable() {
-		if err := rm.discoverTerraformExecutor(ctx); err != nil {
+func (m *module) ExecuteTerraformPlan(ctx context.Context) error {
+	if !m.IsTerraformAvailable() {
+		if err := m.discoverTerraformExecutor(ctx); err != nil {
 			return err
 		}
 	}
 
-	return rm.tfExec.Plan(ctx)
+	return m.tfExec.Plan(ctx)
 }
 
 func (m *module) ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error) {

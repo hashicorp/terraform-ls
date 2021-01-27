@@ -59,7 +59,7 @@ func TestLangServer_workspaceExecuteCommand_plan_basic(t *testing.T) {
 	defer stop()
 
 	ls.Call(t, &langserver.CallRequest{
-		Method: "initialized",
+		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,

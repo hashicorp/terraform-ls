@@ -82,6 +82,7 @@ type Module interface {
 	HasTerraformDiscoveryFinished() bool
 	IsTerraformAvailable() bool
 	ExecuteTerraformInit(ctx context.Context) error
+	ExecuteTerraformPlan(ctx context.Context) error
 	ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error)
 	Modules() []ModuleRecord
 	HumanReadablePath(string) string

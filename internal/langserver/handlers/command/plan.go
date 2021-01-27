@@ -13,29 +13,29 @@ import (
 )
 
 func TerraformPlanHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
-	dirUri, ok := args.GetString("uri")
-	if !ok || dirUri == "" {
+	dirURI, ok := args.GetString("uri")
+	if !ok || dirURI == "" {
 		return nil, fmt.Errorf("%w: expected dir uri argument to be set", code.InvalidParams.Err())
 	}
 
-	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
+	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirURI))
 
-	cf, err := lsctx.RootModuleFinder(ctx)
+	cf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rm, err := cf.RootModuleByPath(dh.Dir())
+	m, err := cf.ModuleByPath(dh.Dir())
 	if err != nil {
 		return nil, err
 	}
 
-	wasInit, err := rm.WasInitialized()
+	wasInit, err := m.WasInitialized()
 	if err != nil {
-		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirUri, err)
+		return nil, fmt.Errorf("error checking if %s was initialized: %s", dirURI, err)
 	}
 	if !wasInit {
-		return nil, fmt.Errorf("%s is not an initialized module, terraform plan cannot be called", dirUri)
+		return nil, fmt.Errorf("%s is not an initialized module, terraform plan cannot be called", dirURI)
 	}
 
 	progress.Begin(ctx, "Planning")
@@ -44,7 +44,7 @@ func TerraformPlanHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 	}()
 
 	progress.Report(ctx, "Running terraform plan ...")
-	err = rm.ExecuteTerraformPlan(ctx)
+	err = m.ExecuteTerraformPlan(ctx)
 	if err != nil {
 		return nil, err
 	}
