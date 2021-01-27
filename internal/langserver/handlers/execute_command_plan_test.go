@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -15,6 +16,7 @@ import (
 func TestLangServer_workspaceExecuteCommand_plan_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	InitPluginCache(t, tmpDir.Dir())
 
 	tfMockCalls := exec.NewMockExecutor([]*mock.Call{
 		{
@@ -34,6 +36,17 @@ func TestLangServer_workspaceExecuteCommand_plan_basic(t *testing.T) {
 			Repeatability: 1,
 			ReturnArguments: []interface{}{
 				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
+			},
+			ReturnArguments: []interface{}{
+				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				nil,
 			},
 		},
 		{
