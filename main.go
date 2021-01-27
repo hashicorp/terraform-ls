@@ -43,6 +43,12 @@ func main() {
 				Ui: ui,
 			}, nil
 		},
+		"version": func() (cli.Command, error) {
+			return &cmd.VersionCommand{
+				Ui:      ui,
+				Version: VersionString(),
+			}, nil
+		},
 	}
 
 	exitStatus, err := c.Run()
