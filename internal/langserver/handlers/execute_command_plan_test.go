@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
@@ -12,6 +13,93 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestLangServer_workspaceExecuteCommand_plan_argumentError(t *testing.T) {
+	tmpDir := TempDir(t)
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	InitPluginCache(t, tmpDir.Dir())
+
+	tfMockCalls := exec.NewMockExecutor([]*mock.Call{
+		{
+			Method:        "Version",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
+			},
+			ReturnArguments: []interface{}{
+				version.Must(version.NewVersion("0.12.0")),
+				nil,
+				nil,
+			},
+		},
+		{
+			Method:        "GetExecPath",
+			Repeatability: 1,
+			ReturnArguments: []interface{}{
+				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
+			},
+			ReturnArguments: []interface{}{
+				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				nil,
+			},
+		},
+		{
+			Method:        "Plan",
+			Repeatability: 1,
+			Arguments: []interface{}{
+				mock.AnythingOfType(""),
+			},
+			ReturnArguments: []interface{}{
+				nil,
+			},
+		},
+	})
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		Modules: map[string]*module.ModuleMock{
+			tmpDir.Dir(): {
+				TfExecFactory: tfMockCalls,
+			},
+		},
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI())})
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "provider \"github\" {}",
+			"uri": %q
+		}
+	}`, testFileURI)})
+
+	ls.CallAndExpectError(t, &langserver.CallRequest{
+		Method: "workspace/executeCommand",
+		ReqParams: fmt.Sprintf(`{
+		"command": %q
+	}`, cmd.Name("terraform.plan"))}, code.InvalidParams.Err())
+}
 
 func TestLangServer_workspaceExecuteCommand_plan_basic(t *testing.T) {
 	tmpDir := TempDir(t)
