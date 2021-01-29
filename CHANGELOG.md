@@ -1,3 +1,9 @@
+## 0.13.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - cmd: Introduce version JSON output ([#386](https://github.com/hashicorp/terraform-ls/pull/386))
+
 ## 0.12.1 (12 January 2021)
 
 BUG FIXES:
