@@ -2,62 +2,78 @@ package module
 
 import (
 	"context"
-	"fmt"
 	"log"
 
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
-type ModuleMockFactory struct {
-	mmocks map[string]*ModuleMock
-	logger *log.Logger
-	fs     filesystem.Filesystem
-}
-
-func (mmf *ModuleMockFactory) New(ctx context.Context, dir string) (*module, error) {
-	mmocks, ok := mmf.mmocks[dir]
-	if !ok {
-		return nil, fmt.Errorf("unexpected module requested: %s (%d available: %#v)", dir, len(mmf.mmocks), mmf.mmocks)
-	}
-
-	mock := NewModuleMock(mmocks, mmf.fs, dir)
-	mock.SetLogger(mmf.logger)
-	return mock, mock.discoverCaches(ctx, dir)
-}
-
 type ModuleManagerMockInput struct {
-	Modules           map[string]*ModuleMock
-	TfExecutorFactory exec.ExecutorFactory
+	Logger         *log.Logger
+	TerraformCalls *exec.TerraformMockCalls
 }
 
 func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
-	return func(fs filesystem.Filesystem) ModuleManager {
-		mm := newModuleManager(fs)
-		mm.syncLoading = true
+	var logger *log.Logger
+	var tfCalls *exec.TerraformMockCalls
 
-		mmf := &ModuleMockFactory{
-			mmocks: make(map[string]*ModuleMock, 0),
-			logger: mm.logger,
-			fs:     fs,
+	if input != nil {
+		logger = input.Logger
+		tfCalls = input.TerraformCalls
+	}
+
+	return func(ctx context.Context, fs filesystem.Filesystem) ModuleManager {
+		if tfCalls != nil {
+			ctx = exec.WithExecutorFactory(ctx, exec.NewMockExecutor(tfCalls))
+			ctx = exec.WithExecutorOpts(ctx, &exec.ExecutorOpts{
+				ExecPath: "tf-mock",
+			})
 		}
 
-		// mock terraform discovery
-		md := &discovery.MockDiscovery{Path: "tf-mock"}
-		mm.tfDiscoFunc = md.LookPath
+		mm := NewSyncModuleManager(ctx, fs)
 
-		// mock terraform executor
-		if input != nil {
-			mm.tfNewExecutor = input.TfExecutorFactory
-
-			if input.Modules != nil {
-				mmf.mmocks = input.Modules
-			}
+		if logger != nil {
+			mm.SetLogger(logger)
 		}
-
-		mm.newModule = mmf.New
 
 		return mm
+	}
+}
+
+func validTfMockCalls(repeatability int) []*mock.Call {
+	return []*mock.Call{
+		{
+			Method:        "Version",
+			Repeatability: repeatability,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.cancelCtx"),
+			},
+			ReturnArguments: []interface{}{
+				version.Must(version.NewVersion("0.12.0")),
+				nil,
+				nil,
+			},
+		},
+		{
+			Method:        "GetExecPath",
+			Repeatability: repeatability,
+			ReturnArguments: []interface{}{
+				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
+			Repeatability: repeatability,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.cancelCtx"),
+			},
+			ReturnArguments: []interface{}{
+				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				nil,
+			},
+		},
 	}
 }

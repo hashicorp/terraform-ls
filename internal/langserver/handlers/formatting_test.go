@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -35,9 +34,9 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -69,7 +68,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 							nil,
 						},
 					},
-				}),
+				},
 			},
 		},
 	}))
@@ -121,9 +120,9 @@ func TestLangServer_formatting_basic(t *testing.T) {
 func TestLangServer_formatting_oldVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -155,7 +154,7 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 							errors.New("not implemented"),
 						},
 					},
-				}),
+				},
 			},
 		},
 	}))

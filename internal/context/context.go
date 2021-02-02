@@ -9,7 +9,6 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
-	"github.com/hashicorp/terraform-ls/internal/watcher"
 )
 
 type contextKey struct {
@@ -29,10 +28,8 @@ var (
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
 	ctxWatcher              = &contextKey{"watcher"}
 	ctxModuleMngr           = &contextKey{"module manager"}
-	ctxTfFormatterFinder    = &contextKey{"terraform formatter finder"}
-	ctxModuleCaFi           = &contextKey{"module candidate finder"}
+	ctxModuleFinder         = &contextKey{"module finder"}
 	ctxModuleWalker         = &contextKey{"module walker"}
-	ctxModuleLoader         = &contextKey{"module loader"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
 	ctxDiags                = &contextKey{"diagnostics"}
@@ -103,12 +100,12 @@ func TerraformExecTimeout(ctx context.Context) (time.Duration, bool) {
 	return path, ok
 }
 
-func WithWatcher(ctx context.Context, w watcher.Watcher) context.Context {
+func WithWatcher(ctx context.Context, w module.Watcher) context.Context {
 	return context.WithValue(ctx, ctxWatcher, w)
 }
 
-func Watcher(ctx context.Context) (watcher.Watcher, error) {
-	w, ok := ctx.Value(ctxWatcher).(watcher.Watcher)
+func Watcher(ctx context.Context) (module.Watcher, error) {
+	w, ok := ctx.Value(ctxWatcher).(module.Watcher)
 	if !ok {
 		return nil, missingContextErr(ctxWatcher)
 	}
@@ -127,18 +124,6 @@ func ModuleManager(ctx context.Context) (module.ModuleManager, error) {
 	return wm, nil
 }
 
-func WithTerraformFormatterFinder(ctx context.Context, tef module.TerraformFormatterFinder) context.Context {
-	return context.WithValue(ctx, ctxTfFormatterFinder, tef)
-}
-
-func TerraformFormatterFinder(ctx context.Context) (module.TerraformFormatterFinder, error) {
-	pf, ok := ctx.Value(ctxTfFormatterFinder).(module.TerraformFormatterFinder)
-	if !ok {
-		return nil, missingContextErr(ctxTfFormatterFinder)
-	}
-	return pf, nil
-}
-
 func WithTerraformExecPath(ctx context.Context, path string) context.Context {
 	return context.WithValue(ctx, ctxTfExecPath, path)
 }
@@ -149,13 +134,13 @@ func TerraformExecPath(ctx context.Context) (string, bool) {
 }
 
 func WithModuleFinder(ctx context.Context, mf module.ModuleFinder) context.Context {
-	return context.WithValue(ctx, ctxModuleCaFi, mf)
+	return context.WithValue(ctx, ctxModuleFinder, mf)
 }
 
 func ModuleFinder(ctx context.Context) (module.ModuleFinder, error) {
-	cf, ok := ctx.Value(ctxModuleCaFi).(module.ModuleFinder)
+	cf, ok := ctx.Value(ctxModuleFinder).(module.ModuleFinder)
 	if !ok {
-		return nil, missingContextErr(ctxModuleCaFi)
+		return nil, missingContextErr(ctxModuleFinder)
 	}
 	return cf, nil
 }
@@ -212,18 +197,6 @@ func ModuleWalker(ctx context.Context) (*module.Walker, error) {
 	w, ok := ctx.Value(ctxModuleWalker).(*module.Walker)
 	if !ok {
 		return nil, missingContextErr(ctxModuleWalker)
-	}
-	return w, nil
-}
-
-func WithModuleLoader(ctx context.Context, ml module.ModuleLoader) context.Context {
-	return context.WithValue(ctx, ctxModuleLoader, ml)
-}
-
-func ModuleLoader(ctx context.Context) (module.ModuleLoader, error) {
-	w, ok := ctx.Value(ctxModuleLoader).(module.ModuleLoader)
-	if !ok {
-		return nil, missingContextErr(ctxModuleLoader)
 	}
 	return w, nil
 }

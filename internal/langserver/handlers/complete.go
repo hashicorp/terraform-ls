@@ -6,6 +6,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (lsp.CompletionList, error) {
@@ -31,20 +32,21 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 		return list, err
 	}
 
-	module, err := mf.ModuleByPath(file.Dir())
+	mod, err := mf.ModuleByPath(file.Dir())
 	if err != nil {
 		return list, err
 	}
 
-	schema, err := mf.SchemaForPath(file.Dir())
+	schema, err := mf.SchemaForModule(file.Dir())
 	if err != nil {
 		return list, err
 	}
 
-	d, err := module.DecoderWithSchema(schema)
+	d, err := module.DecoderForModule(mod)
 	if err != nil {
 		return list, err
 	}
+	d.SetSchema(schema)
 
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, file)
 	if err != nil {

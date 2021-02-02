@@ -3,93 +3,78 @@ package module
 import (
 	"context"
 	"log"
-	"time"
 
-	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/hcl/v2"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 )
 
 type File interface {
 	Path() string
 }
 
-type TerraformFormatterFinder interface {
-	TerraformFormatterForDir(ctx context.Context, path string) (exec.Formatter, error)
-	HasTerraformDiscoveryFinished(path string) (bool, error)
-	IsTerraformAvailable(path string) (bool, error)
+type SchemaSource interface {
+	// module specific methods
+	Path() string
+	HumanReadablePath(string) string
+
+	ProviderSchema() (*tfjson.ProviderSchemas, error)
+	TerraformVersion() (*version.Version, error)
+	ProviderVersions() map[string]*version.Version
 }
 
 type ModuleFinder interface {
-	ModuleCandidatesByPath(path string) Modules
 	ModuleByPath(path string) (Module, error)
-	SchemaForPath(path string) (*schema.BodySchema, error)
+	SchemaForModule(path string) (*schema.BodySchema, error)
+	SchemaSourcesForModule(path string) ([]SchemaSource, error)
 }
 
 type ModuleLoader func(dir string) (Module, error)
 
 type ModuleManager interface {
 	ModuleFinder
-	TerraformFormatterFinder
 
 	SetLogger(logger *log.Logger)
-
-	SetTerraformExecPath(path string)
-	SetTerraformExecLogPath(logPath string)
-	SetTerraformExecTimeout(timeout time.Duration)
-
-	InitAndUpdateModule(ctx context.Context, dir string) (Module, error)
-	AddAndStartLoadingModule(ctx context.Context, dir string) (Module, error)
-	WorkerPoolSize() int
-	WorkerQueueSize() int
-	ListModules() Modules
-	PathsToWatch() []string
+	AddModule(modPath string) (Module, error)
+	EnqueueModuleOp(modPath string, opType OpType) error
+	EnqueueModuleOpWait(modPath string, opType OpType) error
+	ListModules() []Module
 	CancelLoading()
-}
-
-type Modules []Module
-
-func (mods Modules) Paths() []string {
-	paths := make([]string, len(mods))
-	for i, mod := range mods {
-		paths[i] = mod.Path()
-	}
-	return paths
 }
 
 type Module interface {
 	Path() string
-	MatchesPath(path string) bool
-	LoadError() error
-	StartLoading() error
-	IsLoadingDone() bool
-	LoadingDone() <-chan struct{}
-	IsKnownPluginLockFile(path string) bool
-	IsKnownModuleManifestFile(path string) bool
-	PathsToWatch() []string
-	UpdateProviderSchemaCache(ctx context.Context, lockFile File) error
-	IsProviderSchemaLoaded() bool
-	UpdateModuleManifest(manifestFile File) error
-	Decoder() (*decoder.Decoder, error)
-	DecoderWithSchema(*schema.BodySchema) (*decoder.Decoder, error)
-	MergedSchema() (*schema.BodySchema, error)
-	IsParsed() bool
-	ParseFiles() error
-	ParsedDiagnostics() map[string]hcl.Diagnostics
-	TerraformFormatter() (exec.Formatter, error)
-	HasTerraformDiscoveryFinished() bool
-	IsTerraformAvailable() bool
-	ExecuteTerraformInit(ctx context.Context) error
-	ExecuteTerraformValidate(ctx context.Context) (map[string]hcl.Diagnostics, error)
-	Modules() []ModuleRecord
 	HumanReadablePath(string) string
-	WasInitialized() (bool, error)
+	MatchesPath(path string) bool
+	HasOpenFiles() bool
+
+	TerraformExecPath() string
+	TerraformVersion() (*version.Version, error)
+	ProviderVersions() map[string]*version.Version
+	ProviderSchema() (*tfjson.ProviderSchemas, error)
+	ModuleManifest() (*datadir.ModuleManifest, error)
+
+	TerraformVersionState() OpState
+	ProviderSchemaState() OpState
+
+	ParsedFiles() (map[string]*hcl.File, error)
+	Diagnostics() map[string]hcl.Diagnostics
+	ModuleCalls() []datadir.ModuleRecord
 }
 
-type ModuleFactory func(context.Context, string) (*module, error)
+type ModuleFactory func(string) (*module, error)
 
-type ModuleManagerFactory func(filesystem.Filesystem) ModuleManager
+type ModuleManagerFactory func(context.Context, filesystem.Filesystem) ModuleManager
 
-type WalkerFactory func() *Walker
+type WalkerFactory func(filesystem.Filesystem, ModuleManager) *Walker
+
+type Watcher interface {
+	Start() error
+	Stop() error
+	SetLogger(*log.Logger)
+	AddModule(string) error
+	IsModuleWatched(string) bool
+}

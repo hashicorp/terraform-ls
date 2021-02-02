@@ -8,6 +8,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params lsp.SemanticTokensParams) (lsp.SemanticTokens, error) {
@@ -50,15 +51,16 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, fmt.Errorf("finding compatible decoder failed: %w", err)
 	}
 
-	schema, err := mf.SchemaForPath(doc.Dir())
+	schema, err := mf.SchemaForModule(doc.Dir())
 	if err != nil {
 		return tks, err
 	}
 
-	d, err := mod.DecoderWithSchema(schema)
+	d, err := module.DecoderForModule(mod)
 	if err != nil {
 		return tks, err
 	}
+	d.SetSchema(schema)
 
 	tokens, err := d.SemanticTokensInFile(doc.Filename())
 	if err != nil {

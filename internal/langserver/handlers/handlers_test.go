@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -69,9 +68,12 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
-		}}))
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
+			},
+		},
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -95,9 +97,12 @@ func TestInitalizeWithCommandPrefix(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {TfExecFactory: validTfMockCalls()},
-		}}))
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
+			},
+		},
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -117,9 +122,12 @@ func TestEOF(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ms := newMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			TempDir(t).Dir(): {TfExecFactory: validTfMockCalls()},
-		}})
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
+			},
+		},
+	})
 	ls := langserver.NewLangServerMock(t, ms.new)
 	stop := ls.Start(t)
 	defer stop()
@@ -146,8 +154,8 @@ func TestEOF(t *testing.T) {
 	}
 }
 
-func validTfMockCalls() exec.ExecutorFactory {
-	return exec.NewMockExecutor([]*mock.Call{
+func validTfMockCalls() []*mock.Call {
+	return []*mock.Call{
 		{
 			Method:        "Version",
 			Repeatability: 1,
@@ -178,7 +186,7 @@ func validTfMockCalls() exec.ExecutorFactory {
 				nil,
 			},
 		},
-	})
+	}
 }
 
 // TempDir creates a temporary directory containing the test name, as well any

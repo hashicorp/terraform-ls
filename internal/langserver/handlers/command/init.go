@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -20,12 +21,24 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
 
-	cf, err := lsctx.ModuleFinder(ctx)
+	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mod, err := cf.ModuleByPath(dh.Dir())
+	mod, err := modMgr.ModuleByPath(dh.Dir())
+	if err != nil {
+		if module.IsModuleNotFound(err) {
+			mod, err = modMgr.AddModule(dh.Dir())
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
 	if err != nil {
 		return nil, err
 	}
@@ -36,21 +49,9 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 	}()
 
 	progress.Report(ctx, "Running terraform init ...")
-	err = mod.ExecuteTerraformInit(ctx)
+	err = tfExec.Init(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	progress.Report(ctx, "Detecting paths to watch ...")
-	paths := mod.PathsToWatch()
-
-	w, err := lsctx.Watcher(ctx)
-	if err != nil {
-		return nil, err
-	}
-	err = w.AddPaths(paths)
-	if err != nil {
-		return nil, fmt.Errorf("failed to add watch for dir (%s): %+v", dh.Dir(), err)
 	}
 
 	return nil, nil

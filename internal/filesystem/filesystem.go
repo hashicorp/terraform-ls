@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -36,6 +37,18 @@ func (fs *fsystem) SetLogger(logger *log.Logger) {
 }
 
 func (fs *fsystem) CreateDocument(dh DocumentHandler, text []byte) error {
+	_, err := fs.memFs.Stat(dh.Dir())
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := fs.memFs.MkdirAll(dh.Dir(), 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create parent dir: %w", err)
+			}
+		} else {
+			return err
+		}
+	}
+
 	f, err := fs.memFs.Create(dh.FullPath())
 	if err != nil {
 		return err
@@ -196,11 +209,11 @@ func (fs *fsystem) ReadFile(name string) ([]byte, error) {
 func (fs *fsystem) ReadDir(name string) ([]os.FileInfo, error) {
 	memList, err := afero.ReadDir(fs.memFs, name)
 	if err != nil && !os.IsNotExist(err) {
-		return nil, err
+		return nil, fmt.Errorf("memory FS: %w", err)
 	}
 	osList, err := afero.ReadDir(fs.osFs, name)
-	if err != nil {
-		return nil, err
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("OS FS: %w", err)
 	}
 
 	list := memList
@@ -230,4 +243,13 @@ func (fs *fsystem) Open(name string) (File, error) {
 	}
 
 	return f, err
+}
+
+func (fs *fsystem) Stat(name string) (os.FileInfo, error) {
+	fi, err := fs.memFs.Stat(name)
+	if err != nil && os.IsNotExist(err) {
+		return fs.osFs.Stat(name)
+	}
+
+	return fi, err
 }

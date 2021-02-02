@@ -6,7 +6,8 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) {
@@ -16,9 +17,9 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 	InitPluginCache(t, tmpDir.Dir())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: validTfMockCalls(),
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): validTfMockCalls(),
 			},
 		},
 	}))

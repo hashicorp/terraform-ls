@@ -16,6 +16,8 @@ import (
 
 var defaultExecTimeout = 30 * time.Second
 
+type ctxKey string
+
 type Executor struct {
 	tf         *tfexec.Terraform
 	timeout    time.Duration

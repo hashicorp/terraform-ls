@@ -9,7 +9,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -24,9 +23,9 @@ func TestSemanticTokensFull(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -57,7 +56,7 @@ func TestSemanticTokensFull(t *testing.T) {
 							nil,
 						},
 					},
-				}),
+				},
 			},
 		}}))
 	stop := ls.Start(t)
@@ -131,9 +130,9 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		Modules: map[string]*module.ModuleMock{
-			tmpDir.Dir(): {
-				TfExecFactory: exec.NewMockExecutor([]*mock.Call{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -164,7 +163,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 							nil,
 						},
 					},
-				}),
+				},
 			},
 		}}))
 	stop := ls.Start(t)

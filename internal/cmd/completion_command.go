@@ -102,21 +102,27 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	module, err := module.NewModule(context.Background(), fs, fh.Dir())
+	ctx := context.Background()
+	modMgr := module.NewSyncModuleManager(ctx, fs)
+
+	mod, err := modMgr.AddModule(fh.Dir())
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("failed to load module: %s", err.Error()))
+		c.Ui.Error(err.Error())
 		return 1
 	}
-	schema, err := module.MergedSchema()
+
+	schema, err := modMgr.SchemaForModule(fh.Dir())
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find schema: %s", err.Error()))
 		return 1
 	}
-	d, err := module.DecoderWithSchema(schema)
+
+	d, err := module.DecoderForModule(mod)
 	if err != nil {
-		c.Ui.Error(fmt.Sprintf("failed to find parser: %s", err.Error()))
+		c.Ui.Error(fmt.Sprintf("failed to find decoder: %s", err.Error()))
 		return 1
 	}
+	d.SetSchema(schema)
 
 	pos := fPos.Position()
 
