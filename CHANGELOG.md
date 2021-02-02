@@ -1,5 +1,9 @@
 ## 0.13.0 (Unreleased)
 
+FEATURES:
+
+ - watcher: Detect `terraform init` from scratch ([#385](https://github.com/hashicorp/terraform-ls/pull/385))
+
 ENHANCEMENTS:
 
  - cmd: Introduce version JSON output ([#386](https://github.com/hashicorp/terraform-ls/pull/386))
