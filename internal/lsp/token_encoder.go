@@ -78,13 +78,16 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 	previousStartChar := 0
 	if i > 0 {
 		previousLine = te.Tokens[i-1].Range.End.Line - 1
-		previousStartChar = te.Tokens[i-1].Range.Start.Column - 1
+		currentLine := te.Tokens[i].Range.End.Line - 1
+		if currentLine == previousLine {
+			previousStartChar = te.Tokens[i-1].Range.Start.Column - 1
+		}
 	}
 
 	if tokenLineDelta == 0 || false /* te.clientCaps.MultilineTokenSupport */ {
 		deltaLine := token.Range.Start.Line - 1 - previousLine
-		deltaStartChar := token.Range.Start.Column - 1
 		tokenLength := token.Range.End.Byte - token.Range.Start.Byte
+		deltaStartChar := token.Range.Start.Column - 1 - previousStartChar
 
 		data = append(data, []float64{
 			float64(deltaLine),

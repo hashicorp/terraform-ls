@@ -119,6 +119,59 @@ func TestTokenEncoder_multiLineTokens(t *testing.T) {
 	}
 }
 
+func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
+	bytes := []byte(`resource "aws_iam_role_policy" "firehose_s3_access" {
+}
+`)
+	te := &TokenEncoder{
+		Lines: source.MakeSourceLines("test.tf", bytes),
+		Tokens: []lang.SemanticToken{
+			{
+				Type:      lang.TokenBlockType,
+				Modifiers: []lang.SemanticTokenModifier{},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
+					End:      hcl.Pos{Line: 1, Column: 9, Byte: 8},
+				},
+			},
+			{
+				Type:      lang.TokenBlockLabel,
+				Modifiers: []lang.SemanticTokenModifier{lang.TokenModifierDependent},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 1, Column: 10, Byte: 9},
+					End:      hcl.Pos{Line: 1, Column: 31, Byte: 30},
+				},
+			},
+			{
+				Type:      lang.TokenBlockLabel,
+				Modifiers: []lang.SemanticTokenModifier{},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 1, Column: 32, Byte: 31},
+					End:      hcl.Pos{Line: 1, Column: 52, Byte: 51},
+				},
+			},
+		},
+		ClientCaps: protocol.SemanticTokensClientCapabilities{
+			TokenTypes:     serverTokenTypes.AsStrings(),
+			TokenModifiers: serverTokenModifiers.AsStrings(),
+		},
+	}
+	data := te.Encode()
+	expectedData := []float64{
+		0, 0, 8, 0, 0,
+		0, 9, 21, 1, 2,
+		0, 22, 20, 1, 0,
+	}
+
+	if diff := cmp.Diff(expectedData, data); diff != "" {
+		t.Fatalf("unexpected encoded data.\nexpected: %#v\ngiven:    %#v",
+			expectedData, data)
+	}
+}
+
 func TestTokenEncoder_tokenModifiers(t *testing.T) {
 	bytes := []byte(`myblock "mytype" {
   str_attr = "something"
