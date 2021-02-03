@@ -23,21 +23,44 @@ type moduleLoader struct {
 }
 
 func newModuleLoader() *moduleLoader {
-	nonPrioParallelism := 2 * runtime.NumCPU()
-	prioParallelism := 1 * runtime.NumCPU()
-
+	p := loaderParallelism(runtime.NumCPU())
 	plc, lc := int64(0), int64(0)
 	ml := &moduleLoader{
 		queue:              newModuleOpsQueue(),
 		logger:             defaultLogger,
-		nonPrioParallelism: int64(nonPrioParallelism),
-		prioParallelism:    int64(prioParallelism),
+		nonPrioParallelism: p.NonPriority,
+		prioParallelism:    p.Priority,
 		opsToDispatch:      make(chan ModuleOperation, 1),
 		loadingCount:       &lc,
 		prioLoadingCount:   &plc,
 	}
 
 	return ml
+}
+
+type parallelism struct {
+	NonPriority, Priority int64
+}
+
+func loaderParallelism(cpu int) parallelism {
+	// Cap utilization for powerful machines
+	if cpu >= 4 {
+		return parallelism{
+			NonPriority: int64(3),
+			Priority:    int64(1),
+		}
+	}
+	if cpu == 3 {
+		return parallelism{
+			NonPriority: int64(2),
+			Priority:    int64(1),
+		}
+	}
+
+	return parallelism{
+		NonPriority: 1,
+		Priority:    1,
+	}
 }
 
 func (ml *moduleLoader) SetLogger(logger *log.Logger) {
