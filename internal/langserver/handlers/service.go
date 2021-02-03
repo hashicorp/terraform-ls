@@ -176,6 +176,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
+			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},
