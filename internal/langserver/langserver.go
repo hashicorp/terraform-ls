@@ -28,7 +28,7 @@ func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServe
 
 		// Disable concurrency to avoid race conditions
 		// between requests concerning the same document
-		Concurrency: 1,
+		Concurrency: 2,
 	}
 
 	return &langServer{

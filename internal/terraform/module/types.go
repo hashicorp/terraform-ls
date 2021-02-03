@@ -34,6 +34,8 @@ type ModuleFinder interface {
 
 type ModuleLoader func(dir string) (Module, error)
 
+type ProgressReporterFunc func(context.Context, ModuleOperation, OpState)
+
 type ModuleManager interface {
 	ModuleFinder
 
@@ -43,6 +45,7 @@ type ModuleManager interface {
 	EnqueueModuleOpWait(modPath string, opType OpType) error
 	ListModules() []Module
 	CancelLoading()
+	SetProgressReporter(ProgressReporterFunc)
 }
 
 type Module interface {

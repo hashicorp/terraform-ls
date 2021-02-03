@@ -63,6 +63,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	// TODO: Do this only if we can verify the file differs?
 	modMgr.EnqueueModuleOpWait(mod.Path(), module.OpTypeParseConfiguration)
 
+	lh.logger.Printf("Finished waiting for parsed configuration")
+
 	if mod.TerraformVersionState() == module.OpStateUnknown {
 		modMgr.EnqueueModuleOp(mod.Path(), module.OpTypeGetTerraformVersion)
 	}

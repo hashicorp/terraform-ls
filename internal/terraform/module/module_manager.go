@@ -239,3 +239,7 @@ func (mm *moduleManager) ModuleByPath(path string) (Module, error) {
 func (mm *moduleManager) CancelLoading() {
 	mm.cancelFunc()
 }
+
+func (mm *moduleManager) SetProgressReporter(f ProgressReporterFunc) {
+	mm.loader.SetProgressReporter(f)
+}

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -56,6 +58,67 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	if err != nil {
 		return serverCaps, err
 	}
+
+	modMgr, err := lsctx.ModuleManager(ctx)
+	if err != nil {
+		return serverCaps, err
+	}
+
+	srv := jrpc2.ServerFromContext(ctx)
+	modMgr.SetProgressReporter(func(ctx context.Context, mo module.ModuleOperation, state module.OpState) {
+		baseName := filepath.Base(mo.Module.Path())
+
+		h := sha256.New()
+		h.Write([]byte(mo.Module.Path() + "-" + mo.Type.String()))
+		token := h.Sum(nil)
+
+		var humanOpName string
+		switch mo.Type {
+		case module.OpTypeParseConfiguration:
+			humanOpName = "parsing configuration"
+		case module.OpTypeGetTerraformVersion:
+			humanOpName = "getting Terraform version"
+		case module.OpTypeParseModuleManifest:
+			humanOpName = "parsing module manifest"
+		case module.OpTypeObtainSchema:
+			humanOpName = "obtaining schema"
+		}
+
+		switch state {
+		case module.OpStateQueued:
+			_, err := srv.Callback(ctx, "window/workDoneProgress/create", &lsp.WorkDoneProgressCreateParams{
+				Token: token,
+			})
+			if err != nil {
+				return
+			}
+		case module.OpStateLoading:
+			srv.Notify(ctx, "$/progress", &lsp.ProgressParams{
+				Token: token,
+				Value: lsp.WorkDoneProgressBegin{
+					Kind:  "begin",
+					Title: baseName,
+				},
+			})
+
+			srv.Notify(ctx, "$/progress", lsp.ProgressParams{
+				Token: token,
+				Value: lsp.WorkDoneProgressReport{
+					Kind:    "report",
+					Message: humanOpName,
+					// Percentage: ,
+				},
+			})
+		case module.OpStateLoaded:
+			srv.Notify(ctx, "$/progress", lsp.ProgressParams{
+				Token: token,
+				Value: lsp.WorkDoneProgressEnd{
+					Kind:    "end",
+					Message: "Finished",
+				},
+			})
+		}
+	})
 
 	w, err := lsctx.Watcher(ctx)
 	if err != nil {
