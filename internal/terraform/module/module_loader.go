@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 	"sync/atomic"
+	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
@@ -73,6 +74,15 @@ func (ml *moduleLoader) run(ctx context.Context) {
 					defer atomic.AddInt64(ml.loadingCount, -1)
 					ml.executeModuleOp(ctx, mod)
 				}(ml)
+			} else {
+				// Account for an unlikely situation where next operation
+				// was dispatched despite no capacity being available.
+				// This may happen when op was received from the channel
+				// and dispatcher checked capacity before loading counters
+				// were decremented.
+				ml.logger.Println("no available capacity, retrying dispatch")
+				time.Sleep(100 * time.Millisecond)
+				ml.tryDispatchingModuleOp()
 			}
 		}
 	}
