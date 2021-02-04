@@ -85,17 +85,17 @@ func (ml *moduleLoader) run(ctx context.Context) {
 
 			if nextOp.Module.HasOpenFiles() && ml.prioCapacity() > 0 {
 				atomic.AddInt64(ml.prioLoadingCount, 1)
-				mod := ml.queue.PopOp()
 				go func(ml *moduleLoader) {
-					defer atomic.AddInt64(ml.prioLoadingCount, -1)
-					ml.executeModuleOp(ctx, mod)
+					ml.executeModuleOp(ctx, nextOp)
+					atomic.AddInt64(ml.prioLoadingCount, -1)
+					ml.tryDispatchingModuleOp()
 				}(ml)
 			} else if ml.nonPrioCapacity() > 0 {
 				atomic.AddInt64(ml.loadingCount, 1)
-				mod := ml.queue.PopOp()
 				go func(ml *moduleLoader) {
-					defer atomic.AddInt64(ml.loadingCount, -1)
-					ml.executeModuleOp(ctx, mod)
+					ml.executeModuleOp(ctx, nextOp)
+					atomic.AddInt64(ml.loadingCount, -1)
+					ml.tryDispatchingModuleOp()
 				}(ml)
 			} else {
 				// Account for an unlikely situation where next operation
@@ -105,7 +105,8 @@ func (ml *moduleLoader) run(ctx context.Context) {
 				// were decremented.
 				ml.logger.Println("no available capacity, retrying dispatch")
 				time.Sleep(100 * time.Millisecond)
-				ml.tryDispatchingModuleOp()
+				ml.queue.PushOp(nextOp)
+				go ml.tryDispatchingModuleOp()
 			}
 		}
 	}
@@ -113,13 +114,13 @@ func (ml *moduleLoader) run(ctx context.Context) {
 
 func (ml *moduleLoader) tryDispatchingModuleOp() {
 	totalCapacity := ml.nonPrioCapacity() + ml.prioCapacity()
-	opsInQueue := ml.queue.Len()
 
 	// Keep scheduling work from queue if we have capacity
-	if opsInQueue > 0 && totalCapacity > 0 {
-		item := ml.queue.Peek()
-		nextModOp := item.(ModuleOperation)
-		ml.opsToDispatch <- nextModOp
+	if totalCapacity > 0 {
+		nextModOp, ok := ml.queue.PopOp()
+		if ok {
+			ml.opsToDispatch <- nextModOp
+		}
 	}
 }
 
@@ -128,7 +129,7 @@ func (ml *moduleLoader) prioCapacity() int64 {
 }
 
 func (ml *moduleLoader) nonPrioCapacity() int64 {
-	return ml.prioParallelism - atomic.LoadInt64(ml.loadingCount)
+	return ml.nonPrioParallelism - atomic.LoadInt64(ml.loadingCount)
 }
 
 func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperation) {
@@ -136,7 +137,6 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 	// TODO: Report progress in % for each op based on queue length
 	defer ml.logger.Printf("finished %q for %s", modOp.Type, modOp.Module.Path())
 	defer modOp.markAsDone()
-	defer ml.tryDispatchingModuleOp()
 
 	switch modOp.Type {
 	case OpTypeGetTerraformVersion:

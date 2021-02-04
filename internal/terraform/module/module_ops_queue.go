@@ -27,13 +27,17 @@ func (q *moduleOpsQueue) PushOp(op ModuleOperation) {
 
 }
 
-func (q *moduleOpsQueue) PopOp() ModuleOperation {
+func (q *moduleOpsQueue) PopOp() (ModuleOperation, bool) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
+	if q.q.Len() == 0 {
+		return ModuleOperation{}, false
+	}
+
 	item := heap.Pop(&q.q)
 	modOp := item.(ModuleOperation)
-	return modOp
+	return modOp, true
 }
 
 func (q *moduleOpsQueue) Len() int {
@@ -41,14 +45,6 @@ func (q *moduleOpsQueue) Len() int {
 	defer q.mu.Unlock()
 
 	return q.q.Len()
-}
-
-func (q *moduleOpsQueue) Peek() interface{} {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-
-	item := q.q.Peek()
-	return item
 }
 
 type queue []ModuleOperation
@@ -70,11 +66,6 @@ func (q *queue) Pop() interface{} {
 	item := old[n-1]
 	*q = old[0 : n-1]
 	return item
-}
-
-func (q queue) Peek() interface{} {
-	n := len(q)
-	return q[n-1]
 }
 
 func (q queue) Len() int {
