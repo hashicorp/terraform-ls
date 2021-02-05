@@ -45,7 +45,7 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 		mq.PushOp(op)
 	}
 
-	firstOp := mq.PopOp()
+	firstOp, _ := mq.PopOp()
 
 	expectedFirstPath := filepath.Join(dir, "beta")
 	firstPath := firstOp.Module.Path()
@@ -54,7 +54,7 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 			expectedFirstPath, firstPath)
 	}
 
-	secondOp := mq.PopOp()
+	secondOp, _ := mq.PopOp()
 	expectedSecondPath := filepath.Join(dir, "gamma")
 	secondPath := secondOp.Module.Path()
 	if secondPath != expectedSecondPath {
