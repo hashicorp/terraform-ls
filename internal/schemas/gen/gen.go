@@ -23,8 +23,8 @@ import (
 const terraformBlock = `terraform {
 	required_version = "~> 0.13"
   required_providers {
-  {{ range $p := . }}
-    {{ $p.Name }} = {
+  {{ range $i, $p := . }}
+    {{ $p.Name }}-{{ $i }} = {
       source = "{{ $p.Source }}"
     }
   {{ end }}
