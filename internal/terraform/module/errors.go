@@ -22,3 +22,17 @@ func IsModuleNotFound(err error) bool {
 	_, ok := err.(*ModuleNotFoundErr)
 	return ok
 }
+
+type NoTerraformExecPathErr struct{}
+
+func (NoTerraformExecPathErr) Error() string {
+	return "No exec path provided for terraform"
+}
+
+func IsTerraformNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(NoTerraformExecPathErr)
+	return ok
+}
