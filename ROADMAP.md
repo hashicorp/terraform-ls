@@ -14,7 +14,7 @@ The `terraform-ls` language server supports basic schema-driven completion. We p
 
 ### Provide completion and hover for expressions (i.e. references such as `aws_instance.public_ip`) [#2](https://github.com/hashicorp/hcl-lang/issues/2)
 
-### Improved detection of uninitialized
+### Improved detection of uninitialized modules
 
 ## Researching
 - Improve HCL identification and interpretation within LSP
