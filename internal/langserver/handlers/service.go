@@ -122,6 +122,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	rootDir := ""
 	commandPrefix := ""
+	clientName := ""
 	var expFeatures settings.ExperimentalFeatures
 
 	m := map[string]rpch.Func{
@@ -136,6 +137,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
+			ctx = lsctx.WithClientName(ctx, &clientName)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
@@ -200,6 +202,19 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentSymbol)
 		},
+		"textDocument/documentLink": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = lsctx.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithClientName(ctx, &clientName)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+
+			return handle(ctx, req, lh.TextDocumentLink)
+		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
@@ -220,6 +235,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithClientName(ctx, &clientName)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 
 			return handle(ctx, req, lh.TextDocumentHover)

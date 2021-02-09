@@ -6,9 +6,9 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params lsp.SemanticTokensParams) (lsp.SemanticTokens, error) {
@@ -56,7 +56,7 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, err
 	}
 
-	d, err := module.DecoderForModule(mod)
+	d, err := decoder.DecoderForModule(ctx, mod)
 	if err != nil {
 		return tks, err
 	}

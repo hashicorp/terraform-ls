@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
@@ -193,22 +192,4 @@ func ParseModuleManifest(mod Module) {
 	}
 
 	m.SetModuleManifest(mm, err)
-}
-
-func DecoderForModule(mod Module) (*decoder.Decoder, error) {
-	d := decoder.NewDecoder()
-
-	pf, err := mod.ParsedFiles()
-	if err != nil {
-		return nil, err
-	}
-
-	for name, f := range pf {
-		err := d.LoadFile(name, f)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load a file: %w", err)
-		}
-	}
-
-	return d, nil
 }

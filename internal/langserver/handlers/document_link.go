@@ -9,7 +9,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocumentPositionParams) (*lsp.Hover, error) {
+func (h *logHandler) TextDocumentLink(ctx context.Context, params lsp.DocumentLinkParams) ([]lsp.DocumentLink, error) {
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -46,17 +46,10 @@ func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocum
 	}
 	d.SetSchema(schema)
 
-	fPos, err := ilsp.FilePositionFromDocumentPosition(params, file)
+	links, err := d.LinksInFile(file.Filename())
 	if err != nil {
 		return nil, err
 	}
 
-	h.logger.Printf("Looking for hover data at %q -> %#v", file.Filename(), fPos.Position())
-	hoverData, err := d.HoverAtPos(file.Filename(), fPos.Position())
-	h.logger.Printf("received hover data: %#v", hoverData)
-	if err != nil {
-		return nil, err
-	}
-
-	return ilsp.HoverData(hoverData, cc.TextDocument), nil
+	return ilsp.Links(links, cc.TextDocument.DocumentLink), nil
 }

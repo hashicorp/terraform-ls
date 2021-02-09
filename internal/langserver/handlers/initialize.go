@@ -51,6 +51,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
+	if params.ClientInfo.Name != "" {
+		err = lsctx.SetClientName(ctx, params.ClientInfo.Name)
+		if err != nil {
+			return serverCaps, err
+		}
+	}
+
 	clientCaps := params.Capabilities
 	err = lsctx.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {

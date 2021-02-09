@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -117,7 +118,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	d, err := module.DecoderForModule(mod)
+	d, err := decoder.DecoderForModule(ctx, mod)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find decoder: %s", err.Error()))
 		return 1
