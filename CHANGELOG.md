@@ -1,3 +1,9 @@
+## 0.14.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Improve messaging when Terraform is not found ([#401](https://github.com/hashicorp/terraform-ls/pull/401))
+
 ## 0.13.0 (5 February 2021)
 
 FEATURES:
