@@ -127,6 +127,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
 				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
 				return
 			}
 		}
@@ -150,7 +151,9 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 						return w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
 					}
 					if containsPath(mod.Watchable.PluginLockFiles, path) {
-						return w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
+						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
+						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+						return nil
 					}
 					return nil
 				})
@@ -165,6 +168,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
 				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
 				return
 			}
 		}
