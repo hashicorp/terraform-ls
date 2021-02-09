@@ -7,6 +7,7 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -40,7 +41,7 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 
 	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
 	if err != nil {
-		return nil, err
+		return nil, errors.EnrichTfExecError(err)
 	}
 
 	progress.Begin(ctx, "Initializing")

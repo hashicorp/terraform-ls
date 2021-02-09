@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -89,9 +90,16 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		return err
 	}
 
+	_, tfExecErr := module.TerraformExecPath(ctx, mod)
+
 	if walker.IsWalking() || mod.ProviderSchemaState() == module.OpStateLoading {
 		// avoid raising false warnings if operations are still in-flight
 		lh.logger.Printf("walker has not finished walking yet, data may be inaccurate for %s", f.FullPath())
+	} else if tfExecErr != nil {
+		jrpc2.PushNotify(ctx, "window/showMessage", lsp.ShowMessageParams{
+			Type:    lsp.Error,
+			Message: errors.EnrichTfExecError(tfExecErr).Error(),
+		})
 	} else if len(sources) == 0 {
 		// TODO: Only notify once per f.Dir() per session
 		dh := ilsp.FileHandlerFromDirPath(f.Dir())

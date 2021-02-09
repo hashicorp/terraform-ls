@@ -5,6 +5,7 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/hcl"
+	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -32,7 +33,7 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 
 	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
 	if err != nil {
-		return edits, err
+		return edits, errors.EnrichTfExecError(err)
 	}
 
 	file, err := fs.GetDocument(fh)

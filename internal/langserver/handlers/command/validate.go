@@ -8,6 +8,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
+	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -41,7 +42,7 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 
 	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
 	if err != nil {
-		return nil, err
+		return nil, errors.EnrichTfExecError(err)
 	}
 
 	notifier, err := lsctx.Diagnostics(ctx)
