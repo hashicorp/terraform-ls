@@ -4,6 +4,10 @@ ENHANCEMENTS:
 
  - Improve messaging when Terraform is not found ([#401](https://github.com/hashicorp/terraform-ls/pull/401))
 
+BUG FIXES:
+
+ - watcher: Refresh versions when plugin lockfile changes ([#403](https://github.com/hashicorp/terraform-ls/pull/403))
+
 ## 0.13.0 (5 February 2021)
 
 FEATURES:
