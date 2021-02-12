@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -42,6 +43,17 @@ func TestWatcher_initFromScratch(t *testing.T) {
 						},
 						ReturnArguments: []interface{}{
 							psMock,
+							nil,
+						},
+					},
+					{
+						Method: "Version",
+						Arguments: []interface{}{
+							mock.AnythingOfType("*context.cancelCtx"),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("1.0.0")),
+							nil,
 							nil,
 						},
 					},
@@ -113,5 +125,17 @@ resource "aws_vpc" "example" {
 	}
 	if diff := cmp.Diff(psMock, ps); diff != "" {
 		t.Fatalf("schema mismatch: %s", diff)
+	}
+
+	v, err := mod.TerraformVersion()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v == nil {
+		t.Fatal("expected non-nil version")
+	}
+	if v.String() != "1.0.0" {
+		t.Fatalf("version mismatch.\ngiven:   %q\nexpected: %q",
+			v.String(), "1.0.0")
 	}
 }
