@@ -37,6 +37,17 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 		tokenType = TokenTypeString
 	case lang.TokenAttrName:
 		tokenType = TokenTypeProperty
+	case lang.TokenBool:
+		tokenType = TokenTypeKeyword
+	case lang.TokenNumber:
+		tokenType = TokenTypeNumber
+	case lang.TokenString:
+		tokenType = TokenTypeString
+	case lang.TokenObjectKey:
+		tokenType = TokenTypeParameter
+	case lang.TokenMapKey:
+		tokenType = TokenTypeParameter
+
 	default:
 		return []float64{}
 	}
