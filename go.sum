@@ -72,8 +72,8 @@ github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3Ee
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
 github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
-github.com/creachadair/jrpc2 v0.11.3 h1:yigoyZBMQUIKiUyISAx54znMdytT89Q696zft/S03L4=
-github.com/creachadair/jrpc2 v0.11.3/go.mod h1:aACneXzxBPPoiu+nAo5duWP8L4y0//yuHkpkW9uDpo8=
+github.com/creachadair/jrpc2 v0.12.0 h1:cr7QMg8JYLubTneMy7UCQLWPD6LObJ7ZK8T5GeiwbLQ=
+github.com/creachadair/jrpc2 v0.12.0/go.mod h1:aACneXzxBPPoiu+nAo5duWP8L4y0//yuHkpkW9uDpo8=
 github.com/creachadair/staticfile v0.1.3/go.mod h1:a3qySzCIXEprDGxk6tSxSI+dBBdLzqeBOMhZ+o2d3pM=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
