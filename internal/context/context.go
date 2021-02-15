@@ -23,6 +23,7 @@ var (
 	ctxDs                   = &contextKey{"document storage"}
 	ctxClientCapsSetter     = &contextKey{"client capabilities setter"}
 	ctxClientCaps           = &contextKey{"client capabilities"}
+	ctxClientName           = &contextKey{"client name"}
 	ctxTfExecPath           = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
@@ -80,6 +81,28 @@ func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
 	}
 
 	return *caps, nil
+}
+
+func WithClientName(ctx context.Context, namePtr *string) context.Context {
+	return context.WithValue(ctx, ctxClientName, namePtr)
+}
+
+func ClientName(ctx context.Context) (string, bool) {
+	name, ok := ctx.Value(ctxClientName).(*string)
+	if !ok {
+		return "", false
+	}
+	return *name, true
+}
+
+func SetClientName(ctx context.Context, name string) error {
+	namePtr, ok := ctx.Value(ctxClientName).(*string)
+	if !ok {
+		return missingContextErr(ctxClientName)
+	}
+
+	*namePtr = name
+	return nil
 }
 
 func WithTerraformExecLogPath(ctx context.Context, path string) context.Context {
