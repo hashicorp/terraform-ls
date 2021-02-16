@@ -11,13 +11,24 @@ import (
 
 type VersionOutput struct {
 	Version string `json:"version"`
+
+	BuildGoVersion string `json:"go_version,omitempty"`
+	BuildGoOS      string `json:"go_os,omitempty"`
+	BuildGoArch    string `json:"go_arch,omitempty"`
 }
 
 type VersionCommand struct {
-	Ui      cli.Ui
-	Version string
+	Ui        cli.Ui
+	Version   string
+	BuildInfo *BuildInfo
 
 	jsonOutput bool
+}
+
+type BuildInfo struct {
+	GoVersion string
+	GoOS      string
+	GoArch    string
 }
 
 func (c *VersionCommand) flags() *flag.FlagSet {
@@ -37,10 +48,14 @@ func (c *VersionCommand) Run(args []string) int {
 		return 1
 	}
 
+	output := VersionOutput{
+		Version:        c.Version,
+		BuildGoVersion: c.BuildInfo.GoVersion,
+		BuildGoOS:      c.BuildInfo.GoOS,
+		BuildGoArch:    c.BuildInfo.GoArch,
+	}
+
 	if c.jsonOutput {
-		output := VersionOutput{
-			Version: c.Version,
-		}
 		jsonOutput, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
 			c.Ui.Error(fmt.Sprintf("\nError marshalling JSON: %s", err))
@@ -50,7 +65,12 @@ func (c *VersionCommand) Run(args []string) int {
 		return 0
 	}
 
-	c.Ui.Output(string(c.Version))
+	ver := string(c.Version)
+	if output.BuildGoVersion != "" && output.BuildGoOS != "" && output.BuildGoArch != "" {
+		ver = fmt.Sprintf("%s\ngo%s %s/%s", c.Version, output.BuildGoVersion, output.BuildGoOS, output.BuildGoArch)
+	}
+
+	c.Ui.Output(ver)
 	return 0
 }
 

@@ -45,6 +45,8 @@ jobs:
         with:
           version: latest
           args: build --snapshot --skip-post-hooks
+        env:
+          GOVERSION: ${{ steps.go-version.outputs.content }}
 
   test:
     runs-on: ${{ matrix.os }}
@@ -94,7 +96,7 @@ jobs:
       -
         name: Run tests
         run: make test
-      - 
+      -
         name: Upload code coverage report
         uses: codecov/codecov-action@v1
         with:

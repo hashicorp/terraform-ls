@@ -31,14 +31,7 @@ func init() {
 // VersionString returns the complete version string, including prerelease
 func VersionString() string {
 	if prerelease != "" {
-		return buildInfo(fmt.Sprintf("%s-%s", version, prerelease))
-	}
-
-	return buildInfo(version)
-}
-func buildInfo(version string) string {
-	if buildGoVersion != "" && buildGoOS != "" && buildGoArch != "" {
-		return fmt.Sprintf("%s\ngo%s %s/%s", version, buildGoVersion, buildGoOS, buildGoArch)
+		return fmt.Sprintf("%s-%s", version, prerelease)
 	}
 	return version
 }
