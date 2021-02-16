@@ -14,6 +14,12 @@ var version = "0.0.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var prerelease = "dev"
 
+var (
+	buildGoVersion = ""
+	buildGoOS      = ""
+	buildGoArch    = ""
+)
+
 func init() {
 	// Verify that the version is proper semantic version, which should always be the case.
 	_, err := goversion.NewVersion(version)
@@ -25,7 +31,14 @@ func init() {
 // VersionString returns the complete version string, including prerelease
 func VersionString() string {
 	if prerelease != "" {
-		return fmt.Sprintf("%s-%s", version, prerelease)
+		return buildInfo(fmt.Sprintf("%s-%s", version, prerelease))
+	}
+
+	return buildInfo(version)
+}
+func buildInfo(version string) string {
+	if buildGoVersion != "" && buildGoOS != "" && buildGoArch != "" {
+		return fmt.Sprintf("%s\ngo%s %s/%s", version, buildGoVersion, buildGoOS, buildGoArch)
 	}
 	return version
 }
