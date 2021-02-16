@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/mitchellh/cli"
@@ -12,23 +13,21 @@ import (
 type VersionOutput struct {
 	Version string `json:"version"`
 
-	BuildGoVersion string `json:"go_version,omitempty"`
-	BuildGoOS      string `json:"go_os,omitempty"`
-	BuildGoArch    string `json:"go_arch,omitempty"`
+	*BuildInfo
 }
 
 type VersionCommand struct {
-	Ui        cli.Ui
-	Version   string
-	BuildInfo *BuildInfo
+	Ui      cli.Ui
+	Version string
 
 	jsonOutput bool
 }
 
 type BuildInfo struct {
-	GoVersion string
-	GoOS      string
-	GoArch    string
+	GoVersion string `json:"go,omitempty"`
+	GoOS      string `json:"os,omitempty"`
+	GoArch    string `json:"arch,omitempty"`
+	Compiler  string `json:"compiler,omitempty"`
 }
 
 func (c *VersionCommand) flags() *flag.FlagSet {
@@ -49,10 +48,13 @@ func (c *VersionCommand) Run(args []string) int {
 	}
 
 	output := VersionOutput{
-		Version:        c.Version,
-		BuildGoVersion: c.BuildInfo.GoVersion,
-		BuildGoOS:      c.BuildInfo.GoOS,
-		BuildGoArch:    c.BuildInfo.GoArch,
+		Version: c.Version,
+		BuildInfo: &BuildInfo{
+			GoVersion: runtime.Version(),
+			GoOS:      runtime.GOOS,
+			GoArch:    runtime.GOARCH,
+			Compiler:  runtime.Compiler,
+		},
 	}
 
 	if c.jsonOutput {
@@ -65,11 +67,7 @@ func (c *VersionCommand) Run(args []string) int {
 		return 0
 	}
 
-	ver := string(c.Version)
-	if output.BuildGoVersion != "" && output.BuildGoOS != "" && output.BuildGoArch != "" {
-		ver = fmt.Sprintf("%s\ngo%s %s/%s", c.Version, output.BuildGoVersion, output.BuildGoOS, output.BuildGoArch)
-	}
-
+	ver := fmt.Sprintf("%s\nplatform: %s/%s\ngo: %s\ncompiler: %s", c.Version, output.GoOS, output.GoArch, output.GoVersion, output.Compiler)
 	c.Ui.Output(ver)
 	return 0
 }

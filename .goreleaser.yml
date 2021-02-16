@@ -14,7 +14,7 @@ builds:
       - -trimpath
       - -tags=preloadschema
     ldflags:
-      - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}" -X "main.buildGoVersion={{ .Env.GOVERSION }}" -X "main.buildGoOS={{ .Os }}" -X "main.buildGoArch={{ .Arch }}"'
+      - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     goarch:
       - '386'
       - amd64
@@ -39,7 +39,7 @@ builds:
       - -trimpath
       - -tags=preloadschema
     ldflags:
-      - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}" -X "main.buildGoVersion={{ .Env.GOVERSION }}" -X "main.buildGoOS={{ .Os }}" -X "main.buildGoArch={{ .Arch }}"'
+      - '-s -w -X "main.version={{ .RawVersion }}" -X "main.prerelease={{ if .IsSnapshot }}snapshot.{{ .ShortCommit }}{{ else }}{{ .Prerelease }}{{ end }}"'
     goarch:
       - '386'
       - amd64

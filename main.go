@@ -47,11 +47,6 @@ func main() {
 			return &cmd.VersionCommand{
 				Ui:      ui,
 				Version: VersionString(),
-				BuildInfo: &cmd.BuildInfo{
-					GoVersion: buildGoVersion,
-					GoOS:      buildGoOS,
-					GoArch:    buildGoArch,
-				},
 			}, nil
 		},
 	}

@@ -76,7 +76,6 @@ jobs:
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
-          GOVERSION: ${{ steps.go-version.outputs.content }}
       -
         name: Publish released artifacts
         run: hc-releases publish -product=terraform-ls

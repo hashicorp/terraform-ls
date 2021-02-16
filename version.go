@@ -14,12 +14,6 @@ var version = "0.0.0"
 // such as "dev" (in development), "beta", "rc1", etc.
 var prerelease = "dev"
 
-var (
-	buildGoVersion = ""
-	buildGoOS      = ""
-	buildGoArch    = ""
-)
-
 func init() {
 	// Verify that the version is proper semantic version, which should always be the case.
 	_, err := goversion.NewVersion(version)

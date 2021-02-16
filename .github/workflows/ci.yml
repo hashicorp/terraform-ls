@@ -45,8 +45,6 @@ jobs:
         with:
           version: latest
           args: build --snapshot --skip-post-hooks
-        env:
-          GOVERSION: ${{ steps.go-version.outputs.content }}
 
   test:
     runs-on: ${{ matrix.os }}
