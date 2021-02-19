@@ -8,6 +8,10 @@ BUG FIXES:
 
  - watcher: Refresh versions when plugin lockfile changes ([#403](https://github.com/hashicorp/terraform-ls/pull/403))
 
+BUILD:
+
+ - Provide darwin/arm64 (Apple Silicon) build ([#350](https://github.com/hashicorp/terraform-ls/pull/350))
+
 ## 0.13.0 (5 February 2021)
 
 FEATURES:
