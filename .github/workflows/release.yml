@@ -60,6 +60,16 @@ jobs:
       -
         name: Import PGP key for archive signing
         run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
+      - 
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.TERRAFORM_PROD_AWS_ROLE_TO_ASSUME }}
+          role-skip-session-tagging: true
+          role-duration-seconds: 3600
       -
         name: Release
         uses: goreleaser/goreleaser-action@v2
@@ -68,8 +78,6 @@ jobs:
           args: release
         env:
           PGP_USER_ID: ${{ secrets.PGP_USER_ID }}
-          RELEASE_AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
-          RELEASE_AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
@@ -80,6 +88,4 @@ jobs:
         name: Publish released artifacts
         run: hc-releases publish -product=terraform-ls
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RELEASE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RELEASE_AWS_SECRET_ACCESS_KEY }}
           FASTLY_API_TOKEN: ${{ secrets.RELEASE_FASTLY_API_TOKEN }}

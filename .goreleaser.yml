@@ -103,9 +103,6 @@ publishers:
     checksum: true
     signature: true
     cmd: hc-releases upload-file {{ abs .ArtifactPath }}
-    env:
-      - AWS_ACCESS_KEY_ID={{ .Env.RELEASE_AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.RELEASE_AWS_SECRET_ACCESS_KEY }}
 
 changelog:
   skip: true
