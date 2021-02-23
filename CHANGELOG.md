@@ -1,5 +1,9 @@
 ## 0.14.0 (23 February 2021)
 
+FEATURES:
+
+ - Add links to documentation (Ctrl+click in supported clients + hover) ([#402](https://github.com/hashicorp/terraform-ls/pull/402))
+
 ENHANCEMENTS:
 
  - Improve messaging when Terraform is not found ([#401](https://github.com/hashicorp/terraform-ls/pull/401))
