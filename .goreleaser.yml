@@ -102,6 +102,8 @@ publishers:
   - name: "hc-releases"
     checksum: true
     signature: true
+    env:
+      - HOME="{{ .Env.HOME }}"
     cmd: hc-releases upload-file {{ abs .ArtifactPath }}
 
 changelog:
