@@ -103,7 +103,11 @@ publishers:
     checksum: true
     signature: true
     env:
-      - HOME={{ .Env.HOME }}
+      - AWS_DEFAULT_REGION: {{ .Env.AWS_DEFAULT_REGION }}
+      - AWS_REGION: {{ .Env.AWS_REGION }}
+      - AWS_ACCESS_KEY_ID: {{ .Env.AWS_ACCESS_KEY_ID }}
+      - AWS_SECRET_ACCESS_KEY: {{ .Env.AWS_SECRET_ACCESS_KEY }}
+      - AWS_SESSION_TOKEN: {{ .Env.AWS_SESSION_TOKEN }}
     cmd: hc-releases upload-file {{ abs .ArtifactPath }}
 
 changelog:
