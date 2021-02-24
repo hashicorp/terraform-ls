@@ -9,10 +9,15 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.DocumentSymbolParams) ([]lsp.SymbolInformation, error) {
-	var symbols []lsp.SymbolInformation
+func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.DocumentSymbolParams) ([]lsp.DocumentSymbol, error) {
+	var symbols []lsp.DocumentSymbol
 
 	fs, err := lsctx.DocumentStorage(ctx)
+	if err != nil {
+		return symbols, err
+	}
+
+	cc, err := lsctx.ClientCapabilities(ctx)
 	if err != nil {
 		return symbols, err
 	}
@@ -42,5 +47,5 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	return ilsp.ConvertSymbols(params.TextDocument.URI, sbs), nil
+	return ilsp.DocumentSymbols(sbs, cc.TextDocument.DocumentSymbol), nil
 }
