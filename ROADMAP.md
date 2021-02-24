@@ -10,7 +10,7 @@ The `terraform-ls` language server supports basic schema-driven completion. We p
 - Modules
 - Provide nested navigation symbols (i.e. nested blocks and block attributes)
 
-### Syntax highlighting improvements
+### Syntax highlighting improvements via semantic tokens [#331](https://github.com/hashicorp/terraform-ls/pull/331)
 
 ### Provide completion and hover for expressions (i.e. references such as `aws_instance.public_ip`) [#2](https://github.com/hashicorp/hcl-lang/issues/2)
 
