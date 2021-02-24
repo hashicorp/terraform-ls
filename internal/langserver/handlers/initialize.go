@@ -27,6 +27,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			HoverProvider:              true,
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
+			WorkspaceSymbolProvider:    true,
 		},
 	}
 

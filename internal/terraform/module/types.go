@@ -30,6 +30,7 @@ type ModuleFinder interface {
 	ModuleByPath(path string) (Module, error)
 	SchemaForModule(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
+	ListModules() []Module
 }
 
 type ModuleLoader func(dir string) (Module, error)
@@ -41,7 +42,6 @@ type ModuleManager interface {
 	AddModule(modPath string) (Module, error)
 	EnqueueModuleOp(modPath string, opType OpType) error
 	EnqueueModuleOpWait(modPath string, opType OpType) error
-	ListModules() []Module
 	CancelLoading()
 }
 
