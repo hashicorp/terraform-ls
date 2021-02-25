@@ -1,3 +1,13 @@
+## 0.15.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - textDocument/documentSymbol: Support nested symbols ([#420](https://github.com/hashicorp/terraform-ls/pull/420))
+
+BUILD:
+
+ - Provide Linux packages ([#421](https://github.com/hashicorp/terraform-ls/pull/421))
+
 ## 0.14.0 (23 February 2021)
 
 FEATURES:
