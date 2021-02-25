@@ -26,6 +26,50 @@ You can install via [Homebrew](https://brew.sh)
 brew install hashicorp/tap/terraform-ls
 ```
 
+### Ubuntu/Debian (APT)
+
+```sh
+# Add the HashiCorp GPG key
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+# Add the official HashiCorp Linux repository
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+
+sudo apt-get update && sudo apt-get install terraform-ls
+```
+
+### CentOS/RHEL (YUM)
+
+```sh
+# Install yum-config-manager to manage your repositories
+sudo yum install -y yum-utils
+# Add the official HashiCorp Linux repository
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+
+sudo yum -y install terraform-ls
+```
+
+### Amazon Linux (YUM)
+
+```sh
+# Install yum-config-manager to manage your repositories
+sudo yum install -y yum-utils
+# Add the official HashiCorp Linux repository
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+
+$ sudo yum -y install terraform-ls
+```
+
+### Fedora (DNF)
+
+```sh
+# Install dnf config-manager to manage your repositories
+sudo dnf install -y dnf-plugins-core
+# Add the official HashiCorp Linux repository.
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+
+sudo dnf -y install terraform-ls
+```
+
 ### Other platforms
 
 1. [Download for the latest version](https://releases.hashicorp.com/terraform-ls/)
