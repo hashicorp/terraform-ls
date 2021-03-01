@@ -93,7 +93,7 @@ jobs:
         run: make fmt
       -
         name: Run tests
-        run: make test
+        run: go test -coverprofile="coverage.txt" -covermode=atomic -race ./...
       -
         name: Upload code coverage report
         uses: codecov/codecov-action@v1
