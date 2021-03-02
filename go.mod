@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/go-version v1.2.1
-	github.com/hashicorp/hcl-lang v0.0.0-20210305083102-791d1fc99bad
+	github.com/hashicorp/hcl-lang v0.0.0-20210305093939-599b9bedc21c
 	github.com/hashicorp/hcl/v2 v2.9.0
 	github.com/hashicorp/terraform-exec v0.13.0
 	github.com/hashicorp/terraform-json v0.8.0
@@ -26,4 +26,9 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/vektra/mockery/v2 v2.6.0
 	github.com/zclconf/go-cty v1.8.0
+)
+
+replace (
+	github.com/hashicorp/hcl-lang => ../hcl-lang
+	github.com/hashicorp/terraform-schema => ../terraform-schema
 )

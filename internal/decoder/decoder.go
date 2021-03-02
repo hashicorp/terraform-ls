@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-schema/schema"
 )
 
 func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder, error) {
 	d := decoder.NewDecoder()
+	d.SetBuiltinReferences(schema.BuiltinReferences())
 	d.SetUtmSource("terraform-ls")
 	d.UseUtmContent(true)
 
