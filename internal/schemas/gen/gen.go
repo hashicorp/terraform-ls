@@ -237,10 +237,15 @@ func listProviders(tier string) ([]provider, error) {
 // registry for registry.terraform.io/a10networks/vthunder: failed to retrieve
 // authentication checksums for provider: 404 Not Found
 
+// Error while installing brightbox/brightbox v2.0.2: could not query provider
+// registry for registry.terraform.io/brightbox/brightbox: failed to retrieve
+// authentication checksums for provider: 404 Not Found
+
 // Error while installing jradtilbrook/buildkite v0.1.0: provider
 // registry.terraform.io/jradtilbrook/buildkite 0.1.0 is not available for
 // linux_amd64
 var ignore = map[string]bool{
+	"brightbox/brightbox":    true,
 	"Icinga/icinga2":         true,
 	"a10networks/vthunder":   true,
 	"jradtilbrook/buildkite": true,
