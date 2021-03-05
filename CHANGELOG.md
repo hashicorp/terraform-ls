@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - textDocument/documentSymbol: Support nested symbols ([#420](https://github.com/hashicorp/terraform-ls/pull/420))
+ - Add Go version, OS and architecture to `version` command ([#407](https://github.com/hashicorp/terraform-ls/pull/407))
 
 BUILD:
 
