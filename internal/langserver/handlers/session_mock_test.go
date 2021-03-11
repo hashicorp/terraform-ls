@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -22,8 +23,9 @@ type MockSessionInput struct {
 type mockSession struct {
 	mockInput *MockSessionInput
 
-	stopFunc       func()
-	stopFuncCalled bool
+	stopFunc     func()
+	stopCalled   bool
+	stopCalledMu *sync.RWMutex
 }
 
 func (ms *mockSession) new(srvCtx context.Context) session.Session {
@@ -78,16 +80,25 @@ func testLogger() *log.Logger {
 }
 
 func (ms *mockSession) stop() {
+	ms.stopCalledMu.Lock()
+	defer ms.stopCalledMu.Unlock()
+
 	ms.stopFunc()
-	ms.stopFuncCalled = true
+	ms.stopCalled = true
 }
 
 func (ms *mockSession) StopFuncCalled() bool {
-	return ms.stopFuncCalled
+	ms.stopCalledMu.RLock()
+	defer ms.stopCalledMu.RUnlock()
+
+	return ms.stopCalled
 }
 
 func newMockSession(input *MockSessionInput) *mockSession {
-	return &mockSession{mockInput: input}
+	return &mockSession{
+		mockInput:    input,
+		stopCalledMu: &sync.RWMutex{},
+	}
 }
 
 func NewMockSession(input *MockSessionInput) session.SessionFactory {
