@@ -1,11 +1,36 @@
 package lsp
 
 import (
+	"path/filepath"
+
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/zclconf/go-cty/cty"
 )
+
+func SymbolInformation(dirPath string, sbs []decoder.Symbol, caps lsp.WorkspaceSymbolClientCapabilities) []lsp.SymbolInformation {
+	symbols := make([]lsp.SymbolInformation, len(sbs))
+	for i, s := range sbs {
+		kind, ok := symbolKind(s, caps.SymbolKind.ValueSet)
+		if !ok {
+			// skip symbol not supported by client
+			continue
+		}
+
+		path := filepath.Join(dirPath, s.Range().Filename)
+		symbols[i] = lsp.SymbolInformation{
+			Name: s.Name(),
+			Kind: kind,
+			Location: lsp.Location{
+				Range: HCLRangeToLSP(s.Range()),
+				URI:   lsp.DocumentURI(uri.FromPath(path)),
+			},
+		}
+	}
+	return symbols
+}
 
 func DocumentSymbols(sbs []decoder.Symbol, caps lsp.DocumentSymbolClientCapabilities) []lsp.DocumentSymbol {
 	symbols := make([]lsp.DocumentSymbol, 0)

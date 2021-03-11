@@ -38,6 +38,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				"documentSymbolProvider": true,
 				"codeLensProvider": {},
 				"documentLinkProvider": {},
+				"workspaceSymbolProvider": true,
 				"documentFormattingProvider": true,
 				"documentOnTypeFormattingProvider": {
 					"firstTriggerCharacter": ""
