@@ -1,5 +1,9 @@
 ## 0.15.0 (Unreleased)
 
+FEATURES:
+
+ - Add workspace-wide symbol navigation ([#427](https://github.com/hashicorp/terraform-ls/pull/427))
+
 ENHANCEMENTS:
 
  - textDocument/documentSymbol: Support nested symbols ([#420](https://github.com/hashicorp/terraform-ls/pull/420))
