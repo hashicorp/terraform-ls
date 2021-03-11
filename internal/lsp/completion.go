@@ -36,6 +36,18 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		kind = lsp.ClassCompletion
 	case lang.LabelCandidateKind:
 		kind = lsp.FieldCompletion
+	case lang.BoolCandidateKind:
+		kind = lsp.EnumMemberCompletion
+	case lang.StringCandidateKind:
+		kind = lsp.TextCompletion
+	case lang.NumberCandidateKind:
+		kind = lsp.ValueCompletion
+	case lang.KeywordCandidateKind:
+		kind = lsp.KeywordCompletion
+	case lang.ListCandidateKind, lang.SetCandidateKind, lang.TupleCandidateKind:
+		kind = lsp.EnumCompletion
+	case lang.MapCandidateKind, lang.ObjectCandidateKind:
+		kind = lsp.StructCompletion
 	}
 
 	// TODO: Omit item which uses kind unsupported by the client
