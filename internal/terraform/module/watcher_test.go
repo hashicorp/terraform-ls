@@ -117,7 +117,7 @@ resource "aws_vpc" "example" {
 	}
 
 	// Give watcher some time to react
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
 	ps, err := mod.ProviderSchema()
 	if err != nil {
