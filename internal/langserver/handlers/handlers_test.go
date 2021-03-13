@@ -145,7 +145,7 @@ func TestEOF(t *testing.T) {
 
 	// Session is stopped after all other operations stop
 	// which may take some time
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 
 	if !ms.StopFuncCalled() {
 		t.Fatal("Expected session to stop on EOF")
