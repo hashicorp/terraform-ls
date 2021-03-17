@@ -25,5 +25,5 @@ require (
 	github.com/spf13/afero v1.5.1
 	github.com/stretchr/testify v1.7.0
 	github.com/vektra/mockery/v2 v2.6.0
-	github.com/zclconf/go-cty v1.8.0
+	github.com/zclconf/go-cty v1.8.1
 )
