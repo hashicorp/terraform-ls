@@ -7,7 +7,7 @@ Each release will include necessary tasks that lead to the completion of the sta
 ### Expanded Completion and Hover
 The `terraform-ls` language server supports basic schema-driven completion. We plan to introduce additional completion and hover capabilities:
 
-- Provide nested navigation symbols (i.e. nested blocks and block attributes) :white_check_mark:
+- Provide nested navigation symbols (i.e. nested blocks and block attributes) [#420](https://github.com/hashicorp/terraform-ls/pull/420) :white_check_mark:
 - Modules
 
 ### Syntax highlighting improvements via semantic tokens [#331](https://github.com/hashicorp/terraform-ls/pull/331) :white_check_mark:
