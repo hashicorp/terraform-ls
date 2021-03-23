@@ -18,7 +18,7 @@ The `terraform-ls` language server supports basic schema-driven completion. We p
 
 ## Researching
 - Improve HCL identification and interpretation within LSP
-- Add support for sourcing dynamic provider schemas
+- Source provider schemas more flexibly [#354](https://github.com/hashicorp/terraform-ls/issues/354)
 
 ## Disclosures
 The product-development initiatives in this document reflect HashiCorp's current plans and are subject to change and/or cancellation at HashiCorp's sole discretion.
