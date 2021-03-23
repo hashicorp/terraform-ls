@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/hcl-lang v0.0.0-20210311200725-da0537032422
 	github.com/hashicorp/hcl/v2 v2.9.1
 	github.com/hashicorp/terraform-exec v0.13.0
-	github.com/hashicorp/terraform-json v0.8.0
+	github.com/hashicorp/terraform-json v0.9.0
 	github.com/hashicorp/terraform-schema v0.0.0-20210311201134-58cdd74b1165
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.2
