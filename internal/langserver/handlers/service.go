@@ -138,7 +138,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithClientName(ctx, &clientName)
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
