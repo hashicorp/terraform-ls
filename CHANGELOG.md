@@ -1,3 +1,13 @@
+## 0.15.1 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Further improve support for Terraform 0.15 ([#425](https://github.com/hashicorp/terraform-ls/issues/425))
+
+BUG FIXES:
+
+ - Fix panic caused by partially unknown map keys in configuration ([#447](https://github.com/hashicorp/terraform-ls/issues/447))
+
 ## 0.15.0 (12 March 2021)
 
 FEATURES:
