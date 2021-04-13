@@ -245,6 +245,7 @@ var ignore = map[string]bool{
 	"a10networks/vthunder":   true,
 	"jradtilbrook/buildkite": true,
 	"HewlettPackard/oneview": true,
+	"zerotier/zerotier":      true,
 }
 
 func filter(providers []provider) (filtered []provider) {
