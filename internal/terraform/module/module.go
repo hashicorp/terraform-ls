@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 )
 
@@ -237,7 +238,7 @@ func (m *module) CallsModule(path string) bool {
 			continue
 		}
 		absPath := filepath.Join(m.modManifest.RootDir(), mod.Dir)
-		if pathEquals(absPath, path) {
+		if pathcmp.PathEquals(absPath, path) {
 			return true
 		}
 	}
@@ -254,7 +255,7 @@ func (m *module) Path() string {
 }
 
 func (m *module) MatchesPath(path string) bool {
-	return pathEquals(m.path, path)
+	return pathcmp.PathEquals(m.path, path)
 }
 
 // HumanReadablePath helps display shorter, but still relevant paths

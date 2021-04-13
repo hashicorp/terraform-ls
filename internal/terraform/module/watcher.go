@@ -9,6 +9,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 )
 
@@ -59,7 +60,7 @@ func (w *watcher) IsModuleWatched(modPath string) bool {
 	modPath = filepath.Clean(modPath)
 
 	for _, m := range w.modules {
-		if pathEquals(m.Path, modPath) {
+		if pathcmp.PathEquals(m.Path, modPath) {
 			return true
 		}
 	}
@@ -177,7 +178,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Remove == fsnotify.Remove {
 		for modI, mod := range w.modules {
 			// Whole module being removed
-			if pathEquals(mod.Path, eventPath) {
+			if pathcmp.PathEquals(mod.Path, eventPath) {
 				for _, wPath := range mod.Watched {
 					w.fw.Remove(wPath)
 				}
@@ -187,7 +188,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			for i, wp := range mod.Watched {
-				if pathEquals(wp, eventPath) {
+				if pathcmp.PathEquals(wp, eventPath) {
 					w.fw.Remove(wp)
 					mod.Watched = append(mod.Watched[:i], mod.Watched[i+1:]...)
 					return
@@ -199,7 +200,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 
 func containsPath(paths []string, path string) bool {
 	for _, p := range paths {
-		if pathEquals(p, path) {
+		if pathcmp.PathEquals(p, path) {
 			return true
 		}
 	}

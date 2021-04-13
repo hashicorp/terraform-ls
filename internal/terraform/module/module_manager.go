@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl-lang/schema"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
@@ -212,7 +213,7 @@ func (mm *moduleManager) SchemaSourcesForModule(modPath string) ([]SchemaSource,
 
 func (mm *moduleManager) moduleByPath(dir string) (*module, bool) {
 	for _, mod := range mm.modules {
-		if pathEquals(mod.Path(), dir) {
+		if pathcmp.PathEquals(mod.Path(), dir) {
 			return mod, true
 		}
 	}
