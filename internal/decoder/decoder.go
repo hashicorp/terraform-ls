@@ -19,12 +19,7 @@ func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder,
 		d.SetUtmMedium(clientName)
 	}
 
-	pf, err := mod.ParsedFiles()
-	if err != nil {
-		return nil, err
-	}
-
-	for name, f := range pf {
+	for name, f := range mod.ParsedFiles {
 		err := d.LoadFile(name, f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load a file: %w", err)

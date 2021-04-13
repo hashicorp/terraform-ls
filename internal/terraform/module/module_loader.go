@@ -7,7 +7,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 type moduleLoader struct {
@@ -18,21 +21,28 @@ type moduleLoader struct {
 	tfExecOpts         *exec.ExecutorOpts
 	opsToDispatch      chan ModuleOperation
 
+	fs          filesystem.Filesystem
+	modStore    *state.ModuleStore
+	schemaStore *state.ProviderSchemaStore
+
 	loadingCount     *int64
 	prioLoadingCount *int64
 }
 
-func newModuleLoader() *moduleLoader {
+func newModuleLoader(fs filesystem.Filesystem, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore) *moduleLoader {
 	p := loaderParallelism(runtime.NumCPU())
 	plc, lc := int64(0), int64(0)
 	ml := &moduleLoader{
-		queue:              newModuleOpsQueue(),
+		queue:              newModuleOpsQueue(fs),
 		logger:             defaultLogger,
 		nonPrioParallelism: p.NonPriority,
 		prioParallelism:    p.Priority,
 		opsToDispatch:      make(chan ModuleOperation, 1),
 		loadingCount:       &lc,
 		prioLoadingCount:   &plc,
+		fs:                 fs,
+		modStore:           modStore,
+		schemaStore:        schemaStore,
 	}
 
 	return ml
@@ -83,7 +93,9 @@ func (ml *moduleLoader) run(ctx context.Context) {
 				return
 			}
 
-			if nextOp.Module.HasOpenFiles() && ml.prioCapacity() > 0 {
+			hasOpenFiles, _ := ml.fs.HasOpenFiles(nextOp.ModulePath)
+
+			if hasOpenFiles && ml.prioCapacity() > 0 {
 				atomic.AddInt64(ml.prioLoadingCount, 1)
 				go func(ml *moduleLoader) {
 					ml.executeModuleOp(ctx, nextOp)
@@ -133,64 +145,91 @@ func (ml *moduleLoader) nonPrioCapacity() int64 {
 }
 
 func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperation) {
-	ml.logger.Printf("executing %q for %s", modOp.Type, modOp.Module.Path())
+	ml.logger.Printf("executing %q for %s", modOp.Type, modOp.ModulePath)
 	// TODO: Report progress in % for each op based on queue length
-	defer ml.logger.Printf("finished %q for %s", modOp.Type, modOp.Module.Path())
+	defer ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
 	defer modOp.markAsDone()
 
 	switch modOp.Type {
-	case OpTypeGetTerraformVersion:
-		GetTerraformVersion(ctx, modOp.Module)
+	case op.OpTypeGetTerraformVersion:
+		err := GetTerraformVersion(ctx, ml.modStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to get terraform version: %s", err)
+		}
 		return
-	case OpTypeObtainSchema:
-		ObtainSchema(ctx, modOp.Module)
+	case op.OpTypeObtainSchema:
+		err := ObtainSchema(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to obtain schema: %s", err)
+		}
 		return
-	case OpTypeParseConfiguration:
-		ParseConfiguration(modOp.Module)
+	case op.OpTypeParseConfiguration:
+		err := ParseConfiguration(ml.fs, ml.modStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to parse configuration: %s", err)
+		}
 		return
-	case OpTypeParseModuleManifest:
-		ParseModuleManifest(modOp.Module)
+	case op.OpTypeParseModuleManifest:
+		err := ParseModuleManifest(ml.fs, ml.modStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to parse module manifest: %s", err)
+		}
+		return
+	case op.OpTypeLoadModuleMetadata:
+		err := LoadModuleMetadata(ml.modStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to load module metadata: %s", err)
+		}
 		return
 	}
 
 	ml.logger.Printf("%s: unknown operation (%#v) for module operation",
-		modOp.Module.Path(), modOp.Type)
+		modOp.ModulePath, modOp.Type)
 }
 
-func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) {
-	m := modOp.Module
-	mod := m.(*module)
+func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
+	mod, err := ml.modStore.ModuleByPath(modOp.ModulePath)
+	if err != nil {
+		return err
+	}
 
-	ml.logger.Printf("ML: enqueing %q module operation: %s", modOp.Type, mod.Path())
+	ml.logger.Printf("ML: enqueing %q module operation: %s", modOp.Type, modOp.ModulePath)
 
 	switch modOp.Type {
-	case OpTypeGetTerraformVersion:
-		if mod.TerraformVersionState() == OpStateQueued {
+	case op.OpTypeGetTerraformVersion:
+		if mod.TerraformVersionState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
-			return
+			return nil
 		}
-		mod.SetTerraformVersionState(OpStateQueued)
-	case OpTypeObtainSchema:
-		if mod.ProviderSchemaState() == OpStateQueued {
+		ml.modStore.SetTerraformVersionState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeObtainSchema:
+		if mod.ProviderSchemaState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
-			return
+			return nil
 		}
-		mod.SetProviderSchemaObtainingState(OpStateQueued)
-	case OpTypeParseConfiguration:
-		if mod.ConfigParsingState() == OpStateQueued {
+		ml.modStore.SetProviderSchemaState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeParseConfiguration:
+		if mod.ParsingState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
-			return
+			return nil
 		}
-		mod.SetConfigParsingState(OpStateQueued)
-	case OpTypeParseModuleManifest:
-		if mod.ModuleManifestState() == OpStateQueued {
+		ml.modStore.SetParsingState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeParseModuleManifest:
+		if mod.ModManifestState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
-			return
+			return nil
 		}
-		mod.SetModuleManifestParsingState(OpStateQueued)
+		ml.modStore.SetModManifestState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeLoadModuleMetadata:
+		if mod.MetaState == op.OpStateQueued {
+			// avoid enqueuing duplicate operation
+			return nil
+		}
+		ml.modStore.SetMetaState(modOp.ModulePath, op.OpStateQueued)
 	}
 
 	ml.queue.PushOp(modOp)
-
 	ml.tryDispatchingModuleOp()
+
+	return nil
 }

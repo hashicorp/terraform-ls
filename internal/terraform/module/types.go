@@ -4,33 +4,26 @@ import (
 	"context"
 	"log"
 
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/schema"
-	"github.com/hashicorp/hcl/v2"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	"github.com/hashicorp/terraform-ls/internal/state"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 type File interface {
 	Path() string
 }
 
-type SchemaSource interface {
-	// module specific methods
-	Path() string
-	HumanReadablePath(string) string
-
-	ProviderSchema() (*tfjson.ProviderSchemas, error)
-	TerraformVersion() (*version.Version, error)
-	ProviderVersions() map[string]*version.Version
+type SchemaSource struct {
+	Path              string
+	HumanReadablePath string
 }
 
 type ModuleFinder interface {
 	ModuleByPath(path string) (Module, error)
 	SchemaForModule(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
-	ListModules() []Module
+	ListModules() ([]Module, error)
 }
 
 type ModuleLoader func(dir string) (Module, error)
@@ -40,34 +33,17 @@ type ModuleManager interface {
 
 	SetLogger(logger *log.Logger)
 	AddModule(modPath string) (Module, error)
-	EnqueueModuleOp(modPath string, opType OpType) error
-	EnqueueModuleOpWait(modPath string, opType OpType) error
+	EnqueueModuleOp(modPath string, opType op.OpType) error
+	EnqueueModuleOpWait(modPath string, opType op.OpType) error
 	CancelLoading()
 }
 
-type Module interface {
-	Path() string
-	HumanReadablePath(string) string
-	MatchesPath(path string) bool
-	HasOpenFiles() bool
+// TODO: Replace references and remove alias
+type Module *state.Module
 
-	TerraformExecPath() string
-	TerraformVersion() (*version.Version, error)
-	ProviderVersions() map[string]*version.Version
-	ProviderSchema() (*tfjson.ProviderSchemas, error)
-	ModuleManifest() (*datadir.ModuleManifest, error)
+type ModuleFactory func(string) (Module, error)
 
-	TerraformVersionState() OpState
-	ProviderSchemaState() OpState
-
-	ParsedFiles() (map[string]*hcl.File, error)
-	Diagnostics() map[string]hcl.Diagnostics
-	ModuleCalls() []datadir.ModuleRecord
-}
-
-type ModuleFactory func(string) (*module, error)
-
-type ModuleManagerFactory func(context.Context, filesystem.Filesystem) ModuleManager
+type ModuleManagerFactory func(context.Context, filesystem.Filesystem, *state.ModuleStore, *state.ProviderSchemaStore) ModuleManager
 
 type WalkerFactory func(filesystem.Filesystem, ModuleManager) *Walker
 

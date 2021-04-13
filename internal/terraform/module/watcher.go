@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 // Watcher is a wrapper around native fsnotify.Watcher
@@ -123,12 +124,12 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Write == fsnotify.Write {
 		for _, mod := range w.modules {
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 				return
 			}
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 				return
 			}
 		}
@@ -149,11 +150,11 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 						return nil
 					}
 					if containsPath(mod.Watchable.ModuleManifests, path) {
-						return w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 					}
 					if containsPath(mod.Watchable.PluginLockFiles, path) {
-						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 						return nil
 					}
 					return nil
@@ -163,13 +164,13 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 				return
 			}
 
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 				return
 			}
 		}

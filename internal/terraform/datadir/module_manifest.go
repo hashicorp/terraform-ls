@@ -101,6 +101,13 @@ type ModuleManifest struct {
 	Records []ModuleRecord `json:"Modules"`
 }
 
+func NewModuleManifest(rootDir string, records []ModuleRecord) *ModuleManifest {
+	return &ModuleManifest{
+		rootDir: rootDir,
+		Records: records,
+	}
+}
+
 func (mm *ModuleManifest) RootDir() string {
 	return mm.rootDir
 }

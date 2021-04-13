@@ -19,4 +19,5 @@ const (
 	OpTypeObtainSchema
 	OpTypeParseConfiguration
 	OpTypeParseModuleManifest
+	OpTypeLoadModuleMetadata
 )

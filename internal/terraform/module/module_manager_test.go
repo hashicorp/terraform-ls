@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
@@ -335,12 +336,16 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 					AnyWorkDir: validTfMockCalls(tc.totalModuleCount),
 				},
 			})
-			mm := mmock(ctx, fs)
+			ss, err := state.NewStateStore()
+			if err != nil {
+				t.Fatal(err)
+			}
+			mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
 			t.Cleanup(mm.CancelLoading)
 
 			w := SyncWalker(fs, mm)
 			w.SetLogger(testLogger())
-			err := w.StartWalking(ctx, tc.walkerRoot)
+			err = w.StartWalking(ctx, tc.walkerRoot)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -361,11 +366,7 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 func schemaSourcesPaths(t *testing.T, srcs []SchemaSource) []string {
 	paths := make([]string, len(srcs))
 	for i, src := range srcs {
-		mod, ok := src.(Module)
-		if !ok {
-			t.Fatal("schema source is not Module compatible")
-		}
-		paths[i] = mod.Path()
+		paths[i] = src.Path
 	}
 
 	return paths
@@ -376,7 +377,11 @@ func TestSchemaForModule_uninitialized(t *testing.T) {
 
 	ctx := context.Background()
 	fs := filesystem.NewFilesystem()
-	mm := mmock(ctx, fs)
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
 	t.Cleanup(mm.CancelLoading)
 
 	testData, err := filepath.Abs("testdata")

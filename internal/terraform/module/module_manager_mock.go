@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -25,7 +26,7 @@ func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
 		tfCalls = input.TerraformCalls
 	}
 
-	return func(ctx context.Context, fs filesystem.Filesystem) ModuleManager {
+	return func(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
 		if tfCalls != nil {
 			ctx = exec.WithExecutorFactory(ctx, exec.NewMockExecutor(tfCalls))
 			ctx = exec.WithExecutorOpts(ctx, &exec.ExecutorOpts{
@@ -33,7 +34,7 @@ func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
 			})
 		}
 
-		mm := NewSyncModuleManager(ctx, fs)
+		mm := NewSyncModuleManager(ctx, fs, ms, pss)
 
 		if logger != nil {
 			mm.SetLogger(logger)
@@ -71,7 +72,14 @@ func validTfMockCalls(repeatability int) []*mock.Call {
 				mock.AnythingOfType("*context.cancelCtx"),
 			},
 			ReturnArguments: []interface{}{
-				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				&tfjson.ProviderSchemas{
+					FormatVersion: "0.1",
+					Schemas: map[string]*tfjson.ProviderSchema{
+						"test": {
+							ConfigSchema: &tfjson.Schema{},
+						},
+					},
+				},
 				nil,
 			},
 		},
