@@ -1,7 +1,10 @@
-## 0.15.1 (Unreleased)
+## 0.16.0 (Unreleased)
 
 ENHANCEMENTS:
 
+ - Allow effective utilization of multiple schema sources (local or preloaded) via cache ([#454](https://github.com/hashicorp/terraform-ls/issues/454))
+ - _"No schema found ..."_ warning removed, as schema is far more likely to be available now ([#454](https://github.com/hashicorp/terraform-ls/issues/454))
+ - _"Alternative root modules found ..."_ warning removed ([#454](https://github.com/hashicorp/terraform-ls/issues/454))
  - Further improve support for Terraform 0.15 ([#425](https://github.com/hashicorp/terraform-ls/issues/425))
 
 BUG FIXES:
