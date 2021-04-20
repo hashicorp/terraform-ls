@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 var (
@@ -161,20 +162,20 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 				}
 			}
 
-			err = w.modMgr.EnqueueModuleOp(dir, OpTypeGetTerraformVersion)
+			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion)
 			if err != nil {
 				return err
 			}
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			if dataDir.ModuleManifestPath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, OpTypeParseModuleManifest)
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest)
 				if err != nil {
 					return err
 				}
 			}
 			if dataDir.PluginLockFilePath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, OpTypeObtainSchema)
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeObtainSchema)
 				if err != nil {
 					return err
 				}

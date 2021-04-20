@@ -183,7 +183,14 @@ func validTfMockCalls() []*mock.Call {
 				mock.AnythingOfType(""),
 			},
 			ReturnArguments: []interface{}{
-				&tfjson.ProviderSchemas{FormatVersion: "0.1"},
+				&tfjson.ProviderSchemas{
+					FormatVersion: "0.1",
+					Schemas: map[string]*tfjson.ProviderSchema{
+						"test": {
+							ConfigSchema: &tfjson.Schema{},
+						},
+					},
+				},
 				nil,
 			},
 		},

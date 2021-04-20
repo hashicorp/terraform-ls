@@ -8,14 +8,15 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func TestModuleOpsQueue_modulePriority(t *testing.T) {
-	mq := newModuleOpsQueue()
-
 	fs := filesystem.NewFilesystem()
 	fs.SetLogger(testLogger())
+
+	mq := newModuleOpsQueue(fs)
 
 	dir := t.TempDir()
 	t.Cleanup(func() {
@@ -24,20 +25,20 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 
 	ops := []ModuleOperation{
 		NewModuleOperation(
-			closedModAtPath(t, fs, dir, "alpha"),
-			OpTypeGetTerraformVersion,
+			closedModPath(t, fs, dir, "alpha"),
+			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
 			openModAtPath(t, fs, dir, "beta"),
-			OpTypeGetTerraformVersion,
+			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
 			openModAtPath(t, fs, dir, "gamma"),
-			OpTypeGetTerraformVersion,
+			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
-			closedModAtPath(t, fs, dir, "delta"),
-			OpTypeGetTerraformVersion,
+			closedModPath(t, fs, dir, "delta"),
+			op.OpTypeGetTerraformVersion,
 		),
 	}
 
@@ -45,25 +46,28 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 		mq.PushOp(op)
 	}
 
-	firstOp, _ := mq.PopOp()
+	firstOp, ok := mq.PopOp()
+	if !ok {
+		t.Fatal("expected PopOp to succeed")
+	}
 
 	expectedFirstPath := filepath.Join(dir, "beta")
-	firstPath := firstOp.Module.Path()
+	firstPath := firstOp.ModulePath
 	if firstPath != expectedFirstPath {
-		t.Fatalf("path mismatch\nexpected: %s\ngiven:    %s",
+		t.Fatalf("path mismatch (1)\nexpected: %s\ngiven:    %s",
 			expectedFirstPath, firstPath)
 	}
 
 	secondOp, _ := mq.PopOp()
 	expectedSecondPath := filepath.Join(dir, "gamma")
-	secondPath := secondOp.Module.Path()
+	secondPath := secondOp.ModulePath
 	if secondPath != expectedSecondPath {
-		t.Fatalf("path mismatch\nexpected: %s\ngiven:    %s",
+		t.Fatalf("path mismatch (2)\nexpected: %s\ngiven:    %s",
 			expectedSecondPath, secondPath)
 	}
 }
 
-func closedModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) Module {
+func closedModPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) string {
 	modPath := filepath.Join(dir, modName)
 
 	docPath := filepath.Join(modPath, "main.tf")
@@ -72,12 +76,11 @@ func closedModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := newModule(fs, modPath)
-	m.SetLogger(testLogger())
-	return m
+
+	return modPath
 }
 
-func openModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) Module {
+func openModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) string {
 	modPath := filepath.Join(dir, modName)
 	docPath := filepath.Join(modPath, "main.tf")
 	dh := ilsp.FileHandlerFromDocumentURI(protocol.DocumentURI(uri.FromPath(docPath)))
@@ -85,7 +88,6 @@ func openModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := newModule(fs, modPath)
-	m.SetLogger(testLogger())
-	return m
+
+	return modPath
 }

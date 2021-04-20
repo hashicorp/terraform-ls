@@ -2,21 +2,22 @@ package module
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"path/filepath"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/schema"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/schemas"
+	"github.com/hashicorp/terraform-ls/internal/state"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
 type moduleManager struct {
-	modules []*module
-	fs      filesystem.Filesystem
+	fs          filesystem.Filesystem
+	moduleStore *state.ModuleStore
+	schemaStore *state.ProviderSchemaStore
 
 	loader      *moduleLoader
 	syncLoading bool
@@ -24,8 +25,8 @@ type moduleManager struct {
 	logger      *log.Logger
 }
 
-func NewModuleManager(ctx context.Context, fs filesystem.Filesystem) ModuleManager {
-	mm := newModuleManager(fs)
+func NewModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
+	mm := newModuleManager(fs, ms, pss)
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	mm.cancelFunc = cancelFunc
@@ -34,8 +35,8 @@ func NewModuleManager(ctx context.Context, fs filesystem.Filesystem) ModuleManag
 	return mm
 }
 
-func NewSyncModuleManager(ctx context.Context, fs filesystem.Filesystem) ModuleManager {
-	mm := newModuleManager(fs)
+func NewSyncModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
+	mm := newModuleManager(fs, ms, pss)
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	mm.cancelFunc = cancelFunc
@@ -46,12 +47,13 @@ func NewSyncModuleManager(ctx context.Context, fs filesystem.Filesystem) ModuleM
 	return mm
 }
 
-func newModuleManager(fs filesystem.Filesystem) *moduleManager {
+func newModuleManager(fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) *moduleManager {
 	mm := &moduleManager{
-		modules: make([]*module, 0),
-		fs:      fs,
-		logger:  defaultLogger,
-		loader:  newModuleLoader(),
+		fs:          fs,
+		moduleStore: ms,
+		schemaStore: pss,
+		logger:      defaultLogger,
+		loader:      newModuleLoader(fs, ms, pss),
 	}
 	return mm
 }
@@ -67,24 +69,18 @@ func (mm *moduleManager) AddModule(modPath string) (Module, error) {
 	mm.logger.Printf("MM: adding new module: %s", modPath)
 	// TODO: Follow symlinks (requires proper test data)
 
-	if _, ok := mm.moduleByPath(modPath); ok {
-		return nil, fmt.Errorf("module %s was already added", modPath)
+	err := mm.moduleStore.Add(modPath)
+	if err != nil {
+		return nil, err
 	}
 
-	mod := newModule(mm.fs, modPath)
-	mod.SetLogger(mm.logger)
-
-	mm.modules = append(mm.modules, mod)
-
-	return mod, nil
+	// TODO: Avoid returning new module, just the error from adding
+	mod, err := mm.moduleStore.ModuleByPath(modPath)
+	return mod, err
 }
 
-func (mm *moduleManager) EnqueueModuleOpWait(modPath string, opType OpType) error {
-	mod, err := mm.ModuleByPath(modPath)
-	if err != nil {
-		return err
-	}
-	modOp := NewModuleOperation(mod, opType)
+func (mm *moduleManager) EnqueueModuleOpWait(modPath string, opType op.OpType) error {
+	modOp := NewModuleOperation(modPath, opType)
 	mm.loader.EnqueueModuleOp(modOp)
 
 	<-modOp.Done()
@@ -92,13 +88,8 @@ func (mm *moduleManager) EnqueueModuleOpWait(modPath string, opType OpType) erro
 	return nil
 }
 
-func (mm *moduleManager) EnqueueModuleOp(modPath string, opType OpType) error {
-	mod, err := mm.ModuleByPath(modPath)
-	if err != nil {
-		return err
-	}
-
-	modOp := NewModuleOperation(mod, opType)
+func (mm *moduleManager) EnqueueModuleOp(modPath string, opType op.OpType) error {
+	modOp := NewModuleOperation(modPath, opType)
 	mm.loader.EnqueueModuleOp(modOp)
 	if mm.syncLoading {
 		<-modOp.Done()
@@ -107,56 +98,20 @@ func (mm *moduleManager) EnqueueModuleOp(modPath string, opType OpType) error {
 }
 
 func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, error) {
-	sources, err := mm.SchemaSourcesForModule(modPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		tfVersion        *version.Version
-		coreSchema       *schema.BodySchema
-		providerSchema   *tfjson.ProviderSchemas
-		providerVersions map[string]*version.Version
-	)
-
-	if len(sources) > 0 {
-		ps, err := sources[0].ProviderSchema()
-		if err == nil {
-			providerSchema = ps
-		}
-		providerVersions = sources[0].ProviderVersions()
-	}
-
 	mod, err := mm.ModuleByPath(modPath)
 	if err != nil {
 		return nil, err
 	}
 
-	if v, err := mod.TerraformVersion(); err == nil {
-		tfVersion = v
-	}
-
-	if len(sources) == 0 {
-		mm.logger.Printf("falling back to preloaded schema for %s...", modPath)
-		ps, vOut, err := schemas.PreloadedProviderSchemas()
+	var coreSchema *schema.BodySchema
+	coreRequirements := make(version.Constraints, 0)
+	if mod.TerraformVersion != nil {
+		var err error
+		coreSchema, err = tfschema.CoreModuleSchemaForVersion(mod.TerraformVersion)
 		if err != nil {
 			return nil, err
 		}
-		if ps != nil {
-			providerSchema = ps
-			providerVersions = vOut.Providers
-
-			mm.logger.Printf("preloaded provider schema (%d providers) set for %s",
-				len(ps.Schemas), modPath)
-
-			if tfVersion == nil {
-				tfVersion = vOut.Core
-			}
-		}
-	}
-
-	if tfVersion != nil {
-		coreSchema, err = tfschema.CoreModuleSchemaForVersion(tfVersion)
+		coreRequirements, err = version.NewConstraint(mod.TerraformVersion.String())
 		if err != nil {
 			return nil, err
 		}
@@ -164,76 +119,99 @@ func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, er
 		coreSchema = tfschema.UniversalCoreModuleSchema()
 	}
 
-	merger := tfschema.NewSchemaMerger(coreSchema)
-	if tfVersion != nil {
-		merger.SetCoreVersion(tfVersion)
-	}
-	if len(providerVersions) > 0 {
-		err = merger.SetProviderVersions(providerVersions)
-		if err != nil {
-			return nil, err
-		}
+	sm := tfschema.NewSchemaMerger(coreSchema)
+	sm.SetSchemaReader(mm.schemaStore)
+
+	meta := &tfmodule.Meta{
+		Path:                 mod.Path,
+		CoreRequirements:     coreRequirements,
+		ProviderRequirements: mod.Meta.ProviderRequirements,
+		ProviderReferences:   mod.Meta.ProviderReferences,
 	}
 
-	pf, _ := mod.ParsedFiles()
-	if len(pf) > 0 {
-		merger.SetParsedFiles(pf)
-	}
-
-	return merger.MergeWithJsonProviderSchemas(providerSchema)
+	return sm.SchemaForModule(meta)
 }
 
+// SchemaSourcesForModule is DEPRECATED and should NOT be used anymore
+// it is just maintained for backwards compatibility in the "rootmodules"
+// custom LSP command which itself will be DEPRECATED as external parties
+// should not need to know where does a matched schema come from in practice
 func (mm *moduleManager) SchemaSourcesForModule(modPath string) ([]SchemaSource, error) {
-	mod, err := mm.ModuleByPath(modPath)
+	ok, err := mm.moduleHasAnyLocallySourcedSchema(modPath)
 	if err != nil {
-		return []SchemaSource{}, err
+		return nil, err
+	}
+	if ok {
+		return []SchemaSource{
+			{Path: modPath},
+		}, nil
 	}
 
-	if ps, err := mod.ProviderSchema(); err == nil && ps != nil {
-		return []SchemaSource{mod}, nil
+	callers, err := mm.moduleStore.CallersOfModule(modPath)
+	if err != nil {
+		return nil, err
 	}
 
 	sources := make([]SchemaSource, 0)
-	for _, mod := range mm.modules {
-		if mod.CallsModule(modPath) {
-			if ps, err := mod.ProviderSchema(); err == nil && ps != nil {
-				sources = append(sources, mod)
-			}
+	for _, modCaller := range callers {
+		ok, err := mm.moduleHasAnyLocallySourcedSchema(modCaller.Path)
+		if err != nil {
+			return nil, err
 		}
-	}
+		if ok {
+			sources = append(sources, SchemaSource{
+				Path: modCaller.Path,
+			})
+		}
 
-	// We could expose preloaded schemas here already
-	// but other logic elsewhere isn't able to take advantage
-	// of multiple sources and mix-and-match yet.
-	// TODO https://github.com/hashicorp/terraform-ls/issues/354
+	}
 
 	return sources, nil
 }
 
-func (mm *moduleManager) moduleByPath(dir string) (*module, bool) {
-	for _, mod := range mm.modules {
-		if pathEquals(mod.Path(), dir) {
-			return mod, true
+func (mm *moduleManager) moduleHasAnyLocallySourcedSchema(modPath string) (bool, error) {
+	si, err := mm.schemaStore.ListSchemas()
+	if err != nil {
+		return false, err
+	}
+
+	for ps := si.Next(); ps != nil; ps = si.Next() {
+		if lss, ok := ps.Source.(state.LocalSchemaSource); ok {
+			if lss.ModulePath == modPath {
+				return true, nil
+			}
 		}
 	}
-	return nil, false
+
+	return false, nil
 }
 
-func (mm *moduleManager) ListModules() []Module {
+func (mm *moduleManager) ListModules() ([]Module, error) {
 	modules := make([]Module, 0)
-	for _, mod := range mm.modules {
+
+	mods, err := mm.moduleStore.List()
+	if err != nil {
+		return modules, err
+	}
+
+	for _, mod := range mods {
 		modules = append(modules, mod)
 	}
-	return modules
+
+	return modules, nil
 }
 func (mm *moduleManager) ModuleByPath(path string) (Module, error) {
 	path = filepath.Clean(path)
 
-	if mod, ok := mm.moduleByPath(path); ok {
-		return mod, nil
+	mod, err := mm.moduleStore.ModuleByPath(path)
+	if err != nil {
+		if _, ok := err.(*state.ModuleNotFoundError); ok {
+			return nil, &ModuleNotFoundErr{path}
+		}
+		return nil, err
 	}
 
-	return nil, &ModuleNotFoundErr{path}
+	return mod, nil
 }
 
 func (mm *moduleManager) CancelLoading() {

@@ -9,6 +9,7 @@ import (
 
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 )
 
 func ModuleManifestFilePath(fs filesystem.Filesystem, modulePath string) (string, bool) {
@@ -100,8 +101,29 @@ type ModuleManifest struct {
 	Records []ModuleRecord `json:"Modules"`
 }
 
+func NewModuleManifest(rootDir string, records []ModuleRecord) *ModuleManifest {
+	return &ModuleManifest{
+		rootDir: rootDir,
+		Records: records,
+	}
+}
+
 func (mm *ModuleManifest) RootDir() string {
 	return mm.rootDir
+}
+
+func (mm *ModuleManifest) ContainsLocalModule(path string) bool {
+	for _, mod := range mm.Records {
+		if mod.IsRoot() || mod.IsExternal() {
+			continue
+		}
+
+		absPath := filepath.Join(mm.RootDir(), mod.Dir)
+		if pathcmp.PathEquals(absPath, path) {
+			return true
+		}
+	}
+	return false
 }
 
 func ParseModuleManifestFromFile(path string) (*ModuleManifest, error) {

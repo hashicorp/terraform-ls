@@ -9,7 +9,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 // Watcher is a wrapper around native fsnotify.Watcher
@@ -59,7 +61,7 @@ func (w *watcher) IsModuleWatched(modPath string) bool {
 	modPath = filepath.Clean(modPath)
 
 	for _, m := range w.modules {
-		if pathEquals(m.Path, modPath) {
+		if pathcmp.PathEquals(m.Path, modPath) {
 			return true
 		}
 	}
@@ -122,12 +124,12 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Write == fsnotify.Write {
 		for _, mod := range w.modules {
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 				return
 			}
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 				return
 			}
 		}
@@ -148,11 +150,11 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 						return nil
 					}
 					if containsPath(mod.Watchable.ModuleManifests, path) {
-						return w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 					}
 					if containsPath(mod.Watchable.PluginLockFiles, path) {
-						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-						w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 						return nil
 					}
 					return nil
@@ -162,13 +164,13 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
 				return
 			}
 
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
 				return
 			}
 		}
@@ -177,7 +179,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Remove == fsnotify.Remove {
 		for modI, mod := range w.modules {
 			// Whole module being removed
-			if pathEquals(mod.Path, eventPath) {
+			if pathcmp.PathEquals(mod.Path, eventPath) {
 				for _, wPath := range mod.Watched {
 					w.fw.Remove(wPath)
 				}
@@ -187,7 +189,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			for i, wp := range mod.Watched {
-				if pathEquals(wp, eventPath) {
+				if pathcmp.PathEquals(wp, eventPath) {
 					w.fw.Remove(wp)
 					mod.Watched = append(mod.Watched[:i], mod.Watched[i+1:]...)
 					return
@@ -199,7 +201,7 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 
 func containsPath(paths []string, path string) bool {
 	for _, p := range paths {
-		if pathEquals(p, path) {
+		if pathcmp.PathEquals(p, path) {
 			return true
 		}
 	}

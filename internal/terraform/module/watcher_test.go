@@ -10,9 +10,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -28,7 +32,7 @@ func TestWatcher_initFromScratch(t *testing.T) {
 	psMock := &tfjson.ProviderSchemas{
 		FormatVersion: "0.1",
 		Schemas: map[string]*tfjson.ProviderSchema{
-			"custom": {},
+			"registry.terraform.io/hashicorp/aws": {},
 		},
 	}
 	mmm := NewModuleManagerMock(&ModuleManagerMockInput{
@@ -62,7 +66,11 @@ func TestWatcher_initFromScratch(t *testing.T) {
 		},
 	})
 	ctx := context.Background()
-	modMgr := mmm(ctx, fs)
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modMgr := mmm(ctx, fs, ss.Modules, ss.ProviderSchemas)
 
 	w, err := NewWatcher(fs, modMgr)
 	if err != nil {
@@ -70,7 +78,7 @@ func TestWatcher_initFromScratch(t *testing.T) {
 	}
 	w.SetLogger(testLogger())
 
-	mod, err := modMgr.AddModule(modPath)
+	_, err = modMgr.AddModule(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,23 +127,31 @@ resource "aws_vpc" "example" {
 	// Give watcher some time to react
 	time.Sleep(250 * time.Millisecond)
 
-	ps, err := mod.ProviderSchema()
+	vc, err := version.NewConstraint("~> 3.0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(psMock, ps); diff != "" {
+	ps, err := ss.ProviderSchemas.ProviderSchema(modPath, tfaddr.NewDefaultProvider("aws"), vc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedSchema := &tfschema.ProviderSchema{
+		Resources:   map[string]*schema.BodySchema{},
+		DataSources: map[string]*schema.BodySchema{},
+	}
+	if diff := cmp.Diff(expectedSchema, ps); diff != "" {
 		t.Fatalf("schema mismatch: %s", diff)
 	}
 
-	v, err := mod.TerraformVersion()
+	mod, err := ss.Modules.ModuleByPath(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v == nil {
+	if mod.TerraformVersion == nil {
 		t.Fatal("expected non-nil version")
 	}
-	if v.String() != "1.0.0" {
+	if mod.TerraformVersion.String() != "1.0.0" {
 		t.Fatalf("version mismatch.\ngiven:   %q\nexpected: %q",
-			v.String(), "1.0.0")
+			mod.TerraformVersion.String(), "1.0.0")
 	}
 }

@@ -15,7 +15,9 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -30,6 +32,8 @@ type service struct {
 	stopSession context.CancelFunc
 
 	fs               filesystem.Filesystem
+	modStore         *state.ModuleStore
+	schemaStore      *state.ProviderSchemaStore
 	watcher          module.Watcher
 	walker           *module.Walker
 	modMgr           module.ModuleManager
@@ -102,7 +106,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
 	svc.sessCtx = exec.WithExecutorFactory(svc.sessCtx, svc.tfExecFactory)
 
-	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs)
+	store, err := state.NewStateStore()
+	if err != nil {
+		return nil, err
+	}
+
+	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
+	if err != nil {
+		return nil, err
+	}
+
+	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, store.Modules, store.ProviderSchemas)
 	svc.modMgr.SetLogger(svc.logger)
 
 	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
@@ -138,7 +152,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithClientName(ctx, &clientName)
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
@@ -171,15 +184,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithDiagnostics(ctx, diags)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
-			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
-			ctx = exec.WithExecutorOpts(ctx, execOpts)
-			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},

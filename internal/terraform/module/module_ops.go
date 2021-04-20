@@ -6,59 +6,31 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/earlydecoder"
+	"github.com/hashicorp/terraform-schema/module"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
-
-type OpState uint
-
-const (
-	OpStateUnknown OpState = iota
-	OpStateQueued
-	OpStateLoading
-	OpStateLoaded
-)
-
-type OpType uint
-
-const (
-	OpTypeUnknown OpType = iota
-	OpTypeGetTerraformVersion
-	OpTypeObtainSchema
-	OpTypeParseConfiguration
-	OpTypeParseModuleManifest
-)
-
-func (t OpType) String() string {
-	switch t {
-	case OpTypeUnknown:
-		return "OpTypeUnknown"
-	case OpTypeGetTerraformVersion:
-		return "OpTypeGetTerraformVersion"
-	case OpTypeObtainSchema:
-		return "OpTypeObtainSchema"
-	case OpTypeParseConfiguration:
-		return "OpTypeParseConfiguration"
-	case OpTypeParseModuleManifest:
-		return "OpTypeParseModuleManifest"
-	}
-
-	return fmt.Sprintf("OpType(%d)", t)
-}
 
 type ModuleOperation struct {
-	Module Module
-	Type   OpType
+	ModulePath string
+	Type       op.OpType
 
 	doneCh chan struct{}
 }
 
-func NewModuleOperation(mod Module, typ OpType) ModuleOperation {
+func NewModuleOperation(modPath string, typ op.OpType) ModuleOperation {
 	return ModuleOperation{
-		Module: mod,
-		Type:   typ,
-		doneCh: make(chan struct{}, 1),
+		ModulePath: modPath,
+		Type:       typ,
+		doneCh:     make(chan struct{}, 1),
 	}
 }
 
@@ -70,66 +42,116 @@ func (mo ModuleOperation) Done() <-chan struct{} {
 	return mo.doneCh
 }
 
-func GetTerraformVersion(ctx context.Context, mod Module) {
-	m := mod.(*module)
+func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
 
-	m.SetTerraformVersionState(OpStateLoading)
-	defer m.SetTerraformVersionState(OpStateLoaded)
+	err = modStore.SetTerraformVersionState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+	defer modStore.SetTerraformVersionState(modPath, op.OpStateLoaded)
 
 	tfExec, err := TerraformExecutorForModule(ctx, mod)
 	if err != nil {
-		m.SetTerraformVersion(nil, err)
-		m.logger.Printf("getting executor failed: %s", err)
-		return
+		sErr := modStore.UpdateTerraformVersion(modPath, nil, nil, err)
+		if err != nil {
+			return sErr
+		}
+		return err
 	}
 
 	v, pv, err := tfExec.Version(ctx)
-	if err != nil {
-		m.logger.Printf("failed to get terraform version: %s", err)
-	} else {
-		m.logger.Printf("got terraform version successfully for %s", m.Path())
-	}
+	pVersions := providerVersions(pv)
 
-	m.SetTerraformVersion(v, err)
-	if len(pv) > 0 {
-		m.SetProviderVersions(pv)
+	sErr := modStore.UpdateTerraformVersion(modPath, v, pVersions, err)
+	if err != nil {
+		return sErr
 	}
+	return err
 }
 
-func ObtainSchema(ctx context.Context, mod Module) {
-	m := mod.(*module)
-	m.SetProviderSchemaObtainingState(OpStateLoading)
-	defer m.SetProviderSchemaObtainingState(OpStateLoaded)
+func providerVersions(pv map[string]*version.Version) map[tfaddr.Provider]*version.Version {
+	m := make(map[tfaddr.Provider]*version.Version, 0)
+
+	for rawAddr, v := range pv {
+		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
+		if err != nil {
+			// skip unparsable address
+			continue
+		}
+		if pAddr.IsLegacy() {
+			// TODO: check for migrations via Registry API?
+		}
+		m[pAddr] = v
+	}
+
+	return m
+}
+
+func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
 
 	tfExec, err := TerraformExecutorForModule(ctx, mod)
 	if err != nil {
-		m.SetProviderSchemas(nil, err)
-		m.logger.Printf("getting executor failed: %s", err)
-		return
+		sErr := modStore.FinishProviderSchemaLoading(modPath, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
 	}
 
 	ps, err := tfExec.ProviderSchemas(ctx)
 	if err != nil {
-		m.logger.Printf("failed to obtain schema: %s", err)
-	} else {
-		m.logger.Printf("schema obtained successfully for %s", m.Path())
+		sErr := modStore.FinishProviderSchemaLoading(modPath, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
 	}
 
-	m.SetProviderSchemas(ps, err)
+	for rawAddr, pJsonSchema := range ps.Schemas {
+		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
+		if err != nil {
+			// skip unparsable address
+			continue
+		}
+		if pAddr.IsLegacy() {
+			// TODO: check for migrations via Registry API?
+		}
+
+		pSchema := tfschema.ProviderSchemaFromJson(pJsonSchema, pAddr)
+
+		err = schemaStore.AddLocalSchema(modPath, pAddr, pSchema)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func ParseConfiguration(mod Module) {
-	m := mod.(*module)
-	m.SetConfigParsingState(OpStateLoading)
-	defer m.SetConfigParsingState(OpStateLoaded)
+func ParseConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetParsingState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
 	files := make(map[string]*hcl.File, 0)
 	diags := make(map[string]hcl.Diagnostics, 0)
 
-	infos, err := m.fs.ReadDir(m.Path())
+	infos, err := fs.ReadDir(modPath)
 	if err != nil {
-		m.SetParsedFiles(files, err)
-		return
+		sErr := modStore.UpdateParsedFiles(modPath, files, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
 	}
 
 	for _, info := range infos {
@@ -145,12 +167,15 @@ func ParseConfiguration(mod Module) {
 
 		// TODO: overrides
 
-		fullPath := filepath.Join(m.Path(), name)
+		fullPath := filepath.Join(modPath, name)
 
-		src, err := m.fs.ReadFile(fullPath)
+		src, err := fs.ReadFile(fullPath)
 		if err != nil {
-			m.SetParsedFiles(files, err)
-			return
+			sErr := modStore.UpdateParsedFiles(modPath, files, err)
+			if sErr != nil {
+				return sErr
+			}
+			return err
 		}
 
 		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
@@ -160,9 +185,17 @@ func ParseConfiguration(mod Module) {
 		}
 	}
 
-	m.SetParsedFiles(files, err)
-	m.SetDiagnostics(diags)
-	return
+	sErr := modStore.UpdateParsedFiles(modPath, files, err)
+	if sErr != nil {
+		return sErr
+	}
+
+	sErr = modStore.UpdateDiagnostics(modPath, diags)
+	if sErr != nil {
+		return sErr
+	}
+
+	return err
 }
 
 // IsIgnoredFile returns true if the given filename (which must not have a
@@ -173,23 +206,73 @@ func IsIgnoredFile(name string) bool {
 		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }
 
-func ParseModuleManifest(mod Module) {
-	m := mod.(*module)
-	m.SetModuleManifestParsingState(OpStateLoading)
-	defer m.SetModuleManifestParsingState(OpStateLoaded)
+func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetModManifestState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
-	manifestPath, ok := datadir.ModuleManifestFilePath(m.fs, mod.Path())
+	manifestPath, ok := datadir.ModuleManifestFilePath(fs, modPath)
 	if !ok {
-		m.logger.Printf("%s: manifest file does not exist", mod.Path())
-		return
+		err := fmt.Errorf("%s: manifest file does not exist", modPath)
+		sErr := modStore.UpdateModManifest(modPath, nil, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
 	}
 
 	mm, err := datadir.ParseModuleManifestFromFile(manifestPath)
 	if err != nil {
-		m.logger.Printf("failed to parse manifest: %s", err)
-	} else {
-		m.logger.Printf("manifest parsed successfully for %s", m.Path())
+		err := fmt.Errorf("failed to parse manifest: %w", err)
+		sErr := modStore.UpdateModManifest(modPath, nil, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
 	}
 
-	m.SetModuleManifest(mm, err)
+	sErr := modStore.UpdateModManifest(modPath, mm, err)
+	if sErr != nil {
+		return sErr
+	}
+	return err
+}
+
+func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetMetaState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	var mErr error
+	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedFiles)
+	if len(diags) > 0 {
+		mErr = diags
+	}
+
+	providerRequirements := make(map[tfaddr.Provider]version.Constraints, len(meta.ProviderRequirements))
+	for pAddr, pvc := range meta.ProviderRequirements {
+		// TODO: check pAddr for migrations via Registry API?
+		providerRequirements[pAddr] = pvc
+	}
+	meta.ProviderRequirements = providerRequirements
+
+	providerRefs := make(map[module.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
+	for localRef, pAddr := range meta.ProviderReferences {
+		// TODO: check pAddr for migrations via Registry API?
+		providerRefs[localRef] = pAddr
+	}
+	meta.ProviderReferences = providerRefs
+
+	sErr := modStore.UpdateMetadata(modPath, meta, mErr)
+	if sErr != nil {
+		return sErr
+	}
+	return mErr
 }

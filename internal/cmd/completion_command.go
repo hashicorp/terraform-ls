@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
 )
@@ -104,7 +105,12 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 
 	ctx := context.Background()
-	modMgr := module.NewSyncModuleManager(ctx, fs)
+	ss, err := state.NewStateStore()
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
 
 	mod, err := modMgr.AddModule(fh.Dir())
 	if err != nil {

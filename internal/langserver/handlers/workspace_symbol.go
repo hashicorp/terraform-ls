@@ -22,7 +22,11 @@ func (h *logHandler) WorkspaceSymbol(ctx context.Context, params lsp.WorkspaceSy
 		return nil, err
 	}
 
-	modules := mm.ListModules()
+	modules, err := mm.ListModules()
+	if err != nil {
+		return nil, err
+	}
+
 	for _, mod := range modules {
 		d, err := decoder.DecoderForModule(ctx, mod)
 		if err != nil {
@@ -34,7 +38,7 @@ func (h *logHandler) WorkspaceSymbol(ctx context.Context, params lsp.WorkspaceSy
 			continue
 		}
 
-		symbols = append(symbols, ilsp.SymbolInformation(mod.Path(), modSymbols,
+		symbols = append(symbols, ilsp.SymbolInformation(mod.Path, modSymbols,
 			cc.Workspace.WorkspaceClientCapabilities.Symbol)...)
 	}
 

@@ -33,7 +33,7 @@ func TestDocumentLink_withValidData(t *testing.T) {
 							mock.AnythingOfType(""),
 						},
 						ReturnArguments: []interface{}{
-							version.Must(version.NewVersion("0.12.0")),
+							version.Must(version.NewVersion("0.12.1")),
 							nil,
 							nil,
 						},

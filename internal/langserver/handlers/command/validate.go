@@ -62,7 +62,7 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 
 	diags := diagnostics.HCLDiagsFromJSON(jsonDiags)
 
-	notifier.PublishHCLDiags(ctx, mod.Path(), diags, "terraform validate")
+	notifier.PublishHCLDiags(ctx, mod.Path, diags, "terraform validate")
 
 	return nil, nil
 }

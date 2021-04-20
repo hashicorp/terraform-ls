@@ -1,6 +1,6 @@
 // +build !windows
 
-package module
+package pathcmp
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ func TestPathEquals(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.name), func(t *testing.T) {
-			result := pathEquals(tc.path1, tc.path2)
+			result := PathEquals(tc.path1, tc.path2)
 			if result != tc.expected {
 				t.Fatalf("expected: %t Got: %t", tc.expected, result)
 			}

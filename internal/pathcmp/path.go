@@ -1,11 +1,11 @@
-package module
+package pathcmp
 
 import (
 	"path/filepath"
 	"strings"
 )
 
-func pathEquals(path1, path2 string) bool {
+func PathEquals(path1, path2 string) bool {
 	path1 = filepath.Clean(path1)
 	path2 = filepath.Clean(path2)
 	volume1 := filepath.VolumeName(path1)

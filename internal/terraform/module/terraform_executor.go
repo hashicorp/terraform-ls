@@ -18,7 +18,7 @@ func TerraformExecutorForModule(ctx context.Context, mod Module) (exec.Terraform
 		return nil, err
 	}
 
-	tfExec, err := newExecutor(mod.Path(), execPath)
+	tfExec, err := newExecutor(mod.Path, execPath)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +38,6 @@ func TerraformExecPath(ctx context.Context, mod Module) (string, error) {
 	opts, ok := exec.ExecutorOptsFromContext(ctx)
 	if ok && opts.ExecPath != "" {
 		return opts.ExecPath, nil
-	} else if mod.TerraformExecPath() != "" {
-		return mod.TerraformExecPath(), nil
 	} else {
 		return "", NoTerraformExecPathErr{}
 	}

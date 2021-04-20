@@ -16,6 +16,7 @@ import (
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
@@ -86,7 +87,11 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	fs := filesystem.NewFilesystem()
 
 	ctx := context.Background()
-	modMgr := module.NewSyncModuleManager(ctx, fs)
+	ss, err := state.NewStateStore()
+	if err != nil {
+		return err
+	}
+	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
 	modMgr.SetLogger(c.logger)
 
 	walker := module.SyncWalker(fs, modMgr)
@@ -101,34 +106,33 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		return err
 	}
 
-	modules := modMgr.ListModules()
+	modules, err := modMgr.ListModules()
+	if err != nil {
+		return err
+	}
 	c.Ui.Output(fmt.Sprintf("%d modules found in total at %s", len(modules), rootPath))
 	for _, mod := range modules {
 		errs := &multierror.Error{}
 
-		_, err = mod.TerraformVersion()
-		if err != nil {
-			multierror.Append(errs, err)
+		if mod.TerraformVersionErr != nil {
+			multierror.Append(errs, mod.TerraformVersionErr)
 		}
 
-		_, err := mod.ProviderSchema()
-		if err != nil {
-			multierror.Append(errs, err)
+		if mod.ProviderSchemaErr != nil {
+			multierror.Append(errs, mod.ProviderSchemaErr)
 		}
 
-		_, err = mod.ModuleManifest()
-		if err != nil {
-			multierror.Append(errs, err)
+		if mod.ModManifestErr != nil {
+			multierror.Append(errs, mod.ModManifestErr)
 		}
 
-		_, err = mod.ParsedFiles()
-		if err != nil {
-			multierror.Append(errs, err)
+		if mod.ParsingErr != nil {
+			multierror.Append(errs, mod.ParsingErr)
 		}
 
 		errs.ErrorFormat = formatErrors
 
-		modules := formatModuleRecords(mod.ModuleCalls())
+		modules := formatModuleRecords(mod.ModManifest.Records)
 		subModules := fmt.Sprintf("%d modules", len(modules))
 		if len(modules) > 0 {
 			subModules += "\n"
@@ -139,7 +143,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 		c.Ui.Output(fmt.Sprintf(` - %s
    - %s
-   - %s`, mod.Path(), errs, subModules))
+   - %s`, mod.Path, errs, subModules))
 	}
 	c.Ui.Output("")
 

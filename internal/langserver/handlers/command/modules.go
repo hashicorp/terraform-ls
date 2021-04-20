@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 
 	"github.com/creachadair/jrpc2/code"
@@ -68,8 +69,8 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 	modules := make([]moduleInfo, len(sources))
 	for i, source := range sources {
 		modules[i] = moduleInfo{
-			URI:  uri.FromPath(source.Path()),
-			Name: source.HumanReadablePath(rootDir),
+			URI:  uri.FromPath(source.Path),
+			Name: humanReadablePath(rootDir, source.Path),
 		}
 	}
 	sort.SliceStable(modules, func(i, j int) bool {
@@ -80,4 +81,24 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 		DoneLoading:     doneLoading,
 		Modules:         modules,
 	}, nil
+}
+
+func humanReadablePath(rootDir, modPath string) string {
+	if rootDir == "" {
+		return modPath
+	}
+
+	// absolute paths can be too long for UI/messages,
+	// so we just display relative to root dir
+	relDir, err := filepath.Rel(rootDir, modPath)
+	if err != nil {
+		return modPath
+	}
+
+	if relDir == "." {
+		// Name of the root dir is more helpful than "."
+		return filepath.Base(rootDir)
+	}
+
+	return relDir
 }
