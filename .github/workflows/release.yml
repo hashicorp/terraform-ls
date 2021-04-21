@@ -5,6 +5,9 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
+permissions:
+  contents: write
+
 env:
   GOPROXY: https://proxy.golang.org/
 
