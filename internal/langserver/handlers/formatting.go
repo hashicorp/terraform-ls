@@ -19,19 +19,9 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
-	if err != nil {
-		return edits, err
-	}
-
 	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
 
-	mod, err := mf.ModuleByPath(fh.Dir())
-	if err != nil {
-		return edits, err
-	}
-
-	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
+	tfExec, err := module.TerraformExecutorForModule(ctx, fh.Dir())
 	if err != nil {
 		return edits, errors.EnrichTfExecError(err)
 	}

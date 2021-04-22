@@ -40,7 +40,7 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		}
 	}
 
-	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path)
 	if err != nil {
 		return nil, errors.EnrichTfExecError(err)
 	}

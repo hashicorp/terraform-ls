@@ -39,7 +39,7 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		}
 	}
 
-	tfExec, err := module.TerraformExecutorForModule(ctx, mod)
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path)
 	if err != nil {
 		return nil, errors.EnrichTfExecError(err)
 	}
