@@ -58,8 +58,8 @@ jobs:
           sudo mv hc-releases /usr/bin/hc-releases
           hc-releases version
       -
-        name: Import PGP key for archive signing
-        run: echo -e "${{ secrets.PGP_SIGNING_KEY }}" | gpg --import
+        name: Import key for archive signing
+        run: echo -e "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
       - 
         name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -77,7 +77,7 @@ jobs:
           version: latest
           args: release
         env:
-          PGP_USER_ID: ${{ secrets.PGP_USER_ID }}
+          GPG_KEY_ID: ${{ secrets.GPG_PUBLIC_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

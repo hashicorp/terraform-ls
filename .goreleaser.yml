@@ -76,13 +76,13 @@ checksum:
 signs:
   -
     id: with_key_id
-    signature: "${artifact}.{{ .Env.PGP_USER_ID }}.sig"
-    args: ["-u", "{{ .Env.PGP_USER_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
+    signature: "${artifact}.{{ .Env.GPG_KEY_ID }}.sig"
+    args: ["-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
   -
     id: default
     signature: "${artifact}.sig"
-    args: ["-u", "{{ .Env.PGP_USER_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
+    args: ["-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
 
 brews:
