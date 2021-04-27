@@ -227,7 +227,7 @@ func TestCompletion_withValidData(t *testing.T) {
 var testSchemaOutput = `{
   "format_version": "0.1",
   "provider_schemas": {
-	"test": {
+	"test/test": {
 	  "provider": {
 		"version": 0,
 		"block": {

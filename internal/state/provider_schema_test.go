@@ -439,11 +439,15 @@ func TestStateStore_ProviderSchema_legacyAddress_exactMatch(t *testing.T) {
 			expectedDescription, ps.Provider.Description.Value)
 	}
 
-	// Check that detail has "fixed" legacy namespace
-	expectedDetail := "hashicorp/aws 2.0.0"
+	// Check that detail has legacy namespace in detail, but no link
+	expectedDetail := "-/aws 2.0.0"
 	if ps.Provider.Detail != expectedDetail {
 		t.Fatalf("detail doesn't match. expected: %q, got: %q",
 			expectedDetail, ps.Provider.Detail)
+	}
+	if ps.Provider.DocsLink != nil {
+		t.Fatalf("docs link is not empty, got: %#v",
+			ps.Provider.DocsLink)
 	}
 }
 
