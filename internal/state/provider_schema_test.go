@@ -758,6 +758,63 @@ func TestStateStore_ListSchemas(t *testing.T) {
 	}
 }
 
+// BenchmarkProviderSchema exercises the hot path for most handlers which require schema
+func BenchmarkProviderSchema(b *testing.B) {
+	s, err := NewStateStore()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	schemas := []*ProviderSchema{
+		{
+			tfaddr.Provider{
+				Hostname:  tfaddr.DefaultRegistryHost,
+				Namespace: "hashicorp",
+				Type:      "blah",
+			},
+			testVersion(b, "0.9.0"),
+			PreloadedSchemaSource{},
+			&tfschema.ProviderSchema{
+				Provider: &schema.BodySchema{
+					Description: lang.PlainText("preload: hashicorp/blah 0.9.0"),
+				},
+			},
+		},
+		{
+			tfaddr.Provider{
+				Hostname:  tfaddr.DefaultRegistryHost,
+				Namespace: "hashicorp",
+				Type:      "aws",
+			},
+			testVersion(b, "0.9.0"),
+			PreloadedSchemaSource{},
+			&tfschema.ProviderSchema{
+				Provider: &schema.BodySchema{
+					Description: lang.PlainText("preload: hashicorp/aws 0.9.0"),
+				},
+			},
+		},
+	}
+	for _, ps := range schemas {
+		addAnySchema(b, s.ProviderSchemas, s.Modules, ps)
+	}
+
+	expectedPs := &tfschema.ProviderSchema{
+		Provider: &schema.BodySchema{
+			Description: lang.PlainText("preload: hashicorp/aws 0.9.0"),
+		},
+	}
+	for n := 0; n < b.N; n++ {
+		foundPs, err := s.ProviderSchemas.ProviderSchema("/test", tfaddr.NewDefaultProvider("aws"), testConstraint(b, "0.9.0"))
+		if err != nil {
+			b.Fatal(err)
+		}
+		if diff := cmp.Diff(expectedPs, foundPs, cmpOpts); diff != "" {
+			b.Fatalf("schema doesn't match: %s", diff)
+		}
+	}
+}
+
 func schemaSliceFromIterator(it *ProviderSchemaIterator) []*ProviderSchema {
 	schemas := make([]*ProviderSchema, 0)
 	for ps := it.Next(); ps != nil; ps = it.Next() {
@@ -773,7 +830,12 @@ func schemaSliceFromIterator(it *ProviderSchemaIterator) []*ProviderSchema {
 	return schemas
 }
 
-func addAnySchema(t *testing.T, ss *ProviderSchemaStore, ms *ModuleStore, ps *ProviderSchema) {
+type testOrBench interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+}
+
+func addAnySchema(t testOrBench, ss *ProviderSchemaStore, ms *ModuleStore, ps *ProviderSchema) {
 	switch s := ps.Source.(type) {
 	case PreloadedSchemaSource:
 		err := ss.AddPreloadedSchema(ps.Address, ps.Version, ps.Schema)
@@ -784,6 +846,7 @@ func addAnySchema(t *testing.T, ss *ProviderSchemaStore, ms *ModuleStore, ps *Pr
 		err := ss.AddLocalSchema(s.ModulePath, ps.Address, ps.Schema)
 		if err != nil {
 			t.Fatal(err)
+
 		}
 		pVersions := map[tfaddr.Provider]*version.Version{
 			ps.Address: ps.Version,
