@@ -105,7 +105,7 @@ func TestDocumentLink_withValidData(t *testing.T) {
 							"character": 15
 						}
 					},
-					"target": "https://registry.terraform.io/providers/hashicorp/test/latest/docs?utm_content=documentLink\u0026utm_source=terraform-ls"
+					"target": "https://registry.terraform.io/providers/test/test/latest/docs?utm_content=documentLink\u0026utm_source=terraform-ls"
 				}
 			]
 		}`)

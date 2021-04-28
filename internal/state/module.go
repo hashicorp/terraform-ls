@@ -93,16 +93,7 @@ func (s *ModuleStore) CallersOfModule(modPath string) ([]*Module, error) {
 			continue
 		}
 		if mod.ModManifest.ContainsLocalModule(modPath) {
-			// deep copy the module to prevent race conditions
-			mCopy, err := copystructure.Config{
-				Copiers: copiers,
-			}.Copy(mod)
-			if err != nil {
-				return nil, err
-			}
-			moduleCopy := mCopy.(*Module)
-
-			callers = append(callers, moduleCopy)
+			callers = append(callers, mod)
 		}
 	}
 
@@ -117,16 +108,7 @@ func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
 		return nil, err
 	}
 
-	// Return a deep copy to prevent any race conditions
-	mCopy, err := copystructure.Config{
-		Copiers: copiers,
-	}.Copy(mod)
-	if err != nil {
-		return nil, err
-	}
-	moduleCopy := mCopy.(*Module)
-
-	return moduleCopy, nil
+	return mod, nil
 }
 
 func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
@@ -142,6 +124,22 @@ func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
 	return obj.(*Module), nil
 }
 
+func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
+	mod, err := moduleByPath(txn, path)
+	if err != nil {
+		return nil, err
+	}
+
+	mCopy, err := copystructure.Config{
+		Copiers: copiers,
+	}.Copy(mod)
+	if err != nil {
+		return nil, err
+	}
+
+	return mCopy.(*Module), nil
+}
+
 func (s *ModuleStore) List() ([]*Module, error) {
 	txn := s.db.Txn(false)
 
@@ -153,17 +151,7 @@ func (s *ModuleStore) List() ([]*Module, error) {
 	modules := make([]*Module, 0)
 	for item := it.Next(); item != nil; item = it.Next() {
 		mod := item.(*Module)
-
-		// deep copy the module to prevent race conditions
-		mCopy, err := copystructure.Config{
-			Copiers: copiers,
-		}.Copy(mod)
-		if err != nil {
-			return nil, err
-		}
-		moduleCopy := mCopy.(*Module)
-
-		modules = append(modules, moduleCopy)
+		modules = append(modules, mod)
 	}
 
 	return modules, nil
@@ -173,12 +161,13 @@ func (s *ModuleStore) SetModManifestState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
 	mod.ModManifestState = state
+
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
@@ -195,7 +184,7 @@ func (s *ModuleStore) UpdateModManifest(path string, manifest *datadir.ModuleMan
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -216,7 +205,7 @@ func (s *ModuleStore) SetTerraformVersionState(path string, state op.OpState) er
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -235,7 +224,7 @@ func (s *ModuleStore) SetProviderSchemaState(path string, state op.OpState) erro
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -257,7 +246,7 @@ func (s *ModuleStore) FinishProviderSchemaLoading(path string, psErr error) erro
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -280,7 +269,7 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, modPath)
+	mod, err := moduleCopyByPath(txn, modPath)
 	if err != nil {
 		return err
 	}
@@ -306,7 +295,7 @@ func (s *ModuleStore) SetParsingState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -328,7 +317,7 @@ func (s *ModuleStore) UpdateParsedFiles(path string, pFiles map[string]*hcl.File
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -349,7 +338,7 @@ func (s *ModuleStore) SetMetaState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -371,7 +360,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -396,7 +385,7 @@ func (s *ModuleStore) UpdateDiagnostics(path string, diags map[string]hcl.Diagno
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}

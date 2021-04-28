@@ -58,15 +58,20 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 			versionedPs := obj.(*ProviderSchema)
 
 			if versionedPs.Schema != nil {
+				psRawCopy, err := copystructure.Config{
+					Copiers: copiers,
+				}.Copy(versionedPs)
+				psCopy := psRawCopy.(*ProviderSchema)
+
 				_, err = txn.DeleteAll(providerSchemaTableName, "id_prefix", pAddr, src)
 				if err != nil {
 					return fmt.Errorf("unable to delete provider schema: %w", err)
 				}
 
-				versionedPs.Version = pVer
-				versionedPs.Schema.SetProviderVersion(versionedPs.Address, pVer)
+				psCopy.Version = pVer
+				psCopy.Schema.SetProviderVersion(psCopy.Address, pVer)
 
-				err = txn.Insert(providerSchemaTableName, versionedPs)
+				err = txn.Insert(providerSchemaTableName, psCopy)
 				if err != nil {
 					return fmt.Errorf("unable to insert provider schema: %w", err)
 				}
@@ -106,6 +111,12 @@ func (s *ProviderSchemaStore) AddLocalSchema(modPath string, addr tfaddr.Provide
 		Address: addr,
 		Source:  src,
 	}
+
+	schemaRawCopy, err := copystructure.Config{
+		Copiers: copiers,
+	}.Copy(schema)
+	schemaCopy := schemaRawCopy.(*tfschema.ProviderSchema)
+
 	if obj != nil {
 		existingEntry, ok := obj.(*ProviderSchema)
 		if !ok {
@@ -121,7 +132,7 @@ func (s *ProviderSchemaStore) AddLocalSchema(modPath string, addr tfaddr.Provide
 				// the new version yet.
 			} else {
 				ps.Version = existingEntry.Version
-				schema.SetProviderVersion(addr, existingEntry.Version)
+				schemaCopy.SetProviderVersion(addr, existingEntry.Version)
 			}
 
 			err = txn.Delete(s.tableName, existingEntry)
@@ -131,7 +142,7 @@ func (s *ProviderSchemaStore) AddLocalSchema(modPath string, addr tfaddr.Provide
 		}
 	}
 
-	ps.Schema = schema
+	ps.Schema = schemaCopy
 
 	err = txn.Insert(s.tableName, ps)
 	if err != nil {
@@ -162,7 +173,12 @@ func (s *ProviderSchemaStore) AddPreloadedSchema(addr tfaddr.Provider, pv *versi
 		}
 	}
 
-	ps.Schema = schema
+	schemaRawCopy, err := copystructure.Config{
+		Copiers: copiers,
+	}.Copy(schema)
+	schemaCopy := schemaRawCopy.(*tfschema.ProviderSchema)
+
+	ps.Schema = schemaCopy
 
 	err = txn.Insert(s.tableName, ps)
 	if err != nil {
@@ -216,17 +232,8 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 			return nil, err
 		}
 		if obj != nil {
-			origPs := obj.(*ProviderSchema)
-			sCopy, err := copystructure.Config{
-				Copiers: copiers,
-			}.Copy(origPs.Schema)
-
-			ps := sCopy.(*tfschema.ProviderSchema)
-
-			// ensure namespace is correct
-			ps.SetProviderVersion(addr, origPs.Version)
-
-			return ps, err
+			ps := obj.(*ProviderSchema)
+			return ps.Schema, err
 		}
 
 		// Last we just try to loosely match the provider type
@@ -254,26 +261,10 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 		requiredModPath: modPath,
 		requiredVersion: vc,
 	}
+
 	sort.Stable(ss)
 
-	// Return a deep copy to prevent any race conditions
-	sCopy, err := copystructure.Config{
-		Copiers: copiers,
-	}.Copy(ss.schemas[0].Schema)
-	ps := sCopy.(*tfschema.ProviderSchema)
-
-	// Try to fix a legacy address so that links
-	// are more likely to work
-	if ss.schemas[0].Address.IsLegacy() {
-		newAddress := tfaddr.Provider{
-			Hostname:  ss.schemas[0].Address.Hostname,
-			Namespace: "hashicorp",
-			Type:      ss.schemas[0].Address.Type,
-		}
-		ps.SetProviderVersion(newAddress, ss.schemas[0].Version)
-	}
-
-	return ps, err
+	return ss.schemas[0].Schema, err
 }
 
 type ModuleLookupFunc func(string) (*Module, error)

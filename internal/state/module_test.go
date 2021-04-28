@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -410,13 +411,74 @@ provider "blah" {
 	}
 }
 
+func BenchmarkModuleByPath(b *testing.B) {
+	s, err := NewStateStore()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	modPath := b.TempDir()
+
+	err = s.Modules.Add(modPath)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	pFiles := make(map[string]*hcl.File, 0)
+	diags := make(map[string]hcl.Diagnostics, 0)
+
+	f, pDiags := hclsyntax.ParseConfig([]byte(`provider "blah" {
+
+}
+`), "first.tf", hcl.InitialPos)
+	diags["first.tf"] = pDiags
+	if f != nil {
+		pFiles["first.tf"] = f
+	}
+	f, pDiags = hclsyntax.ParseConfig([]byte(`provider "meh" {
+
+
+`), "second.tf", hcl.InitialPos)
+	diags["second.tf"] = pDiags
+	if f != nil {
+		pFiles["second.tf"] = f
+	}
+
+	err = s.Modules.UpdateParsedFiles(modPath, pFiles, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	err = s.Modules.UpdateDiagnostics(modPath, diags)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	expectedMod := &Module{
+		Path:         modPath,
+		ParsedFiles:  pFiles,
+		ParsingState: operation.OpStateLoaded,
+		Diagnostics:  diags,
+	}
+
+	for n := 0; n < b.N; n++ {
+		mod, err := s.Modules.ModuleByPath(modPath)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		if diff := cmp.Diff(expectedMod, mod, cmpOpts); diff != "" {
+			b.Fatalf("unexpected module: %s", diff)
+		}
+	}
+}
+
 type customErr struct{}
 
 func (e customErr) Error() string {
 	return "custom test error"
 }
 
-func testConstraint(t *testing.T, v string) version.Constraints {
+func testConstraint(t testOrBench, v string) version.Constraints {
 	constraints, err := version.NewConstraint(v)
 	if err != nil {
 		t.Fatal(err)
@@ -424,7 +486,7 @@ func testConstraint(t *testing.T, v string) version.Constraints {
 	return constraints
 }
 
-func testVersion(t *testing.T, v string) *version.Version {
+func testVersion(t testOrBench, v string) *version.Version {
 	ver, err := version.NewVersion(v)
 	if err != nil {
 		t.Fatal(err)
