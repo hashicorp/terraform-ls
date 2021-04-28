@@ -255,7 +255,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = exec.WithExecutorOpts(ctx, execOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 

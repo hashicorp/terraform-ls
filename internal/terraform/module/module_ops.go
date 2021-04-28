@@ -54,7 +54,7 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	}
 	defer modStore.SetTerraformVersionState(modPath, op.OpStateLoaded)
 
-	tfExec, err := TerraformExecutorForModule(ctx, mod)
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
 	if err != nil {
 		sErr := modStore.UpdateTerraformVersion(modPath, nil, nil, err)
 		if err != nil {
@@ -97,7 +97,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		return err
 	}
 
-	tfExec, err := TerraformExecutorForModule(ctx, mod)
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
 	if err != nil {
 		sErr := modStore.FinishProviderSchemaLoading(modPath, err)
 		if sErr != nil {
