@@ -76,10 +76,13 @@ checksum:
 signs:
   -
     id: with_key_id
+    # TODO: Replace with variable once goreleaser supports variables here
+    signature: "${artifact}.72D7468F.sig"
     args: ["--batch", "--no-tty", "-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${artifact}.{{ .Env.GPG_KEY_ID }}.sig", "--detach-sign", "${artifact}"]
     artifacts: checksum
   -
     id: default
+    signature: "${artifact}.sig"
     args: ["--batch", "--no-tty", "-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${artifact}.sig", "--detach-sign", "${artifact}"]
     artifacts: checksum
 
