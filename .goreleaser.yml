@@ -77,12 +77,12 @@ signs:
   -
     id: with_key_id
     signature: "${artifact}.{{ .Env.GPG_KEY_ID }}.sig"
-    args: ["-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}", "--batch", "--no-tty"]
+    args: ["--batch", "--no-tty", "-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
   -
     id: default
     signature: "${artifact}.sig"
-    args: ["-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}", "--batch", "--no-tty"]
+    args: ["--batch", "--no-tty", "-u", "{{ .Env.GPG_KEY_ID }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
     artifacts: checksum
 
 brews:
