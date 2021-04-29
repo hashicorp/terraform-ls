@@ -1,5 +1,14 @@
 ## 0.16.0 (Unreleased)
 
+**SECURITY:**
+
+This release is signed with a new GPG key (ID `72D7468F`), unlike all previous releases which were signed with (now revoked) key (ID `348FFC4C`). Old releases were *temporarily* re-signed with the new key, but that key will be removed in coming weeks or months.
+
+[Read more about the related security event HCSEC-2021-12](https://discuss.hashicorp.com/t/hcsec-2021-12-codecov-security-event-and-hashicorp-gpg-key-exposure/23512/2).
+
+Users of the [Terraform VS Code extension](https://github.com/hashicorp/vscode-terraform) will need to upgrade to [`2.10.1`](https://github.com/hashicorp/vscode-terraform/blob/v2.10.1/CHANGELOG.md#2101-2021-04-28) before auto-upgrading to this LS version.
+
+
 ENHANCEMENTS:
 
  - Allow effective utilization of multiple schema sources (local or preloaded) via cache ([#454](https://github.com/hashicorp/terraform-ls/issues/454))
