@@ -1,3 +1,9 @@
+## 0.16.1 (30 April 2021)
+
+BUG FIXES:
+
+ - Prevent crash for legacy provider lookups where configuration is missing `terraform`>`required_providers` block or `source` arguments for providers and Terraform 0.13+ is used ([#481](https://github.com/hashicorp/terraform-ls/pull/481))
+
 ## 0.16.0 (29 April 2021)
 
 **SECURITY:**
