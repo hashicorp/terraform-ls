@@ -1,6 +1,9 @@
 package state
 
 import (
+	"io/ioutil"
+	"log"
+
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -52,6 +55,7 @@ type StateStore struct {
 type ModuleStore struct {
 	db        *memdb.MemDB
 	tableName string
+	logger    *log.Logger
 }
 
 type ModuleReader interface {
@@ -63,6 +67,7 @@ type ModuleReader interface {
 type ProviderSchemaStore struct {
 	db        *memdb.MemDB
 	tableName string
+	logger    *log.Logger
 }
 
 type SchemaReader interface {
@@ -79,10 +84,19 @@ func NewStateStore() (*StateStore, error) {
 		Modules: &ModuleStore{
 			db:        db,
 			tableName: moduleTableName,
+			logger:    defaultLogger,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
 			tableName: providerSchemaTableName,
+			logger:    defaultLogger,
 		},
 	}, nil
 }
+
+func (s *StateStore) SetLogger(logger *log.Logger) {
+	s.Modules.logger = logger
+	s.ProviderSchemas.logger = logger
+}
+
+var defaultLogger = log.New(ioutil.Discard, "", 0)
