@@ -110,6 +110,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	if err != nil {
 		return nil, err
 	}
+	store.SetLogger(svc.logger)
 
 	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
 	if err != nil {

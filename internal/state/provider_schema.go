@@ -95,6 +95,7 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 }
 
 func (s *ProviderSchemaStore) AddLocalSchema(modPath string, addr tfaddr.Provider, schema *tfschema.ProviderSchema) error {
+	s.logger.Printf("PSS: adding local schema (%s, %s): %p", modPath, addr, schema)
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -190,6 +191,7 @@ func (s *ProviderSchemaStore) AddPreloadedSchema(addr tfaddr.Provider, pv *versi
 }
 
 func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
+	s.logger.Printf("PSS: getting provider schema (%s, %s, %s)", modPath, addr, vc)
 	txn := s.db.Txn(false)
 
 	it, err := txn.Get(s.tableName, "id_prefix", addr)
@@ -233,7 +235,9 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 		}
 		if obj != nil {
 			ps := obj.(*ProviderSchema)
-			return ps.Schema, err
+			if ps.Schema != nil {
+				return ps.Schema, nil
+			}
 		}
 
 		// Last we just try to loosely match the provider type
@@ -264,7 +268,7 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 
 	sort.Stable(ss)
 
-	return ss.schemas[0].Schema, err
+	return ss.schemas[0].Schema, nil
 }
 
 type ModuleLookupFunc func(string) (*Module, error)

@@ -44,6 +44,64 @@ func TestStateStore_AddPreloadedSchema_duplicate(t *testing.T) {
 	}
 }
 
+// Test a scenario where Terraform 0.13+ produced schema with non-legacy
+// addresses but lookup is still done via legacy address
+func TestStateStore_IncompleteSchema_legacyLookup(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	modPath := t.TempDir()
+	err = s.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	addr := tfaddr.Provider{
+		Hostname:  tfaddr.DefaultRegistryHost,
+		Namespace: "hashicorp",
+		Type:      "aws",
+	}
+	pv := testVersion(t, "3.2.0")
+
+	pvs := map[tfaddr.Provider]*version.Version{
+		addr: pv,
+	}
+
+	// obtaining versions typically takes less time than schema itself
+	// so we test that "incomplete" state is handled correctly too
+
+	err = s.Modules.UpdateTerraformVersion(modPath, testVersion(t, "0.13.0"), pvs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.ProviderSchemas.ProviderSchema(modPath, tfaddr.NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
+	if err == nil {
+		t.Fatal("expected error when requesting incomplete schema")
+	}
+	expectedErr := &NoSchemaError{}
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("unexpected error: %#v", err)
+	}
+
+	// next attempt (after schema is actually obtained) should not fail
+
+	err = s.ProviderSchemas.AddLocalSchema(modPath, addr, &tfschema.ProviderSchema{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ps, err := s.ProviderSchemas.ProviderSchema(modPath, tfaddr.NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ps == nil {
+		t.Fatal("expected provider schema not to be nil")
+	}
+}
+
 func TestStateStore_AddLocalSchema_duplicate(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {
