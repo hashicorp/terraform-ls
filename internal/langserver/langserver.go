@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
@@ -22,13 +23,17 @@ type langServer struct {
 	newSession session.SessionFactory
 }
 
-func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServer {
-	opts := &jrpc2.ServerOptions{
-		AllowPush: true,
+type ctxReqConcurrency struct{}
 
-		// Disable concurrency to avoid race conditions
-		// between requests concerning the same document
-		Concurrency: 1,
+func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServer {
+	concurrency, ok := requestConcurrencyFromCtx(srvCtx)
+	if !ok {
+		concurrency = DefaultConcurrency()
+	}
+
+	opts := &jrpc2.ServerOptions{
+		AllowPush:   true,
+		Concurrency: concurrency,
 	}
 
 	return &langServer{
@@ -37,6 +42,26 @@ func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServe
 		srvOptions: opts,
 		newSession: sf,
 	}
+}
+
+func WithRequestConcurrency(parent context.Context, concurrency int) context.Context {
+	return context.WithValue(parent, ctxReqConcurrency{}, concurrency)
+}
+
+func requestConcurrencyFromCtx(ctx context.Context) (int, bool) {
+	c, ok := ctx.Value(ctxReqConcurrency{}).(int)
+	return c, ok
+}
+
+func DefaultConcurrency() int {
+	cpu := runtime.NumCPU()
+	// Cap concurrency on powerful machines
+	// to leave some capacity for module ops
+	// and other application
+	if cpu >= 4 {
+		return cpu / 2
+	}
+	return cpu
 }
 
 func (ls *langServer) SetLogger(logger *log.Logger) {
@@ -66,7 +91,8 @@ func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) erro
 	if err != nil {
 		return err
 	}
-	ls.logger.Printf("Starting server (pid %d) ...", os.Getpid())
+	ls.logger.Printf("Starting server (pid %d; concurrency: %d) ...",
+		os.Getpid(), ls.srvOptions.Concurrency)
 
 	// Wrap waiter with a context so that we can cancel it here
 	// after the service is cancelled (and srv.Wait returns)
@@ -87,8 +113,8 @@ func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) erro
 }
 
 func (ls *langServer) StartTCP(address string) error {
-	ls.logger.Printf("Starting TCP server (pid %d) at %q ...",
-		os.Getpid(), address)
+	ls.logger.Printf("Starting TCP server (pid %d; concurrency: %d) at %q ...",
+		os.Getpid(), ls.srvOptions.Concurrency, address)
 	lst, err := net.Listen("tcp", address)
 	if err != nil {
 		return fmt.Errorf("TCP Server failed to start: %s", err)
