@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-schema v0.0.0-20210428174709-ad0461b43827
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.2
-	github.com/mitchellh/copystructure v1.1.2
+	github.com/mitchellh/copystructure v1.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pmezard/go-difflib v1.0.0
