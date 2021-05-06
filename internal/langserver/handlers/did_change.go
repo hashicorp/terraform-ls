@@ -72,6 +72,12 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
+
+	// obtain fresh module state after the above operations finished
+	mod, err = modMgr.ModuleByPath(fh.Dir())
+	if err != nil {
+		return err
+	}
 	diags.PublishHCLDiags(ctx, mod.Path, mod.Diagnostics, "HCL")
 
 	return nil
