@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers"
 	"github.com/hashicorp/terraform-ls/internal/logging"
+	"github.com/hashicorp/terraform-ls/internal/pathtpl"
 	"github.com/mitchellh/cli"
 )
 
@@ -45,8 +46,12 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "path to a file for Terraform executions"+
 		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
 		" syntax {{.VarName}}")
-	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)")
-	fs.StringVar(&c.memProfile, "memprofile", "", "file into which to write memory profile (if not empty)")
+	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)"+
+		" with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
+		" syntax {{.VarName}}")
+	fs.StringVar(&c.memProfile, "memprofile", "", "file into which to write memory profile (if not empty)"+
+		" with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
+		" syntax {{.VarName}}")
 
 	fs.Usage = func() { c.Ui.Error(c.Help()) }
 
@@ -161,7 +166,12 @@ func (c *ServeCommand) Run(args []string) int {
 
 type stopFunc func() error
 
-func writeCpuProfileInto(path string) (stopFunc, error) {
+func writeCpuProfileInto(rawPath string) (stopFunc, error) {
+	path, err := pathtpl.ParseRawPath("cpuprofile-path", rawPath)
+	if err != nil {
+		return nil, err
+	}
+
 	f, err := os.Create(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not create CPU profile: %s", err)
@@ -177,7 +187,12 @@ func writeCpuProfileInto(path string) (stopFunc, error) {
 	}, nil
 }
 
-func writeMemoryProfileInto(path string) error {
+func writeMemoryProfileInto(rawPath string) error {
+	path, err := pathtpl.ParseRawPath("memprofile-path", rawPath)
+	if err != nil {
+		return err
+	}
+
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("could not create memory profile: %s", err)

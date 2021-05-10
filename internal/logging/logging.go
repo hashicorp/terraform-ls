@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"time"
+
+	"github.com/hashicorp/terraform-ls/internal/pathtpl"
 )
 
 func NewLogger(w io.Writer) *log.Logger {
@@ -44,13 +45,7 @@ func NewFileLogger(rawPath string) (*fileLogger, error) {
 }
 
 func parseLogPath(rawPath string) (string, error) {
-	tpl := template.New("log-file")
-	tpl = tpl.Funcs(template.FuncMap{
-		"timestamp": time.Now().Local().Unix,
-		"pid":       os.Getpid,
-		"ppid":      os.Getppid,
-	})
-	tpl, err := tpl.Parse(rawPath)
+	tpl, err := pathtpl.NewPath("log-file").Parse(rawPath)
 	if err != nil {
 		return "", err
 	}
@@ -84,17 +79,13 @@ func ParseExecLogPath(method string, rawPath string) (string, error) {
 	return buf.String(), nil
 }
 
-func parseExecLogPathTemplate(method string, rawPath string) (*template.Template, error) {
-	tpl := template.New("tf-log-file")
+func parseExecLogPathTemplate(method string, rawPath string) (pathtpl.TemplatedPath, error) {
+	tpl := pathtpl.NewPath("tf-log-file")
 	methodFunc := func() string {
 		return method
 	}
 	tpl = tpl.Funcs(template.FuncMap{
-		"timestamp": time.Now().Local().Unix,
-		"lsPid":     os.Getpid,
-		"lsPpid":    os.Getppid,
-		"method":    methodFunc,
-
+		"method": methodFunc,
 		// DEPRECATED
 		"args": methodFunc,
 	})
