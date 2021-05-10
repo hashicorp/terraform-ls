@@ -40,7 +40,7 @@ templated paths (as described below) may produce many log files over time.
 
 ### Log Path Templating
 
-Log paths support template syntax. This allows sane separation of logs while accounting for:
+Log paths support template syntax. This allows for separation of logs while accounting for:
 
  - multiple server instances
  - multiple clients
@@ -75,6 +75,18 @@ $ terraform-ls serve \
 
 The target file will be truncated before being written into.
 
+### Path Templating
+
+Path supports template syntax. This allows for separation of logs while accounting for multiple server or client instances.
+
+**`-cpuprofile`** supports the following functions:
+
+ - `timestamp` - current timestamp (formatted as [`Time.Unix()`](https://golang.org/pkg/time/#Time.Unix), i.e. the number of seconds elapsed since January 1, 1970 UTC)
+ - `pid` - process ID of the language server
+ - `ppid` - parent process ID (typically editor's or editor plugin's PID)
+
+The path is interpreted as [Go template](https://golang.org/pkg/text/template/), e.g. `/tmp/terraform-ls-cpuprofile-{{timestamp}}.log`.
+
 ## Memory Profiling
 
 If the bug you are reporting is related to high memory usage it may be helpful
@@ -88,6 +100,18 @@ $ terraform-ls serve \
 ```
 
 The target file will be truncated before being written into.
+
+### Path Templating
+
+Path supports template syntax. This allows for separation of logs while accounting for multiple server or client instances.
+
+**`-memprofile`** supports the following functions:
+
+ - `timestamp` - current timestamp (formatted as [`Time.Unix()`](https://golang.org/pkg/time/#Time.Unix), i.e. the number of seconds elapsed since January 1, 1970 UTC)
+ - `pid` - process ID of the language server
+ - `ppid` - parent process ID (typically editor's or editor plugin's PID)
+
+The path is interpreted as [Go template](https://golang.org/pkg/text/template/), e.g. `/tmp/terraform-ls-memprofile-{{timestamp}}.log`.
 
 ## "No root module found for ... functionality may be limited"
 
