@@ -1,3 +1,13 @@
+## 0.16.2 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Support templated paths for `-cpuprofile` & `-memprofile` flags of `serve` ([#501](https://github.com/hashicorp/terraform-ls/pull/501))
+
+BUG FIXES:
+
+ - didChange: Avoid presenting stale diagnostics ([#488](https://github.com/hashicorp/terraform-ls/pull/488))
+
 ## 0.16.1 (30 April 2021)
 
 BUG FIXES:
