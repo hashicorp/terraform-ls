@@ -14,7 +14,7 @@ func Begin(ctx context.Context, title string) error {
 		return nil
 	}
 
-	return jrpc2.PushNotify(ctx, "$/progress", lsp.ProgressParams{
+	return jrpc2.ServerFromContext(ctx).Notify(ctx, "$/progress", lsp.ProgressParams{
 		Token: token,
 		Value: lsp.WorkDoneProgressBegin{
 			Kind:  "begin",
@@ -29,7 +29,7 @@ func Report(ctx context.Context, message string) error {
 		return nil
 	}
 
-	return jrpc2.PushNotify(ctx, "$/progress", lsp.ProgressParams{
+	return jrpc2.ServerFromContext(ctx).Notify(ctx, "$/progress", lsp.ProgressParams{
 		Token: token,
 		Value: lsp.WorkDoneProgressReport{
 			Kind:    "report",
@@ -44,7 +44,7 @@ func End(ctx context.Context, message string) error {
 		return nil
 	}
 
-	return jrpc2.PushNotify(ctx, "$/progress", lsp.ProgressParams{
+	return jrpc2.ServerFromContext(ctx).Notify(ctx, "$/progress", lsp.ProgressParams{
 		Token: token,
 		Value: lsp.WorkDoneProgressEnd{
 			Kind:    "end",

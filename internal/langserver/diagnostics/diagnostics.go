@@ -69,7 +69,7 @@ func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags ma
 
 func (n *Notifier) notify() {
 	for d := range n.diags {
-		if err := jrpc2.PushNotify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
+		if err := jrpc2.ServerFromContext(d.ctx).Notify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         d.uri,
 			Diagnostics: n.mergeDiags(d.uri, d.source, d.diags),
 		}); err != nil {
