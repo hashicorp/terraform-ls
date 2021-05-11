@@ -107,7 +107,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	lsctx.SetExperimentalFeatures(ctx, out.Options.ExperimentalFeatures)
 
 	if len(out.UnusedKeys) > 0 {
-		jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type:    lsp.Warning,
 			Message: fmt.Sprintf("Unknown configuration options: %q", out.UnusedKeys),
 		})
@@ -120,7 +120,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		for _, rawPath := range cfgOpts.ModulePaths {
 			modPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
-				jrpc2.PushNotify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type:    lsp.Warning,
 					Message: fmt.Sprintf("Ignoring module path %s: %s", rawPath, err),
 				})

@@ -14,7 +14,7 @@ func CancelRequest(ctx context.Context, params lsp.CancelParams) error {
 		return err
 	}
 
-	jrpc2.CancelRequest(ctx, id)
+	jrpc2.ServerFromContext(ctx).CancelRequest(id)
 	return nil
 }
 
