@@ -1,4 +1,4 @@
-## 0.16.2 (Unreleased)
+## 0.16.2 (11 May 2021)
 
 ENHANCEMENTS:
 
@@ -6,7 +6,7 @@ ENHANCEMENTS:
 
 BUG FIXES:
 
- - didChange: Avoid presenting stale diagnostics ([#488](https://github.com/hashicorp/terraform-ls/pull/488))
+ - Avoid presenting stale diagnostics after document changes ([#488](https://github.com/hashicorp/terraform-ls/pull/488))
 
 ## 0.16.1 (30 April 2021)
 
