@@ -26,13 +26,14 @@ type ServeCommand struct {
 	Version string
 
 	// flags
-	port          int
-	logFilePath   string
-	tfExecPath    string
-	tfExecLogPath string
-	tfExecTimeout string
-	cpuProfile    string
-	memProfile    string
+	port           int
+	logFilePath    string
+	tfExecPath     string
+	tfExecLogPath  string
+	tfExecTimeout  string
+	cpuProfile     string
+	memProfile     string
+	reqConcurrency int
 }
 
 func (c *ServeCommand) flags() *flag.FlagSet {
@@ -52,6 +53,8 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.StringVar(&c.memProfile, "memprofile", "", "file into which to write memory profile (if not empty)"+
 		" with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
 		" syntax {{.VarName}}")
+	fs.IntVar(&c.reqConcurrency, "req-concurrency", 0, fmt.Sprintf("number of RPC requests to process concurrently,"+
+		" defaults to %d, concurrency lower than 2 is not recommended", langserver.DefaultConcurrency()))
 
 	fs.Usage = func() { c.Ui.Error(c.Help()) }
 
@@ -137,6 +140,11 @@ func (c *ServeCommand) Run(args []string) int {
 
 		ctx = lsctx.WithTerraformExecPath(ctx, path)
 		logger.Printf("Terraform exec path set to %q", path)
+	}
+
+	if c.reqConcurrency != 0 {
+		ctx = langserver.WithRequestConcurrency(ctx, c.reqConcurrency)
+		logger.Printf("Custom request concurrency set to %d", c.reqConcurrency)
 	}
 
 	logger.Printf("Starting terraform-ls %s", c.Version)
