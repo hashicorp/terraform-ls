@@ -24,6 +24,7 @@ type ModuleFinder interface {
 	SchemaForModule(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
 	ListModules() ([]Module, error)
+	CallersOfModule(modPath string) ([]Module, error)
 }
 
 type ModuleLoader func(dir string) (Module, error)

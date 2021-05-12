@@ -136,6 +136,20 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schem
 	return sm.SchemaForModule(meta)
 }
 
+func (mm *moduleManager) CallersOfModule(modPath string) ([]Module, error) {
+	modules := make([]Module, 0)
+	callers, err := mm.moduleStore.CallersOfModule(modPath)
+	if err != nil {
+		return modules, err
+	}
+
+	for _, mod := range callers {
+		modules = append(modules, mod)
+	}
+
+	return modules, nil
+}
+
 // SchemaSourcesForModule is DEPRECATED and should NOT be used anymore
 // it is just maintained for backwards compatibility in the "rootmodules"
 // custom LSP command which itself will be DEPRECATED as external parties
