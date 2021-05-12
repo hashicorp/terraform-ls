@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -275,4 +277,46 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 		return sErr
 	}
 	return mErr
+}
+
+func DecodeReferences(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	err := modStore.SetReferencesState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	d := decoder.NewDecoder()
+	for name, f := range mod.ParsedFiles {
+		err := d.LoadFile(name, f)
+		if err != nil {
+			return fmt.Errorf("failed to load a file: %w", err)
+		}
+	}
+
+	fullSchema, schemaErr := schemaForModule(mod, schemaReader)
+	if schemaErr != nil {
+		sErr := modStore.UpdateReferences(modPath, lang.References{}, schemaErr)
+		if sErr != nil {
+			return sErr
+		}
+		return schemaErr
+	}
+	d.SetSchema(fullSchema)
+
+	refs, rErr := d.DecodeReferences()
+
+	bRefs := builtinReferences(modPath)
+	refs = append(refs, bRefs...)
+
+	sErr := modStore.UpdateReferences(modPath, refs, rErr)
+	if sErr != nil {
+		return sErr
+	}
+
+	return rErr
 }

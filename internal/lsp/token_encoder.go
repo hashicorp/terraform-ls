@@ -47,6 +47,10 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 		tokenType = TokenTypeParameter
 	case lang.TokenMapKey:
 		tokenType = TokenTypeParameter
+	case lang.TokenKeyword:
+		tokenType = TokenTypeVariable
+	case lang.TokenTraversalStep:
+		tokenType = TokenTypeVariable
 
 	default:
 		return []float64{}
