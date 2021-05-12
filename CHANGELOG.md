@@ -1,3 +1,9 @@
+## 0.16.3 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Increase request concurrency & make it configurable via `-req-concurrency` flag of `serve` command ([#489](https://github.com/hashicorp/terraform-ls/pull/489))
+
 ## 0.16.2 (11 May 2021)
 
 ENHANCEMENTS:
