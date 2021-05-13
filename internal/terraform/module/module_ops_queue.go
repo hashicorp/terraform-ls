@@ -44,6 +44,20 @@ func (q *moduleOpsQueue) PopOp() (ModuleOperation, bool) {
 	return modOp, true
 }
 
+func (q *moduleOpsQueue) DequeueAllModuleOps(modPath string) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.q.Len() == 0 {
+		return
+	}
+
+	for i, p := range q.q.ops {
+		if p.ModulePath == modPath {
+			q.q.ops = append(q.q.ops[:i], q.q.ops[:i+1]...)
+		}
+	}
+}
+
 func (q *moduleOpsQueue) Len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()

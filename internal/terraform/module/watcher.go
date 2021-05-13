@@ -101,6 +101,31 @@ func (w *watcher) AddModule(modPath string) error {
 	return nil
 }
 
+func (w *watcher) RemoveModule(modPath string) error {
+	modPath = filepath.Clean(modPath)
+
+	w.logger.Printf("removing module from watching: %s", modPath)
+
+	for modI, mod := range w.modules {
+		if pathcmp.PathEquals(mod.Path, modPath) {
+			for _, wPath := range mod.Watched {
+				w.fw.Remove(wPath)
+			}
+			w.fw.Remove(mod.Path)
+			w.modules = append(w.modules[:modI], w.modules[modI+1:]...)
+		}
+
+		for i, wp := range mod.Watched {
+			if pathcmp.PathEquals(wp, modPath) {
+				w.fw.Remove(wp)
+				mod.Watched = append(mod.Watched[:i], mod.Watched[i+1:]...)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (w *watcher) run(ctx context.Context) {
 	for {
 		select {

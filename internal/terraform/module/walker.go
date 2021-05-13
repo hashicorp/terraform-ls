@@ -1,6 +1,7 @@
 package module
 
 import (
+	"container/heap"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -27,12 +29,18 @@ var (
 	}
 )
 
+type pathToWatch struct{}
+
 type Walker struct {
 	fs      filesystem.Filesystem
 	modMgr  ModuleManager
 	watcher Watcher
 	logger  *log.Logger
 	sync    bool
+
+	queue    *walkerQueue
+	queueMu  *sync.Mutex
+	pushChan chan struct{}
 
 	walking    bool
 	walkingMu  *sync.RWMutex
@@ -48,6 +56,9 @@ func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
 		modMgr:    modMgr,
 		logger:    discardLogger,
 		walkingMu: &sync.RWMutex{},
+		queue:     newWalkerQueue(fs),
+		queueMu:   &sync.Mutex{},
+		pushChan:  make(chan struct{}, 1),
 		doneCh:    make(chan struct{}, 0),
 	}
 }
@@ -84,7 +95,21 @@ func (w *Walker) setWalking(isWalking bool) {
 	w.walking = isWalking
 }
 
-func (w *Walker) StartWalking(ctx context.Context, path string) error {
+func (w *Walker) EnqueuePath(path string) {
+	w.queueMu.Lock()
+	defer w.queueMu.Unlock()
+	heap.Push(w.queue, path)
+
+	w.pushChan <- struct{}{}
+}
+
+func (w *Walker) RemovePathFromQueue(path string) {
+	w.queueMu.Lock()
+	defer w.queueMu.Unlock()
+	w.queue.RemoveFromQueue(path)
+}
+
+func (w *Walker) StartWalking(ctx context.Context) error {
 	if w.IsWalking() {
 		return fmt.Errorf("walker is already running")
 	}
@@ -95,19 +120,64 @@ func (w *Walker) StartWalking(ctx context.Context, path string) error {
 	w.setWalking(true)
 
 	if w.sync {
-		w.logger.Printf("synchronously walking through %s", path)
-		return w.walk(ctx, path)
+		var errs *multierror.Error
+		for {
+			w.queueMu.Lock()
+			if w.queue.Len() == 0 {
+				w.queueMu.Unlock()
+				w.Stop()
+				return errs.ErrorOrNil()
+			}
+			nextPath := heap.Pop(w.queue)
+			w.queueMu.Unlock()
+
+			path := nextPath.(string)
+			w.logger.Printf("synchronously walking through %s", path)
+			err := w.walk(ctx, path)
+			if err != nil {
+				multierror.Append(errs, err)
+			}
+		}
 	}
 
-	go func(w *Walker, path string) {
-		w.logger.Printf("asynchronously walking through %s", path)
-		err := w.walk(ctx, path)
-		if err != nil {
-			w.logger.Printf("async walking through %s failed: %s", path, err)
-			return
+	var nextPathToWalk = make(chan string)
+
+	go func(w *Walker) {
+		for {
+			w.queueMu.Lock()
+			if w.queue.Len() == 0 {
+				w.queueMu.Unlock()
+				select {
+				case <-w.pushChan:
+					// block to avoid infinite loop
+					continue
+				case <-w.doneCh:
+					return
+				}
+			}
+			nextPath := heap.Pop(w.queue)
+			w.queueMu.Unlock()
+			path := nextPath.(string)
+			nextPathToWalk <- path
 		}
-		w.logger.Printf("async walking through %s finished", path)
-	}(w, path)
+	}(w)
+
+	go func(w *Walker, pathsChan chan string) {
+		for {
+			select {
+			case <-w.doneCh:
+				return
+			case path := <-pathsChan:
+				w.logger.Printf("asynchronously walking through %s", path)
+				err := w.walk(ctx, path)
+				if err != nil {
+					w.logger.Printf("async walking through %s failed: %s", path, err)
+					return
+				}
+				w.logger.Printf("async walking through %s finished", path)
+			}
+		}
+	}(w, nextPathToWalk)
 
 	return nil
 }
@@ -120,8 +190,6 @@ func (w *Walker) IsWalking() bool {
 }
 
 func (w *Walker) walk(ctx context.Context, rootPath string) error {
-	defer w.Stop()
-
 	// We ignore the passed FS and instead read straight from OS FS
 	// because that would require reimplementing filepath.Walk and
 	// the data directory should never be on the virtual filesystem anyway

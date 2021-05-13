@@ -30,6 +30,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
 			WorkspaceSymbolProvider:    true,
+			Workspace: lsp.WorkspaceGn{
+				WorkspaceFolders: lsp.WorkspaceFoldersGn{
+					Supported:           true,
+					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
+				},
+			},
 		},
 	}
 
@@ -116,6 +122,36 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 	cfgOpts := out.Options
 
+	if !clientCaps.Workspace.WorkspaceFolders && len(params.WorkspaceFolders) > 0 {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: "Client sent workspace folders despite not declaring support. " +
+				"Please report this as a bug.",
+		})
+	}
+
+	walker, err := lsctx.ModuleWalker(ctx)
+	if err != nil {
+		return serverCaps, err
+	}
+	walker.SetLogger(lh.logger)
+
+	if len(params.WorkspaceFolders) > 0 {
+		for _, folderPath := range params.WorkspaceFolders {
+			modPath, err := pathFromDocumentURI(folderPath.URI)
+			if err != nil {
+				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+					Type: lsp.Warning,
+					Message: fmt.Sprintf("Ignoring workspace folder %s: %s."+
+						" This is most likely bug, please report it.", folderPath.URI, err),
+				})
+				continue
+			}
+
+			walker.EnqueuePath(modPath)
+		}
+	}
+
 	// Static user-provided paths take precedence over dynamic discovery
 	if len(cfgOpts.ModulePaths) > 0 {
 		lh.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
@@ -148,17 +184,12 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
-	walker, err := lsctx.ModuleWalker(ctx)
-	if err != nil {
-		return serverCaps, err
-	}
-
-	walker.SetLogger(lh.logger)
 	walker.SetExcludeModulePaths(excludeModulePaths)
+	walker.EnqueuePath(fh.Dir())
+
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
-	bCtx := context.Background()
-	err = walker.StartWalking(bCtx, fh.Dir())
+	err = walker.StartWalking(context.Background())
 
 	return serverCaps, err
 }
@@ -173,6 +204,10 @@ func resolvePath(rootDir, rawPath string) (string, error) {
 		path = filepath.Join(rootDir, rawPath)
 	}
 
+	return cleanupPath(path)
+}
+
+func cleanupPath(path string) (string, error) {
 	absPath, err := filepath.EvalSymlinks(path)
 	return toLowerVolumePath(absPath), err
 }

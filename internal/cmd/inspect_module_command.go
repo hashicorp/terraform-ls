@@ -101,7 +101,8 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		c.logger, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	err = walker.StartWalking(ctx, rootPath)
+	walker.EnqueuePath(rootPath)
+	err = walker.StartWalking(ctx)
 	if err != nil {
 		return err
 	}

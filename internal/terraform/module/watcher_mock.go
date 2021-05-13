@@ -27,6 +27,10 @@ func (w *mockWatcher) AddModule(string) error {
 	return nil
 }
 
+func (w *mockWatcher) RemoveModule(string) error {
+	return nil
+}
+
 func (w *mockWatcher) IsModuleWatched(string) bool {
 	return false
 }

@@ -193,6 +193,19 @@ func (s *ModuleStore) Add(modPath string) error {
 	return nil
 }
 
+func (s *ModuleStore) Remove(modPath string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	_, err := txn.DeleteAll(s.tableName, "id", modPath)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *ModuleStore) CallersOfModule(modPath string) ([]*Module, error) {
 	txn := s.db.Txn(false)
 	it, err := txn.Get(s.tableName, "id")
