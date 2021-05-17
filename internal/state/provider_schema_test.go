@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/hcl-lang/schema"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
-	"github.com/mitchellh/copystructure"
 )
 
 func TestStateStore_AddPreloadedSchema_duplicate(t *testing.T) {
@@ -876,14 +875,7 @@ func BenchmarkProviderSchema(b *testing.B) {
 func schemaSliceFromIterator(it *ProviderSchemaIterator) []*ProviderSchema {
 	schemas := make([]*ProviderSchema, 0)
 	for ps := it.Next(); ps != nil; ps = it.Next() {
-		psCopy, err := copystructure.Config{
-			Copiers: copiers,
-		}.Copy(ps)
-		if err != nil {
-			continue
-		}
-		schemaCopy := psCopy.(*ProviderSchema)
-		schemas = append(schemas, schemaCopy)
+		schemas = append(schemas, ps.Copy())
 	}
 	return schemas
 }

@@ -101,6 +101,24 @@ type ModuleManifest struct {
 	Records []ModuleRecord `json:"Modules"`
 }
 
+func (mm *ModuleManifest) Copy() *ModuleManifest {
+	if mm == nil {
+		return nil
+	}
+
+	newMm := &ModuleManifest{
+		rootDir: mm.rootDir,
+		Records: make([]ModuleRecord, len(mm.Records)),
+	}
+
+	for i, record := range mm.Records {
+		// Individual records are immutable once parsed
+		newMm.Records[i] = record
+	}
+
+	return newMm
+}
+
 func NewModuleManifest(rootDir string, records []ModuleRecord) *ModuleManifest {
 	return &ModuleManifest{
 		rootDir: rootDir,
