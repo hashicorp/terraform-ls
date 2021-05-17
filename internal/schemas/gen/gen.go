@@ -247,6 +247,7 @@ var ignore = map[string]bool{
 	"HewlettPackard/oneview": true,
 	"zerotier/zerotier":      true,
 	"nirmata/nirmata":        true,
+	"datastax/astra":         true,
 }
 
 func filter(providers []provider) (filtered []provider) {
