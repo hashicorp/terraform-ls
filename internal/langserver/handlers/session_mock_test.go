@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
@@ -16,8 +17,9 @@ import (
 )
 
 type MockSessionInput struct {
-	Filesystem     filesystem.Filesystem
-	TerraformCalls *exec.TerraformMockCalls
+	Filesystem         filesystem.Filesystem
+	TerraformCalls     *exec.TerraformMockCalls
+	AdditionalHandlers map[string]handler.Func
 }
 
 type mockSession struct {
@@ -40,10 +42,13 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	}
 
 	var fs filesystem.Filesystem
-	if ms.mockInput != nil && ms.mockInput.Filesystem != nil {
-		fs = ms.mockInput.Filesystem
-	} else {
-		fs = filesystem.NewFilesystem()
+	fs = filesystem.NewFilesystem()
+	var handlers map[string]handler.Func
+	if ms.mockInput != nil {
+		if ms.mockInput.Filesystem != nil {
+			fs = ms.mockInput.Filesystem
+		}
+		handlers = ms.mockInput.AdditionalHandlers
 	}
 
 	var tfCalls *exec.TerraformMockCalls
@@ -56,16 +61,17 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	}
 
 	svc := &service{
-		logger:           testLogger(),
-		srvCtx:           srvCtx,
-		sessCtx:          sessCtx,
-		stopSession:      ms.stop,
-		fs:               fs,
-		newModuleManager: module.NewModuleManagerMock(input),
-		newWatcher:       module.MockWatcher(),
-		newWalker:        module.SyncWalker,
-		tfDiscoFunc:      d.LookPath,
-		tfExecFactory:    exec.NewMockExecutor(tfCalls),
+		logger:             testLogger(),
+		srvCtx:             srvCtx,
+		sessCtx:            sessCtx,
+		stopSession:        ms.stop,
+		fs:                 fs,
+		newModuleManager:   module.NewModuleManagerMock(input),
+		newWatcher:         module.MockWatcher(),
+		newWalker:          module.SyncWalker,
+		tfDiscoFunc:        d.LookPath,
+		tfExecFactory:      exec.NewMockExecutor(tfCalls),
+		additionalHandlers: handlers,
 	}
 
 	return svc
