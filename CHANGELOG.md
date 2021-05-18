@@ -1,3 +1,9 @@
+## 0.17.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Add support for traversals/references ([#485](https://github.com/hashicorp/terraform-ls/pull/485))
+
 ## 0.16.3 (13 May 2021)
 
 ENHANCEMENTS:
