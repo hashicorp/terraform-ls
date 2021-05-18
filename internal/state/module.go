@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
@@ -32,6 +33,10 @@ type Module struct {
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
 
+	References      lang.References
+	ReferencesErr   error
+	ReferencesState op.OpState
+
 	ParsedFiles  map[string]*hcl.File
 	ParsingErr   error
 	ParsingState op.OpState
@@ -49,6 +54,7 @@ func newModule(modPath string) *Module {
 		ModManifestState:      op.OpStateUnknown,
 		TerraformVersionState: op.OpStateUnknown,
 		ProviderSchemaState:   op.OpStateUnknown,
+		ReferencesState:       op.OpStateUnknown,
 		ParsingState:          op.OpStateUnknown,
 		MetaState:             op.OpStateUnknown,
 	}
@@ -391,6 +397,49 @@ func (s *ModuleStore) UpdateDiagnostics(path string, diags map[string]hcl.Diagno
 	}
 
 	mod.Diagnostics = diags
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetReferencesState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.ReferencesState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateReferences(path string, refs lang.References, rErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetReferencesState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	mod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.References = refs
+	mod.ReferencesErr = rErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

@@ -108,6 +108,7 @@ var (
 		TokenTypeKeyword,
 		TokenTypeNumber,
 		TokenTypeParameter,
+		TokenTypeVariable,
 	}
 	serverTokenModifiers = TokenModifiers{
 		TokenModifierDeprecated,

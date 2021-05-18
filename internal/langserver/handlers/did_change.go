@@ -67,6 +67,10 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
+	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferences)
+	if err != nil {
+		return err
+	}
 
 	diags, err := lsctx.Diagnostics(ctx)
 	if err != nil {

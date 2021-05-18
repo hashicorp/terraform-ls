@@ -5,12 +5,18 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder, error) {
 	d := decoder.NewDecoder()
+
+	d.SetReferenceReader(func() lang.References {
+		return mod.References
+	})
+
 	d.SetUtmSource("terraform-ls")
 	d.UseUtmContent(true)
 

@@ -103,6 +103,10 @@ func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, er
 		return nil, err
 	}
 
+	return schemaForModule(mod, mm.schemaStore)
+}
+
+func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schema.BodySchema, error) {
 	var coreSchema *schema.BodySchema
 	coreRequirements := make(version.Constraints, 0)
 	if mod.TerraformVersion != nil {
@@ -120,7 +124,7 @@ func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, er
 	}
 
 	sm := tfschema.NewSchemaMerger(coreSchema)
-	sm.SetSchemaReader(mm.schemaStore)
+	sm.SetSchemaReader(schemaReader)
 
 	meta := &tfmodule.Meta{
 		Path:                 mod.Path,
