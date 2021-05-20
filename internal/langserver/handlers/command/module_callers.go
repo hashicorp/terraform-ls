@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sort"
 
 	"github.com/creachadair/jrpc2/code"
@@ -20,8 +19,7 @@ type moduleCallersResponse struct {
 }
 
 type moduleCaller struct {
-	URI          string `json:"uri"`
-	RelativePath string `json:"rel_path"`
+	URI string `json:"uri"`
 }
 
 func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -47,13 +45,8 @@ func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 
 	callers := make([]moduleCaller, 0)
 	for _, caller := range modCallers {
-		relPath, err := filepath.Rel(modPath, caller.Path)
-		if err != nil {
-			return nil, err
-		}
 		callers = append(callers, moduleCaller{
-			URI:          uri.FromPath(caller.Path),
-			RelativePath: relPath,
+			URI: uri.FromPath(caller.Path),
 		})
 	}
 	sort.SliceStable(callers, func(i, j int) bool {
