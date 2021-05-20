@@ -3,12 +3,17 @@
 ENHANCEMENTS:
 
  - Add support for traversals/references ([#485](https://github.com/hashicorp/terraform-ls/pull/485))
+ - Add new `module.callers` (LSP) command & [document all available commands](https://github.com/hashicorp/terraform-ls/blob/41d49b3/docs/commands.md) ([#508](https://github.com/hashicorp/terraform-ls/pull/508))
 
 ## 0.16.3 (13 May 2021)
 
 ENHANCEMENTS:
 
  - Increase request concurrency & make it configurable via `-req-concurrency` flag of `serve` command ([#489](https://github.com/hashicorp/terraform-ls/pull/489))
+
+BUG FIXES:
+
+ - Fix request cancellation ([#314](https://github.com/hashicorp/terraform-ls/issues/314))
 
 ## 0.16.2 (11 May 2021)
 
