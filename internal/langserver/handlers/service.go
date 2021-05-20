@@ -296,6 +296,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)

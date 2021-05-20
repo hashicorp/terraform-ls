@@ -13,6 +13,7 @@ import (
 
 var handlers = cmd.Handlers{
 	cmd.Name("rootmodules"):        command.ModulesHandler,
+	cmd.Name("module.callers"):     command.ModuleCallersHandler,
 	cmd.Name("terraform.init"):     command.TerraformInitHandler,
 	cmd.Name("terraform.validate"): command.TerraformValidateHandler,
 }

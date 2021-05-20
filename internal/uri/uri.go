@@ -1,6 +1,7 @@
 package uri
 
 import (
+	"fmt"
 	"net/url"
 	"path/filepath"
 )
@@ -14,4 +15,30 @@ func FromPath(path string) string {
 		Path:   p,
 	}
 	return u.String()
+}
+
+func IsURIValid(uri string) bool {
+	_, err := parseUri(uri)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func mustParseUri(uri string) string {
+	u, err := parseUri(uri)
+	if err != nil {
+		panic(fmt.Sprintf("invalid URI: %s", uri))
+	}
+	return u
+}
+
+func parseUri(uri string) (string, error) {
+	u, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return "", err
+	}
+
+	return url.PathUnescape(u.Path)
 }

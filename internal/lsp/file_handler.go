@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -36,25 +35,11 @@ type fileHandler struct {
 }
 
 func (fh *fileHandler) Valid() bool {
-	_, err := fh.parsePath()
-	if err != nil {
-		return false
-	}
-
-	return true
+	return uri.IsURIValid(fh.uri)
 }
 
 func (fh *fileHandler) IsDir() bool {
 	return fh.isDir
-}
-
-func (fh *fileHandler) parsePath() (string, error) {
-	u, err := url.ParseRequestURI(string(fh.uri))
-	if err != nil {
-		return "", err
-	}
-
-	return url.PathUnescape(u.Path)
 }
 
 func (fh *fileHandler) Dir() string {
@@ -68,6 +53,10 @@ func (fh *fileHandler) Dir() string {
 
 func (fh *fileHandler) Filename() string {
 	return filepath.Base(fh.FullPath())
+}
+
+func (fh *fileHandler) FullPath() string {
+	return uri.MustPathFromURI(fh.uri)
 }
 
 func (fh *fileHandler) DocumentURI() lsp.DocumentURI {
