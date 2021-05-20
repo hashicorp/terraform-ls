@@ -98,10 +98,6 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_basic(t *testing.T) {
 		}
 	}`, fmt.Sprintf("%s/main.tf", baseDirUri))})
 
-	devName := filepath.Join("..", "dev")
-	prodName := filepath.Join("..", "prod")
-	stagingName := filepath.Join("..", "staging")
-
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
@@ -114,20 +110,17 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_basic(t *testing.T) {
 			"v": 0,
 			"callers": [
 				{
-					"uri": "%s/dev",
-					"rel_path": %q
+					"uri": "%s/dev"
 				},
 				{
-					"uri": "%s/prod",
-					"rel_path": %q
+					"uri": "%s/prod"
 				},
 				{
-					"uri": "%s/staging",
-					"rel_path": %q
+					"uri": "%s/staging"
 				}
 			]
 		}
-	}`, rootUri, devName, rootUri, prodName, rootUri, stagingName))
+	}`, rootUri, rootUri, rootUri))
 }
 
 func createModuleCalling(t *testing.T, src, modPath string) {

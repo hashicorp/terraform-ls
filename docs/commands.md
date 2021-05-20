@@ -87,7 +87,6 @@ can be used to hint the user e.g. where to run `init` or `validate` from.
  - `v` - describes version of the format; Will be used in the future to communicate format changes.
  - `callers` - array of any modules found in the workspace which call the module in question
    - `uri` - URI of the directory (absolute path)
-   - `rel_path` - path relative to the module in question, suitable to display in any UI elements
 
 ```json
 {
@@ -95,11 +94,9 @@ can be used to hint the user e.g. where to run `init` or `validate` from.
 	"callers": [
 		{
 			"uri": "file:///path/to/dev",
-			"rel_path": "../dev"
 		},
 		{
 			"uri": "file:///path/to/prod",
-			"rel_path": "../prod"
 		}
 	]
 }
