@@ -248,6 +248,7 @@ var ignore = map[string]bool{
 	"zerotier/zerotier":      true,
 	"nirmata/nirmata":        true,
 	"datastax/astra":         true,
+	"oktadeveloper/okta":     true,
 }
 
 func filter(providers []provider) (filtered []provider) {
