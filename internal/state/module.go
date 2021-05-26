@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
-	"github.com/mitchellh/copystructure"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -17,6 +16,30 @@ type ModuleMetadata struct {
 	CoreRequirements     version.Constraints
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
 	ProviderRequirements map[tfaddr.Provider]version.Constraints
+}
+
+func (mm ModuleMetadata) Copy() ModuleMetadata {
+	newMm := ModuleMetadata{
+		// version.Constraints is practically immutable once parsed
+		CoreRequirements: mm.CoreRequirements,
+	}
+
+	if mm.ProviderReferences != nil {
+		newMm.ProviderReferences = make(map[tfmod.ProviderRef]tfaddr.Provider, len(mm.ProviderReferences))
+		for ref, provider := range mm.ProviderReferences {
+			newMm.ProviderReferences[ref] = provider
+		}
+	}
+
+	if mm.ProviderRequirements != nil {
+		newMm.ProviderRequirements = make(map[tfaddr.Provider]version.Constraints, len(mm.ProviderRequirements))
+		for provider, vc := range mm.ProviderRequirements {
+			// version.Constraints is never mutated in this context
+			newMm.ProviderRequirements[provider] = vc
+		}
+	}
+
+	return newMm
 }
 
 type Module struct {
@@ -46,6 +69,59 @@ type Module struct {
 	MetaState op.OpState
 
 	Diagnostics map[string]hcl.Diagnostics
+}
+
+func (m *Module) Copy() *Module {
+	if m == nil {
+		return nil
+	}
+	newMod := &Module{
+		Path: m.Path,
+
+		ModManifest:      m.ModManifest.Copy(),
+		ModManifestErr:   m.ModManifestErr,
+		ModManifestState: m.ModManifestState,
+
+		// version.Version is practically immutable once parsed
+		TerraformVersion:      m.TerraformVersion,
+		TerraformVersionErr:   m.TerraformVersionErr,
+		TerraformVersionState: m.TerraformVersionState,
+
+		ProviderSchemaErr:   m.ProviderSchemaErr,
+		ProviderSchemaState: m.ProviderSchemaState,
+
+		References:      m.References.Copy(),
+		ReferencesErr:   m.ReferencesErr,
+		ReferencesState: m.ReferencesState,
+
+		ParsingErr:   m.ParsingErr,
+		ParsingState: m.ParsingState,
+
+		Meta:      m.Meta.Copy(),
+		MetaErr:   m.MetaErr,
+		MetaState: m.MetaState,
+	}
+
+	if m.ParsedFiles != nil {
+		newMod.ParsedFiles = make(map[string]*hcl.File, len(m.ParsedFiles))
+		for name, f := range m.ParsedFiles {
+			// hcl.File is practically immutable once it comes out of parser
+			newMod.ParsedFiles[name] = f
+		}
+	}
+
+	if m.Diagnostics != nil {
+		newMod.Diagnostics = make(map[string]hcl.Diagnostics, len(m.Diagnostics))
+		for name, diags := range m.Diagnostics {
+			newMod.Diagnostics[name] = make(hcl.Diagnostics, len(diags))
+			for i, diag := range diags {
+				// hcl.Diagnostic is practically immutable once it comes out of parser
+				newMod.Diagnostics[name][i] = diag
+			}
+		}
+	}
+
+	return newMod
 }
 
 func newModule(modPath string) *Module {
@@ -136,14 +212,7 @@ func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
 		return nil, err
 	}
 
-	mCopy, err := copystructure.Config{
-		Copiers: copiers,
-	}.Copy(mod)
-	if err != nil {
-		return nil, err
-	}
-
-	return mCopy.(*Module), nil
+	return mod.Copy(), nil
 }
 
 func (s *ModuleStore) List() ([]*Module, error) {

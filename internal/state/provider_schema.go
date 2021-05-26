@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-registry-address"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
-	"github.com/mitchellh/copystructure"
 )
 
 type ProviderSchema struct {
@@ -17,6 +16,19 @@ type ProviderSchema struct {
 	Source  SchemaSource
 
 	Schema *tfschema.ProviderSchema
+}
+
+func (ps *ProviderSchema) Copy() *ProviderSchema {
+	if ps == nil {
+		return nil
+	}
+
+	return &ProviderSchema{
+		Address: ps.Address,
+		Version: ps.Version, // version.Version is immutable by design
+		Source:  ps.Source,
+		Schema:  ps.Schema.Copy(),
+	}
 }
 
 type ProviderSchemaIterator struct {
@@ -58,16 +70,12 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 			versionedPs := obj.(*ProviderSchema)
 
 			if versionedPs.Schema != nil {
-				psRawCopy, err := copystructure.Config{
-					Copiers: copiers,
-				}.Copy(versionedPs)
-				psCopy := psRawCopy.(*ProviderSchema)
-
 				_, err = txn.DeleteAll(providerSchemaTableName, "id_prefix", pAddr, src)
 				if err != nil {
 					return fmt.Errorf("unable to delete provider schema: %w", err)
 				}
 
+				psCopy := versionedPs.Copy()
 				psCopy.Version = pVer
 				psCopy.Schema.SetProviderVersion(psCopy.Address, pVer)
 
@@ -113,10 +121,7 @@ func (s *ProviderSchemaStore) AddLocalSchema(modPath string, addr tfaddr.Provide
 		Source:  src,
 	}
 
-	schemaRawCopy, err := copystructure.Config{
-		Copiers: copiers,
-	}.Copy(schema)
-	schemaCopy := schemaRawCopy.(*tfschema.ProviderSchema)
+	schemaCopy := schema.Copy()
 
 	if obj != nil {
 		existingEntry, ok := obj.(*ProviderSchema)
@@ -174,10 +179,7 @@ func (s *ProviderSchemaStore) AddPreloadedSchema(addr tfaddr.Provider, pv *versi
 		}
 	}
 
-	schemaRawCopy, err := copystructure.Config{
-		Copiers: copiers,
-	}.Copy(schema)
-	schemaCopy := schemaRawCopy.(*tfschema.ProviderSchema)
+	schemaCopy := schema.Copy()
 
 	ps.Schema = schemaCopy
 
