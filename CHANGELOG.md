@@ -1,3 +1,9 @@
+## 0.17.1 (26 May 2021)
+
+BUG FIXES:
+
+ - Reduce CPU usage via custom Copy methods instead reflection ([#513](https://github.com/hashicorp/terraform-ls/pull/513))
+
 ## 0.17.0 (20 May 2021)
 
 ENHANCEMENTS:
