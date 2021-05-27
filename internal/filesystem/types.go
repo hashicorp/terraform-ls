@@ -11,6 +11,7 @@ type Document interface {
 	DocumentHandler
 	Text() ([]byte, error)
 	Lines() source.Lines
+	LanguageID() string
 	Version() int
 }
 
@@ -19,7 +20,6 @@ type DocumentHandler interface {
 	FullPath() string
 	Dir() string
 	Filename() string
-	LanguageID() string
 }
 
 type VersionedDocumentHandler interface {
@@ -36,8 +36,8 @@ type DocumentChanges []DocumentChange
 
 type DocumentStorage interface {
 	// LS-specific methods
-	CreateDocument(DocumentHandler, []byte) error
-	CreateAndOpenDocument(DocumentHandler, []byte) error
+	CreateDocument(DocumentHandler, string, []byte) error
+	CreateAndOpenDocument(DocumentHandler, string, []byte) error
 	GetDocument(DocumentHandler) (Document, error)
 	CloseAndRemoveDocument(DocumentHandler) error
 	ChangeDocument(VersionedDocumentHandler, DocumentChanges) error

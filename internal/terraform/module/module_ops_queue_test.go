@@ -72,7 +72,7 @@ func closedModPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) 
 
 	docPath := filepath.Join(modPath, "main.tf")
 	dh := ilsp.FileHandlerFromDocumentURI(protocol.DocumentURI(uri.FromPath(docPath)))
-	err := fs.CreateDocument(dh, []byte{})
+	err := fs.CreateDocument(dh, "test", []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func openModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) 
 	modPath := filepath.Join(dir, modName)
 	docPath := filepath.Join(modPath, "main.tf")
 	dh := ilsp.FileHandlerFromDocumentURI(protocol.DocumentURI(uri.FromPath(docPath)))
-	err := fs.CreateAndOpenDocument(dh, []byte{})
+	err := fs.CreateAndOpenDocument(dh, "test", []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}

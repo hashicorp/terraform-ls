@@ -67,10 +67,6 @@ func (fh *fileHandler) URI() string {
 	return string(fh.uri)
 }
 
-func (fh *fileHandler) LanguageID() string {
-	return ""
-}
-
 type versionedFileHandler struct {
 	fileHandler
 	v int

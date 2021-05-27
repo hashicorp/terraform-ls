@@ -39,7 +39,7 @@ func (fs *fsystem) HasOpenFiles(dirPath string) (bool, error) {
 	return false, nil
 }
 
-func (fs *fsystem) createDocumentMetadata(dh DocumentHandler, text []byte) error {
+func (fs *fsystem) createDocumentMetadata(dh DocumentHandler, langId string, text []byte) error {
 	if fs.documentMetadataExists(dh) {
 		return &MetadataAlreadyExistsErr{dh}
 	}
@@ -47,7 +47,7 @@ func (fs *fsystem) createDocumentMetadata(dh DocumentHandler, text []byte) error
 	fs.docMetaMu.Lock()
 	defer fs.docMetaMu.Unlock()
 
-	fs.docMeta[dh.URI()] = NewDocumentMetadata(dh, text)
+	fs.docMeta[dh.URI()] = NewDocumentMetadata(dh, langId, text)
 	return nil
 }
 
