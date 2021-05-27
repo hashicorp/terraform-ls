@@ -6,7 +6,6 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -51,12 +50,12 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, fmt.Errorf("finding compatible decoder failed: %w", err)
 	}
 
-	schema, err := mf.SchemaForModule(doc.Dir())
+	schema, err := schemaForDocument(mf, doc)
 	if err != nil {
 		return tks, err
 	}
 
-	d, err := decoder.DecoderForModule(ctx, mod)
+	d, err := decoderForDocument(ctx, mod, doc.LanguageID())
 	if err != nil {
 		return tks, err
 	}

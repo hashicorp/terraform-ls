@@ -16,6 +16,7 @@ type ModuleMetadata struct {
 	CoreRequirements     version.Constraints
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
 	ProviderRequirements map[tfaddr.Provider]version.Constraints
+	Variables            map[string]tfmod.Variable
 }
 
 func (mm ModuleMetadata) Copy() ModuleMetadata {
@@ -36,6 +37,13 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 		for provider, vc := range mm.ProviderRequirements {
 			// version.Constraints is never mutated in this context
 			newMm.ProviderRequirements[provider] = vc
+		}
+	}
+
+	if mm.Variables != nil {
+		newMm.Variables = make(map[string]tfmod.Variable, len(mm.Variables))
+		for name, variable := range mm.Variables {
+			newMm.Variables[name] = variable
 		}
 	}
 
@@ -60,15 +68,19 @@ type Module struct {
 	ReferencesErr   error
 	ReferencesState op.OpState
 
-	ParsedFiles  map[string]*hcl.File
-	ParsingErr   error
-	ParsingState op.OpState
+	ParsedModuleFiles  map[string]*hcl.File
+	ParsedVarsFiles    map[string]*hcl.File
+	ModuleParsingErr   error
+	VarsParsingErr     error
+	ModuleParsingState op.OpState
+	VarsParsingState   op.OpState
 
 	Meta      ModuleMetadata
 	MetaErr   error
 	MetaState op.OpState
 
-	Diagnostics map[string]hcl.Diagnostics
+	ModuleDiagnostics map[string]hcl.Diagnostics
+	VarsDiagnostics   map[string]hcl.Diagnostics
 }
 
 func (m *Module) Copy() *Module {
@@ -94,29 +106,50 @@ func (m *Module) Copy() *Module {
 		ReferencesErr:   m.ReferencesErr,
 		ReferencesState: m.ReferencesState,
 
-		ParsingErr:   m.ParsingErr,
-		ParsingState: m.ParsingState,
+		ModuleParsingErr:   m.ModuleParsingErr,
+		VarsParsingErr:     m.VarsParsingErr,
+		ModuleParsingState: m.ModuleParsingState,
+		VarsParsingState:   m.VarsParsingState,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
 	}
 
-	if m.ParsedFiles != nil {
-		newMod.ParsedFiles = make(map[string]*hcl.File, len(m.ParsedFiles))
-		for name, f := range m.ParsedFiles {
+	if m.ParsedModuleFiles != nil {
+		newMod.ParsedModuleFiles = make(map[string]*hcl.File, len(m.ParsedModuleFiles))
+		for name, f := range m.ParsedModuleFiles {
 			// hcl.File is practically immutable once it comes out of parser
-			newMod.ParsedFiles[name] = f
+			newMod.ParsedModuleFiles[name] = f
 		}
 	}
 
-	if m.Diagnostics != nil {
-		newMod.Diagnostics = make(map[string]hcl.Diagnostics, len(m.Diagnostics))
-		for name, diags := range m.Diagnostics {
-			newMod.Diagnostics[name] = make(hcl.Diagnostics, len(diags))
+	if m.ParsedVarsFiles != nil {
+		newMod.ParsedVarsFiles = make(map[string]*hcl.File, len(m.ParsedVarsFiles))
+		for name, f := range m.ParsedVarsFiles {
+			// hcl.File is practically immutable once it comes out of parser
+			newMod.ParsedVarsFiles[name] = f
+		}
+	}
+
+	if m.ModuleDiagnostics != nil {
+		newMod.ModuleDiagnostics = make(map[string]hcl.Diagnostics, len(m.ModuleDiagnostics))
+		for name, diags := range m.ModuleDiagnostics {
+			newMod.ModuleDiagnostics[name] = make(hcl.Diagnostics, len(diags))
 			for i, diag := range diags {
 				// hcl.Diagnostic is practically immutable once it comes out of parser
-				newMod.Diagnostics[name][i] = diag
+				newMod.ModuleDiagnostics[name][i] = diag
+			}
+		}
+	}
+
+	if m.VarsDiagnostics != nil {
+		newMod.VarsDiagnostics = make(map[string]hcl.Diagnostics, len(m.VarsDiagnostics))
+		for name, diags := range m.VarsDiagnostics {
+			newMod.VarsDiagnostics[name] = make(hcl.Diagnostics, len(diags))
+			for i, diag := range diags {
+				// hcl.Diagnostic is practically immutable once it comes out of parser
+				newMod.VarsDiagnostics[name][i] = diag
 			}
 		}
 	}
@@ -131,7 +164,7 @@ func newModule(modPath string) *Module {
 		TerraformVersionState: op.OpStateUnknown,
 		ProviderSchemaState:   op.OpStateUnknown,
 		ReferencesState:       op.OpStateUnknown,
-		ParsingState:          op.OpStateUnknown,
+		ModuleParsingState:    op.OpStateUnknown,
 		MetaState:             op.OpStateUnknown,
 	}
 }
@@ -366,7 +399,7 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 	return nil
 }
 
-func (s *ModuleStore) SetParsingState(path string, state op.OpState) error {
+func (s *ModuleStore) SetModuleParsingState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -375,7 +408,7 @@ func (s *ModuleStore) SetParsingState(path string, state op.OpState) error {
 		return err
 	}
 
-	mod.ParsingState = state
+	mod.ModuleParsingState = state
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
@@ -385,10 +418,29 @@ func (s *ModuleStore) SetParsingState(path string, state op.OpState) error {
 	return nil
 }
 
-func (s *ModuleStore) UpdateParsedFiles(path string, pFiles map[string]*hcl.File, pErr error) error {
+func (s *ModuleStore) SetVarsParsingState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.VarsParsingState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateParsedModuleFiles(path string, pFiles map[string]*hcl.File, pErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
-		s.SetParsingState(path, op.OpStateLoaded)
+		s.SetModuleParsingState(path, op.OpStateLoaded)
 	})
 	defer txn.Abort()
 
@@ -397,8 +449,34 @@ func (s *ModuleStore) UpdateParsedFiles(path string, pFiles map[string]*hcl.File
 		return err
 	}
 
-	mod.ParsedFiles = pFiles
-	mod.ParsingErr = pErr
+	mod.ParsedModuleFiles = pFiles
+
+	mod.ModuleParsingErr = pErr
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateParsedVarsFiles(path string, pFiles map[string]*hcl.File, pErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetVarsParsingState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.ParsedVarsFiles = pFiles
+
+	mod.VarsParsingErr = pErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -444,6 +522,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 		CoreRequirements:     meta.CoreRequirements,
 		ProviderReferences:   meta.ProviderReferences,
 		ProviderRequirements: meta.ProviderRequirements,
+		Variables:            meta.Variables,
 	}
 	mod.MetaErr = mErr
 
@@ -456,7 +535,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	return nil
 }
 
-func (s *ModuleStore) UpdateDiagnostics(path string, diags map[string]hcl.Diagnostics) error {
+func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags map[string]hcl.Diagnostics) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -465,7 +544,27 @@ func (s *ModuleStore) UpdateDiagnostics(path string, diags map[string]hcl.Diagno
 		return err
 	}
 
-	mod.Diagnostics = diags
+	mod.ModuleDiagnostics = diags
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags map[string]hcl.Diagnostics) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.VarsDiagnostics = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

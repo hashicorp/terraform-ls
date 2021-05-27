@@ -118,7 +118,8 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	schema, err := modMgr.SchemaForModule(fh.Dir())
+	schema, err := modMgr.SchemaForModule(file.Dir())
+
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find schema: %s", err.Error()))
 		return 1

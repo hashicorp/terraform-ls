@@ -163,10 +163,16 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 			ml.logger.Printf("failed to obtain schema: %s", err)
 		}
 		return
-	case op.OpTypeParseConfiguration:
-		err := ParseConfiguration(ml.fs, ml.modStore, modOp.ModulePath)
+	case op.OpTypeParseModuleConfiguration:
+		err := ParseModuleConfiguration(ml.fs, ml.modStore, modOp.ModulePath)
 		if err != nil {
-			ml.logger.Printf("failed to parse configuration: %s", err)
+			ml.logger.Printf("failed to parse module configuration: %s", err)
+		}
+		return
+	case op.OpTypeParseVariables:
+		err := ParseVariables(ml.fs, ml.modStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to parse variables: %s", err)
 		}
 		return
 	case op.OpTypeParseModuleManifest:
@@ -214,12 +220,18 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 			return nil
 		}
 		ml.modStore.SetProviderSchemaState(modOp.ModulePath, op.OpStateQueued)
-	case op.OpTypeParseConfiguration:
-		if mod.ParsingState == op.OpStateQueued {
+	case op.OpTypeParseModuleConfiguration:
+		if mod.ModuleParsingState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
 			return nil
 		}
-		ml.modStore.SetParsingState(modOp.ModulePath, op.OpStateQueued)
+		ml.modStore.SetModuleParsingState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeParseVariables:
+		if mod.VarsParsingState == op.OpStateQueued {
+			// avoid enqueuing duplicate operation
+			return nil
+		}
+		ml.modStore.SetVarsParsingState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeParseModuleManifest:
 		if mod.ModManifestState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation

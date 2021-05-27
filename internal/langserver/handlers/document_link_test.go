@@ -17,7 +17,7 @@ func TestDocumentLink_withValidData(t *testing.T) {
 	InitPluginCache(t, tmpDir.Dir())
 
 	var testSchema tfjson.ProviderSchemas
-	err := json.Unmarshal([]byte(testSchemaOutput), &testSchema)
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
 	if err != nil {
 		t.Fatal(err)
 	}

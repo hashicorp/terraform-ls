@@ -4,7 +4,6 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -35,12 +34,12 @@ func (h *logHandler) TextDocumentHover(ctx context.Context, params lsp.TextDocum
 		return nil, err
 	}
 
-	schema, err := mf.SchemaForModule(file.Dir())
+	schema, err := schemaForDocument(mf, file)
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := decoder.DecoderForModule(ctx, mod)
+	d, err := decoderForDocument(ctx, mod, file.LanguageID())
 	if err != nil {
 		return nil, err
 	}

@@ -138,8 +138,8 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return nil
 }
 
-func ParseConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetParsingState(modPath, op.OpStateLoading)
+func ParseModuleConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetModuleParsingState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func ParseConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, m
 
 	infos, err := fs.ReadDir(modPath)
 	if err != nil {
-		sErr := modStore.UpdateParsedFiles(modPath, files, err)
+		sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 		if sErr != nil {
 			return sErr
 		}
@@ -166,14 +166,13 @@ func ParseConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, m
 		if !strings.HasSuffix(name, ".tf") || IsIgnoredFile(name) {
 			continue
 		}
-
 		// TODO: overrides
 
 		fullPath := filepath.Join(modPath, name)
 
 		src, err := fs.ReadFile(fullPath)
 		if err != nil {
-			sErr := modStore.UpdateParsedFiles(modPath, files, err)
+			sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 			if sErr != nil {
 				return sErr
 			}
@@ -187,12 +186,73 @@ func ParseConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, m
 		}
 	}
 
-	sErr := modStore.UpdateParsedFiles(modPath, files, err)
+	sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 	if sErr != nil {
 		return sErr
 	}
 
-	sErr = modStore.UpdateDiagnostics(modPath, diags)
+	sErr = modStore.UpdateModuleDiagnostics(modPath, diags)
+	if sErr != nil {
+		return sErr
+	}
+
+	return err
+}
+
+func ParseVariables(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetVarsParsingState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	files := make(map[string]*hcl.File, 0)
+	diags := make(map[string]hcl.Diagnostics, 0)
+
+	infos, err := fs.ReadDir(modPath)
+	if err != nil {
+		sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+		if sErr != nil {
+			return sErr
+		}
+		return err
+	}
+
+	for _, info := range infos {
+		if info.IsDir() {
+			// We only care about files
+			continue
+		}
+
+		name := info.Name()
+		if !(strings.HasSuffix(name, ".auto.tfvars") ||
+			name == "terraform.tfvars") || IsIgnoredFile(name) {
+			continue
+		}
+
+		fullPath := filepath.Join(modPath, name)
+
+		src, err := fs.ReadFile(fullPath)
+		if err != nil {
+			sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+			if sErr != nil {
+				return sErr
+			}
+			return err
+		}
+
+		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
+		diags[name] = pDiags
+		if f != nil {
+			files[name] = f
+		}
+	}
+
+	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+	if sErr != nil {
+		return sErr
+	}
+
+	sErr = modStore.UpdateVarsDiagnostics(modPath, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -253,7 +313,7 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 	}
 
 	var mErr error
-	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedFiles)
+	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedModuleFiles)
 	if len(diags) > 0 {
 		mErr = diags
 	}
@@ -291,7 +351,7 @@ func DecodeReferences(modStore *state.ModuleStore, schemaReader state.SchemaRead
 	}
 
 	d := decoder.NewDecoder()
-	for name, f := range mod.ParsedFiles {
+	for name, f := range mod.ParsedModuleFiles {
 		err := d.LoadFile(name, f)
 		if err != nil {
 			return fmt.Errorf("failed to load a file: %w", err)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/schema"
+
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -104,6 +105,16 @@ func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, er
 	}
 
 	return schemaForModule(mod, mm.schemaStore)
+}
+
+func (mm *moduleManager) SchemaForVariables(modPath string) (*schema.BodySchema, error) {
+	mod, err := mm.ModuleByPath(modPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tfschema.SchemaForVariables(mod.Meta.Variables)
 }
 
 func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schema.BodySchema, error) {
