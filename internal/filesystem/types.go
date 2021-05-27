@@ -19,6 +19,7 @@ type DocumentHandler interface {
 	FullPath() string
 	Dir() string
 	Filename() string
+	LanguageID() string
 }
 
 type VersionedDocumentHandler interface {

@@ -42,6 +42,10 @@ func (d *document) Version() int {
 	return d.meta.Version()
 }
 
+func (d *document) LanguageID() string {
+	return d.meta.dh.LanguageID()
+}
+
 func (d *document) IsOpen() bool {
 	return d.meta.IsOpen()
 }

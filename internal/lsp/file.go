@@ -11,13 +11,15 @@ type File interface {
 	Dir() string
 	Filename() string
 	Lines() source.Lines
+	LanguageID() string
 }
 
 type file struct {
-	fh      *fileHandler
-	ls      source.Lines
-	text    []byte
-	version int
+	fh         *fileHandler
+	ls         source.Lines
+	text       []byte
+	version    int
+	languageID string
 }
 
 func (f *file) URI() string {
@@ -44,6 +46,10 @@ func (f *file) Lines() source.Lines {
 	return f.lines()
 }
 
+func (f *file) LanguageID() string {
+	return f.languageID
+}
+
 func (f *file) lines() source.Lines {
 	if f.ls == nil {
 		f.ls = source.MakeSourceLines(f.fh.Filename(), f.text)
@@ -57,8 +63,9 @@ func (f *file) Version() int {
 
 func FileFromDocumentItem(doc lsp.TextDocumentItem) *file {
 	return &file{
-		fh:      FileHandlerFromDocumentURI(doc.URI),
-		text:    []byte(doc.Text),
-		version: int(doc.Version),
+		fh:         FileHandlerFromDocumentURI(doc.URI),
+		text:       []byte(doc.Text),
+		version:    int(doc.Version),
+		languageID: doc.LanguageID,
 	}
 }

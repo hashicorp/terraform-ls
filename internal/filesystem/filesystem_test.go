@@ -590,6 +590,10 @@ func (fh *testHandler) Version() int {
 	return 0
 }
 
+func (fh *testHandler) LanguageID() string {
+	return "terraform"
+}
+
 func testDocumentStorage() DocumentStorage {
 	fs := NewFilesystem()
 	fs.logger = testLogger()
