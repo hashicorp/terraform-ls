@@ -34,7 +34,7 @@ func TestFilesystem_Change_closed(t *testing.T) {
 	fs := testDocumentStorage()
 
 	fh := &testHandler{uri: "file:///doesnotexist"}
-	fs.CreateAndOpenDocument(fh, []byte{})
+	fs.CreateAndOpenDocument(fh, "test", []byte{})
 	err := fs.CloseAndRemoveDocument(fh)
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestFilesystem_Remove_unknown(t *testing.T) {
 	fs := testDocumentStorage()
 
 	fh := &testHandler{uri: "file:///doesnotexist"}
-	fs.CreateAndOpenDocument(fh, []byte{})
+	fs.CreateAndOpenDocument(fh, "test", []byte{})
 	err := fs.CloseAndRemoveDocument(fh)
 	if err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestFilesystem_Close_closed(t *testing.T) {
 	fs := testDocumentStorage()
 
 	fh := &testHandler{uri: "file:///isnotopen"}
-	fs.CreateDocument(fh, []byte{})
+	fs.CreateDocument(fh, "test", []byte{})
 	err := fs.CloseAndRemoveDocument(fh)
 	expectedErr := &DocumentNotOpenErr{fh}
 	if err == nil {
@@ -96,7 +96,7 @@ func TestFilesystem_Change_noChanges(t *testing.T) {
 	fs := testDocumentStorage()
 
 	fh := &testHandler{uri: "file:///test.tf"}
-	fs.CreateAndOpenDocument(fh, []byte{})
+	fs.CreateAndOpenDocument(fh, "test", []byte{})
 
 	var changes DocumentChanges
 	err := fs.ChangeDocument(fh, changes)
@@ -109,7 +109,7 @@ func TestFilesystem_Change_multipleChanges(t *testing.T) {
 	fs := testDocumentStorage()
 
 	fh := &testHandler{uri: "file:///test.tf"}
-	fs.CreateAndOpenDocument(fh, []byte{})
+	fs.CreateAndOpenDocument(fh, "test", []byte{})
 
 	var changes DocumentChanges
 	changes = append(changes, &testChange{text: "ahoy"})
@@ -127,7 +127,7 @@ func TestFilesystem_GetDocument_success(t *testing.T) {
 	fs := testDocumentStorage()
 
 	dh := &testHandler{uri: "file:///test.tf"}
-	err := fs.CreateAndOpenDocument(dh, []byte("hello world"))
+	err := fs.CreateAndOpenDocument(dh, "test", []byte("hello world"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func TestFilesystem_GetDocument_success(t *testing.T) {
 	}
 
 	b := []byte("hello world")
-	meta := NewDocumentMetadata(dh, b)
+	meta := NewDocumentMetadata(dh, "test", b)
 	meta.isOpen = true
 	expectedFile := testDocument(t, dh, meta, b)
 	if diff := cmp.Diff(expectedFile, f); diff != "" {
@@ -199,7 +199,7 @@ func TestFilesystem_ReadFile_memOnly(t *testing.T) {
 	fs := NewFilesystem()
 	fh := &testHandler{uri: "file:///tmp/test.tf"}
 	content := "test content"
-	err := fs.CreateDocument(fh, []byte(content))
+	err := fs.CreateDocument(fh, "test", []byte(content))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func TestFilesystem_ReadFile_memAndOs(t *testing.T) {
 
 	fh := testHandlerFromPath(testPath)
 	memContent := "in-mem content"
-	err = fs.CreateDocument(fh, []byte(memContent))
+	err = fs.CreateDocument(fh, "test", []byte(memContent))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,7 +277,7 @@ func TestFilesystem_ReadDir(t *testing.T) {
 	fs := NewFilesystem()
 
 	fh := testHandlerFromPath(filepath.Join(tmpDir, "memfile"))
-	err = fs.CreateDocument(fh, []byte("test"))
+	err = fs.CreateDocument(fh, "test", []byte("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,7 +300,7 @@ func TestFilesystem_ReadDir_memFsOnly(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	fh := testHandlerFromPath(filepath.Join(tmpDir, "memfile"))
-	err := fs.CreateDocument(fh, []byte("test"))
+	err := fs.CreateDocument(fh, "test", []byte("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,7 +363,7 @@ func TestFilesystem_Open_memOnly(t *testing.T) {
 	fh := testHandlerFromPath(testPath)
 
 	content := "test content"
-	err := fs.CreateDocument(fh, []byte(content))
+	err := fs.CreateDocument(fh, "test", []byte(content))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +403,7 @@ func TestFilesystem_Open_memAndOs(t *testing.T) {
 
 	fh := testHandlerFromPath(testPath)
 	memContent := "in-mem content"
-	err = fs.CreateDocument(fh, []byte(memContent))
+	err = fs.CreateDocument(fh, "test", []byte(memContent))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +439,7 @@ func TestFilesystem_Create_memOnly(t *testing.T) {
 	fh := testHandlerFromPath(testPath)
 
 	content := "test content"
-	err := fs.CreateDocument(fh, []byte(content))
+	err := fs.CreateDocument(fh, "test", []byte(content))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +463,7 @@ func TestFilesystem_CreateDocument_missingParentDir(t *testing.T) {
 	testPath := filepath.Join(tmpDir, "foo", "bar", "test.tf")
 	fh := testHandlerFromPath(testPath)
 
-	err := fs.CreateDocument(fh, []byte("test"))
+	err := fs.CreateDocument(fh, "test", []byte("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -494,7 +494,7 @@ func TestFilesystem_HasOpenFiles(t *testing.T) {
 
 	notOpenHandler := filepath.Join(tmpDir, "not-open.tf")
 	noFh := testHandlerFromPath(notOpenHandler)
-	err := fs.CreateDocument(noFh, []byte("test1"))
+	err := fs.CreateDocument(noFh, "test", []byte("test1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -509,7 +509,7 @@ func TestFilesystem_HasOpenFiles(t *testing.T) {
 
 	openHandler := filepath.Join(tmpDir, "open.tf")
 	ofh := testHandlerFromPath(openHandler)
-	err = fs.CreateAndOpenDocument(ofh, []byte("test2"))
+	err = fs.CreateAndOpenDocument(ofh, "test", []byte("test2"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -588,6 +588,10 @@ func (fh *testHandler) IsOpen() bool {
 
 func (fh *testHandler) Version() int {
 	return 0
+}
+
+func (fh *testHandler) LanguageID() string {
+	return "terraform"
 }
 
 func testDocumentStorage() DocumentStorage {

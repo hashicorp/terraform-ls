@@ -12,14 +12,16 @@ type documentMetadata struct {
 	mu      *sync.RWMutex
 	isOpen  bool
 	version int
+	langId  string
 	lines   source.Lines
 }
 
-func NewDocumentMetadata(dh DocumentHandler, content []byte) *documentMetadata {
+func NewDocumentMetadata(dh DocumentHandler, langId string, content []byte) *documentMetadata {
 	return &documentMetadata{
-		dh:    dh,
-		mu:    &sync.RWMutex{},
-		lines: source.MakeSourceLines(dh.Filename(), content),
+		dh:     dh,
+		mu:     &sync.RWMutex{},
+		langId: langId,
+		lines:  source.MakeSourceLines(dh.Filename(), content),
 	}
 }
 

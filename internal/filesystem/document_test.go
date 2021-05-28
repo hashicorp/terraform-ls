@@ -11,7 +11,7 @@ func TestFile_ApplyChange_fullUpdate(t *testing.T) {
 	fs := testDocumentStorage()
 	dh := &testHandler{uri: "file:///test.tf"}
 
-	err := fs.CreateAndOpenDocument(dh, []byte("hello world"))
+	err := fs.CreateAndOpenDocument(dh, "test", []byte("hello world"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ func TestFile_ApplyChange_partialUpdate(t *testing.T) {
 		fs := testDocumentStorage()
 		dh := &testHandler{uri: "file:///test.tf"}
 
-		err := fs.CreateAndOpenDocument(dh, []byte(v.Content))
+		err := fs.CreateAndOpenDocument(dh, "test", []byte(v.Content))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -253,7 +253,7 @@ module "app" {
 		fs := testDocumentStorage()
 		dh := &testHandler{uri: "file:///test.tf"}
 
-		err := fs.CreateAndOpenDocument(dh, []byte(v.Content))
+		err := fs.CreateAndOpenDocument(dh, "test", []byte(v.Content))
 		if err != nil {
 			t.Fatal(err)
 		}

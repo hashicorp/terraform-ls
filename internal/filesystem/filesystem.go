@@ -36,7 +36,7 @@ func (fs *fsystem) SetLogger(logger *log.Logger) {
 	fs.logger = logger
 }
 
-func (fs *fsystem) CreateDocument(dh DocumentHandler, text []byte) error {
+func (fs *fsystem) CreateDocument(dh DocumentHandler, langId string, text []byte) error {
 	_, err := fs.memFs.Stat(dh.Dir())
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -58,11 +58,11 @@ func (fs *fsystem) CreateDocument(dh DocumentHandler, text []byte) error {
 		return err
 	}
 
-	return fs.createDocumentMetadata(dh, text)
+	return fs.createDocumentMetadata(dh, langId, text)
 }
 
-func (fs *fsystem) CreateAndOpenDocument(dh DocumentHandler, text []byte) error {
-	err := fs.CreateDocument(dh, text)
+func (fs *fsystem) CreateAndOpenDocument(dh DocumentHandler, langId string, text []byte) error {
+	err := fs.CreateDocument(dh, langId, text)
 	if err != nil {
 		return err
 	}
