@@ -143,6 +143,7 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schem
 		CoreRequirements:     coreRequirements,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		ProviderReferences:   mod.Meta.ProviderReferences,
+		Variables:            mod.Meta.Variables,
 	}
 
 	return sm.SchemaForModule(meta)
