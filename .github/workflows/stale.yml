@@ -12,6 +12,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         days-before-stale: '-1'
         days-before-close: '90'
+        only-labels: 'waiting-response'
         stale-issue-label: 'stale'
         stale-issue-message: |
           Marking this issue as stale due to inactivity. This helps our maintainers find and focus on the active issues. If this issue receives no comments in the next 90 days it will automatically be closed. Maintainers can also remove the stale label.
