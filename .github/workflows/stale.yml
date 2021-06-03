@@ -1,0 +1,25 @@
+name: "Stale issues and pull requests"
+on:
+  schedule:
+  - cron: "10 3 * * *"
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/stale@v3
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        days-before-stale: '-1'
+        days-before-close: '90'
+        only-labels: 'waiting-response'
+        stale-issue-label: 'stale'
+        stale-issue-message: |
+          Marking this issue as stale due to inactivity. This helps our maintainers find and focus on the active issues. If this issue receives no comments in the next 90 days it will automatically be closed. Maintainers can also remove the stale label.
+
+          If this issue was automatically closed and you feel this issue should be reopened, we encourage creating a new issue linking back to this one for added context. Thank you!
+        stale-pr-label: 'stale'
+        stale-pr-message: |
+          Marking this pull request as stale due to inactivity. This helps our maintainers find and focus on the active pull requests. If this pull request receives no comments in the next 90 days it will automatically be closed. Maintainers can also remove the stale label.
+
+          If this pull request was automatically closed and you feel this pull request should be reopened, we encourage creating a new pull request linking back to this one for added context. Thank you!
