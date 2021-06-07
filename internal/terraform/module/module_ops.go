@@ -3,6 +3,7 @@ package module
 import (
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -293,8 +294,21 @@ func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, 
 		}
 		return err
 	}
+	if mm != nil {
+		for _, modRecord := range mm.Records {
+			modModulePath := path.Join(modPath, modRecord.Dir)
+			_, err := modStore.ModuleByPath(modModulePath)
+			if err != nil {
+				modStore.Add(modModulePath)
+				ParseModuleConfiguration(fs, modStore, modModulePath)
+				ParseVariables(fs, modStore, modModulePath)
+				LoadModuleMetadata(modStore, modModulePath)
+			}
+		}
+	}
 
 	sErr := modStore.UpdateModManifest(modPath, mm, err)
+
 	if sErr != nil {
 		return sErr
 	}
@@ -358,7 +372,7 @@ func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.Sche
 		}
 	}
 
-	fullSchema, schemaErr := schemaForModule(mod, schemaReader)
+	fullSchema, schemaErr := schemaForModule(mod, schemaReader, modStore)
 	if schemaErr != nil {
 		sErr := modStore.UpdateReferenceTargets(modPath, lang.ReferenceTargets{}, schemaErr)
 		if sErr != nil {
@@ -400,7 +414,7 @@ func DecodeReferenceOrigins(modStore *state.ModuleStore, schemaReader state.Sche
 		}
 	}
 
-	fullSchema, schemaErr := schemaForModule(mod, schemaReader)
+	fullSchema, schemaErr := schemaForModule(mod, schemaReader, modStore)
 	if schemaErr != nil {
 		sErr := modStore.UpdateReferenceOrigins(modPath, lang.ReferenceOrigins{}, schemaErr)
 		if sErr != nil {

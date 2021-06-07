@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
@@ -62,6 +63,11 @@ type ModuleReader interface {
 	CallersOfModule(modPath string) ([]*Module, error)
 	ModuleByPath(modPath string) (*Module, error)
 	List() ([]*Module, error)
+}
+
+type ModuleCallReader interface {
+	ModuleCalls(modPath string) ([]tfmod.ModuleCall, error)
+	ModuleMeta(modPath string) (*tfmod.Meta, error)
 }
 
 type ProviderSchemaStore struct {

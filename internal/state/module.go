@@ -1,6 +1,8 @@
 package state
 
 import (
+	"path/filepath"
+
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -245,6 +247,37 @@ func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
 	}
 
 	return mod, nil
+}
+
+func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
+	result := make([]tfmod.ModuleCall, 0)
+	modList, err := s.List()
+	for _, mod := range modList {
+		if mod.ModManifest != nil {
+			for _, record := range mod.ModManifest.Records {
+				_ = record
+				result = append(result, tfmod.ModuleCall{
+					SourceAddr: record.SourceAddr,
+					Path:       filepath.Join(modPath, record.Dir),
+				})
+			}
+		}
+	}
+	return result, err
+}
+
+func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
+	mod, err := s.ModuleByPath(modPath)
+	if err != nil {
+		return nil, err
+	}
+	return &tfmod.Meta{
+		Path:                 mod.Path,
+		ProviderReferences:   mod.Meta.ProviderReferences,
+		ProviderRequirements: mod.Meta.ProviderRequirements,
+		CoreRequirements:     mod.Meta.CoreRequirements,
+		Variables:            mod.Meta.Variables,
+	}, nil
 }
 
 func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
