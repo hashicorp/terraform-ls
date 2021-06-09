@@ -136,6 +136,7 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schem
 
 	sm := tfschema.NewSchemaMerger(coreSchema)
 	sm.SetSchemaReader(schemaReader)
+	sm.SetTerraformVersion(mod.TerraformVersion)
 
 	meta := &tfmodule.Meta{
 		Path:                 mod.Path,
