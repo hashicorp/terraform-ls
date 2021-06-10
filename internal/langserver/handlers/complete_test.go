@@ -584,7 +584,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 					{
 						"label": "test",
 						"kind": 10,
-						"detail": "string",
+						"detail": "required, string",
 						"insertTextFormat":1,
 						"textEdit": {
 							"range": {"start":{"line":0,"character":0}, "end":{"line":0,"character":0}}, 
