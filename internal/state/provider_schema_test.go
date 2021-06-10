@@ -733,7 +733,8 @@ func TestStateStore_ListSchemas(t *testing.T) {
 			},
 			&tfschema.ProviderSchema{
 				Provider: &schema.BodySchema{
-					Detail: "hashicorp/aws-local 0.9.0",
+					Detail:   "hashicorp/aws-local 0.9.0",
+					HoverURL: "https://registry.terraform.io/providers/hashicorp/aws-local/0.9.0/docs",
 					DocsLink: &schema.DocsLink{
 						URL:     "https://registry.terraform.io/providers/hashicorp/aws-local/0.9.0/docs",
 						Tooltip: "hashicorp/aws-local Documentation",
@@ -755,7 +756,8 @@ func TestStateStore_ListSchemas(t *testing.T) {
 			},
 			&tfschema.ProviderSchema{
 				Provider: &schema.BodySchema{
-					Detail: "hashicorp/aws-local 1.0.0",
+					Detail:   "hashicorp/aws-local 1.0.0",
+					HoverURL: "https://registry.terraform.io/providers/hashicorp/aws-local/1.0.0/docs",
 					DocsLink: &schema.DocsLink{
 						URL:     "https://registry.terraform.io/providers/hashicorp/aws-local/1.0.0/docs",
 						Tooltip: "hashicorp/aws-local Documentation",
@@ -777,7 +779,8 @@ func TestStateStore_ListSchemas(t *testing.T) {
 			},
 			&tfschema.ProviderSchema{
 				Provider: &schema.BodySchema{
-					Detail: "hashicorp/aws-local 1.3.0",
+					Detail:   "hashicorp/aws-local 1.3.0",
+					HoverURL: "https://registry.terraform.io/providers/hashicorp/aws-local/1.3.0/docs",
 					DocsLink: &schema.DocsLink{
 						URL:     "https://registry.terraform.io/providers/hashicorp/aws-local/1.3.0/docs",
 						Tooltip: "hashicorp/aws-local Documentation",
@@ -799,7 +802,8 @@ func TestStateStore_ListSchemas(t *testing.T) {
 			},
 			&tfschema.ProviderSchema{
 				Provider: &schema.BodySchema{
-					Detail: "hashicorp/blah 1.0.0",
+					Detail:   "hashicorp/blah 1.0.0",
+					HoverURL: "https://registry.terraform.io/providers/hashicorp/blah/1.0.0/docs",
 					DocsLink: &schema.DocsLink{
 						URL:     "https://registry.terraform.io/providers/hashicorp/blah/1.0.0/docs",
 						Tooltip: "hashicorp/blah Documentation",
