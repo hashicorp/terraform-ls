@@ -4,6 +4,10 @@ FEATURES:
 
  - Add support for `tfvars` (variable files) ([#540](https://github.com/hashicorp/terraform-ls/pull/540))
 
+ENHANCEMENTS:
+
+ - Support for type declarations (for variable `type`) ([#490](https://github.com/hashicorp/terraform-ls/pull/490))
+
 ## 0.17.1 (26 May 2021)
 
 BUG FIXES:
