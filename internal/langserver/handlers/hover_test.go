@@ -197,7 +197,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
-			"text": "variable \"test\" {\n type=string\n}\n",
+			"text": "variable \"test\" {\n type=string\n sensitive=true}\n",
 			"uri": "%s/variables.tf"
 		}
 	}`, tmpDir.URI())})
@@ -228,7 +228,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 			"result": {
 				"contents": {
 					"kind": "plaintext",
-					"value": "test string"
+					"value": "test required, sensitive, string"
 				},
 				"range": {
 					"start": { "line":0, "character":0 },
