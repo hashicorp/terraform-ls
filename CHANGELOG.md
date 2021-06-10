@@ -1,4 +1,4 @@
-## 0.18.0 (Unreleased)
+## 0.18.0 (10 June 2021)
 
 FEATURES:
 
