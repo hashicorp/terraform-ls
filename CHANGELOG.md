@@ -7,6 +7,7 @@ FEATURES:
 ENHANCEMENTS:
 
  - Add support for state backends ([#544](https://github.com/hashicorp/terraform-ls/pull/544))
+ - Add support for provisioners ([#542](https://github.com/hashicorp/terraform-ls/pull/542))
  - Support for type declarations (for variable `type`) ([#490](https://github.com/hashicorp/terraform-ls/pull/490))
 
 ## 0.17.1 (26 May 2021)
