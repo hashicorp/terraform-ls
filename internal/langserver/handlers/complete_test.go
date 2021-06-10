@@ -122,7 +122,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					{
 						"label": "alias",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
 						"insertTextFormat": 1,
 						"textEdit": {
@@ -142,7 +142,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					{
 						"label": "anonymous",
 						"kind": 10,
-						"detail": "Optional, number",
+						"detail": "optional, number",
 						"documentation": "Desc 1",
 						"insertTextFormat": 1,
 						"textEdit": {
@@ -162,7 +162,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					{
 						"label": "base_url",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Desc 2",
 						"insertTextFormat": 1,
 						"textEdit": {
@@ -182,7 +182,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					{
 						"label": "individual",
 						"kind": 10,
-						"detail": "Optional, bool",
+						"detail": "optional, bool",
 						"documentation": "Desc 3",
 						"insertTextFormat": 1,
 						"textEdit": {
@@ -202,7 +202,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					{
 						"label": "version",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
 						"insertTextFormat": 1,
 						"textEdit": {
@@ -323,7 +323,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					{
 						"label": "alias",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
 						"insertTextFormat": 2,
 						"textEdit": {
@@ -343,7 +343,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					{
 						"label": "anonymous",
 						"kind": 10,
-						"detail": "Optional, number",
+						"detail": "optional, number",
 						"documentation": "Desc 1",
 						"insertTextFormat": 2,
 						"textEdit": {
@@ -367,7 +367,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					{
 						"label": "base_url",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Desc 2",
 						"insertTextFormat": 2,
 						"textEdit": {
@@ -391,7 +391,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					{
 						"label": "individual",
 						"kind": 10,
-						"detail": "Optional, bool",
+						"detail": "optional, bool",
 						"documentation": "Desc 3",
 						"insertTextFormat": 2,
 						"textEdit": {
@@ -415,7 +415,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					{
 						"label": "version",
 						"kind": 10,
-						"detail": "Optional, string",
+						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
 						"insertTextFormat": 2,
 						"textEdit": {
