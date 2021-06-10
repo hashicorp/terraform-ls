@@ -46,7 +46,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseConfiguration)
+	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseModuleConfiguration)
+	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
 	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
 	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferences)
 
@@ -70,7 +71,8 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, mod.Path, mod.Diagnostics, "HCL")
+	mergedDiags := mergeDiagnostics(mod.ModuleDiagnostics, mod.VarsDiagnostics)
+	diags.PublishHCLDiags(ctx, mod.Path, mergedDiags, "HCL")
 
 	return nil
 }

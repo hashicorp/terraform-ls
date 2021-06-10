@@ -22,6 +22,7 @@ type SchemaSource struct {
 type ModuleFinder interface {
 	ModuleByPath(path string) (Module, error)
 	SchemaForModule(path string) (*schema.BodySchema, error)
+	SchemaForVariables(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
 	ListModules() ([]Module, error)
 	CallersOfModule(modPath string) ([]Module, error)

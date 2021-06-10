@@ -10,10 +10,15 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
 	rpch "github.com/creachadair/jrpc2/handler"
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/schema"
+	"github.com/hashicorp/hcl/v2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -412,4 +417,28 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
 	}
 	return result, err
+}
+
+func schemaForDocument(mf module.ModuleFinder, doc filesystem.Document) (*schema.BodySchema, error) {
+	if doc.LanguageID() == ilsp.Tfvars.String() {
+		return mf.SchemaForVariables(doc.Dir())
+	}
+	return mf.SchemaForModule(doc.Dir())
+}
+
+func decoderForDocument(ctx context.Context, mod module.Module, languageID string) (*decoder.Decoder, error) {
+	if languageID == ilsp.Tfvars.String() {
+		return idecoder.DecoderForVariables(mod)
+	}
+	return idecoder.DecoderForModule(ctx, mod)
+}
+
+func mergeDiagnostics(diags1, diags2 map[string]hcl.Diagnostics) map[string]hcl.Diagnostics {
+	diags := map[string]hcl.Diagnostics{}
+	for _, md := range []map[string]hcl.Diagnostics{diags1, diags2} {
+		for path, d := range md {
+			diags[path] = d
+		}
+	}
+	return diags
 }

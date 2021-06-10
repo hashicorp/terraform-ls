@@ -315,7 +315,7 @@ func TestModuleStore_UpdateTerraformVersion(t *testing.T) {
 	}
 }
 
-func TestModuleStore_UpdateParsedFiles(t *testing.T) {
+func TestModuleStore_UpdateParsedModuleFiles(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -337,7 +337,7 @@ provider "blah" {
 		t.Fatal(diags)
 	}
 
-	err = s.Modules.UpdateParsedFiles(tmpDir, map[string]*hcl.File{
+	err = s.Modules.UpdateParsedModuleFiles(tmpDir, map[string]*hcl.File{
 		"test.tf": testFile,
 	}, nil)
 	if err != nil {
@@ -349,15 +349,57 @@ provider "blah" {
 		t.Fatal(err)
 	}
 
-	expectedParsedFiles := map[string]*hcl.File{
+	expectedParsedModuleFiles := map[string]*hcl.File{
 		"test.tf": testFile,
 	}
-	if diff := cmp.Diff(expectedParsedFiles, mod.ParsedFiles, cmpOpts); diff != "" {
+	if diff := cmp.Diff(expectedParsedModuleFiles, mod.ParsedModuleFiles, cmpOpts); diff != "" {
 		t.Fatalf("unexpected parsed files: %s", diff)
 	}
 }
 
-func TestModuleStore_UpdateDiagnostics(t *testing.T) {
+func TestModuleStore_UpdateParsedVarsFiles(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	err = s.Modules.Add(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := hclparse.NewParser()
+	testFile, diags := p.ParseHCL([]byte(`
+dev = {
+  region = "london"
+}
+`), "test.tfvars")
+	if len(diags) > 0 {
+		t.Fatal(diags)
+	}
+
+	err = s.Modules.UpdateParsedVarsFiles(tmpDir, map[string]*hcl.File{
+		"test.tfvars": testFile,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mod, err := s.Modules.ModuleByPath(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedParsedVarsFiles := map[string]*hcl.File{
+		"test.tfvars": testFile,
+	}
+	if diff := cmp.Diff(expectedParsedVarsFiles, mod.ParsedVarsFiles, cmpOpts); diff != "" {
+		t.Fatalf("unexpected parsed files: %s", diff)
+	}
+}
+
+func TestModuleStore_UpdateModuleDiagnostics(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -375,7 +417,7 @@ provider "blah" {
   region = "london"
 `), "test.tf")
 
-	err = s.Modules.UpdateDiagnostics(tmpDir, map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateModuleDiagnostics(tmpDir, map[string]hcl.Diagnostics{
 		"test.tf": diags,
 	})
 
@@ -406,8 +448,62 @@ provider "blah" {
 			},
 		},
 	}
-	if diff := cmp.Diff(expectedDiags, mod.Diagnostics, cmpOpts); diff != "" {
-		t.Fatalf("unexpected parsed files: %s", diff)
+	if diff := cmp.Diff(expectedDiags, mod.ModuleDiagnostics, cmpOpts); diff != "" {
+		t.Fatalf("unexpected diagnostics: %s", diff)
+	}
+}
+
+func TestModuleStore_UpdateVarsDiagnostics(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	err = s.Modules.Add(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p := hclparse.NewParser()
+	_, diags := p.ParseHCL([]byte(`
+dev = {
+  region = "london"
+`), "test.tfvars")
+
+	err = s.Modules.UpdateVarsDiagnostics(tmpDir, map[string]hcl.Diagnostics{
+		"test.tfvars": diags,
+	})
+
+	mod, err := s.Modules.ModuleByPath(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDiags := map[string]hcl.Diagnostics{
+		"test.tfvars": {
+			{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid expression",
+				Detail:   "Expected the start of an expression, but found an invalid expression token.",
+				Subject: &hcl.Range{
+					Filename: "test.tfvars",
+					Start: hcl.Pos{
+						Line:   4,
+						Column: 1,
+						Byte:   29,
+					},
+					End: hcl.Pos{
+						Line:   4,
+						Column: 1,
+						Byte:   29,
+					},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(expectedDiags, mod.VarsDiagnostics, cmpOpts); diff != "" {
+		t.Fatalf("unexpected diagnostics: %s", diff)
 	}
 }
 
@@ -444,20 +540,20 @@ func BenchmarkModuleByPath(b *testing.B) {
 		pFiles["second.tf"] = f
 	}
 
-	err = s.Modules.UpdateParsedFiles(modPath, pFiles, nil)
+	err = s.Modules.UpdateParsedModuleFiles(modPath, pFiles, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = s.Modules.UpdateDiagnostics(modPath, diags)
+	err = s.Modules.UpdateModuleDiagnostics(modPath, diags)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	expectedMod := &Module{
-		Path:         modPath,
-		ParsedFiles:  pFiles,
-		ParsingState: operation.OpStateLoaded,
-		Diagnostics:  diags,
+		Path:               modPath,
+		ParsedModuleFiles:  pFiles,
+		ModuleParsingState: operation.OpStateLoaded,
+		ModuleDiagnostics:  diags,
 	}
 
 	for n := 0; n < b.N; n++ {

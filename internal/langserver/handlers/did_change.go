@@ -59,7 +59,11 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseConfiguration)
+	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseModuleConfiguration)
+	if err != nil {
+		return err
+	}
+	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
 	if err != nil {
 		return err
 	}
@@ -82,7 +86,9 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	diags.PublishHCLDiags(ctx, mod.Path, mod.Diagnostics, "HCL")
+
+	mergedDiags := mergeDiagnostics(mod.ModuleDiagnostics, mod.VarsDiagnostics)
+	diags.PublishHCLDiags(ctx, mod.Path, mergedDiags, "HCL")
 
 	return nil
 }

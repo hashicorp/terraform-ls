@@ -4,7 +4,6 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -37,7 +36,7 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	d, err := decoder.DecoderForModule(ctx, mod)
+	d, err := decoderForDocument(ctx, mod, file.LanguageID())
 	if err != nil {
 		return symbols, err
 	}

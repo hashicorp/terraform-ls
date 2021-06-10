@@ -30,6 +30,10 @@ func (h *logHandler) TextDocumentLink(ctx context.Context, params lsp.DocumentLi
 		return nil, err
 	}
 
+	if file.LanguageID() != ilsp.Terraform.String() {
+		return nil, nil
+	}
+
 	mod, err := mf.ModuleByPath(file.Dir())
 	if err != nil {
 		return nil, err

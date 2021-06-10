@@ -126,8 +126,12 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 			multierror.Append(errs, mod.ModManifestErr)
 		}
 
-		if mod.ParsingErr != nil {
-			multierror.Append(errs, mod.ParsingErr)
+		if mod.ModuleParsingErr != nil {
+			multierror.Append(errs, mod.ModuleParsingErr)
+		}
+
+		if mod.VarsParsingErr != nil {
+			multierror.Append(errs, mod.VarsParsingErr)
 		}
 
 		errs.ErrorFormat = formatErrors

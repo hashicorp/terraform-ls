@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCompletion_withoutInitialization(t *testing.T) {
+func TestModuleCompletion_withoutInitialization(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
 	stop := ls.Start(t)
 	defer stop()
@@ -31,12 +31,12 @@ func TestCompletion_withoutInitialization(t *testing.T) {
 		}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
 }
 
-func TestCompletion_withValidData(t *testing.T) {
+func TestModuleCompletion_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Dir())
 
 	var testSchema tfjson.ProviderSchemas
-	err := json.Unmarshal([]byte(testSchemaOutput), &testSchema)
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,12 +224,12 @@ func TestCompletion_withValidData(t *testing.T) {
 		}`)
 }
 
-func TestCompletion_withValidDataAndSnippets(t *testing.T) {
+func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Dir())
 
 	var testSchema tfjson.ProviderSchemas
-	err := json.Unmarshal([]byte(testSchemaOutput), &testSchema)
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -437,7 +437,7 @@ func TestCompletion_withValidDataAndSnippets(t *testing.T) {
 		}`)
 }
 
-var testSchemaOutput = `{
+var testModuleSchemaOutput = `{
   "format_version": "0.1",
   "provider_schemas": {
 	"test/test": {
@@ -483,3 +483,115 @@ var testSchemaOutput = `{
 	}
   }
 }`
+
+func TestVarsCompletion_withValidData(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Dir())
+
+	var testSchema tfjson.ProviderSchemas
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Dir(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI())})
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "variable \"test\" {\n type=string\n}\n",
+			"uri": "%s/variables.tf"
+		}
+	}`, tmpDir.URI())})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform-vars",
+			"uri": "%s/terraform.tfvars"
+		}
+	}`, tmpDir.URI())})
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/terraform.tfvars"
+			},
+			"position": {
+				"character": 0,
+				"line": 0
+			}
+		}`, tmpDir.URI())}, `{
+			"jsonrpc": "2.0",
+			"id": 4,
+			"result": {
+				"isIncomplete": false,
+				"items": [
+					{
+						"label": "test",
+						"kind": 10,
+						"detail": "string",
+						"insertTextFormat":1,
+						"textEdit": {
+							"range": {"start":{"line":0,"character":0}, "end":{"line":0,"character":0}}, 
+							"newText":"test"
+						}
+					}
+				]
+			}
+		}`)
+}

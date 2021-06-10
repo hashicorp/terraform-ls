@@ -17,7 +17,8 @@ const (
 	OpTypeUnknown OpType = iota
 	OpTypeGetTerraformVersion
 	OpTypeObtainSchema
-	OpTypeParseConfiguration
+	OpTypeParseModuleConfiguration
+	OpTypeParseVariables
 	OpTypeParseModuleManifest
 	OpTypeLoadModuleMetadata
 	OpTypeDecodeReferences
