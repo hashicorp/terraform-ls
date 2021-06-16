@@ -188,8 +188,8 @@ github.com/hashicorp/golang-lru v0.5.4 h1:YDjusn29QI/Das2iO9M0BHnIbxPeyuCHsjMW+l
 github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hashicorp/hcl-lang v0.0.0-20210609161122-bc4299c29bd1 h1:GC7rz0G81RRnb8RHB6TH4s0UrOs8oEgZ6UqoaQ0lzSU=
-github.com/hashicorp/hcl-lang v0.0.0-20210609161122-bc4299c29bd1/go.mod h1:uMsq6wV8ZXEH8qndov4tncXlHDYnZ8aHsGmS4T74e2o=
+github.com/hashicorp/hcl-lang v0.0.0-20210615134118-a5118c309360 h1:E4CPsv7+U6tQOgSrma1PPTuMmeXfOxDNkY3e9bAI4z4=
+github.com/hashicorp/hcl-lang v0.0.0-20210615134118-a5118c309360/go.mod h1:uMsq6wV8ZXEH8qndov4tncXlHDYnZ8aHsGmS4T74e2o=
 github.com/hashicorp/hcl/v2 v2.10.0 h1:1S1UnuhDGlv3gRFV4+0EdwB+znNP5HmcGbIqwnSCByg=
 github.com/hashicorp/hcl/v2 v2.10.0/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=
@@ -203,8 +203,8 @@ github.com/hashicorp/terraform-json v0.11.0 h1:4zDqqW2F3kOysORIaYKFGgWDYIRA3hwqx
 github.com/hashicorp/terraform-json v0.11.0/go.mod h1:pmbq9o4EuL43db5+0ogX10Yofv1nozM+wskr/bGFJpI=
 github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896 h1:1FGtlkJw87UsTMg5s8jrekrHmUPUJaMcu6ELiVhQrNw=
 github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896/go.mod h1:bzBPnUIkI0RxauU8Dqo+2KrZZ28Cf48s8V6IHt3p4co=
-github.com/hashicorp/terraform-schema v0.0.0-20210610085118-e42d6aa8c63d h1:1vQ8qwBeZDOqt+UmuZ8D+hRnS3ilLHziV8XXBkzDAW8=
-github.com/hashicorp/terraform-schema v0.0.0-20210610085118-e42d6aa8c63d/go.mod h1:6HnR9FvXrFimOgw3U/9Y1w8J02RJj6YWm7WSOFb4iEM=
+github.com/hashicorp/terraform-schema v0.0.0-20210615134722-b66475e71618 h1:BqSvtjfGhxnPaOiTiIokg6eJcjhT1hg/nmXU6XoKYFI=
+github.com/hashicorp/terraform-schema v0.0.0-20210615134722-b66475e71618/go.mod h1:ruV9Xx5LQYrZB0sNEx9dlkvS0Cp+juY/2jXQmup/67s=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
