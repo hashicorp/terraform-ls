@@ -437,26 +437,30 @@ func TestSchemaForVariables(t *testing.T) {
 	}
 
 	mod.Meta.Variables = map[string]tfmodule.Variable{
-		"name": tfmodule.Variable{
+		"name": {
 			Description: "name of the module",
 			Type:        cty.String,
 		},
 	}
 	expectedSchema := &schema.BodySchema{Attributes: map[string]*schema.AttributeSchema{
-		"name": &schema.AttributeSchema{
+		"name": {
 			Description: lang.MarkupContent{
 				Value: "name of the module",
 				Kind:  lang.PlainTextKind,
 			},
-			Expr: schema.ExprConstraints{schema.LiteralTypeExpr{cty.String}},
+			IsRequired: true,
+			Expr:       schema.LiteralTypeOnly(cty.String),
 		},
 	}}
 
-	actualSchema, _ := mm.SchemaForVariables(path)
+	actualSchema, err := mm.SchemaForVariables(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	diff := cmp.Diff(expectedSchema, actualSchema, ctydebug.CmpOptions)
 	if diff != "" {
-		t.Fatalf("unexpected schema %s", diff)
+		t.Fatalf("unexpected schema: %s", diff)
 	}
 }
 
