@@ -1,3 +1,9 @@
+## 0.18.1 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Support for references to variables and locals ([#553](https://github.com/hashicorp/terraform-ls/pull/553))
+
 ## 0.18.0 (10 June 2021)
 
 FEATURES:
