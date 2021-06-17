@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - Support for references to variables and locals ([#553](https://github.com/hashicorp/terraform-ls/pull/553))
+ - tfvars: Infer variable types from default values where not explicitly specified ([#554](https://github.com/hashicorp/terraform-ls/pull/554))
 
 BUG FIXES:
 
