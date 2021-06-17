@@ -4,6 +4,10 @@ ENHANCEMENTS:
 
  - Support for references to variables and locals ([#553](https://github.com/hashicorp/terraform-ls/pull/553))
 
+BUG FIXES:
+
+ - Prevent var names from being completed in label ([#555](https://github.com/hashicorp/terraform-ls/pull/555))
+
 ## 0.18.0 (10 June 2021)
 
 FEATURES:
