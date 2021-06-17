@@ -21,7 +21,7 @@ import (
 )
 
 const terraformBlock = `terraform {
-	required_version = "~> 0.13"
+	required_version = "~> 1"
   required_providers {
   {{ range $i, $p := . }}
     {{ $p.Name }}-{{ $i }} = {
