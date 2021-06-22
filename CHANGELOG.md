@@ -1,3 +1,9 @@
+## 0.18.2 (Unreleased)
+
+BUG FIXES:
+
+ - Mock out code lens support to avoid errors ([#561](https://github.com/hashicorp/terraform-ls/pull/561))
+
 ## 0.18.1 (17 June 2021)
 
 ENHANCEMENTS:
