@@ -22,7 +22,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				Change:    lsp.Incremental,
 			},
 			CompletionProvider: lsp.CompletionOptions{
-				ResolveProvider: false,
+				ResolveProvider:   false,
+				TriggerCharacters: []string{".", "["},
 			},
 			CodeLensProvider:           lsp.CodeLensOptions{},
 			HoverProvider:              true,
