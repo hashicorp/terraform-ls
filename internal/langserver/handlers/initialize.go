@@ -24,6 +24,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			CompletionProvider: lsp.CompletionOptions{
 				ResolveProvider: false,
 			},
+			CodeLensProvider:           lsp.CodeLensOptions{},
 			HoverProvider:              true,
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
