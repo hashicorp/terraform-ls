@@ -14,8 +14,8 @@ import (
 func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder, error) {
 	d := decoder.NewDecoder()
 
-	d.SetReferenceReader(func() lang.References {
-		return mod.References
+	d.SetReferenceTargetReader(func() lang.ReferenceTargets {
+		return mod.RefTargets
 	})
 
 	d.SetUtmSource("terraform-ls")

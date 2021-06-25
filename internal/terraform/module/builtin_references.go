@@ -7,8 +7,8 @@ import (
 
 var builtinScopeId = lang.ScopeId("builtin")
 
-func builtinReferences(modPath string) lang.References {
-	return lang.References{
+func builtinReferences(modPath string) lang.ReferenceTargets {
+	return lang.ReferenceTargets{
 		{
 			Addr: lang.Address{
 				lang.RootStep{Name: "path"},

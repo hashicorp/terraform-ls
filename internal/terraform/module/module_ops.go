@@ -339,8 +339,8 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 	return mErr
 }
 
-func DecodeReferences(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	err := modStore.SetReferencesState(modPath, op.OpStateLoading)
+func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	err := modStore.SetReferenceTargetsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -360,7 +360,7 @@ func DecodeReferences(modStore *state.ModuleStore, schemaReader state.SchemaRead
 
 	fullSchema, schemaErr := schemaForModule(mod, schemaReader)
 	if schemaErr != nil {
-		sErr := modStore.UpdateReferences(modPath, lang.References{}, schemaErr)
+		sErr := modStore.UpdateReferenceTargets(modPath, lang.ReferenceTargets{}, schemaErr)
 		if sErr != nil {
 			return sErr
 		}
@@ -368,12 +368,12 @@ func DecodeReferences(modStore *state.ModuleStore, schemaReader state.SchemaRead
 	}
 	d.SetSchema(fullSchema)
 
-	refs, rErr := d.DecodeReferences()
+	targets, rErr := d.CollectReferenceTargets()
 
 	bRefs := builtinReferences(modPath)
-	refs = append(refs, bRefs...)
+	targets = append(targets, bRefs...)
 
-	sErr := modStore.UpdateReferences(modPath, refs, rErr)
+	sErr := modStore.UpdateReferenceTargets(modPath, targets, rErr)
 	if sErr != nil {
 		return sErr
 	}
