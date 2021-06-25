@@ -64,9 +64,9 @@ type Module struct {
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
 
-	References      lang.References
-	ReferencesErr   error
-	ReferencesState op.OpState
+	RefTargets      lang.ReferenceTargets
+	RefTargetsErr   error
+	RefTargetsState op.OpState
 
 	ParsedModuleFiles  map[string]*hcl.File
 	ParsedVarsFiles    map[string]*hcl.File
@@ -102,9 +102,9 @@ func (m *Module) Copy() *Module {
 		ProviderSchemaErr:   m.ProviderSchemaErr,
 		ProviderSchemaState: m.ProviderSchemaState,
 
-		References:      m.References.Copy(),
-		ReferencesErr:   m.ReferencesErr,
-		ReferencesState: m.ReferencesState,
+		RefTargets:      m.RefTargets.Copy(),
+		RefTargetsErr:   m.RefTargetsErr,
+		RefTargetsState: m.RefTargetsState,
 
 		ModuleParsingErr:   m.ModuleParsingErr,
 		VarsParsingErr:     m.VarsParsingErr,
@@ -163,7 +163,7 @@ func newModule(modPath string) *Module {
 		ModManifestState:      op.OpStateUnknown,
 		TerraformVersionState: op.OpStateUnknown,
 		ProviderSchemaState:   op.OpStateUnknown,
-		ReferencesState:       op.OpStateUnknown,
+		RefTargetsState:       op.OpStateUnknown,
 		ModuleParsingState:    op.OpStateUnknown,
 		MetaState:             op.OpStateUnknown,
 	}
@@ -575,7 +575,7 @@ func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags map[string]hcl.Di
 	return nil
 }
 
-func (s *ModuleStore) SetReferencesState(path string, state op.OpState) error {
+func (s *ModuleStore) SetReferenceTargetsState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -584,7 +584,7 @@ func (s *ModuleStore) SetReferencesState(path string, state op.OpState) error {
 		return err
 	}
 
-	mod.ReferencesState = state
+	mod.RefTargetsState = state
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
@@ -594,10 +594,10 @@ func (s *ModuleStore) SetReferencesState(path string, state op.OpState) error {
 	return nil
 }
 
-func (s *ModuleStore) UpdateReferences(path string, refs lang.References, rErr error) error {
+func (s *ModuleStore) UpdateReferenceTargets(path string, refs lang.ReferenceTargets, rErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
-		s.SetReferencesState(path, op.OpStateLoaded)
+		s.SetReferenceTargetsState(path, op.OpStateLoaded)
 	})
 	defer txn.Abort()
 
@@ -606,8 +606,8 @@ func (s *ModuleStore) UpdateReferences(path string, refs lang.References, rErr e
 		return err
 	}
 
-	mod.References = refs
-	mod.ReferencesErr = rErr
+	mod.RefTargets = refs
+	mod.RefTargetsErr = rErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

@@ -71,7 +71,7 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferences)
+	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
 	if err != nil {
 		return err
 	}

@@ -187,8 +187,8 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 			ml.logger.Printf("failed to load module metadata: %s", err)
 		}
 		return
-	case op.OpTypeDecodeReferences:
-		err := DecodeReferences(ml.modStore, ml.schemaStore, modOp.ModulePath)
+	case op.OpTypeDecodeReferenceTargets:
+		err := DecodeReferenceTargets(ml.modStore, ml.schemaStore, modOp.ModulePath)
 		if err != nil {
 			ml.logger.Printf("failed to decode references: %s", err)
 		}
@@ -244,12 +244,12 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 			return nil
 		}
 		ml.modStore.SetMetaState(modOp.ModulePath, op.OpStateQueued)
-	case op.OpTypeDecodeReferences:
+	case op.OpTypeDecodeReferenceTargets:
 		if mod.MetaState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
 			return nil
 		}
-		ml.modStore.SetReferencesState(modOp.ModulePath, op.OpStateQueued)
+		ml.modStore.SetReferenceTargetsState(modOp.ModulePath, op.OpStateQueued)
 	}
 
 	ml.queue.PushOp(modOp)

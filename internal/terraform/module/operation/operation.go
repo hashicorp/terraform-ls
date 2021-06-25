@@ -21,5 +21,5 @@ const (
 	OpTypeParseVariables
 	OpTypeParseModuleManifest
 	OpTypeLoadModuleMetadata
-	OpTypeDecodeReferences
+	OpTypeDecodeReferenceTargets
 )
