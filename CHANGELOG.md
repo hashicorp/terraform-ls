@@ -1,5 +1,9 @@
 ## 0.18.2 (Unreleased)
 
+ENHANCEMENTS:
+
+ - Provide (less verbose) step-based completion ([#566](https://github.com/hashicorp/terraform-ls/pull/566))
+
 BUG FIXES:
 
  - Mock out code lens support to avoid errors ([#561](https://github.com/hashicorp/terraform-ls/pull/561))
