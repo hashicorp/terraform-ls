@@ -67,11 +67,16 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
+	// TODO: parallelise the operations below in a workgroup
 	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
 	if err != nil {
 		return err
 	}
 	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
+	if err != nil {
+		return err
+	}
+	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceOrigins)
 	if err != nil {
 		return err
 	}

@@ -18,6 +18,10 @@ func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder,
 		return mod.RefTargets
 	})
 
+	d.SetReferenceOriginReader(func() lang.ReferenceOrigins {
+		return mod.RefOrigins
+	})
+
 	d.SetUtmSource("terraform-ls")
 	d.UseUtmContent(true)
 

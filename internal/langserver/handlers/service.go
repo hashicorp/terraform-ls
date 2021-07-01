@@ -336,6 +336,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.DidChangeWorkspaceFolders)
 		},
+		"textDocument/references": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+
+			return handle(ctx, req, lh.References)
+		},
 		"workspace/executeCommand": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {

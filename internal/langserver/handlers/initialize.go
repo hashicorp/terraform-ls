@@ -28,6 +28,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			DeclarationProvider:        lsp.DeclarationOptions{},
 			DefinitionProvider:         true,
 			CodeLensProvider:           lsp.CodeLensOptions{},
+			ReferencesProvider:         true,
 			HoverProvider:              true,
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,

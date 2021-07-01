@@ -68,6 +68,10 @@ type Module struct {
 	RefTargetsErr   error
 	RefTargetsState op.OpState
 
+	RefOrigins      lang.ReferenceOrigins
+	RefOriginsErr   error
+	RefOriginsState op.OpState
+
 	ParsedModuleFiles  map[string]*hcl.File
 	ParsedVarsFiles    map[string]*hcl.File
 	ModuleParsingErr   error
@@ -105,6 +109,10 @@ func (m *Module) Copy() *Module {
 		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,
 		RefTargetsState: m.RefTargetsState,
+
+		RefOrigins:      m.RefOrigins.Copy(),
+		RefOriginsErr:   m.RefOriginsErr,
+		RefOriginsState: m.RefOriginsState,
 
 		ModuleParsingErr:   m.ModuleParsingErr,
 		VarsParsingErr:     m.VarsParsingErr,
@@ -621,6 +629,49 @@ func (s *ModuleStore) UpdateReferenceTargets(path string, refs lang.ReferenceTar
 
 	mod.RefTargets = refs
 	mod.RefTargetsErr = rErr
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetReferenceOriginsState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.RefOriginsState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateReferenceOrigins(path string, origins lang.ReferenceOrigins, roErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetReferenceOriginsState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	mod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.RefOrigins = origins
+	mod.RefOriginsErr = roErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

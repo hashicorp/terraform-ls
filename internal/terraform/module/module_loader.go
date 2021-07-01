@@ -190,7 +190,13 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 	case op.OpTypeDecodeReferenceTargets:
 		err := DecodeReferenceTargets(ml.modStore, ml.schemaStore, modOp.ModulePath)
 		if err != nil {
-			ml.logger.Printf("failed to decode references: %s", err)
+			ml.logger.Printf("failed to decode reference targets: %s", err)
+		}
+		return
+	case op.OpTypeDecodeReferenceOrigins:
+		err := DecodeReferenceOrigins(ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if err != nil {
+			ml.logger.Printf("failed to decode reference origins: %s", err)
 		}
 		return
 	}
@@ -250,6 +256,12 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 			return nil
 		}
 		ml.modStore.SetReferenceTargetsState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeDecodeReferenceOrigins:
+		if mod.MetaState == op.OpStateQueued {
+			// avoid enqueuing duplicate operation
+			return nil
+		}
+		ml.modStore.SetReferenceOriginsState(modOp.ModulePath, op.OpStateQueued)
 	}
 
 	ml.queue.PushOp(modOp)
