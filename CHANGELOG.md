@@ -1,4 +1,4 @@
-## 0.18.2 (Unreleased)
+## 0.18.2 (1 July 2021)
 
 ENHANCEMENTS:
 
