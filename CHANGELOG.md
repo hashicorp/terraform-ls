@@ -1,3 +1,9 @@
+## 0.18.3 (2 July 2021)
+
+BUG FIXES:
+
+ - fix: avoid circular references to list/map/object attributes (which caused high CPU usage on copy) ([#575](https://github.com/hashicorp/terraform-ls/pull/575))
+
 ## 0.18.2 (1 July 2021)
 
 ENHANCEMENTS:
