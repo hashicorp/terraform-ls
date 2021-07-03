@@ -94,8 +94,8 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     url_template: "https://releases.hashicorp.com/terraform-ls/{{ .Version }}/{{ .ArtifactName }}"
     commit_author:
-      name: hashibot
-      email: hashibot-feedback@hashicorp.com
+      name: hc-espd-packager
+      email: team-product-delivery@hashicorp.com
     folder: Formula
     homepage: "https://github.com/hashicorp/terraform-ls"
     description: "Terraform Language Server"
