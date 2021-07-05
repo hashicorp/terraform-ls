@@ -1,3 +1,9 @@
+## 0.19.0 (Unreleased)
+
+BUG FIXES:
+
+ - fix: avoid crash on empty file formatting ([#578](https://github.com/hashicorp/terraform-ls/pull/578))
+
 ## 0.18.3 (2 July 2021)
 
 BUG FIXES:
