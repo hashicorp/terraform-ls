@@ -25,6 +25,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				ResolveProvider:   false,
 				TriggerCharacters: []string{".", "["},
 			},
+			DeclarationProvider:        lsp.DeclarationOptions{},
+			DefinitionProvider:         true,
 			CodeLensProvider:           lsp.CodeLensOptions{},
 			HoverProvider:              true,
 			DocumentFormattingProvider: true,

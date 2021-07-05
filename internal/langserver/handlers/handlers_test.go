@@ -37,6 +37,8 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				},
 				"hoverProvider": true,
 				"signatureHelpProvider": {},
+				"declarationProvider": {},
+				"definitionProvider": true,
 				"documentSymbolProvider": true,
 				"codeLensProvider": {},
 				"documentLinkProvider": {},
