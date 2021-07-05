@@ -1,5 +1,9 @@
 ## 0.19.0 (Unreleased)
 
+ENHANCEMENTS:
+
+ - Support multiple folders natively ([#502](https://github.com/hashicorp/terraform-ls/pull/502))
+
 BUG FIXES:
 
  - fix: avoid crash on empty file formatting ([#578](https://github.com/hashicorp/terraform-ls/pull/578))
