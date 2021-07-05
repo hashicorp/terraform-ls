@@ -42,6 +42,19 @@ based on those capabilities, so make sure these are accurate.
 For example the server will not provide completion snippets unless the client
 explicitly communicates it supports them via [`CompletionClientCapabilities`](https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#completionClientCapabilities).
 
+### Multiple Folders
+
+Language server supports multiple folders natively from version `0.19`.
+
+Client is expected to always launch a single instance of the server and check for
+[`workspace.workspaceFolders.supported`](https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceFoldersServerCapabilities) server capability, and then:
+
+ - launch any more instances (_one instance per folder_) if multiple folders are _not supported_
+ - avoid launching any more instances if multiple folders _are supported_
+
+It is assumed that paths to these folders will be provided as part of `workspaceFolders`
+in the `initialize` request per LSP.
+
 ## Custom Commands
 
 Clients are encouraged to implement custom commands
