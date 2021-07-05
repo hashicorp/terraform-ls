@@ -80,6 +80,11 @@ func (mm *moduleManager) AddModule(modPath string) (Module, error) {
 	return mod, err
 }
 
+func (mm *moduleManager) RemoveModule(modPath string) error {
+	mm.loader.DequeueModule(modPath)
+	return mm.moduleStore.Remove(modPath)
+}
+
 func (mm *moduleManager) EnqueueModuleOpWait(modPath string, opType op.OpType) error {
 	modOp := NewModuleOperation(modPath, opType)
 	mm.loader.EnqueueModuleOp(modOp)

@@ -350,7 +350,8 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 
 			w := SyncWalker(fs, mm)
 			w.SetLogger(testLogger())
-			err = w.StartWalking(ctx, tc.walkerRoot)
+			w.EnqueuePath(tc.walkerRoot)
+			err = w.StartWalking(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}

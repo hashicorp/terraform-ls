@@ -257,3 +257,7 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 
 	return nil
 }
+
+func (ml *moduleLoader) DequeueModule(modPath string) {
+	ml.queue.DequeueAllModuleOps(modPath)
+}

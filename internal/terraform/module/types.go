@@ -35,6 +35,7 @@ type ModuleManager interface {
 
 	SetLogger(logger *log.Logger)
 	AddModule(modPath string) (Module, error)
+	RemoveModule(modPath string) error
 	EnqueueModuleOp(modPath string, opType op.OpType) error
 	EnqueueModuleOpWait(modPath string, opType op.OpType) error
 	CancelLoading()
@@ -54,5 +55,6 @@ type Watcher interface {
 	Stop() error
 	SetLogger(*log.Logger)
 	AddModule(string) error
+	RemoveModule(string) error
 	IsModuleWatched(string) bool
 }
