@@ -112,9 +112,25 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 			}
 
 			if c.Tag == OpInsert {
-				insertRng := &hcl.Range{}
-				insertRng.Start = beforeLines[beforeStart-1].Range().End
-				insertRng.End = beforeLines[beforeStart-1].Range().End
+				insertRng := &hcl.Range{
+					Filename: filename,
+					Start:    hcl.InitialPos,
+					End:      hcl.InitialPos,
+				}
+
+				if beforeStart == beforeEnd {
+					line := beforeLines[beforeStart]
+					insertRng = line.Range().Ptr()
+				} else {
+					for i, line := range beforeLines[beforeStart:beforeEnd] {
+						if i == 0 {
+							insertRng = line.Range().Ptr()
+							continue
+						}
+						insertRng.End = line.Range().End
+					}
+				}
+
 				var newBytes []byte
 
 				for _, line := range afterLines[afterStart:afterEnd] {

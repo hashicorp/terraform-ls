@@ -147,8 +147,9 @@ ccc`,
 				&fileChange{
 					newText: "\n",
 					rng: &hcl.Range{
-						Start: hcl.Pos{Line: 3, Column: 1, Byte: 30},
-						End:   hcl.Pos{Line: 3, Column: 1, Byte: 30},
+						Filename: "test.tf",
+						Start:    hcl.Pos{Line: 3, Column: 1, Byte: 30},
+						End:      hcl.Pos{Line: 3, Column: 1, Byte: 30},
 					},
 				},
 			},
@@ -173,6 +174,22 @@ ccc`,
 						Filename: "test.tf",
 						Start:    hcl.Pos{Line: 3, Column: 1, Byte: 44},
 						End:      hcl.Pos{Line: 4, Column: 1, Byte: 45},
+					},
+				},
+			},
+		},
+		{
+			"empty to newline",
+			``,
+			`
+`,
+			filesystem.DocumentChanges{
+				&fileChange{
+					newText: "\n",
+					rng: &hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
+						End:      hcl.Pos{Line: 1, Column: 1, Byte: 0},
 					},
 				},
 			},
