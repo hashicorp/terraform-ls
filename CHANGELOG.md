@@ -1,5 +1,9 @@
 ## 0.19.0 (Unreleased)
 
+FEATURES:
+
+ - Go to attribute/block from reference ([#569](https://github.com/hashicorp/terraform-ls/pull/569))
+
 ENHANCEMENTS:
 
  - Support multiple folders natively ([#502](https://github.com/hashicorp/terraform-ls/pull/502))
