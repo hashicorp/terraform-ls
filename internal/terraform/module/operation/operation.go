@@ -22,4 +22,5 @@ const (
 	OpTypeParseModuleManifest
 	OpTypeLoadModuleMetadata
 	OpTypeDecodeReferenceTargets
+	OpTypeDecodeReferenceOrigins
 )

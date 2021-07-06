@@ -50,6 +50,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
 	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
 	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
+	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceOrigins)
 
 	if mod.TerraformVersionState == op.OpStateUnknown {
 		modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)

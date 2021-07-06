@@ -380,3 +380,42 @@ func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.Sche
 
 	return rErr
 }
+
+func DecodeReferenceOrigins(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	err := modStore.SetReferenceOriginsState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	d := decoder.NewDecoder()
+	for name, f := range mod.ParsedModuleFiles {
+		err := d.LoadFile(name, f)
+		if err != nil {
+			return fmt.Errorf("failed to load a file: %w", err)
+		}
+	}
+
+	fullSchema, schemaErr := schemaForModule(mod, schemaReader)
+	if schemaErr != nil {
+		sErr := modStore.UpdateReferenceOrigins(modPath, lang.ReferenceOrigins{}, schemaErr)
+		if sErr != nil {
+			return sErr
+		}
+		return schemaErr
+	}
+	d.SetSchema(fullSchema)
+
+	origins, rErr := d.CollectReferenceOrigins()
+
+	sErr := modStore.UpdateReferenceOrigins(modPath, origins, rErr)
+	if sErr != nil {
+		return sErr
+	}
+
+	return rErr
+}
