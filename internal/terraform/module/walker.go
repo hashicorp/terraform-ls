@@ -50,6 +50,11 @@ type Walker struct {
 	excludeModulePaths map[string]bool
 }
 
+// queueCap represents channel buffer size
+// which when reached causes EnqueuePath to block
+// until a path is consumed
+const queueCap = 50
+
 func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
 	return &Walker{
 		fs:        fs,
@@ -58,7 +63,7 @@ func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
 		walkingMu: &sync.RWMutex{},
 		queue:     newWalkerQueue(fs),
 		queueMu:   &sync.Mutex{},
-		pushChan:  make(chan struct{}, 1),
+		pushChan:  make(chan struct{}, queueCap),
 		doneCh:    make(chan struct{}, 0),
 	}
 }
@@ -100,6 +105,10 @@ func (w *Walker) EnqueuePath(path string) {
 	defer w.queueMu.Unlock()
 	heap.Push(w.queue, path)
 
+	w.triggerConsumption()
+}
+
+func (w *Walker) triggerConsumption() {
 	w.pushChan <- struct{}{}
 }
 

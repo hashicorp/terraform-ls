@@ -138,6 +138,30 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 	walker.SetLogger(lh.logger)
 
+	var excludeModulePaths []string
+	for _, rawPath := range cfgOpts.ExcludeModulePaths {
+		modPath, err := resolvePath(rootDir, rawPath)
+		if err != nil {
+			lh.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
+			continue
+		}
+		excludeModulePaths = append(excludeModulePaths, modPath)
+	}
+
+	walker.SetExcludeModulePaths(excludeModulePaths)
+	walker.EnqueuePath(fh.Dir())
+
+	// Walker runs asynchronously so we're intentionally *not*
+	// passing the request context here
+	walkerCtx := context.Background()
+
+	// Walker is also started early to allow gradual consumption
+	// and avoid overfilling the queue
+	err = walker.StartWalking(walkerCtx)
+	if err != nil {
+		return serverCaps, err
+	}
+
 	if len(params.WorkspaceFolders) > 0 {
 		for _, folderPath := range params.WorkspaceFolders {
 			modPath, err := pathFromDocumentURI(folderPath.URI)
@@ -176,24 +200,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, nil
 	}
 
-	var excludeModulePaths []string
-	for _, rawPath := range cfgOpts.ExcludeModulePaths {
-		modPath, err := resolvePath(rootDir, rawPath)
-		if err != nil {
-			lh.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
-			continue
-		}
-		excludeModulePaths = append(excludeModulePaths, modPath)
-	}
-
-	walker.SetExcludeModulePaths(excludeModulePaths)
-	walker.EnqueuePath(fh.Dir())
-
-	// Walker runs asynchronously so we're intentionally *not*
-	// passing the request context here
-	err = walker.StartWalking(context.Background())
-
-	return serverCaps, err
+	return serverCaps, nil
 }
 
 func resolvePath(rootDir, rawPath string) (string, error) {

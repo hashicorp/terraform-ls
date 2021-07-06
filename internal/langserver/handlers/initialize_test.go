@@ -92,3 +92,30 @@ func TestInitialize_withInvalidRootURI(t *testing.T) {
 	    "rootUri": "meh"
 	}`}, code.SystemError.Err())
 }
+
+func TestInitialize_multipleFolders(t *testing.T) {
+	rootDir := TempDir(t)
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				rootDir.Dir(): validTfMockCalls(),
+			},
+		},
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+	    "processId": 12345,
+	    "workspaceFolders": [
+	    	{
+	    		"uri": %q,
+	    		"name": "root"
+	    	}
+	    ]
+	}`, rootDir.URI(), rootDir.URI())})
+}
