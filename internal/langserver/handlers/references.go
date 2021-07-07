@@ -47,7 +47,7 @@ func (h *logHandler) References(ctx context.Context, params lsp.ReferenceParams)
 		return list, err
 	}
 
-	refTarget, err := d.OutermostReferenceTargetAtPos(fPos.Filename(), fPos.Position())
+	refTarget, err := d.InnermostReferenceTargetAtPos(fPos.Filename(), fPos.Position())
 	if err != nil {
 		return list, err
 	}
@@ -57,7 +57,7 @@ func (h *logHandler) References(ctx context.Context, params lsp.ReferenceParams)
 		return list, nil
 	}
 
-	h.logger.Printf("finding origins for target: %#v", refTarget)
+	h.logger.Printf("finding origins for inner-most target: %#v", refTarget)
 
 	origins, err := d.ReferenceOriginsTargeting(*refTarget)
 	if err != nil {

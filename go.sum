@@ -191,8 +191,8 @@ github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uG
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hashicorp/hcl-lang v0.0.0-20210616121206-bd34ebcc883b/go.mod h1:uMsq6wV8ZXEH8qndov4tncXlHDYnZ8aHsGmS4T74e2o=
-github.com/hashicorp/hcl-lang v0.0.0-20210706114807-f5820717eea2 h1:0FDZNqlF1pRYf8CLr4nv8jdeYS/3l7M1nwjCSnW5WZI=
-github.com/hashicorp/hcl-lang v0.0.0-20210706114807-f5820717eea2/go.mod h1:rDEzcPJU1AYRanWbpH9AZEik9i+jv1aoKkwqjfs7NyA=
+github.com/hashicorp/hcl-lang v0.0.0-20210707112750-2f1f1d6a3355 h1:DF+5etYGgdAWMxbs2U8nwim7Rp49Wge8859f7SdGBk0=
+github.com/hashicorp/hcl-lang v0.0.0-20210707112750-2f1f1d6a3355/go.mod h1:A1Pj/o2k+ADlN0onToNuOJWNuWywxV7towLQmzU8dfU=
 github.com/hashicorp/hcl/v2 v2.10.0 h1:1S1UnuhDGlv3gRFV4+0EdwB+znNP5HmcGbIqwnSCByg=
 github.com/hashicorp/hcl/v2 v2.10.0/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=
@@ -383,8 +383,9 @@ github.com/zclconf/go-cty v1.2.0/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q
 github.com/zclconf/go-cty v1.2.1/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q/N4PQ8=
 github.com/zclconf/go-cty v1.8.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.8.3/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
-github.com/zclconf/go-cty v1.8.4 h1:pwhhz5P+Fjxse7S7UriBrMu6AUJSZM5pKqGem1PjGAs=
 github.com/zclconf/go-cty v1.8.4/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
+github.com/zclconf/go-cty v1.9.0 h1:IgJxw5b4LPXCPeqFjjhLaNEA8NKXMyaEUdAd399acts=
+github.com/zclconf/go-cty v1.9.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b h1:FosyBZYxY34Wul7O/MSKey3txpPYyCqVO5ZyceuQJEI=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b/go.mod h1:ZRKQfBXbGkpdV6QMzT3rU1kSTAnfu1dO8dPKjYprgj8=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
