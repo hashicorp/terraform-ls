@@ -3,7 +3,7 @@
 FEATURES:
 
  - Go to attribute/block from reference ([#569](https://github.com/hashicorp/terraform-ls/pull/569))
- - Go to references from outermost block ([#572](https://github.com/hashicorp/terraform-ls/pull/572))
+ - Go to references from an attribute or a block ([#572](https://github.com/hashicorp/terraform-ls/pull/572), [#580](https://github.com/hashicorp/terraform-ls/pull/580))
 
 ENHANCEMENTS:
 
