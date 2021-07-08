@@ -8,6 +8,7 @@ FEATURES:
 ENHANCEMENTS:
 
  - Support multiple folders natively ([#502](https://github.com/hashicorp/terraform-ls/pull/502))
+ - Make references scope & type aware ([#582](https://github.com/hashicorp/terraform-ls/pull/582))
 
 BUG FIXES:
 
