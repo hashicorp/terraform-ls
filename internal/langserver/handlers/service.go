@@ -286,6 +286,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
+			ctx = lsctx.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+
 			return handle(ctx, req, lh.TextDocumentCodeLens)
 		},
 		"textDocument/formatting": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {

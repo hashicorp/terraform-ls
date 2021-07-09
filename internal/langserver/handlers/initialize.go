@@ -71,6 +71,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 
 	clientCaps := params.Capabilities
+
+	if _, ok = lsp.ExperimentalClientCapabilities(clientCaps.Experimental).ShowReferencesCommandId(); ok {
+		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
+			ReferenceCountCodeLens: true,
+		}
+	}
+
 	err = lsctx.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {
 		return serverCaps, err

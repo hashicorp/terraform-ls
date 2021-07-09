@@ -18,7 +18,7 @@ import (
 func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	dirUri, ok := args.GetString("uri")
 	if !ok || dirUri == "" {
-		return nil, fmt.Errorf("%w: expected dir uri argument to be set", code.InvalidParams.Err())
+		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
 	}
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))

@@ -55,6 +55,54 @@ Client is expected to always launch a single instance of the server and check fo
 It is assumed that paths to these folders will be provided as part of `workspaceFolders`
 in the `initialize` request per LSP.
 
+## Code Lens
+
+### Reference Counts (opt-in)
+
+The server implements an opt-in code lens which displays number of references
+to any "root level" targettable block or attribute, such as local value,
+variable, resource etc.
+
+LSP has not standardized client-side command IDs nor does it provide mechanism
+for negotiating what the right command ID is and whether it's available.
+This is why **client has to opt-in by providing a command ID** in experimental
+client capabilities.
+
+For example:
+
+```json
+{
+    "capabilities": {
+        "experimental": {
+            "showReferencesCommandId": "client.showReferences"
+        }
+    }
+}
+```
+
+This enables the code lens.
+
+The client-side command is executed with 2 arguments (position, reference context):
+
+```json
+[
+    {
+        "line": 0,
+        "character": 8
+    },
+    {
+        "includeDeclaration": false
+    }
+]
+```
+
+These arguments are to be passed by the client to a subsequent [`textDocument/references`](https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocument_references)
+request back to the server to obtain the list of references relevant to
+that position and finally display received references in the editor.
+
+See [example implementation in the Terraform VS Code extension](https://github.com/hashicorp/vscode-terraform/pull/686).
+
+
 ## Custom Commands
 
 Clients are encouraged to implement custom commands
