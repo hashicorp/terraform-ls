@@ -11,6 +11,7 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -131,6 +132,21 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		})
 	}
 	cfgOpts := out.Options
+
+	// We might eventually remove cli flags for the following options
+	path, ok := lsctx.TerraformExecPath(ctx)
+	if len(path) > 0 && len(cfgOpts.TerraformExecPath) > 0 {
+		return serverCaps, fmt.Errorf("TerraformExecPath can either be set via cli or LSP options")
+	}
+
+	var opts = &exec.ExecutorOpts{}
+	if len(cfgOpts.TerraformExecPath) > 0 {
+		opts.ExecPath = cfgOpts.TerraformExecPath
+		ctx = exec.WithExecutorOpts(ctx, opts)
+		if err != nil {
+			return serverCaps, err
+		}
+	}
 
 	if !clientCaps.Workspace.WorkspaceFolders && len(params.WorkspaceFolders) > 0 {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{

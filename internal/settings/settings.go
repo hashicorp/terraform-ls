@@ -2,6 +2,8 @@ package settings
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -20,7 +22,7 @@ type Options struct {
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
 
 	// TODO: Need to check for conflict with CLI flags
-	// TerraformExecPath string
+	TerraformExecPath string `mapstructure:"terraformExecPath"`
 	// TerraformExecTimeout time.Duration
 	// TerraformLogFilePath string
 }
@@ -29,6 +31,21 @@ func (o *Options) Validate() error {
 	if len(o.ModulePaths) != 0 && len(o.ExcludeModulePaths) != 0 {
 		return fmt.Errorf("at most one of `rootModulePaths` and `excludeModulePaths` could be set")
 	}
+
+	if o.TerraformExecPath != "" {
+		path := o.TerraformExecPath
+		if !filepath.IsAbs(path) {
+			return fmt.Errorf("Expected absolute path for Terraform binary, got %q", path)
+		}
+		stat, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("Unable to find Terraform binary: %s", err)
+		}
+		if stat.IsDir() {
+			return fmt.Errorf("Expected a Terraform binary, got a directory: %q", path)
+		}
+	}
+
 	return nil
 }
 

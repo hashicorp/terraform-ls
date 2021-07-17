@@ -94,14 +94,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	// The following is set via CLI flags, hence available in the server context
 	execOpts := &exec.ExecutorOpts{}
-	if path, ok := lsctx.TerraformExecPath(svc.srvCtx); ok {
-		execOpts.ExecPath = path
+	tfExecPath, ok := lsctx.TerraformExecPath(svc.srvCtx)
+	if ok {
+		execOpts.ExecPath = tfExecPath
 	} else {
-		tfExecPath, err := svc.tfDiscoFunc()
+		path, err := svc.tfDiscoFunc()
 		if err == nil {
-			execOpts.ExecPath = tfExecPath
+			execOpts.ExecPath = path
 		}
+		svc.srvCtx = lsctx.WithTerraformExecPath(svc.srvCtx, path)
 	}
+
 	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
 		execOpts.ExecLogPath = path
 	}
@@ -160,6 +163,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithClientName(ctx, &clientName)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+			ctx = lsctx.WithTerraformExecPath(ctx, tfExecPath)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
 			if ok {
