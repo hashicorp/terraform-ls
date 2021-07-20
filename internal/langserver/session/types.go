@@ -9,7 +9,7 @@ import (
 
 type Session interface {
 	Assigner() (jrpc2.Assigner, error)
-	Finish(jrpc2.ServerStatus)
+	Finish(jrpc2.Assigner, jrpc2.ServerStatus)
 	SetLogger(*log.Logger)
 }
 

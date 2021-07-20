@@ -416,7 +416,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	return convertMap(m), nil
 }
 
-func (svc *service) Finish(status jrpc2.ServerStatus) {
+func (svc *service) Finish(_ jrpc2.Assigner, status jrpc2.ServerStatus) {
 	if status.Closed() || status.Err != nil {
 		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}

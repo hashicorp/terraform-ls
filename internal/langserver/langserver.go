@@ -160,8 +160,10 @@ func Server(svc server.Service, opts *jrpc2.ServerOptions) (*singleServer, error
 	}
 
 	return &singleServer{
-		srv:        jrpc2.NewServer(assigner, opts),
-		finishFunc: svc.Finish,
+		srv: jrpc2.NewServer(assigner, opts),
+		finishFunc: func(status jrpc2.ServerStatus) {
+			svc.Finish(assigner, status)
+		},
 	}, nil
 }
 
