@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-memdb v1.3.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-version v1.3.0
-	github.com/hashicorp/hcl-lang v0.0.0-20210708095602-d4a0c548d7c9
+	github.com/hashicorp/hcl-lang v0.0.0-20210720141644-2d55bcd30ace
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/hashicorp/terraform-exec v0.14.0
 	github.com/hashicorp/terraform-json v0.12.0
