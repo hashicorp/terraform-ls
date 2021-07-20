@@ -1,3 +1,9 @@
+## 0.19.1 (Unreleased)
+
+INTERNAL:
+
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.17.0 to 0.18.0 ([#550](https://github.com/hashicorp/terraform-ls/pull/550))
+
 ## 0.19.0 (8 July 2021)
 
 FEATURES:
