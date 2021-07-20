@@ -1,4 +1,4 @@
-## 0.19.1 (Unreleased)
+## 0.19.1 (20 July 2021)
 
 BUG FIXES:
 
