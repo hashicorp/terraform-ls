@@ -36,7 +36,7 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 
 	fileUri, ok := args.GetString("uri")
 	if !ok || fileUri == "" {
-		return nil, fmt.Errorf("%w: expected uri argument to be set", code.InvalidParams.Err())
+		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
 	}
 
 	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(fileUri))

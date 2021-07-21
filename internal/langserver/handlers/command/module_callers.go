@@ -25,7 +25,7 @@ type moduleCaller struct {
 func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
-		return nil, fmt.Errorf("%w: expected uri argument to be set", code.InvalidParams.Err())
+		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
 	}
 
 	modPath, err := uri.PathFromURI(modUri)
