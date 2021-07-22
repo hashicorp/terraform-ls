@@ -4,6 +4,10 @@ FEATURES:
 
  - Implement reference count code lens ([#584](https://github.com/hashicorp/terraform-ls/pull/584))
 
+ENHANCEMENT:
+
+ - Add basic module support for variable completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
+
 INTERNAL:
 
  - build(deps): bump github.com/hashicorp/hcl/v2 from 2.10.0 to 2.10.1 ([#589](https://github.com/hashicorp/terraform-ls/pull/589))
