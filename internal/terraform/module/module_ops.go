@@ -3,7 +3,6 @@ package module
 import (
 	"context"
 	"fmt"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -296,7 +295,7 @@ func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, 
 	}
 	if mm != nil {
 		for _, modRecord := range mm.Records {
-			modModulePath := path.Join(modPath, modRecord.Dir)
+			modModulePath := filepath.Join(modPath, modRecord.Dir)
 			_, err := modStore.ModuleByPath(modModulePath)
 			if err != nil {
 				modStore.Add(modModulePath)

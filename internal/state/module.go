@@ -255,7 +255,6 @@ func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
 	for _, mod := range modList {
 		if mod.ModManifest != nil {
 			for _, record := range mod.ModManifest.Records {
-				_ = record
 				result = append(result, tfmod.ModuleCall{
 					SourceAddr: record.SourceAddr,
 					Path:       filepath.Join(modPath, record.Dir),
