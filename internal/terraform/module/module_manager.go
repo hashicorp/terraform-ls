@@ -110,7 +110,7 @@ func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, er
 		return nil, err
 	}
 
-	return schemaForModule(mod, mm.schemaStore)
+	return schemaForModule(mod, mm.schemaStore, mm.moduleStore)
 }
 
 func (mm *moduleManager) SchemaForVariables(modPath string) (*schema.BodySchema, error) {
@@ -123,7 +123,7 @@ func (mm *moduleManager) SchemaForVariables(modPath string) (*schema.BodySchema,
 	return tfschema.SchemaForVariables(mod.Meta.Variables)
 }
 
-func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schema.BodySchema, error) {
+func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modReader state.ModuleCallReader) (*schema.BodySchema, error) {
 	var coreSchema *schema.BodySchema
 	coreRequirements := make(version.Constraints, 0)
 	if mod.TerraformVersion != nil {
@@ -143,6 +143,7 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader) (*schem
 	sm := tfschema.NewSchemaMerger(coreSchema)
 	sm.SetSchemaReader(schemaReader)
 	sm.SetTerraformVersion(mod.TerraformVersion)
+	sm.SetModuleReader(modReader)
 
 	meta := &tfmodule.Meta{
 		Path:                 mod.Path,
