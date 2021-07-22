@@ -150,59 +150,58 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 	defer ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
 	defer modOp.markAsDone()
 
+	var opErr error
+
 	switch modOp.Type {
 	case op.OpTypeGetTerraformVersion:
-		err := GetTerraformVersion(ctx, ml.modStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to get terraform version: %s", err)
+		opErr = GetTerraformVersion(ctx, ml.modStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to get terraform version: %s", opErr)
 		}
-		return
 	case op.OpTypeObtainSchema:
-		err := ObtainSchema(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to obtain schema: %s", err)
+		opErr = ObtainSchema(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to obtain schema: %s", opErr)
 		}
-		return
 	case op.OpTypeParseModuleConfiguration:
-		err := ParseModuleConfiguration(ml.fs, ml.modStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to parse module configuration: %s", err)
+		opErr = ParseModuleConfiguration(ml.fs, ml.modStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to parse module configuration: %s", opErr)
 		}
-		return
 	case op.OpTypeParseVariables:
-		err := ParseVariables(ml.fs, ml.modStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to parse variables: %s", err)
+		opErr = ParseVariables(ml.fs, ml.modStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to parse variables: %s", opErr)
 		}
-		return
 	case op.OpTypeParseModuleManifest:
-		err := ParseModuleManifest(ml.fs, ml.modStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to parse module manifest: %s", err)
+		opErr = ParseModuleManifest(ml.fs, ml.modStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to parse module manifest: %s", opErr)
 		}
-		return
 	case op.OpTypeLoadModuleMetadata:
-		err := LoadModuleMetadata(ml.modStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to load module metadata: %s", err)
+		opErr = LoadModuleMetadata(ml.modStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to load module metadata: %s", opErr)
 		}
-		return
 	case op.OpTypeDecodeReferenceTargets:
-		err := DecodeReferenceTargets(ml.modStore, ml.schemaStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to decode reference targets: %s", err)
+		opErr = DecodeReferenceTargets(ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to decode reference targets: %s", opErr)
 		}
-		return
 	case op.OpTypeDecodeReferenceOrigins:
-		err := DecodeReferenceOrigins(ml.modStore, ml.schemaStore, modOp.ModulePath)
-		if err != nil {
-			ml.logger.Printf("failed to decode reference origins: %s", err)
+		opErr = DecodeReferenceOrigins(ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to decode reference origins: %s", opErr)
 		}
+	default:
+		ml.logger.Printf("%s: unknown operation (%#v) for module operation",
+			modOp.ModulePath, modOp.Type)
 		return
 	}
 
-	ml.logger.Printf("%s: unknown operation (%#v) for module operation",
-		modOp.ModulePath, modOp.Type)
+	if modOp.Defer != nil {
+		modOp.Defer(opErr)
+	}
 }
 
 func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {

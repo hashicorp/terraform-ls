@@ -149,12 +149,12 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Write == fsnotify.Write {
 		for _, mod := range w.modules {
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
 				return
 			}
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema, nil)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion, nil)
 				return
 			}
 		}
@@ -175,11 +175,11 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 						return nil
 					}
 					if containsPath(mod.Watchable.ModuleManifests, path) {
-						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
+						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
 					}
 					if containsPath(mod.Watchable.PluginLockFiles, path) {
-						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
-						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema, nil)
+						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion, nil)
 						return nil
 					}
 					return nil
@@ -189,13 +189,13 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
 				return
 			}
 
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema)
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema, nil)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion, nil)
 				return
 			}
 		}
