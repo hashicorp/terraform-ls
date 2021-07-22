@@ -239,20 +239,20 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 				}
 			}
 
-			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion)
+			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion, nil)
 			if err != nil {
 				return err
 			}
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			if dataDir.ModuleManifestPath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest)
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest, nil)
 				if err != nil {
 					return err
 				}
 			}
 			if dataDir.PluginLockFilePath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeObtainSchema)
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeObtainSchema, nil)
 				if err != nil {
 					return err
 				}

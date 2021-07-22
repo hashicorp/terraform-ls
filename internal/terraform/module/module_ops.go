@@ -21,9 +21,12 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
+type DeferFunc func(opError error)
+
 type ModuleOperation struct {
 	ModulePath string
 	Type       op.OpType
+	Defer      DeferFunc
 
 	doneCh chan struct{}
 }
