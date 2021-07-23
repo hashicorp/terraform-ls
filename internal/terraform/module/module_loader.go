@@ -147,7 +147,6 @@ func (ml *moduleLoader) nonPrioCapacity() int64 {
 func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperation) {
 	ml.logger.Printf("executing %q for %s", modOp.Type, modOp.ModulePath)
 	// TODO: Report progress in % for each op based on queue length
-	defer ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
 	defer modOp.markAsDone()
 
 	var opErr error
@@ -198,9 +197,10 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 			modOp.ModulePath, modOp.Type)
 		return
 	}
+	ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
 
 	if modOp.Defer != nil {
-		modOp.Defer(opErr)
+		go modOp.Defer(opErr)
 	}
 }
 

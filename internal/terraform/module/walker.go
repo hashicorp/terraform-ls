@@ -246,7 +246,8 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			if dataDir.ModuleManifestPath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest, nil)
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest,
+					decodeCalledModulesFunc(w.modMgr, w.watcher, dir))
 				if err != nil {
 					return err
 				}

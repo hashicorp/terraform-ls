@@ -149,7 +149,8 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 	if event.Op&fsnotify.Write == fsnotify.Write {
 		for _, mod := range w.modules {
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest,
+					decodeCalledModulesFunc(w.modMgr, w, mod.Path))
 				return
 			}
 			if containsPath(mod.Watchable.PluginLockFiles, eventPath) {
@@ -175,7 +176,8 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 						return nil
 					}
 					if containsPath(mod.Watchable.ModuleManifests, path) {
-						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
+						return w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest,
+							decodeCalledModulesFunc(w.modMgr, w, mod.Path))
 					}
 					if containsPath(mod.Watchable.PluginLockFiles, path) {
 						w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeObtainSchema, nil)
@@ -189,7 +191,8 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 			}
 
 			if containsPath(mod.Watchable.ModuleManifests, eventPath) {
-				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest, nil)
+				w.modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleManifest,
+					decodeCalledModulesFunc(w.modMgr, w, mod.Path))
 				return
 			}
 
@@ -219,6 +222,38 @@ func (w *watcher) processEvent(event fsnotify.Event) {
 					mod.Watched = append(mod.Watched[:i], mod.Watched[i+1:]...)
 					return
 				}
+			}
+		}
+	}
+}
+
+func decodeCalledModulesFunc(modMgr ModuleManager, w Watcher, modPath string) DeferFunc {
+	return func(opErr error) {
+		if opErr != nil {
+			return
+		}
+
+		moduleCalls, err := modMgr.ModuleCalls(modPath)
+		if err != nil {
+			return
+		}
+
+		for _, mc := range moduleCalls {
+			fi, err := os.Stat(mc.Path)
+			if err != nil || !fi.IsDir() {
+				continue
+			}
+			modMgr.AddModule(mc.Path)
+
+			modMgr.EnqueueModuleOpWait(mc.Path, op.OpTypeParseModuleConfiguration)
+
+			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeParseVariables, nil)
+			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeLoadModuleMetadata, nil)
+			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeDecodeReferenceTargets, nil)
+			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeDecodeReferenceOrigins, nil)
+
+			if w != nil {
+				w.AddModule(mc.Path)
 			}
 		}
 	}

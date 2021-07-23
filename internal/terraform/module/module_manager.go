@@ -170,6 +170,10 @@ func (mm *moduleManager) CallersOfModule(modPath string) ([]Module, error) {
 	return modules, nil
 }
 
+func (mm *moduleManager) ModuleCalls(modPath string) ([]tfmodule.ModuleCall, error) {
+	return mm.moduleStore.ModuleCalls(modPath)
+}
+
 // SchemaSourcesForModule is DEPRECATED and should NOT be used anymore
 // it is just maintained for backwards compatibility in the "rootmodules"
 // custom LSP command which itself will be DEPRECATED as external parties

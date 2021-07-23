@@ -296,18 +296,6 @@ func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, 
 		}
 		return err
 	}
-	if mm != nil {
-		for _, modRecord := range mm.Records {
-			modModulePath := filepath.Join(modPath, modRecord.Dir)
-			_, err := modStore.ModuleByPath(modModulePath)
-			if err != nil {
-				modStore.Add(modModulePath)
-				ParseModuleConfiguration(fs, modStore, modModulePath)
-				ParseVariables(fs, modStore, modModulePath)
-				LoadModuleMetadata(modStore, modModulePath)
-			}
-		}
-	}
 
 	sErr := modStore.UpdateModManifest(modPath, mm, err)
 

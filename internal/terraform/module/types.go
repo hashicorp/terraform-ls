@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 )
 
 type File interface {
@@ -25,6 +26,7 @@ type ModuleFinder interface {
 	SchemaForVariables(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
 	ListModules() ([]Module, error)
+	ModuleCalls(modPath string) ([]tfmodule.ModuleCall, error)
 	CallersOfModule(modPath string) ([]Module, error)
 }
 
