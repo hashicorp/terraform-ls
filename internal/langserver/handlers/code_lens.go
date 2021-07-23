@@ -27,12 +27,12 @@ func (h *logHandler) TextDocumentCodeLens(ctx context.Context, params lsp.CodeLe
 		return list, err
 	}
 
-	list = append(list, referenceCountCodeLens(ctx, file)...)
+	list = append(list, h.referenceCountCodeLens(ctx, file)...)
 
 	return list, nil
 }
 
-func referenceCountCodeLens(ctx context.Context, doc filesystem.Document) []lsp.CodeLens {
+func (h *logHandler) referenceCountCodeLens(ctx context.Context, doc filesystem.Document) []lsp.CodeLens {
 	list := make([]lsp.CodeLens, 0)
 
 	cc, err := lsctx.ClientCapabilities(ctx)
