@@ -6,7 +6,7 @@ FEATURES:
 
 ENHANCEMENT:
 
- - Add basic module support for variable completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
+ - Add support for module input completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
 
 INTERNAL:
 
