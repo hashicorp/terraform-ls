@@ -8,6 +8,10 @@ ENHANCEMENT:
 
  - Add support for module input completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
 
+BUG FIXES:
+
+ - fix: recognize references in lists and other complex types ([#594](https://github.com/hashicorp/terraform-ls/pull/594))
+
 INTERNAL:
 
  - build(deps): bump github.com/hashicorp/hcl/v2 from 2.10.0 to 2.10.1 ([#589](https://github.com/hashicorp/terraform-ls/pull/589))
