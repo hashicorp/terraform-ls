@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl/v2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -76,20 +77,43 @@ func referenceCountCodeLens(ctx context.Context, doc filesystem.Document) []lsp.
 		return list
 	}
 
+	// There can be two targets pointing to the same range
+	// e.g. when a block is targettable as type-less reference
+	// and as an object, which is important in most contexts
+	// but not here, where we present it to the user.
+	dedupedTargets := make(map[hcl.Range]lang.ReferenceTargets, 0)
 	for _, refTarget := range refTargets {
-		origins, err := d.ReferenceOriginsTargeting(refTarget)
-		if err != nil {
-			continue
+		rng := *refTarget.RangePtr
+		if _, ok := dedupedTargets[rng]; !ok {
+			dedupedTargets[rng] = make(lang.ReferenceTargets, 0)
 		}
-		if len(origins) == 0 {
+		dedupedTargets[rng] = append(dedupedTargets[rng], refTarget)
+	}
+
+	for rng, refTargets := range dedupedTargets {
+		originCount := 0
+		var defRange *hcl.Range
+		for _, refTarget := range refTargets {
+			if refTarget.DefRangePtr != nil {
+				defRange = refTarget.DefRangePtr
+			}
+
+			origins, err := d.ReferenceOriginsTargeting(refTarget)
+			if err != nil {
+				continue
+			}
+			originCount += len(origins)
+		}
+
+		if originCount == 0 {
 			continue
 		}
 
 		var pos hcl.Pos
-		if refTarget.DefRangePtr != nil {
-			pos = posMiddleOfRange(refTarget.DefRangePtr)
+		if defRange != nil {
+			pos = posMiddleOfRange(defRange)
 		} else {
-			pos = posMiddleOfRange(refTarget.RangePtr)
+			pos = posMiddleOfRange(&rng)
 		}
 
 		posBytes, err := json.Marshal(ilsp.HCLPosToLSP(pos))
@@ -98,9 +122,9 @@ func referenceCountCodeLens(ctx context.Context, doc filesystem.Document) []lsp.
 		}
 
 		list = append(list, lsp.CodeLens{
-			Range: ilsp.HCLRangeToLSP(*refTarget.RangePtr),
+			Range: ilsp.HCLRangeToLSP(rng),
 			Command: lsp.Command{
-				Title:   getTitle("reference", "references", len(origins)),
+				Title:   getTitle("reference", "references", originCount),
 				Command: showReferencesCmd,
 				Arguments: []json.RawMessage{
 					json.RawMessage(posBytes),
