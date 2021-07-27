@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -47,21 +48,25 @@ func (h *logHandler) References(ctx context.Context, params lsp.ReferenceParams)
 		return list, err
 	}
 
-	refTarget, err := d.InnermostReferenceTargetAtPos(fPos.Filename(), fPos.Position())
+	refTargets, err := d.InnermostReferenceTargetsAtPos(fPos.Filename(), fPos.Position())
 	if err != nil {
 		return list, err
 	}
-	if refTarget == nil {
+	if len(refTargets) == 0 {
 		// this position is not addressable
 		h.logger.Printf("position is not addressable: %s - %#v", fPos.Filename(), fPos.Position())
 		return list, nil
 	}
 
-	h.logger.Printf("finding origins for inner-most target: %#v", refTarget)
+	h.logger.Printf("finding origins for inner-most targets: %#v", refTargets)
 
-	origins, err := d.ReferenceOriginsTargeting(*refTarget)
-	if err != nil {
-		return list, err
+	origins := make(lang.ReferenceOrigins, 0)
+	for _, refTarget := range refTargets {
+		refOrigins, err := d.ReferenceOriginsTargeting(refTarget)
+		if err != nil {
+			return list, err
+		}
+		origins = append(origins, refOrigins...)
 	}
 
 	return ilsp.RefOriginsToLocations(mod.Path, origins), nil

@@ -58,6 +58,7 @@ func (h *logHandler) GoToReferenceTarget(ctx context.Context, params lsp.TextDoc
 	if origin == nil {
 		return nil, nil
 	}
+	h.logger.Printf("found origin: %#v", origin)
 
 	target, err := d.ReferenceTargetForOrigin(*origin)
 	if err != nil {

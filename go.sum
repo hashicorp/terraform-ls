@@ -191,8 +191,8 @@ github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uG
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hashicorp/hcl-lang v0.0.0-20210616121206-bd34ebcc883b/go.mod h1:uMsq6wV8ZXEH8qndov4tncXlHDYnZ8aHsGmS4T74e2o=
-github.com/hashicorp/hcl-lang v0.0.0-20210720185741-4775fe675507 h1:oJvWrjpJ631eWE/WLeNfVX7JXgEEIbavD17B70JA5bU=
-github.com/hashicorp/hcl-lang v0.0.0-20210720185741-4775fe675507/go.mod h1:A1Pj/o2k+ADlN0onToNuOJWNuWywxV7towLQmzU8dfU=
+github.com/hashicorp/hcl-lang v0.0.0-20210727133229-454bfd2596ce h1:XekCZzsJL95UGIMEWHBdPjGSPpi8uxU91zRghDbRgTc=
+github.com/hashicorp/hcl-lang v0.0.0-20210727133229-454bfd2596ce/go.mod h1:xzXU6Fn+TWVaZUFxV8CyAsObi2oMgSEFAmLvCx2ArzM=
 github.com/hashicorp/hcl/v2 v2.10.0/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
 github.com/hashicorp/hcl/v2 v2.10.1 h1:h4Xx4fsrRE26ohAk/1iGF/JBqRQbyUqu5Lvj60U54ys=
 github.com/hashicorp/hcl/v2 v2.10.1/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
