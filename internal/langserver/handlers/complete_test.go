@@ -710,7 +710,7 @@ output "test" {
 	// asynchronously and we currently have no way of waiting
 	// for them to complete.
 	// TODO remove once we support synchronous dependent tasks
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
