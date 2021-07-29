@@ -1,4 +1,4 @@
-## 0.20.0 (Unreleased)
+## 0.20.0 (29 July 2021)
 
 FEATURES:
 
