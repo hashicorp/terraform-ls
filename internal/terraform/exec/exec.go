@@ -100,6 +100,17 @@ func (e *Executor) Init(ctx context.Context, opts ...tfexec.InitOption) error {
 	return e.contextfulError(ctx, "Init", e.tf.Init(ctx, opts...))
 }
 
+func (e *Executor) Get(ctx context.Context, opts ...tfexec.GetCmdOption) error {
+	ctx, cancel := e.withTimeout(ctx)
+	defer cancel()
+	err := e.setLogPath("Get")
+	if err != nil {
+		return err
+	}
+
+	return e.contextfulError(ctx, "Get", e.tf.Get(ctx, opts...))
+}
+
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 	ctx, cancel := e.withTimeout(ctx)
 	defer cancel()

@@ -19,6 +19,7 @@ type ModuleMetadata struct {
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
 	ProviderRequirements map[tfaddr.Provider]version.Constraints
 	Variables            map[string]tfmod.Variable
+	Outputs              map[string]tfmod.Output
 }
 
 func (mm ModuleMetadata) Copy() ModuleMetadata {
@@ -46,6 +47,13 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 		newMm.Variables = make(map[string]tfmod.Variable, len(mm.Variables))
 		for name, variable := range mm.Variables {
 			newMm.Variables[name] = variable
+		}
+	}
+
+	if mm.Outputs != nil {
+		newMm.Outputs = make(map[string]tfmod.Output, len(mm.Outputs))
+		for name, output := range mm.Outputs {
+			newMm.Outputs[name] = output
 		}
 	}
 
@@ -259,6 +267,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
 					continue
 				}
 				result = append(result, tfmod.ModuleCall{
+					LocalName:  record.Key,
 					SourceAddr: record.SourceAddr,
 					Path:       filepath.Join(modPath, record.Dir),
 				})
@@ -279,6 +288,7 @@ func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		CoreRequirements:     mod.Meta.CoreRequirements,
 		Variables:            mod.Meta.Variables,
+		Outputs:              mod.Meta.Outputs,
 	}, nil
 }
 
@@ -579,6 +589,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 		ProviderReferences:   meta.ProviderReferences,
 		ProviderRequirements: meta.ProviderRequirements,
 		Variables:            meta.Variables,
+		Outputs:              meta.Outputs,
 	}
 	mod.MetaErr = mErr
 

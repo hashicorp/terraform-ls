@@ -190,10 +190,8 @@ github.com/hashicorp/golang-lru v0.5.4 h1:YDjusn29QI/Das2iO9M0BHnIbxPeyuCHsjMW+l
 github.com/hashicorp/golang-lru v0.5.4/go.mod h1:iADmTwqILo4mZ8BN3D2Q6+9jd8WM5uGBxy+E8yxSoD4=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hashicorp/hcl-lang v0.0.0-20210616121206-bd34ebcc883b/go.mod h1:uMsq6wV8ZXEH8qndov4tncXlHDYnZ8aHsGmS4T74e2o=
-github.com/hashicorp/hcl-lang v0.0.0-20210727133229-454bfd2596ce h1:XekCZzsJL95UGIMEWHBdPjGSPpi8uxU91zRghDbRgTc=
-github.com/hashicorp/hcl-lang v0.0.0-20210727133229-454bfd2596ce/go.mod h1:xzXU6Fn+TWVaZUFxV8CyAsObi2oMgSEFAmLvCx2ArzM=
-github.com/hashicorp/hcl/v2 v2.10.0/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
+github.com/hashicorp/hcl-lang v0.0.0-20210728150846-565e9ca96f5a h1:/4iJtfKKXrHCi99FQgUeHvF6OBNUzJeVO7Tsmfj8F1s=
+github.com/hashicorp/hcl-lang v0.0.0-20210728150846-565e9ca96f5a/go.mod h1:xzXU6Fn+TWVaZUFxV8CyAsObi2oMgSEFAmLvCx2ArzM=
 github.com/hashicorp/hcl/v2 v2.10.1 h1:h4Xx4fsrRE26ohAk/1iGF/JBqRQbyUqu5Lvj60U54ys=
 github.com/hashicorp/hcl/v2 v2.10.1/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
 github.com/hashicorp/logutils v1.0.0/go.mod h1:QIAnNjmIWmVIIkWDTG1z5v++HQmx9WQRO+LraFDTW64=
@@ -206,8 +204,8 @@ github.com/hashicorp/terraform-json v0.12.0 h1:8czPgEEWWPROStjkWPUnTQDXmpmZPlkQA
 github.com/hashicorp/terraform-json v0.12.0/go.mod h1:pmbq9o4EuL43db5+0ogX10Yofv1nozM+wskr/bGFJpI=
 github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896 h1:1FGtlkJw87UsTMg5s8jrekrHmUPUJaMcu6ELiVhQrNw=
 github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896/go.mod h1:bzBPnUIkI0RxauU8Dqo+2KrZZ28Cf48s8V6IHt3p4co=
-github.com/hashicorp/terraform-schema v0.0.0-20210722111916-2c53a3129d11 h1:AmgdvpxCaq1rb90drpXqOafdPSR4084bOBtDthYrd7Y=
-github.com/hashicorp/terraform-schema v0.0.0-20210722111916-2c53a3129d11/go.mod h1:2rBfUJC+1kyVzt5R/6pRa+d9HbpZrf8sMjQZdh8rSCM=
+github.com/hashicorp/terraform-schema v0.0.0-20210728151552-ade5695c845a h1:IZ1T0OvyLXM5+VYaMYhOrbCb8qS2ASoDlPfsbx8c64M=
+github.com/hashicorp/terraform-schema v0.0.0-20210728151552-ade5695c845a/go.mod h1:laZKK46fUcgutOVcEOx7lY0POxOEFxLZCD+eaUvGIc8=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
@@ -382,7 +380,6 @@ github.com/zclconf/go-cty v1.1.0/go.mod h1:xnAOWiHeOqg2nWS62VtQ7pbOu17FtxJNW8RLE
 github.com/zclconf/go-cty v1.2.0/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q/N4PQ8=
 github.com/zclconf/go-cty v1.2.1/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q/N4PQ8=
 github.com/zclconf/go-cty v1.8.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
-github.com/zclconf/go-cty v1.8.3/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.8.4/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.9.0 h1:IgJxw5b4LPXCPeqFjjhLaNEA8NKXMyaEUdAd399acts=
 github.com/zclconf/go-cty v1.9.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=

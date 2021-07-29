@@ -16,7 +16,7 @@ type ExecutorFactory func(workDir, execPath string) (TerraformExecutor, error)
 
 type Formatter func(ctx context.Context, input []byte) ([]byte, error)
 
-//go:generate mockery --name TerraformExecutor --structname Executor --filename executor.go --outpkg mock --output ./mock
+//go:generate go run github.com/vektra/mockery/v2 --name TerraformExecutor --structname Executor --filename executor.go --outpkg mock --output ./mock
 
 type TerraformExecutor interface {
 	SetLogger(logger *log.Logger)
@@ -24,6 +24,7 @@ type TerraformExecutor interface {
 	SetTimeout(duration time.Duration)
 	GetExecPath() string
 	Init(ctx context.Context, opts ...tfexec.InitOption) error
+	Get(ctx context.Context, opts ...tfexec.GetCmdOption) error
 	Format(ctx context.Context, input []byte) ([]byte, error)
 	Version(ctx context.Context) (*version.Version, map[string]*version.Version, error)
 	Validate(ctx context.Context) ([]tfjson.Diagnostic, error)
