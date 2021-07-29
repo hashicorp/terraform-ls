@@ -7,6 +7,7 @@ FEATURES:
 ENHANCEMENT:
 
  - Add support for module input completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
+ - Add support for module output reference completion/hover/highlighting ([#593](https://github.com/hashicorp/terraform-ls/pull/593))
 
 BUG FIXES:
 
