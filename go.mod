@@ -12,12 +12,12 @@ require (
 	github.com/hashicorp/go-memdb v1.3.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-version v1.3.0
-	github.com/hashicorp/hcl-lang v0.0.0-20210728150846-565e9ca96f5a
+	github.com/hashicorp/hcl-lang v0.0.0-20210730145509-f403a86a1605
 	github.com/hashicorp/hcl/v2 v2.10.1
 	github.com/hashicorp/terraform-exec v0.14.0
 	github.com/hashicorp/terraform-json v0.12.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896
-	github.com/hashicorp/terraform-schema v0.0.0-20210728151552-ade5695c845a
+	github.com/hashicorp/terraform-schema v0.0.0-20210730150127-e9a4cde5d2a6
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.2
