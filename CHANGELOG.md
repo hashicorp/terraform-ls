@@ -1,3 +1,9 @@
+## 0.20.1 (Unreleased)
+
+BUG FIXES:
+
+ - fix: recognize references in common nested expressions ([#596](https://github.com/hashicorp/terraform-ls/pull/596))
+
 ## 0.20.0 (29 July 2021)
 
 FEATURES:
