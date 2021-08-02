@@ -33,7 +33,7 @@ var (
 	ctxModuleWalker         = &contextKey{"module walker"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
-	ctxDiags                = &contextKey{"diagnostics"}
+	ctxDiagsNotifier        = &contextKey{"diagnostics notifier"}
 	ctxLsVersion            = &contextKey{"language server version"}
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
@@ -224,14 +224,14 @@ func ModuleWalker(ctx context.Context) (*module.Walker, error) {
 	return w, nil
 }
 
-func WithDiagnostics(ctx context.Context, diags *diagnostics.Notifier) context.Context {
-	return context.WithValue(ctx, ctxDiags, diags)
+func WithDiagnosticsNotifier(ctx context.Context, diags *diagnostics.Notifier) context.Context {
+	return context.WithValue(ctx, ctxDiagsNotifier, diags)
 }
 
-func Diagnostics(ctx context.Context) (*diagnostics.Notifier, error) {
-	diags, ok := ctx.Value(ctxDiags).(*diagnostics.Notifier)
+func DiagnosticsNotifier(ctx context.Context) (*diagnostics.Notifier, error) {
+	diags, ok := ctx.Value(ctxDiagsNotifier).(*diagnostics.Notifier)
 	if !ok {
-		return nil, missingContextErr(ctxDiags)
+		return nil, missingContextErr(ctxDiagsNotifier)
 	}
 
 	return diags, nil

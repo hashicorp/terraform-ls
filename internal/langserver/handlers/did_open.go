@@ -4,6 +4,7 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -68,12 +69,17 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
-	diags, err := lsctx.Diagnostics(ctx)
+	notifier, err := lsctx.DiagnosticsNotifier(ctx)
 	if err != nil {
 		return err
 	}
-	mergedDiags := mergeDiagnostics(mod.ModuleDiagnostics, mod.VarsDiagnostics)
-	diags.PublishHCLDiags(ctx, mod.Path, mergedDiags, "HCL")
+
+	diags := diagnostics.NewDiagnostics()
+	diags.EmptyRootDiagnostic()
+	diags.Append("HCL", mod.ModuleDiagnostics)
+	diags.Append("HCL", mod.VarsDiagnostics)
+
+	notifier.PublishHCLDiags(ctx, mod.Path, diags)
 
 	return nil
 }

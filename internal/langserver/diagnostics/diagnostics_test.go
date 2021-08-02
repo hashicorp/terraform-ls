@@ -6,8 +6,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
-	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 var discardLogger = log.New(ioutil.Discard, "", 0)
@@ -17,13 +17,17 @@ func TestDiags_Closes(t *testing.T) {
 	n := NewNotifier(ctx, discardLogger)
 
 	cancel()
-	n.PublishHCLDiags(context.Background(), "", map[string]hcl.Diagnostics{
+
+	diags := NewDiagnostics()
+	diags.Append("test", map[string]hcl.Diagnostics{
 		"test": {
 			{
 				Severity: hcl.DiagError,
 			},
 		},
-	}, "test")
+	})
+
+	n.PublishHCLDiags(context.Background(), t.TempDir(), diags)
 
 	if _, open := <-n.diags; open {
 		t.Fatal("channel should be closed")
@@ -41,81 +45,91 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 	n := NewNotifier(ctx, discardLogger)
 
 	cancel()
-	n.PublishHCLDiags(context.Background(), "", map[string]hcl.Diagnostics{
+
+	diags := NewDiagnostics()
+	diags.Append("test", map[string]hcl.Diagnostics{
 		"test": {
 			{
 				Severity: hcl.DiagError,
 			},
 		},
-	}, "test")
+	})
+
+	n.PublishHCLDiags(context.Background(), t.TempDir(), diags)
 }
 
-func TestMergeDiags_CachesMultipleSourcesPerURI(t *testing.T) {
-	uri := lsp.DocumentURI("test.tf")
-
-	n := NewNotifier(context.Background(), discardLogger)
-
-	all := n.mergeDiags(uri, "source1", []lsp.Diagnostic{
-		{
-			Severity: lsp.SeverityError,
-			Message:  "diag1",
+func TestDiagnostics_Append(t *testing.T) {
+	diags := NewDiagnostics()
+	diags.Append("foo", map[string]hcl.Diagnostics{
+		"first.tf": {
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Something went wrong",
+				Detail:   "Testing detail",
+				Subject: &hcl.Range{
+					Filename: "first.tf",
+					Start:    hcl.InitialPos,
+					End: hcl.Pos{
+						Line:   3,
+						Column: 2,
+						Byte:   10,
+					},
+				},
+			},
 		},
 	})
-	if len(all) != 1 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 1, len(all))
-	}
-
-	all = n.mergeDiags(uri, "source2", []lsp.Diagnostic{
-		{
-			Severity: lsp.SeverityError,
-			Message:  "diag2",
+	diags.Append("bar", map[string]hcl.Diagnostics{
+		"first.tf": {
+			&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Something else went wrong",
+				Detail:   "Testing detail",
+			},
+		},
+		"second.tf": {
+			&hcl.Diagnostic{
+				Severity: hcl.DiagWarning,
+				Summary:  "Beware",
+			},
 		},
 	})
-	if len(all) != 2 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 2, len(all))
-	}
-}
 
-func TestMergeDiags_OverwritesSource_EvenWithEmptySlice(t *testing.T) {
-	uri := lsp.DocumentURI("test.tf")
-
-	n := NewNotifier(context.Background(), discardLogger)
-
-	all := n.mergeDiags(uri, "source1", []lsp.Diagnostic{
-		{
-			Severity: lsp.SeverityError,
-			Message:  "diag1",
+	expectedDiags := Diagnostics{
+		"first.tf": map[DiagnosticSource]hcl.Diagnostics{
+			DiagnosticSource("foo"): {
+				&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Something went wrong",
+					Detail:   "Testing detail",
+					Subject: &hcl.Range{
+						Filename: "first.tf",
+						Start:    hcl.InitialPos,
+						End: hcl.Pos{
+							Line:   3,
+							Column: 2,
+							Byte:   10,
+						},
+					},
+				},
+			},
+			DiagnosticSource("bar"): {
+				&hcl.Diagnostic{
+					Severity: hcl.DiagError,
+					Summary:  "Something else went wrong",
+					Detail:   "Testing detail",
+				},
+			},
 		},
-	})
-	if len(all) != 1 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 1, len(all))
-	}
-
-	all = n.mergeDiags(uri, "source1", []lsp.Diagnostic{
-		{
-			Severity: lsp.SeverityError,
-			Message:  "diagOverwritten",
+		"second.tf": map[DiagnosticSource]hcl.Diagnostics{
+			DiagnosticSource("bar"): {
+				&hcl.Diagnostic{
+					Severity: hcl.DiagWarning,
+					Summary:  "Beware",
+				},
+			},
 		},
-	})
-	if len(all) != 1 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 1, len(all))
 	}
-	if all[0].Message != "diagOverwritten" {
-		t.Fatalf("diag has incorrect message: expected %s, got %s", "diagOverwritten", all[0].Message)
-	}
-
-	all = n.mergeDiags(uri, "source2", []lsp.Diagnostic{
-		{
-			Severity: lsp.SeverityError,
-			Message:  "diag2",
-		},
-	})
-	if len(all) != 2 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 2, len(all))
-	}
-
-	all = n.mergeDiags(uri, "source2", []lsp.Diagnostic{})
-	if len(all) != 1 {
-		t.Fatalf("returns diags is incorrect length: expected %d, got %d", 1, len(all))
+	if diff := cmp.Diff(expectedDiags, diags); diff != "" {
+		t.Fatalf("diagnostics mismatch: %s", diff)
 	}
 }
