@@ -14,12 +14,12 @@ func HCLDiagsFromJSON(jsonDiags []tfjson.Diagnostic) map[string]hcl.Diagnostics 
 	diagsMap := make(map[string]hcl.Diagnostics)
 
 	for _, d := range jsonDiags {
-		// the diagnostic must be tied to a file to exist in the map
-		if d.Range == nil || d.Range.Filename == "" {
-			continue
+		file := ""
+		if d.Range != nil {
+			file = d.Range.Filename
 		}
 
-		diags := diagsMap[d.Range.Filename]
+		diags := diagsMap[file]
 
 		var severity hcl.DiagnosticSeverity
 		if d.Severity == "error" {
@@ -28,17 +28,23 @@ func HCLDiagsFromJSON(jsonDiags []tfjson.Diagnostic) map[string]hcl.Diagnostics 
 			severity = hcl.DiagWarning
 		}
 
-		diags = append(diags, &hcl.Diagnostic{
+		diag := &hcl.Diagnostic{
 			Severity: severity,
 			Summary:  d.Summary,
 			Detail:   d.Detail,
-			Subject: &hcl.Range{
+		}
+
+		if d.Range != nil {
+			diag.Subject = &hcl.Range{
 				Filename: d.Range.Filename,
 				Start:    hcl.Pos(d.Range.Start),
 				End:      hcl.Pos(d.Range.End),
-			},
-		})
-		diagsMap[d.Range.Filename] = diags
+			}
+		}
+
+		diags = append(diags, diag)
+
+		diagsMap[file] = diags
 	}
 
 	return diagsMap
