@@ -5,6 +5,7 @@ BUG FIXES:
  - fix: recognize references in common nested expressions ([#596](https://github.com/hashicorp/terraform-ls/pull/596))
  - textDocument/publishDiagnostics: Publish any source-less warnings or errors ([#601](https://github.com/hashicorp/terraform-ls/pull/601))
  - fix: avoid publishing stale 'validate' diagnostics ([#603](https://github.com/hashicorp/terraform-ls/pull/603))
+ - fix: avoid crash on highlighting unknown tuple element ([#605](https://github.com/hashicorp/terraform-ls/pull/605))
 
 ## 0.20.0 (29 July 2021)
 
