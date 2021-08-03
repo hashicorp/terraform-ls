@@ -33,7 +33,8 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"save": {}
 				},
 				"completionProvider": {
-					"triggerCharacters": [".", "["]
+					"triggerCharacters": [".", "["],
+					"completionItem":{}
 				},
 				"hoverProvider": true,
 				"signatureHelpProvider": {},

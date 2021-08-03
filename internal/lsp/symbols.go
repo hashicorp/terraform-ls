@@ -10,7 +10,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func SymbolInformation(dirPath string, sbs []decoder.Symbol, caps lsp.WorkspaceSymbolClientCapabilities) []lsp.SymbolInformation {
+func SymbolInformation(dirPath string, sbs []decoder.Symbol, caps *lsp.WorkspaceSymbolClientCapabilities) []lsp.SymbolInformation {
 	symbols := make([]lsp.SymbolInformation, len(sbs))
 	for i, s := range sbs {
 		kind, ok := symbolKind(s, caps.SymbolKind.ValueSet)

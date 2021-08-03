@@ -33,8 +33,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
 			WorkspaceSymbolProvider:    true,
-			Workspace: lsp.WorkspaceGn{
-				WorkspaceFolders: lsp.WorkspaceFoldersGn{
+			Workspace: lsp.Workspace5Gn{
+				WorkspaceFolders: lsp.WorkspaceFolders4Gn{
 					Supported:           true,
 					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
 				},

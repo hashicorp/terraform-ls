@@ -126,6 +126,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 				"items": [
 					{
 						"label": "alias",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
@@ -146,6 +147,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					},
 					{
 						"label": "anonymous",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, number",
 						"documentation": "Desc 1",
@@ -166,6 +168,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					},
 					{
 						"label": "base_url",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Desc 2",
@@ -186,6 +189,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					},
 					{
 						"label": "individual",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, bool",
 						"documentation": "Desc 3",
@@ -206,6 +210,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 					},
 					{
 						"label": "version",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
@@ -327,6 +332,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 				"items": [
 					{
 						"label": "alias",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
@@ -347,6 +353,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "anonymous",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, number",
 						"documentation": "Desc 1",
@@ -371,6 +378,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "base_url",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Desc 2",
@@ -395,6 +403,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "individual",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, bool",
 						"documentation": "Desc 3",
@@ -419,6 +428,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "version",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
@@ -588,6 +598,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 				"items": [
 					{
 						"label": "test",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, string",
 						"insertTextFormat":1,
@@ -730,6 +741,7 @@ output "test" {
 				"items": [
 					{
 						"label": "providers",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, map of provider references",
 						"documentation": "Explicit mapping of providers which the module uses",
@@ -750,6 +762,7 @@ output "test" {
 					},
 					{
 						"label": "testvar",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, string",
 						"insertTextFormat": 1,
@@ -769,6 +782,7 @@ output "test" {
 					},
 					{
 						"label": "version",
+						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
@@ -809,6 +823,7 @@ output "test" {
 				"items": [
 					{
 						"label": "module.refname.testout",
+						"labelDetails": {},
 						"kind": 6,
 						"detail": "number",
 						"insertTextFormat": 1,

@@ -79,7 +79,7 @@ func (c *CompletionCommand) Run(args []string) int {
 		c.Ui.Error(fmt.Sprintf("Error parsing column: %s (expected number)", err))
 		return 1
 	}
-	lspPos := lsp.Position{Line: float64(line), Character: float64(col)}
+	lspPos := lsp.Position{Line: uint32(line), Character: uint32(col)}
 
 	logger := logging.NewLogger(os.Stderr)
 

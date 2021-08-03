@@ -13,12 +13,12 @@ func fsRangeToLSP(fsRng *filesystem.Range) lsp.Range {
 
 	return lsp.Range{
 		Start: lsp.Position{
-			Character: float64(fsRng.Start.Column),
-			Line:      float64(fsRng.Start.Line),
+			Character: uint32(fsRng.Start.Column),
+			Line:      uint32(fsRng.Start.Line),
 		},
 		End: lsp.Position{
-			Character: float64(fsRng.End.Column),
-			Line:      float64(fsRng.End.Line),
+			Character: uint32(fsRng.End.Column),
+			Line:      uint32(fsRng.End.Line),
 		},
 	}
 }
@@ -49,7 +49,7 @@ func HCLRangeToLSP(rng hcl.Range) lsp.Range {
 
 func HCLPosToLSP(pos hcl.Pos) lsp.Position {
 	return lsp.Position{
-		Line:      float64(pos.Line - 1),
-		Character: float64(pos.Column - 1),
+		Line:      uint32(pos.Line - 1),
+		Character: uint32(pos.Column - 1),
 	}
 }
