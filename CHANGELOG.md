@@ -8,6 +8,10 @@ BUG FIXES:
  - fix: avoid crash on highlighting unknown tuple element ([#605](https://github.com/hashicorp/terraform-ls/pull/605))
  - fix: recognize list(object) and set(object) attributes as blocks ([#607](https://github.com/hashicorp/terraform-ls/pull/607))
 
+INTERNAL:
+
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.19.0 to 0.19.1 ([#606](https://github.com/hashicorp/terraform-ls/pull/606))
+
 ## 0.20.0 (29 July 2021)
 
 FEATURES:
