@@ -45,7 +45,7 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, errors.EnrichTfExecError(err)
 	}
 
-	notifier, err := lsctx.Diagnostics(ctx)
+	notifier, err := lsctx.DiagnosticsNotifier(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +60,14 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 		return nil, err
 	}
 
-	diags := diagnostics.HCLDiagsFromJSON(jsonDiags)
+	diags := diagnostics.NewDiagnostics()
+	validateDiags := diagnostics.HCLDiagsFromJSON(jsonDiags)
+	diags.EmptyRootDiagnostic()
+	diags.Append("terraform validate", validateDiags)
+	diags.Append("HCL", mod.ModuleDiagnostics)
+	diags.Append("HCL", mod.VarsDiagnostics)
 
-	notifier.PublishHCLDiags(ctx, mod.Path, diags, "terraform validate")
+	notifier.PublishHCLDiags(ctx, mod.Path, diags)
 
 	return nil, nil
 }

@@ -12,7 +12,6 @@ import (
 	rpch "github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/schema"
-	"github.com/hashicorp/hcl/v2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -140,7 +139,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, err
 	}
 
-	diags := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
+	notifier := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
 	commandPrefix := ""
@@ -182,7 +181,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
@@ -192,7 +191,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, ww)
@@ -322,7 +321,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = exec.WithExecutorOpts(ctx, execOpts)
@@ -363,7 +362,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, ww)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
-			ctx = lsctx.WithDiagnostics(ctx, diags)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = exec.WithExecutorOpts(ctx, execOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
@@ -489,14 +488,4 @@ func decoderForDocument(ctx context.Context, mod module.Module, languageID strin
 		return idecoder.DecoderForVariables(mod)
 	}
 	return idecoder.DecoderForModule(ctx, mod)
-}
-
-func mergeDiagnostics(diags1, diags2 map[string]hcl.Diagnostics) map[string]hcl.Diagnostics {
-	diags := map[string]hcl.Diagnostics{}
-	for _, md := range []map[string]hcl.Diagnostics{diags1, diags2} {
-		for path, d := range md {
-			diags[path] = d
-		}
-	}
-	return diags
 }
