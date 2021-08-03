@@ -1,4 +1,4 @@
-## 0.20.1 (Unreleased)
+## 0.20.1 (3 August 2021)
 
 BUG FIXES:
 
