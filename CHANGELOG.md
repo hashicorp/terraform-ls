@@ -6,6 +6,7 @@ BUG FIXES:
  - textDocument/publishDiagnostics: Publish any source-less warnings or errors ([#601](https://github.com/hashicorp/terraform-ls/pull/601))
  - fix: avoid publishing stale 'validate' diagnostics ([#603](https://github.com/hashicorp/terraform-ls/pull/603))
  - fix: avoid crash on highlighting unknown tuple element ([#605](https://github.com/hashicorp/terraform-ls/pull/605))
+ - fix: recognize list(object) and set(object) attributes as blocks ([#607](https://github.com/hashicorp/terraform-ls/pull/607))
 
 ## 0.20.0 (29 July 2021)
 
