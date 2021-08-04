@@ -28,6 +28,10 @@ func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
 	}
 
+	if !uri.IsURIValid(modUri) {
+		return nil, fmt.Errorf("URI %q is not valid", modUri)
+	}
+
 	modPath, err := uri.PathFromURI(modUri)
 	if err != nil {
 		return nil, err

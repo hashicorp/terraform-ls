@@ -39,9 +39,10 @@ func TestFileHandler_valid_unix(t *testing.T) {
 }
 
 func TestFileHandler_valid_unixDir(t *testing.T) {
-	fh := FileHandlerFromDirURI(lsp.DocumentURI("/valid/path/to"))
+	uri := "file:///valid/path/to"
+	fh := FileHandlerFromDirURI(lsp.DocumentURI(uri))
 	if !fh.Valid() {
-		t.Fatalf("Expected %q to be valid", "/valid/path/to")
+		t.Fatalf("Expected %q to be valid", uri)
 	}
 
 	expectedDir := "/valid/path/to"

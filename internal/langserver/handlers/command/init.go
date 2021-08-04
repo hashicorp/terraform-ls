@@ -12,12 +12,17 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	dirUri, ok := args.GetString("uri")
 	if !ok || dirUri == "" {
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
+	}
+
+	if !uri.IsURIValid(dirUri) {
+		return nil, fmt.Errorf("URI %q is not valid", dirUri)
 	}
 
 	dh := ilsp.FileHandlerFromDirURI(lsp.DocumentURI(dirUri))
