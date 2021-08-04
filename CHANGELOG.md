@@ -1,3 +1,9 @@
+## 0.21.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Always validate URI schema ([#602](https://github.com/hashicorp/terraform-ls/pull/602))
+
 ## 0.20.1 (3 August 2021)
 
 BUG FIXES:
@@ -18,7 +24,7 @@ FEATURES:
 
  - Implement reference count code lens ([#584](https://github.com/hashicorp/terraform-ls/pull/584))
 
-ENHANCEMENT:
+ENHANCEMENTS:
 
  - Add support for module input completion/hover/highlighting ([#551](https://github.com/hashicorp/terraform-ls/pull/551))
  - Add support for module output reference completion/hover/highlighting ([#593](https://github.com/hashicorp/terraform-ls/pull/593))
