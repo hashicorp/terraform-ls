@@ -1,5 +1,9 @@
 ## 0.21.0 (Unreleased)
 
+BUG FIXES:
+
+ - fix: allow multiple variable validation blocks ([#610](https://github.com/hashicorp/terraform-ls/pull/610))
+
 ENHANCEMENTS:
 
  - Always validate URI schema ([#602](https://github.com/hashicorp/terraform-ls/pull/602))
