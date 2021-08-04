@@ -8,6 +8,10 @@ ENHANCEMENTS:
 
  - Always validate URI schema ([#602](https://github.com/hashicorp/terraform-ls/pull/602))
 
+INTERNAL:
+
+ - Update LSP structs to gopls' `0.7.0` ([#608](https://github.com/hashicorp/terraform-ls/pull/608))
+
 ## 0.20.1 (3 August 2021)
 
 BUG FIXES:
