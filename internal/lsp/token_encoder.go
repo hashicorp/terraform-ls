@@ -14,8 +14,8 @@ type TokenEncoder struct {
 	ClientCaps lsp.SemanticTokensClientCapabilities
 }
 
-func (te *TokenEncoder) Encode() []float64 {
-	data := make([]float64, 0)
+func (te *TokenEncoder) Encode() []uint32 {
+	data := make([]uint32, 0)
 
 	for i := range te.Tokens {
 		data = append(data, te.encodeTokenOfIndex(i)...)
@@ -24,7 +24,7 @@ func (te *TokenEncoder) Encode() []float64 {
 	return data
 }
 
-func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
+func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	token := te.Tokens[i]
 
 	var tokenType TokenType
@@ -53,11 +53,11 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 		tokenType = TokenTypeVariable
 
 	default:
-		return []float64{}
+		return []uint32{}
 	}
 
 	if !te.tokenTypeSupported(tokenType) {
-		return []float64{}
+		return []uint32{}
 	}
 
 	tokenTypeIdx := TokenTypesLegend(te.ClientCaps.TokenTypes).Index(tokenType)
@@ -79,7 +79,7 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 
 	modifierBitMask := TokenModifiersLegend(te.ClientCaps.TokenModifiers).BitMask(modifiers)
 
-	data := make([]float64, 0)
+	data := make([]uint32, 0)
 
 	// Client may not support multiline tokens which would be indicated
 	// via lsp.SemanticTokensCapabilities.MultilineTokenSupport
@@ -104,12 +104,12 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 		tokenLength := token.Range.End.Byte - token.Range.Start.Byte
 		deltaStartChar := token.Range.Start.Column - 1 - previousStartChar
 
-		data = append(data, []float64{
-			float64(deltaLine),
-			float64(deltaStartChar),
-			float64(tokenLength),
-			float64(tokenTypeIdx),
-			float64(modifierBitMask),
+		data = append(data, []uint32{
+			uint32(deltaLine),
+			uint32(deltaStartChar),
+			uint32(tokenLength),
+			uint32(tokenTypeIdx),
+			uint32(modifierBitMask),
 		}...)
 	} else {
 		// Add entry for each line of a multiline token
@@ -128,12 +128,12 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []float64 {
 				length = token.Range.End.Column - 1
 			}
 
-			data = append(data, []float64{
-				float64(deltaLine),
-				float64(deltaStartChar),
-				float64(length),
-				float64(tokenTypeIdx),
-				float64(modifierBitMask),
+			data = append(data, []uint32{
+				uint32(deltaLine),
+				uint32(deltaStartChar),
+				uint32(length),
+				uint32(tokenTypeIdx),
+				uint32(modifierBitMask),
 			}...)
 
 			previousLine = tokenLine

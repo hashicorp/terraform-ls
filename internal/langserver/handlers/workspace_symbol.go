@@ -39,7 +39,7 @@ func (h *logHandler) WorkspaceSymbol(ctx context.Context, params lsp.WorkspaceSy
 		}
 
 		symbols = append(symbols, ilsp.SymbolInformation(mod.Path, modSymbols,
-			cc.Workspace.WorkspaceClientCapabilities.Symbol)...)
+			cc.Workspace.Symbol)...)
 	}
 
 	return symbols, nil

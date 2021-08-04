@@ -66,7 +66,7 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 		},
 	}
 	data := te.Encode()
-	expectedData := []float64{
+	expectedData := []uint32{
 		0, 0, 7, 0, 0,
 		0, 8, 8, 1, 0,
 		1, 2, 8, 2, 0,
@@ -107,7 +107,7 @@ func TestTokenEncoder_multiLineTokens(t *testing.T) {
 		},
 	}
 	data := te.Encode()
-	expectedData := []float64{
+	expectedData := []uint32{
 		1, 2, 24, 2, 0,
 		1, 0, 15, 2, 0,
 		1, 0, 11, 2, 0,
@@ -160,7 +160,7 @@ func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
 		},
 	}
 	data := te.Encode()
-	expectedData := []float64{
+	expectedData := []uint32{
 		0, 0, 8, 0, 0,
 		0, 9, 21, 1, 2,
 		0, 22, 20, 1, 0,
@@ -241,7 +241,7 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 		},
 	}
 	data := te.Encode()
-	expectedData := []float64{
+	expectedData := []uint32{
 		0, 0, 7, 0, 0,
 		0, 8, 8, 1, 1,
 		1, 2, 8, 2, 1,
@@ -324,7 +324,7 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 		},
 	}
 	data := te.Encode()
-	expectedData := []float64{
+	expectedData := []uint32{
 		0, 0, 7, 0, 0,
 		1, 2, 8, 1, 1,
 		1, 2, 8, 1, 0,
