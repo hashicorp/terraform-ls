@@ -3,6 +3,7 @@
 BUG FIXES:
 
  - fix: allow multiple variable validation blocks ([#610](https://github.com/hashicorp/terraform-ls/pull/610))
+ - fix: avoid crash on missing block label ([#612](https://github.com/hashicorp/terraform-ls/pull/612))
 
 ENHANCEMENTS:
 
