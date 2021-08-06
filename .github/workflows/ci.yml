@@ -17,6 +17,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-18.04
+    timeout-minutes: 15
     steps:
       -
         name: Checkout
@@ -51,6 +52,7 @@ jobs:
 
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
       matrix:
         os:
