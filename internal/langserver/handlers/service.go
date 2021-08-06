@@ -420,7 +420,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 }
 
 func (svc *service) Finish(_ jrpc2.Assigner, status jrpc2.ServerStatus) {
-	if status.Closed() || status.Err != nil {
+	if status.Closed || status.Err != nil {
 		svc.logger.Printf("session stopped unexpectedly (err: %v)", status.Err)
 	}
 
