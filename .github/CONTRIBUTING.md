@@ -23,10 +23,9 @@ which in turn relies on other projects that have their own repositories.
 
 [Terraform CLI/core has its own repository.](https://github.com/hashicorp/terraform)
 
-The HashiCorp-maintained Terraform providers are open source but are **not**
-in this repository; instead, they are each in their own repository in
-[the `terraform-providers` organization](https://github.com/terraform-providers)
-on GitHub.
+Terraform providers are **not** maintained in this repository; you can find relevant
+repository and relevant issue tracker for each provider within the
+[Terraform Registry index](https://registry.terraform.io/browse/providers).
 
 This repository also does **not** include the source code for some other parts of
 the Terraform product including Terraform Cloud, Terraform Enterprise, and the
