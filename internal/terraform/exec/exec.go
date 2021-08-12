@@ -136,8 +136,11 @@ func (e *Executor) Validate(ctx context.Context) ([]tfjson.Diagnostic, error) {
 	}
 
 	validation, err := e.tf.Validate(ctx)
+	if err != nil {
+		return []tfjson.Diagnostic{}, e.contextfulError(ctx, "Validate", err)
+	}
 
-	return validation.Diagnostics, e.contextfulError(ctx, "Validate", err)
+	return validation.Diagnostics, nil
 }
 
 func (e *Executor) Version(ctx context.Context) (*version.Version, map[string]*version.Version, error) {

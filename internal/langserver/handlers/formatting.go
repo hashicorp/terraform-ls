@@ -36,6 +36,8 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 		return edits, err
 	}
 
+	h.logger.Printf("formatting document via %q", tfExec.GetExecPath())
+
 	formatted, err := tfExec.Format(ctx, original)
 	if err != nil {
 		return edits, err

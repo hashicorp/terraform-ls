@@ -4,6 +4,13 @@
 
 The language server supports the following configuration options:
 
+## `terraformExecPath` (`string`)
+
+Path to the Terraform binary.
+
+This is usually looked up automatically from `$PATH` and should not need to be
+specified in majority of cases. Use this to override the automatic lookup.
+
 ## `rootModulePaths` (`[]string`)
 
 This allows overriding automatic root module discovery by passing a static list

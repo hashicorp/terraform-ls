@@ -42,7 +42,7 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.IntVar(&c.port, "port", 0, "port number to listen on (turns server into TCP mode)")
 	fs.StringVar(&c.logFilePath, "log-file", "", "path to a file to log into with support "+
 		"for variables (e.g. Timestamp, Pid, Ppid) via Go template syntax {{.VarName}}")
-	fs.StringVar(&c.tfExecPath, "tf-exec", "", "path to Terraform binary")
+	fs.StringVar(&c.tfExecPath, "tf-exec", "", "(DEPRECATED) path to Terraform binary. Use terraformExecPath LSP config option instead.")
 	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "Overrides Terraform execution timeout (e.g. 30s)")
 	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "path to a file for Terraform executions"+
 		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
@@ -120,6 +120,9 @@ func (c *ServeCommand) Run(args []string) int {
 		logger.Printf("Terraform execution timeout set to %s", d)
 	}
 
+	// Setting this option as a CLI flag is deprecated
+	// in favor of `terraformExecPath` LSP config option.
+	// This validation code is duplicated, make changes accordingly.
 	if c.tfExecPath != "" {
 		path := c.tfExecPath
 
@@ -140,6 +143,7 @@ func (c *ServeCommand) Run(args []string) int {
 
 		ctx = lsctx.WithTerraformExecPath(ctx, path)
 		logger.Printf("Terraform exec path set to %q", path)
+		logger.Println("[WARN] -tf-exec is deprecated in favor of `terraformExecPath` LSP config option")
 	}
 
 	if c.reqConcurrency != 0 {
