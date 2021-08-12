@@ -46,6 +46,7 @@ type service struct {
 	newWalker        module.WalkerFactory
 	tfDiscoFunc      discovery.DiscoveryFunc
 	tfExecFactory    exec.ExecutorFactory
+	tfExecOpts       *exec.ExecutorOpts
 
 	additionalHandlers map[string]rpch.Func
 }
@@ -92,56 +93,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	// The following is set via CLI flags, hence available in the server context
-	execOpts := &exec.ExecutorOpts{}
-	tfExecPath, ok := lsctx.TerraformExecPath(svc.srvCtx)
-	if ok {
-		execOpts.ExecPath = tfExecPath
-	} else {
-		path, err := svc.tfDiscoFunc()
-		if err == nil {
-			execOpts.ExecPath = path
-		}
-		svc.srvCtx = lsctx.WithTerraformExecPath(svc.srvCtx, path)
-	}
-
-	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
-		execOpts.ExecLogPath = path
-	}
-	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
-		execOpts.Timeout = timeout
-	}
-
-	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
-	svc.sessCtx = exec.WithExecutorFactory(svc.sessCtx, svc.tfExecFactory)
-
-	store, err := state.NewStateStore()
-	if err != nil {
-		return nil, err
-	}
-	store.SetLogger(svc.logger)
-
-	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
-	if err != nil {
-		return nil, err
-	}
-
-	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, store.Modules, store.ProviderSchemas)
-	svc.modMgr.SetLogger(svc.logger)
-
-	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
-
-	ww, err := svc.newWatcher(svc.fs, svc.modMgr)
-	if err != nil {
-		return nil, err
-	}
-	svc.watcher = ww
-	svc.watcher.SetLogger(svc.logger)
-	err = svc.watcher.Start()
-	if err != nil {
-		return nil, err
-	}
-
 	notifier := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
 
 	rootDir := ""
@@ -155,22 +106,19 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+
 			ctx = lsctx.WithClientCapabilitiesSetter(ctx, cc)
-			ctx = lsctx.WithWatcher(ctx, ww)
-			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = lsctx.WithClientName(ctx, &clientName)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
-			ctx = lsctx.WithTerraformExecPath(ctx, tfExecPath)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
 			if ok {
 				ctx = lsctx.WithLanguageServerVersion(ctx, version)
 			}
 
-			return handle(ctx, req, lh.Initialize)
+			return handle(ctx, req, svc.Initialize)
 		},
 		"initialized": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.ConfirmInitialization(req)
@@ -198,7 +146,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithWatcher(ctx, ww)
+			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			return handle(ctx, req, lh.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -302,7 +250,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
 			return handle(ctx, req, lh.TextDocumentFormatting)
@@ -328,7 +276,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
-			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 
 			return handle(ctx, req, lh.TextDocumentDidSave)
 		},
@@ -364,10 +312,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
-			ctx = lsctx.WithWatcher(ctx, ww)
+			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
-			ctx = exec.WithExecutorOpts(ctx, execOpts)
+			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
 			return handle(ctx, req, lh.WorkspaceExecuteCommand)
@@ -421,6 +369,69 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	}
 
 	return convertMap(m), nil
+}
+
+func (svc *service) configureSessionDependencies(cfgOpts *settings.Options) error {
+	// The following is set via CLI flags, hence available in the server context
+	execOpts := &exec.ExecutorOpts{}
+	cliExecPath, ok := lsctx.TerraformExecPath(svc.srvCtx)
+	if ok {
+		if len(cfgOpts.TerraformExecPath) > 0 {
+			return fmt.Errorf("Terraform exec path can either be set via (-tf-exec) CLI flag " +
+				"or (terraformExecPath) LSP config option, not both")
+		}
+		execOpts.ExecPath = cliExecPath
+	} else if len(cfgOpts.TerraformExecPath) > 0 {
+		execOpts.ExecPath = cfgOpts.TerraformExecPath
+	} else {
+		path, err := svc.tfDiscoFunc()
+		if err == nil {
+			execOpts.ExecPath = path
+		}
+	}
+	svc.srvCtx = lsctx.WithTerraformExecPath(svc.srvCtx, execOpts.ExecPath)
+
+	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
+		execOpts.ExecLogPath = path
+	}
+	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
+		execOpts.Timeout = timeout
+	}
+
+	svc.tfExecOpts = execOpts
+
+	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
+	svc.sessCtx = exec.WithExecutorFactory(svc.sessCtx, svc.tfExecFactory)
+
+	store, err := state.NewStateStore()
+	if err != nil {
+		return err
+	}
+	store.SetLogger(svc.logger)
+
+	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
+	if err != nil {
+		return err
+	}
+
+	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, store.Modules, store.ProviderSchemas)
+	svc.modMgr.SetLogger(svc.logger)
+
+	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
+	svc.walker.SetLogger(svc.logger)
+
+	ww, err := svc.newWatcher(svc.fs, svc.modMgr)
+	if err != nil {
+		return err
+	}
+	svc.watcher = ww
+	svc.watcher.SetLogger(svc.logger)
+	err = svc.watcher.Start()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (svc *service) Finish(_ jrpc2.Assigner, status jrpc2.ServerStatus) {

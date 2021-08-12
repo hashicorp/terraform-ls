@@ -11,11 +11,10 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/mitchellh/go-homedir"
 )
 
-func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.InitializeResult, error) {
+func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.InitializeResult, error) {
 	serverCaps := lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
 			TextDocumentSync: lsp.TextDocumentSyncOptions{
@@ -84,16 +83,16 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		return serverCaps, err
 	}
 
-	w, err := lsctx.Watcher(ctx)
-	if err != nil {
-		return serverCaps, err
-	}
-
 	out, err := settings.DecodeOptions(params.InitializationOptions)
 	if err != nil {
 		return serverCaps, err
 	}
 	err = out.Options.Validate()
+	if err != nil {
+		return serverCaps, err
+	}
+
+	err = svc.configureSessionDependencies(out.Options)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -133,19 +132,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	}
 	cfgOpts := out.Options
 
-	// We might eventually remove cli flags for the following options
-	path, ok := lsctx.TerraformExecPath(ctx)
-	if len(path) > 0 && len(cfgOpts.TerraformExecPath) > 0 {
-		return serverCaps, fmt.Errorf("Terraform exec path can either be set via (-tf-exec) CLI flag " +
-			"or (terraformExecPath) LSP config option, not both")
-	}
-
-	var opts = &exec.ExecutorOpts{}
-	if len(cfgOpts.TerraformExecPath) > 0 {
-		opts.ExecPath = cfgOpts.TerraformExecPath
-		ctx = exec.WithExecutorOpts(ctx, opts)
-	}
-
 	if !clientCaps.Workspace.WorkspaceFolders && len(params.WorkspaceFolders) > 0 {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type: lsp.Warning,
@@ -154,24 +140,18 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 		})
 	}
 
-	walker, err := lsctx.ModuleWalker(ctx)
-	if err != nil {
-		return serverCaps, err
-	}
-	walker.SetLogger(lh.logger)
-
 	var excludeModulePaths []string
 	for _, rawPath := range cfgOpts.ExcludeModulePaths {
 		modPath, err := resolvePath(rootDir, rawPath)
 		if err != nil {
-			lh.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
+			svc.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
 			continue
 		}
 		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
-	walker.SetExcludeModulePaths(excludeModulePaths)
-	walker.EnqueuePath(fh.Dir())
+	svc.walker.SetExcludeModulePaths(excludeModulePaths)
+	svc.walker.EnqueuePath(fh.Dir())
 
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
@@ -179,7 +159,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 
 	// Walker is also started early to allow gradual consumption
 	// and avoid overfilling the queue
-	err = walker.StartWalking(walkerCtx)
+	err = svc.walker.StartWalking(walkerCtx)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -196,13 +176,13 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				continue
 			}
 
-			walker.EnqueuePath(modPath)
+			svc.walker.EnqueuePath(modPath)
 		}
 	}
 
 	// Static user-provided paths take precedence over dynamic discovery
 	if len(cfgOpts.ModulePaths) > 0 {
-		lh.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
+		svc.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
 		for _, rawPath := range cfgOpts.ModulePaths {
 			modPath, err := resolvePath(rootDir, rawPath)
 			if err != nil {
@@ -213,7 +193,7 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 				continue
 			}
 
-			err = w.AddModule(modPath)
+			err = svc.watcher.AddModule(modPath)
 			if err != nil {
 				return serverCaps, err
 			}
