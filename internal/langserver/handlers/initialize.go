@@ -144,9 +144,6 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	if len(cfgOpts.TerraformExecPath) > 0 {
 		opts.ExecPath = cfgOpts.TerraformExecPath
 		ctx = exec.WithExecutorOpts(ctx, opts)
-		if err != nil {
-			return serverCaps, err
-		}
 	}
 
 	if !clientCaps.Workspace.WorkspaceFolders && len(params.WorkspaceFolders) > 0 {
