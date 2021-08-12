@@ -1,13 +1,19 @@
 ## 0.21.0 (Unreleased)
 
+DEPRECATIONS:
+
+ - `tfExecPath` (CLI flag) is deprecated in favour of more "native" LSP config option [`terraformExecPath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexecpath-string). `tfExecPath` will raise warnings in future releases and will be eventually removed. ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
+
 BUG FIXES:
 
  - fix: allow multiple variable validation blocks ([#610](https://github.com/hashicorp/terraform-ls/pull/610))
  - fix: avoid crash on missing block label ([#612](https://github.com/hashicorp/terraform-ls/pull/612))
+ - fix: avoid crash when `validate` command returns internal error instead of diagnostics ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
 
 ENHANCEMENTS:
 
  - Always validate URI schema ([#602](https://github.com/hashicorp/terraform-ls/pull/602))
+ - Expose [`terraformExecPath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexecpath-string) as option within `initializationOptions` ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
 
 INTERNAL:
 
