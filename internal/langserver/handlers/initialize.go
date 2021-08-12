@@ -136,7 +136,8 @@ func (lh *logHandler) Initialize(ctx context.Context, params lsp.InitializeParam
 	// We might eventually remove cli flags for the following options
 	path, ok := lsctx.TerraformExecPath(ctx)
 	if len(path) > 0 && len(cfgOpts.TerraformExecPath) > 0 {
-		return serverCaps, fmt.Errorf("TerraformExecPath can either be set via cli or LSP options")
+		return serverCaps, fmt.Errorf("Terraform exec path can either be set via (-tf-exec) CLI flag " +
+			"or (terraformExecPath) LSP config option, not both")
 	}
 
 	var opts = &exec.ExecutorOpts{}
