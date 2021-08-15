@@ -21,10 +21,9 @@ type Options struct {
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
 
-	// TODO: Need to check for conflict with CLI flags
-	TerraformExecPath string `mapstructure:"terraformExecPath"`
-	// TerraformExecTimeout time.Duration
-	// TerraformLogFilePath string
+	TerraformExecPath    string `mapstructure:"terraformExecPath"`
+	TerraformExecTimeout string `mapstructure:"terraformExecTimeout"`
+	TerraformLogFilePath string `mapstructure:"terraformLogFilePath"`
 }
 
 func (o *Options) Validate() error {
