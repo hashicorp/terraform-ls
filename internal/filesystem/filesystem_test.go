@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -317,10 +318,10 @@ func TestFilesystem_ReadDir_memFsOnly(t *testing.T) {
 	}
 }
 
-func namesFromFileInfos(fis []os.FileInfo) []string {
-	names := make([]string, len(fis), len(fis))
-	for i, fi := range fis {
-		names[i] = fi.Name()
+func namesFromFileInfos(entries []fs.DirEntry) []string {
+	names := make([]string, len(entries), len(entries))
+	for i, entry := range entries {
+		names[i] = entry.Name()
 	}
 	return names
 }

@@ -3,18 +3,15 @@ package module
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/earlydecoder"
 	"github.com/hashicorp/terraform-schema/module"
@@ -147,47 +144,7 @@ func ParseModuleConfiguration(fs filesystem.Filesystem, modStore *state.ModuleSt
 		return err
 	}
 
-	files := make(map[string]*hcl.File, 0)
-	diags := make(map[string]hcl.Diagnostics, 0)
-
-	infos, err := fs.ReadDir(modPath)
-	if err != nil {
-		sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
-		if sErr != nil {
-			return sErr
-		}
-		return err
-	}
-
-	for _, info := range infos {
-		if info.IsDir() {
-			// We only care about files
-			continue
-		}
-
-		name := info.Name()
-		if !strings.HasSuffix(name, ".tf") || IsIgnoredFile(name) {
-			continue
-		}
-		// TODO: overrides
-
-		fullPath := filepath.Join(modPath, name)
-
-		src, err := fs.ReadFile(fullPath)
-		if err != nil {
-			sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
-			if sErr != nil {
-				return sErr
-			}
-			return err
-		}
-
-		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
-		diags[name] = pDiags
-		if f != nil {
-			files[name] = f
-		}
-	}
+	files, diags, err := parser.ParseModuleFiles(fs, modPath)
 
 	sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 	if sErr != nil {
@@ -208,47 +165,7 @@ func ParseVariables(fs filesystem.Filesystem, modStore *state.ModuleStore, modPa
 		return err
 	}
 
-	files := make(map[string]*hcl.File, 0)
-	diags := make(map[string]hcl.Diagnostics, 0)
-
-	infos, err := fs.ReadDir(modPath)
-	if err != nil {
-		sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
-		if sErr != nil {
-			return sErr
-		}
-		return err
-	}
-
-	for _, info := range infos {
-		if info.IsDir() {
-			// We only care about files
-			continue
-		}
-
-		name := info.Name()
-		if !(strings.HasSuffix(name, ".auto.tfvars") ||
-			name == "terraform.tfvars") || IsIgnoredFile(name) {
-			continue
-		}
-
-		fullPath := filepath.Join(modPath, name)
-
-		src, err := fs.ReadFile(fullPath)
-		if err != nil {
-			sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
-			if sErr != nil {
-				return sErr
-			}
-			return err
-		}
-
-		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
-		diags[name] = pDiags
-		if f != nil {
-			files[name] = f
-		}
-	}
+	files, diags, err := parser.ParseVariableFiles(fs, modPath)
 
 	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
 	if sErr != nil {
@@ -261,14 +178,6 @@ func ParseVariables(fs filesystem.Filesystem, modStore *state.ModuleStore, modPa
 	}
 
 	return err
-}
-
-// IsIgnoredFile returns true if the given filename (which must not have a
-// directory path ahead of it) should be ignored as e.g. an editor swap file.
-func IsIgnoredFile(name string) bool {
-	return strings.HasPrefix(name, ".") || // Unix-like hidden files
-		strings.HasSuffix(name, "~") || // vim
-		strings.HasPrefix(name, "#") && strings.HasSuffix(name, "#") // emacs
 }
 
 func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
@@ -317,7 +226,7 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 	}
 
 	var mErr error
-	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedModuleFiles)
+	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedModuleFiles.AsMap())
 	if len(diags) > 0 {
 		mErr = diags
 	}
@@ -355,7 +264,7 @@ func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.Sche
 	}
 
 	d := decoder.NewDecoder()
-	for name, f := range mod.ParsedModuleFiles {
+	for name, f := range mod.ParsedModuleFiles.AsMap() {
 		err := d.LoadFile(name, f)
 		if err != nil {
 			return fmt.Errorf("failed to load a file: %w", err)
@@ -397,7 +306,7 @@ func DecodeReferenceOrigins(modStore *state.ModuleStore, schemaReader state.Sche
 	}
 
 	d := decoder.NewDecoder()
-	for name, f := range mod.ParsedModuleFiles {
+	for name, f := range mod.ParsedModuleFiles.AsMap() {
 		err := d.LoadFile(name, f)
 		if err != nil {
 			return fmt.Errorf("failed to load a file: %w", err)
