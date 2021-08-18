@@ -55,6 +55,16 @@ Client is expected to always launch a single instance of the server and check fo
 It is assumed that paths to these folders will be provided as part of `workspaceFolders`
 in the `initialize` request per LSP.
 
+## Code Actions
+
+The server implements a set of opt-in code actions which perform different actions for the user. The code action request is sent from the client to the server to compute commands for a given text document and range. These commands are typically code fixes to either fix problems or to beautify/refactor code.
+
+### Format Document
+
+The server will format a given document according to Terraform formatting conventions.
+
+This action is available as `source.formatAll.terraform-ls` for clients which configure actions globally (such as Sublime Text LSP) and as `source.formatAll` for clients which allow languageID or server specific configuration (such as VS Code).
+
 ## Code Lens
 
 ### Reference Counts (opt-in)
