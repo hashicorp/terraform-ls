@@ -19,6 +19,7 @@ INTERNAL:
 
  - Update LSP structs to gopls' `0.7.0` ([#608](https://github.com/hashicorp/terraform-ls/pull/608))
  - build(deps): bump github.com/creachadair/jrpc2 from 0.19.1 to 0.20.0 ([#614](https://github.com/hashicorp/terraform-ls/pull/614))
+ - build(deps): bump github.com/zclconf/go-cty from 1.9.0 to 1.9.1 ([#624](https://github.com/hashicorp/terraform-ls/pull/624))
 
 ## 0.20.1 (3 August 2021)
 
