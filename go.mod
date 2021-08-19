@@ -6,7 +6,7 @@ require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.20.0
-	github.com/fsnotify/fsnotify v1.4.9
+	github.com/fsnotify/fsnotify v1.5.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/hashicorp/go-memdb v1.3.2
