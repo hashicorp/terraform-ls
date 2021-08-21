@@ -4,6 +4,18 @@
 
 The language server supports the following configuration options:
 
+## `terraformLogFilePath` (`string`)
+
+Path to a file for Terraform executions to be logged into (TF_LOG_PATH)
+with support for variables (e.g. Timestamp, Pid, Ppid) via Go template
+syntax {{.VarName}}
+
+## `terraformExecTimeout` (`string`)
+
+Overrides Terraform execution timeout (e.g. 30s)
+
+Path to the Terraform binary.
+
 ## `terraformExecPath` (`string`)
 
 Path to the Terraform binary.
