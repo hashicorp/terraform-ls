@@ -4,10 +4,12 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/hcl"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
@@ -37,6 +39,17 @@ func (h *logHandler) TextDocumentFormatting(ctx context.Context, params lsp.Docu
 	}
 
 	h.logger.Printf("formatting document via %q", tfExec.GetExecPath())
+
+	edits, err = formatDocument(ctx, tfExec, original, file)
+	if err != nil {
+		return edits, err
+	}
+
+	return edits, nil
+}
+
+func formatDocument(ctx context.Context, tfExec exec.TerraformExecutor, original []byte, file filesystem.Document) ([]lsp.TextEdit, error) {
+	var edits []lsp.TextEdit
 
 	formatted, err := tfExec.Format(ctx, original)
 	if err != nil {

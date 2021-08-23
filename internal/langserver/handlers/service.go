@@ -232,6 +232,19 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, lh.TextDocumentHover)
 		},
+		"textDocument/codeAction": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = lsctx.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
+			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
+			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
+
+			return handle(ctx, req, lh.TextDocumentCodeAction)
+		},
 		"textDocument/codeLens": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {

@@ -25,6 +25,10 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 				ResolveProvider:   false,
 				TriggerCharacters: []string{".", "["},
 			},
+			CodeActionProvider: lsp.CodeActionOptions{
+				CodeActionKinds: ilsp.SupportedCodeActions.AsSlice(),
+				ResolveProvider: false,
+			},
 			DeclarationProvider:        lsp.DeclarationOptions{},
 			DefinitionProvider:         true,
 			CodeLensProvider:           lsp.CodeLensOptions{},
