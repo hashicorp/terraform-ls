@@ -2,7 +2,9 @@
 
 DEPRECATIONS:
 
- - `tfExecPath` (CLI flag) is deprecated in favour of more "native" LSP config option [`terraformExecPath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexecpath-string). `tfExecPath` will raise warnings in future releases and will be eventually removed. ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
+ - `-tf-exec` (CLI flag) is deprecated in favour of LSP config option [`terraformExecPath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexecpath-string). `-tf-exec` flag will raise warnings in future releases and will be eventually removed. ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
+ - `-tf-log-file` (CLI flag) is deprecated in favour of LSP config option [`terraformLogFilePath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformlogfilepath-string). `-tf-log-file` flag will raise warnings in future releases and will be eventually removed. ([#619](https://github.com/hashicorp/terraform-ls/pull/619))
+ - `tf-exec-timeout` (CLI flag) is deprecated in favour of LSP config option [`terraformExecTimeout`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexectimeout-string). `tf-exec-timeout` flag will raise warnings in future releases and will be eventually removed. ([#619](https://github.com/hashicorp/terraform-ls/pull/619))
 
 BUG FIXES:
 
