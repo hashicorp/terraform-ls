@@ -18,6 +18,7 @@ ENHANCEMENTS:
  - Introduce [`terraformExecPath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexecpath-string) as option within `initializationOptions` ([#588](https://github.com/hashicorp/terraform-ls/pull/588))
  - Introduce [`terraformLogFilePath`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformlogfilepath-string) as option within `initializationOptions` ([#619](https://github.com/hashicorp/terraform-ls/pull/619))
  - Introduce [`terraformExecTimeout`](https://github.com/hashicorp/terraform-ls/blob/v0.21.0/docs/SETTINGS.md#terraformexectimeout-string) as option within `initializationOptions` ([#619](https://github.com/hashicorp/terraform-ls/pull/619))
+ - Introduce format on save code action ([#625](https://github.com/hashicorp/terraform-ls/pull/625))
 
 INTERNAL:
 
