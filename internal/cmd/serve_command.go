@@ -43,8 +43,8 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.StringVar(&c.logFilePath, "log-file", "", "path to a file to log into with support "+
 		"for variables (e.g. Timestamp, Pid, Ppid) via Go template syntax {{.VarName}}")
 	fs.StringVar(&c.tfExecPath, "tf-exec", "", "(DEPRECATED) path to Terraform binary. Use terraformExecPath LSP config option instead.")
-	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "Overrides Terraform execution timeout (e.g. 30s)")
-	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "path to a file for Terraform executions"+
+	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "(DEPRECATED) Overrides Terraform execution timeout (e.g. 30s)")
+	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "(DEPRECATED) path to a file for Terraform executions"+
 		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
 		" syntax {{.VarName}}")
 	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)"+
@@ -99,6 +99,9 @@ func (c *ServeCommand) Run(args []string) int {
 		syscall.SIGINT, syscall.SIGTERM)
 	defer cancelFunc()
 
+	// Setting this option as a CLI flag is deprecated
+	// in favor of `terraformLogFilePath` LSP config option.
+	// This validation code is duplicated, make changes accordingly.
 	if c.tfExecLogPath != "" {
 		err := logging.ValidateExecLogPath(c.tfExecLogPath)
 		if err != nil {
@@ -108,8 +111,12 @@ func (c *ServeCommand) Run(args []string) int {
 		ctx = lsctx.WithTerraformExecLogPath(ctx, c.tfExecLogPath)
 		logger.Printf("Terraform executions will be logged to %s "+
 			"(interpolated at the time of execution)", c.tfExecLogPath)
+		logger.Println("[WARN] -tf-log-file is deprecated in favor of `terraformLogFilePath` LSP config option")
 	}
 
+	// Setting this option as a CLI flag is deprecated
+	// in favor of `terraformExecTimeout` LSP config option.
+	// This validation code is duplicated, make changes accordingly.
 	if c.tfExecTimeout != "" {
 		d, err := time.ParseDuration(c.tfExecTimeout)
 		if err != nil {
@@ -118,6 +125,7 @@ func (c *ServeCommand) Run(args []string) int {
 		}
 		ctx = lsctx.WithTerraformExecTimeout(ctx, d)
 		logger.Printf("Terraform execution timeout set to %s", d)
+		logger.Println("[WARN] -tf-exec-timeout is deprecated in favor of `terraformExecTimeout` LSP config option")
 	}
 
 	// Setting this option as a CLI flag is deprecated

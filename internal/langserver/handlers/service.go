@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
@@ -391,11 +392,30 @@ func (svc *service) configureSessionDependencies(cfgOpts *settings.Options) erro
 	}
 	svc.srvCtx = lsctx.WithTerraformExecPath(svc.srvCtx, execOpts.ExecPath)
 
-	if path, ok := lsctx.TerraformExecLogPath(svc.srvCtx); ok {
+	path, ok := lsctx.TerraformExecLogPath(svc.srvCtx)
+	if ok {
+		if len(cfgOpts.TerraformLogFilePath) > 0 {
+			return fmt.Errorf("Terraform log file path can either be set via (-tf-log-file) CLI flag " +
+				"or (terraformLogFilePath) LSP config option, not both")
+		}
 		execOpts.ExecLogPath = path
+	} else if len(cfgOpts.TerraformLogFilePath) > 0 {
+		execOpts.ExecLogPath = cfgOpts.TerraformLogFilePath
 	}
-	if timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx); ok {
+
+	timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx)
+	if ok {
+		if len(cfgOpts.TerraformExecTimeout) > 0 {
+			return fmt.Errorf("Terraform exec timeout can either be set via (-tf-exec-timeout) CLI flag " +
+				"or (terraformExecTimeout) LSP config option, not both")
+		}
 		execOpts.Timeout = timeout
+	} else if len(cfgOpts.TerraformExecTimeout) > 0 {
+		d, err := time.ParseDuration(cfgOpts.TerraformExecTimeout)
+		if err != nil {
+			return fmt.Errorf("Failed to parse terraformExecTimeout LSP config option: %s", err)
+		}
+		execOpts.Timeout = d
 	}
 
 	svc.tfExecOpts = execOpts
