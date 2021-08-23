@@ -6,15 +6,14 @@ The language server supports the following configuration options:
 
 ## `terraformLogFilePath` (`string`)
 
-Path to a file for Terraform executions to be logged into (TF_LOG_PATH)
+Path to a file for Terraform executions to be logged into (`TF_LOG_PATH`)
 with support for variables (e.g. Timestamp, Pid, Ppid) via Go template
-syntax {{.VarName}}
+syntax `{{.VarName}}`
 
 ## `terraformExecTimeout` (`string`)
 
-Overrides Terraform execution timeout (e.g. 30s)
-
-Path to the Terraform binary.
+Overrides Terraform execution timeout in [`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration)
+compatible format (e.g. `30s`)
 
 ## `terraformExecPath` (`string`)
 

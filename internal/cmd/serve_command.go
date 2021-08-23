@@ -99,6 +99,9 @@ func (c *ServeCommand) Run(args []string) int {
 		syscall.SIGINT, syscall.SIGTERM)
 	defer cancelFunc()
 
+	// Setting this option as a CLI flag is deprecated
+	// in favor of `terraformLogFilePath` LSP config option.
+	// This validation code is duplicated, make changes accordingly.
 	if c.tfExecLogPath != "" {
 		err := logging.ValidateExecLogPath(c.tfExecLogPath)
 		if err != nil {

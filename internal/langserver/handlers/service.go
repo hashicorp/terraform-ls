@@ -395,8 +395,8 @@ func (svc *service) configureSessionDependencies(cfgOpts *settings.Options) erro
 	path, ok := lsctx.TerraformExecLogPath(svc.srvCtx)
 	if ok {
 		if len(cfgOpts.TerraformLogFilePath) > 0 {
-			return fmt.Errorf("Terraform exec log file path can either be set via (-tf-log-file) CLI flag " +
-				"or (terraformExecLogFilePath) LSP config option, not both")
+			return fmt.Errorf("Terraform log file path can either be set via (-tf-log-file) CLI flag " +
+				"or (terraformLogFilePath) LSP config option, not both")
 		}
 		execOpts.ExecLogPath = path
 	} else if len(cfgOpts.TerraformLogFilePath) > 0 {
