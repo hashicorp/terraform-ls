@@ -1,3 +1,9 @@
+## 0.21.1 (Unreleased)
+
+BUG FIXES:
+
+ - fix: Limit label completion items to 100 (same as limit for completion items in other contexts) ([#628](https://github.com/hashicorp/terraform-ls/pull/628))
+
 ## 0.21.0 (23 August 2021)
 
 DEPRECATIONS:
