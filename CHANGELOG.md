@@ -4,6 +4,10 @@ BUG FIXES:
 
  - fix: Limit label completion items to 100 (same as limit for completion items in other contexts) ([#628](https://github.com/hashicorp/terraform-ls/pull/628))
 
+INTERNAL:
+
+ - build(deps): bump github.com/fsnotify/fsnotify from 1.4.9 to 1.5.1 ([#629](https://github.com/hashicorp/terraform-ls/pull/629))
+
 ## 0.21.0 (23 August 2021)
 
 DEPRECATIONS:
