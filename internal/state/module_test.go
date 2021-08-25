@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -337,7 +338,7 @@ provider "blah" {
 		t.Fatal(diags)
 	}
 
-	err = s.Modules.UpdateParsedModuleFiles(tmpDir, map[string]*hcl.File{
+	err = s.Modules.UpdateParsedModuleFiles(tmpDir, ast.ModFiles{
 		"test.tf": testFile,
 	}, nil)
 	if err != nil {
@@ -349,9 +350,9 @@ provider "blah" {
 		t.Fatal(err)
 	}
 
-	expectedParsedModuleFiles := map[string]*hcl.File{
+	expectedParsedModuleFiles := ast.ModFilesFromMap(map[string]*hcl.File{
 		"test.tf": testFile,
-	}
+	})
 	if diff := cmp.Diff(expectedParsedModuleFiles, mod.ParsedModuleFiles, cmpOpts); diff != "" {
 		t.Fatalf("unexpected parsed files: %s", diff)
 	}
@@ -379,9 +380,9 @@ dev = {
 		t.Fatal(diags)
 	}
 
-	err = s.Modules.UpdateParsedVarsFiles(tmpDir, map[string]*hcl.File{
+	err = s.Modules.UpdateParsedVarsFiles(tmpDir, ast.VarsFilesFromMap(map[string]*hcl.File{
 		"test.tfvars": testFile,
-	}, nil)
+	}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,9 +392,9 @@ dev = {
 		t.Fatal(err)
 	}
 
-	expectedParsedVarsFiles := map[string]*hcl.File{
+	expectedParsedVarsFiles := ast.VarsFilesFromMap(map[string]*hcl.File{
 		"test.tfvars": testFile,
-	}
+	})
 	if diff := cmp.Diff(expectedParsedVarsFiles, mod.ParsedVarsFiles, cmpOpts); diff != "" {
 		t.Fatalf("unexpected parsed files: %s", diff)
 	}
@@ -417,16 +418,16 @@ provider "blah" {
   region = "london"
 `), "test.tf")
 
-	err = s.Modules.UpdateModuleDiagnostics(tmpDir, map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateModuleDiagnostics(tmpDir, ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tf": diags,
-	})
+	}))
 
 	mod, err := s.Modules.ModuleByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedDiags := map[string]hcl.Diagnostics{
+	expectedDiags := ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tf": {
 			{
 				Severity: hcl.DiagError,
@@ -447,7 +448,7 @@ provider "blah" {
 				},
 			},
 		},
-	}
+	})
 	if diff := cmp.Diff(expectedDiags, mod.ModuleDiagnostics, cmpOpts); diff != "" {
 		t.Fatalf("unexpected diagnostics: %s", diff)
 	}
@@ -471,16 +472,16 @@ dev = {
   region = "london"
 `), "test.tfvars")
 
-	err = s.Modules.UpdateVarsDiagnostics(tmpDir, map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tfvars": diags,
-	})
+	}))
 
 	mod, err := s.Modules.ModuleByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedDiags := map[string]hcl.Diagnostics{
+	expectedDiags := ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tfvars": {
 			{
 				Severity: hcl.DiagError,
@@ -501,7 +502,7 @@ dev = {
 				},
 			},
 		},
-	}
+	})
 	if diff := cmp.Diff(expectedDiags, mod.VarsDiagnostics, cmpOpts); diff != "" {
 		t.Fatalf("unexpected diagnostics: %s", diff)
 	}
@@ -540,20 +541,22 @@ func BenchmarkModuleByPath(b *testing.B) {
 		pFiles["second.tf"] = f
 	}
 
-	err = s.Modules.UpdateParsedModuleFiles(modPath, pFiles, nil)
+	mFiles := ast.ModFilesFromMap(pFiles)
+	err = s.Modules.UpdateParsedModuleFiles(modPath, mFiles, nil)
 	if err != nil {
 		b.Fatal(err)
 	}
-	err = s.Modules.UpdateModuleDiagnostics(modPath, diags)
+	mDiags := ast.ModDiagsFromMap(diags)
+	err = s.Modules.UpdateModuleDiagnostics(modPath, mDiags)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	expectedMod := &Module{
 		Path:               modPath,
-		ParsedModuleFiles:  pFiles,
+		ParsedModuleFiles:  mFiles,
 		ModuleParsingState: operation.OpStateLoaded,
-		ModuleDiagnostics:  diags,
+		ModuleDiagnostics:  mDiags,
 	}
 
 	for n := 0; n < b.N; n++ {

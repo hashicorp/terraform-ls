@@ -3,6 +3,7 @@ package filesystem
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -206,37 +207,37 @@ func (fs *fsystem) ReadFile(name string) ([]byte, error) {
 	return b, err
 }
 
-func (fs *fsystem) ReadDir(name string) ([]os.FileInfo, error) {
-	memList, err := afero.ReadDir(fs.memFs, name)
+func (fsys *fsystem) ReadDir(name string) ([]fs.DirEntry, error) {
+	memList, err := afero.NewIOFS(fsys.memFs).ReadDir(name)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("memory FS: %w", err)
 	}
-	osList, err := afero.ReadDir(fs.osFs, name)
+	osList, err := afero.NewIOFS(fsys.osFs).ReadDir(name)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("OS FS: %w", err)
 	}
 
 	list := memList
-	for _, osFi := range osList {
-		if fileIsInList(list, osFi) {
+	for _, osEntry := range osList {
+		if fileIsInList(list, osEntry) {
 			continue
 		}
-		list = append(list, osFi)
+		list = append(list, osEntry)
 	}
 
 	return list, nil
 }
 
-func fileIsInList(list []os.FileInfo, file os.FileInfo) bool {
-	for _, fi := range list {
-		if fi.Name() == file.Name() {
+func fileIsInList(list []fs.DirEntry, entry fs.DirEntry) bool {
+	for _, di := range list {
+		if di.Name() == entry.Name() {
 			return true
 		}
 	}
 	return false
 }
 
-func (fs *fsystem) Open(name string) (File, error) {
+func (fs *fsystem) Open(name string) (fs.File, error) {
 	f, err := fs.memFs.Open(name)
 	if err != nil && os.IsNotExist(err) {
 		return fs.osFs.Open(name)

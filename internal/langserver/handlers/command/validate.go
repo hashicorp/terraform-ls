@@ -69,8 +69,8 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 	validateDiags := diagnostics.HCLDiagsFromJSON(jsonDiags)
 	diags.EmptyRootDiagnostic()
 	diags.Append("terraform validate", validateDiags)
-	diags.Append("HCL", mod.ModuleDiagnostics)
-	diags.Append("HCL", mod.VarsDiagnostics)
+	diags.Append("HCL", mod.ModuleDiagnostics.AsMap())
+	diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
 
 	notifier.PublishHCLDiags(ctx, mod.Path, diags)
 

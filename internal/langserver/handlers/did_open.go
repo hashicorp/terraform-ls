@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -76,8 +77,11 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 
 	diags := diagnostics.NewDiagnostics()
 	diags.EmptyRootDiagnostic()
-	diags.Append("HCL", mod.ModuleDiagnostics)
-	diags.Append("HCL", mod.VarsDiagnostics)
+	diags.Append("HCL", mod.ModuleDiagnostics.AsMap())
+	diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
+	if vf, ok := ast.NewVarsFilename(f.Filename()); ok && !vf.IsAutoloaded() {
+		diags.Append("HCL", mod.VarsDiagnostics.ForFile(vf).AsMap())
+	}
 
 	notifier.PublishHCLDiags(ctx, mod.Path, diags)
 

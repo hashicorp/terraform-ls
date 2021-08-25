@@ -155,6 +155,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
@@ -533,7 +534,7 @@ func schemaForDocument(mf module.ModuleFinder, doc filesystem.Document) (*schema
 
 func decoderForDocument(ctx context.Context, mod module.Module, languageID string) (*decoder.Decoder, error) {
 	if languageID == ilsp.Tfvars.String() {
-		return idecoder.DecoderForVariables(mod)
+		return idecoder.DecoderForVariables(mod.ParsedVarsFiles)
 	}
 	return idecoder.DecoderForModule(ctx, mod)
 }

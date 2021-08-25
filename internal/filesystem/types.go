@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"io/fs"
 	"log"
 	"os"
 
@@ -51,15 +52,7 @@ type Filesystem interface {
 
 	// direct FS methods
 	ReadFile(name string) ([]byte, error)
-	ReadDir(name string) ([]os.FileInfo, error)
-	Open(name string) (File, error)
+	ReadDir(name string) ([]fs.DirEntry, error)
+	Open(name string) (fs.File, error)
 	Stat(name string) (os.FileInfo, error)
-}
-
-// File represents an open file in FS
-// See io/fs.File in http://golang.org/s/draft-iofs-design
-type File interface {
-	Stat() (os.FileInfo, error)
-	Read([]byte) (int, error)
-	Close() error
 }
