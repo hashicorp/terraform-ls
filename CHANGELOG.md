@@ -1,4 +1,8 @@
-## 0.21.1 (Unreleased)
+## 0.22.0 (Unreleased)
+
+ENHANCEMENT:
+
+ - Support standalone (not autoloaded) `*.tfvars` files ([#621](https://github.com/hashicorp/terraform-ls/pull/621))
 
 BUG FIXES:
 
