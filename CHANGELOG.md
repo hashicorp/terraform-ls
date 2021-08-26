@@ -7,6 +7,7 @@ ENHANCEMENT:
 BUG FIXES:
 
  - fix: Limit label completion items to 100 (same as limit for completion items in other contexts) ([#628](https://github.com/hashicorp/terraform-ls/pull/628))
+ - Recognize references in module block inputs ([#623](https://github.com/hashicorp/terraform-ls/pull/623))
 
 INTERNAL:
 
