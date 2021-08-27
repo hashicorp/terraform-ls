@@ -159,8 +159,9 @@ github.com/hashicorp/go-cleanhttp v0.5.0/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtng
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9neXJWAZQ=
 github.com/hashicorp/go-cleanhttp v0.5.2/go.mod h1:kO/YDlP8L1346E6Sodw+PrpBSV4/SoxCXGY6BqNFT48=
-github.com/hashicorp/go-getter v1.5.3 h1:NF5+zOlQegim+w/EUhSLh6QhXHmZMEeHLQzllkQ3ROU=
 github.com/hashicorp/go-getter v1.5.3/go.mod h1:BrrV/1clo8cCYu6mxvboYg+KutTiFnXjMEgDD8+i7ZI=
+github.com/hashicorp/go-getter v1.5.8 h1:qx5CZXxXz5YFpALPkbf/F1iZZoRE+f6T1i/AWw/Zkic=
+github.com/hashicorp/go-getter v1.5.8/go.mod h1:BrrV/1clo8cCYu6mxvboYg+KutTiFnXjMEgDD8+i7ZI=
 github.com/hashicorp/go-immutable-radix v1.0.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-immutable-radix v1.3.0 h1:8exGP7ego3OmkfksihtSouGMZ+hQrhxx+FVELeXpVPE=
 github.com/hashicorp/go-immutable-radix v1.3.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
@@ -202,8 +203,9 @@ github.com/hashicorp/terraform-exec v0.14.0 h1:UQoUcxKTZZXhyyK68Cwn4mApT4mnFPmEX
 github.com/hashicorp/terraform-exec v0.14.0/go.mod h1:qrAASDq28KZiMPDnQ02sFS9udcqEkRly002EA2izXTA=
 github.com/hashicorp/terraform-json v0.12.0 h1:8czPgEEWWPROStjkWPUnTQDXmpmZPlkQAwYYLETaTvw=
 github.com/hashicorp/terraform-json v0.12.0/go.mod h1:pmbq9o4EuL43db5+0ogX10Yofv1nozM+wskr/bGFJpI=
-github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896 h1:1FGtlkJw87UsTMg5s8jrekrHmUPUJaMcu6ELiVhQrNw=
 github.com/hashicorp/terraform-registry-address v0.0.0-20210412075316-9b2996cce896/go.mod h1:bzBPnUIkI0RxauU8Dqo+2KrZZ28Cf48s8V6IHt3p4co=
+github.com/hashicorp/terraform-registry-address v0.0.0-20210816115301-cb2034eba045 h1:R/I8ofvXuPcTNoc//N4ruvaHGZcShI/VuU2iXo875Lo=
+github.com/hashicorp/terraform-registry-address v0.0.0-20210816115301-cb2034eba045/go.mod h1:anRyJbe12BZscpFgaeGu9gH12qfdBP094LYFtuAFzd4=
 github.com/hashicorp/terraform-schema v0.0.0-20210823185306-e7a9c4e84cd1 h1:K6wkKTi4+aSYXDFGbGWgd3sP+gWTTM9VYOVeCXjJJm8=
 github.com/hashicorp/terraform-schema v0.0.0-20210823185306-e7a9c4e84cd1/go.mod h1:wG+IttAk2LqgHE76fD0wt2kucaKzV7pzm7OTqCJJC3M=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
