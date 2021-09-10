@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.24.1
+	github.com/creachadair/jrpc2 v0.24.2
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.2.0 // indirect
