@@ -13,7 +13,8 @@ INTERNAL:
 
  - build(deps): bump github.com/fsnotify/fsnotify from 1.4.9 to 1.5.1 ([#629](https://github.com/hashicorp/terraform-ls/pull/629))
  - build(deps): bump github.com/creachadair/jrpc2 from 0.20.0 to 0.21.0 ([#631](https://github.com/hashicorp/terraform-ls/pull/631))
- - build(deps): bump github.com/creachadair/jrpc2 from 0.21.0 to 0.24.1 [[#636](https://github.com/hashicorp/terraform-ls/pull/636))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.21.0 to 0.24.1 ([#636](https://github.com/hashicorp/terraform-ls/pull/636))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.24.1 to 0.24.2 ([#638](https://github.com/hashicorp/terraform-ls/pull/638))
 
 ## 0.21.0 (23 August 2021)
 
