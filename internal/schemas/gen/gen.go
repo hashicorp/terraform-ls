@@ -240,6 +240,10 @@ func listProviders(tier string) ([]provider, error) {
 // Error while installing jradtilbrook/buildkite v0.1.0: provider
 // registry.terraform.io/jradtilbrook/buildkite 0.1.0 is not available for
 // linux_amd64
+
+// Error while installing jfrog/artifactory v2.6.4: could not query provider
+// registry for registry.terraform.io/jfrog/artifactory: failed to retrieve
+// authentication checksums for provider: 404 Not Found
 var ignore = map[string]bool{
 	"Icinga/icinga2":         true,
 	"a10networks/vthunder":   true,
@@ -249,6 +253,7 @@ var ignore = map[string]bool{
 	"nirmata/nirmata":        true,
 	"datastax/astra":         true,
 	"oktadeveloper/okta":     true,
+	"jfrog/artifactory":      true,
 }
 
 func filter(providers []provider) (filtered []provider) {
