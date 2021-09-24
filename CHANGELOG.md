@@ -1,6 +1,16 @@
+## 0.23.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Introduce `module.calls` command ([#632](https://github.com/hashicorp/terraform-ls/pull/632))
+
+INTERNAL:
+
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.25.1 to 0.25.2 ([#649](https://github.com/hashicorp/terraform-ls/pull/649))
+
 ## 0.22.0 (16 September 2021)
 
-ENHANCEMENT:
+ENHANCEMENTS:
 
  - Support standalone (not autoloaded) `*.tfvars` files ([#621](https://github.com/hashicorp/terraform-ls/pull/621))
 
