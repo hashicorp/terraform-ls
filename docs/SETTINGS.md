@@ -78,6 +78,14 @@ Enabling this feature will run terraform validate within the folder of the file 
  - Validation is not run on file open, only once it's saved.
  - When editing a module file, validation is not run due to not knowing which "rootmodule" to run validation from (there could be multiple). This creates an awkward workflow where when saving a file in a rootmodule, a diagnostic is raised in a module file. Editing the module file will not clear the diagnostic for the reason mentioned above, it will only clear once a file is saved back in the original "rootmodule". We will continue to attempt improve this user experience.
 
+### `experimentalFeatures.prefillRequiredFields`
+
+Enables advanced completion for `provider`, `resource`, and `data` blocks where any required fields for that block are pre-filled. All such attributes and blocks are sorted alphabetically to ensure consistent ordering.
+
+When disabled (unset or set to `false`), completion only provides the label name.
+
+For example, when completing the `aws_appmesh_route` resource the `mesh_name`, `name`, `virtual_router_name` attributes and the `spec` block will fill and prompt you for appropriate values.
+
 ## How to pass settings
 
 The server expects static settings to be passed as part of LSP `initialize` call,
