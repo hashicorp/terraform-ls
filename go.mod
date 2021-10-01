@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/hcl-lang v0.0.0-20210823185445-8fcbc27a6a22
 	github.com/hashicorp/hcl/v2 v2.10.1
 	github.com/hashicorp/terraform-exec v0.14.0
-	github.com/hashicorp/terraform-json v0.12.0
+	github.com/hashicorp/terraform-json v0.13.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20210816115301-cb2034eba045
 	github.com/hashicorp/terraform-schema v0.0.0-20210823185306-e7a9c4e84cd1
 	github.com/kylelemons/godebug v1.1.0 // indirect
