@@ -121,6 +121,20 @@ let g:LanguageClient_serverCommands = {
     \ }
 ```
 
+### Neovim v0.5.0+
+
+ - Install the [nvim-lspconfig plugin](https://github.com/neovim/nvim-lspconfig)
+ - Add the following to your `.vimrc`:
+
+```vim
+lua <<EOF
+  require'lspconfig'.terraformls.setup{} 
+EOF
+autocmd BufWritePre *.tf lua vim.lsp.buf.formatting()
+```
+
+Make sure to read through to [CONFIG.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/CONFIG.md#terraformls) if you need more detailed settings.
+
 ## VS Code
 
  - Install [Terraform VS Code Extension](https://marketplace.visualstudio.com/items?itemName=hashicorp.terraform) `>=2.0.0`
