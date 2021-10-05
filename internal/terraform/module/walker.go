@@ -26,6 +26,7 @@ var (
 		".idea":               true,
 		".vscode":             true,
 		"terraform.tfstate.d": true,
+		".terragrunt-cache":   true,
 	}
 )
 
