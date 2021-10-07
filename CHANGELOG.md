@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - Introduce `module.calls` command ([#632](https://github.com/hashicorp/terraform-ls/pull/632))
+ - Introduce experimental completion of required fields. You can opt in via [`prefillRequiredFields` option](https://github.com/hashicorp/terraform-ls/blob/v0.23.0/docs/SETTINGS.md#experimentalfeaturesprefillrequiredfields) ([#657](https://github.com/hashicorp/terraform-ls/pull/657))
 
 INTERNAL:
 
