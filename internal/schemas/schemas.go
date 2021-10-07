@@ -1,3 +1,4 @@
+//go:build !preloadschema
 // +build !preloadschema
 
 package schemas
