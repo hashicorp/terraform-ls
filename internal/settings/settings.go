@@ -9,7 +9,8 @@ import (
 )
 
 type ExperimentalFeatures struct {
-	ValidateOnSave bool `mapstructure:"validateOnSave"`
+	ValidateOnSave        bool `mapstructure:"validateOnSave"`
+	PrefillRequiredFields bool `mapstructure:"prefillRequiredFields"`
 }
 
 type Options struct {
