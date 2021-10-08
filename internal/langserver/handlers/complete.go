@@ -47,6 +47,13 @@ func (h *logHandler) TextDocumentComplete(ctx context.Context, params lsp.Comple
 	}
 	d.SetSchema(schema)
 
+	expFeatures, err := lsctx.ExperimentalFeatures(ctx)
+	if err != nil {
+		return list, err
+	}
+
+	d.PrefillRequiredFields = expFeatures.PrefillRequiredFields
+
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, file)
 	if err != nil {
 		return list, err

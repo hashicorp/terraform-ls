@@ -3,10 +3,12 @@
 ENHANCEMENTS:
 
  - Introduce `module.calls` command ([#632](https://github.com/hashicorp/terraform-ls/pull/632))
+ - Introduce experimental completion of required fields. You can opt in via [`prefillRequiredFields` option](https://github.com/hashicorp/terraform-ls/blob/v0.23.0/docs/SETTINGS.md#experimentalfeaturesprefillrequiredfields) ([#657](https://github.com/hashicorp/terraform-ls/pull/657))
 
 INTERNAL:
 
- - build(deps): bump github.com/creachadair/jrpc2 from 0.25.1 to 0.25.3 ([#649](https://github.com/hashicorp/terraform-ls/pull/649), [#650](https://github.com/hashicorp/terraform-ls/pull/650))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.25.1 to 0.26.1 ([#649](https://github.com/hashicorp/terraform-ls/pull/649), [#650](https://github.com/hashicorp/terraform-ls/pull/650), [#662](https://github.com/hashicorp/terraform-ls/pull/662))
+ - build(deps): bump github.com/hashicorp/terraform-exec from 0.14.0 to 0.15.0 ([#664](https://github.com/hashicorp/terraform-ls/pull/664))
 
 ## 0.22.0 (16 September 2021)
 

@@ -217,6 +217,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			return handle(ctx, req, lh.TextDocumentComplete)
 		},
