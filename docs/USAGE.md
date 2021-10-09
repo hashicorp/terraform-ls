@@ -148,3 +148,13 @@ Make sure to read through to [CONFIG.md#terraformls](https://github.com/neovim/n
     ],
 },
 ```
+
+## BBEdit
+
+*BBEdit 14 [added support](https://www.barebones.com/support/bbedit/lsp-notes.html) for the Language Server Protocol so you'll need to upgrade to version 14 to use; this won't work for older versions of BBEdit*.
+
+- Open Preferences > Languages
+- In *Language-specific settings* section, add an entry for Terraform
+- In the Server tab, Set *Command* to `terraform-ls` and *Arguments* to `serve`
+- Once you've correctly installed `terraform-ls` and configured BBEdit, the status indicator on this settings panel will flip to green
+- If you'd like to pass any [settings](./SETTINGS.md) to the server you can do so via the *Arguments* field.
