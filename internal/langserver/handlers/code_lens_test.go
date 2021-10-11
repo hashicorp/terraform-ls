@@ -184,7 +184,7 @@ output "test" {
 							"arguments": [
 								{
 									"line": 0,
-									"character": 8
+									"character": 7
 								},
 								{
 									"includeDeclaration": false
