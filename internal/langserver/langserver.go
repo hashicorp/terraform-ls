@@ -121,10 +121,11 @@ func (ls *langServer) StartTCP(address string) error {
 	}
 	ls.logger.Printf("TCP server running at %q", lst.Addr())
 
+	accepter := server.NetAccepter(lst, channel.LSP)
+
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = server.Loop(lst, ls.newService, &server.LoopOptions{
-			Framing:       channel.LSP,
+		err = server.Loop(accepter, ls.newService, &server.LoopOptions{
 			ServerOptions: ls.srvOptions,
 		})
 		if err != nil {
