@@ -47,6 +47,22 @@ func FilePositionFromDocumentPosition(params lsp.TextDocumentPositionParams, f F
 	}, nil
 }
 
+func FilePositionFromDocumentPosition2(pos lsp.Position, uri lsp.DocumentURI, f File) (*filePosition, error) {
+	byteOffset, err := filesystem.ByteOffsetForPos(f.Lines(), lspPosToFsPos(pos))
+	if err != nil {
+		return nil, err
+	}
+
+	return &filePosition{
+		fh: FileHandlerFromDocumentURI(uri),
+		pos: hcl.Pos{
+			Line:   int(pos.Line) + 1,
+			Column: int(pos.Character) + 1,
+			Byte:   byteOffset,
+		},
+	}, nil
+}
+
 func lspPosToFsPos(pos lsp.Position) filesystem.Pos {
 	return filesystem.Pos{
 		Line:   int(pos.Line),

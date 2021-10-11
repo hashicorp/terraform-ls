@@ -244,6 +244,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
+			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
 			return handle(ctx, req, lh.TextDocumentCodeAction)
 		},
