@@ -15,10 +15,14 @@ type CodeActions map[lsp.CodeActionKind]bool
 
 var (
 	SupportedCodeActions = CodeActions{
+		lsp.QuickFix:               true,
 		lsp.Source:                 true,
 		lsp.SourceFixAll:           true,
 		SourceFormatAll:            true,
 		SourceFormatAllTerraformLs: true,
+	}
+	MinimalCodeActions = CodeActions{
+		lsp.QuickFix: true,
 	}
 )
 

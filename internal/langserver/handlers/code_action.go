@@ -23,7 +23,13 @@ func (h *logHandler) TextDocumentCodeAction(ctx context.Context, params lsp.Code
 func (h *logHandler) textDocumentCodeAction(ctx context.Context, params lsp.CodeActionParams) ([]lsp.CodeAction, error) {
 	var ca []lsp.CodeAction
 
-	wantedCodeActions := ilsp.SupportedCodeActions.Only(params.Context.Only)
+	var wantedCodeActions ilsp.CodeActions
+	if len(params.Context.Only) == 0 {
+		wantedCodeActions = ilsp.MinimalCodeActions
+	} else {
+		wantedCodeActions = ilsp.SupportedCodeActions.Only(params.Context.Only)
+	}
+
 	if len(wantedCodeActions) == 0 {
 		return nil, fmt.Errorf("could not find a supported code action to execute for %s, wanted %v",
 			params.TextDocument.URI, params.Context.Only)
