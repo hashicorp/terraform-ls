@@ -8,7 +8,7 @@ ENHANCEMENTS:
 
 INTERNAL:
 
- - build(deps): bump github.com/creachadair/jrpc2 from 0.25.1 to 0.27.0 ([#649](https://github.com/hashicorp/terraform-ls/pull/649), [#650](https://github.com/hashicorp/terraform-ls/pull/650), [#662](https://github.com/hashicorp/terraform-ls/pull/662), [#668](https://github.com/hashicorp/terraform-ls/pull/668))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.25.1 to 0.27.0 ([#649](https://github.com/hashicorp/terraform-ls/pull/649), [#650](https://github.com/hashicorp/terraform-ls/pull/650), [#662](https://github.com/hashicorp/terraform-ls/pull/662), [#668](https://github.com/hashicorp/terraform-ls/pull/668), [#676](https://github.com/hashicorp/terraform-ls/pull/676))
  - build(deps): bump github.com/hashicorp/terraform-exec from 0.14.0 to 0.15.0 ([#664](https://github.com/hashicorp/terraform-ls/pull/664))
 
 ## 0.22.0 (16 September 2021)
