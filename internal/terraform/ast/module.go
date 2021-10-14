@@ -12,8 +12,14 @@ func (mf ModFilename) String() string {
 	return string(mf)
 }
 
+func (mf ModFilename) IsJSON() bool {
+	return strings.HasSuffix(string(mf), ".json")
+}
+
 func IsModuleFilename(name string) bool {
-	return strings.HasSuffix(name, ".tf") && !isIgnoredFile(name)
+	return (strings.HasSuffix(name, ".tf") ||
+		strings.HasSuffix(name, ".tf.json")) &&
+		!isIgnoredFile(name)
 }
 
 type ModFiles map[ModFilename]*hcl.File

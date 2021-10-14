@@ -3,8 +3,6 @@ package parser
 import (
 	"path/filepath"
 
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
@@ -37,8 +35,10 @@ func ParseModuleFiles(fs FS, modPath string) (ast.ModFiles, ast.ModDiags, error)
 			return nil, nil, err
 		}
 
-		f, pDiags := hclsyntax.ParseConfig(src, name, hcl.InitialPos)
 		filename := ast.ModFilename(name)
+
+		f, pDiags := parseFile(src, filename)
+
 		diags[filename] = pDiags
 		if f != nil {
 			files[filename] = f
