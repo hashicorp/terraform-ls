@@ -43,7 +43,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				"referencesProvider": true,
 				"documentSymbolProvider": true,
 				"codeActionProvider": {
-					"codeActionKinds": ["source", "source.fixAll", "source.formatAll", "source.formatAll.terraform-ls"]
+					"codeActionKinds": ["source.formatAll.terraform"]
 				},
 				"codeLensProvider": {},
 				"documentLinkProvider": {},
