@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -48,6 +49,7 @@ type service struct {
 	tfDiscoFunc      discovery.DiscoveryFunc
 	tfExecFactory    exec.ExecutorFactory
 	tfExecOpts       *exec.ExecutorOpts
+	telemetry        telemetry.Sender
 
 	additionalHandlers map[string]rpch.Func
 }
@@ -70,6 +72,7 @@ func NewSession(srvCtx context.Context) session.Session {
 		newWalker:        module.NewWalker,
 		tfDiscoFunc:      d.LookPath,
 		tfExecFactory:    exec.NewExecutor,
+		telemetry:        &telemetry.NoopSender{},
 	}
 }
 
@@ -89,6 +92,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 		return nil, fmt.Errorf("Unable to prepare session: %w", err)
 	}
 
+	svc.telemetry = &telemetry.NoopSender{Logger: svc.logger}
 	svc.fs.SetLogger(svc.logger)
 
 	lh := LogHandler(svc.logger)
@@ -443,6 +447,9 @@ func (svc *service) configureSessionDependencies(cfgOpts *settings.Options) erro
 		return err
 	}
 	store.SetLogger(svc.logger)
+	store.Modules.ChangeHooks = state.ModuleChangeHooks{
+		sendModuleTelemetry(svc.sessCtx, store, svc.telemetry),
+	}
 
 	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
 	if err != nil {
@@ -466,6 +473,16 @@ func (svc *service) configureSessionDependencies(cfgOpts *settings.Options) erro
 		return err
 	}
 
+	return nil
+}
+
+func (svc *service) setupTelemetry(version int, notifier session.ClientNotifier) error {
+	t, err := telemetry.NewSender(version, notifier)
+	if err != nil {
+		return err
+	}
+
+	svc.telemetry = t
 	return nil
 }
 

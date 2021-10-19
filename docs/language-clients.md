@@ -119,3 +119,7 @@ Clients are encouraged to implement custom commands
 in a command palette or similar functionality.
 
 See [./commands.md](./commands.md) for more.
+
+## Telemetry
+
+See [./telemetry.md](./telemetry.md).

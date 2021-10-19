@@ -13,4 +13,8 @@ type Session interface {
 	SetLogger(*log.Logger)
 }
 
+type ClientNotifier interface {
+	Notify(ctx context.Context, method string, params interface{}) error
+}
+
 type SessionFactory func(context.Context) Session

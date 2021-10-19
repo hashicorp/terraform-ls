@@ -94,7 +94,13 @@ Please follow the [relevant guide for your IDE](./docs/USAGE.md).
 - [Martin Atkins](https://github.com/apparentlymart) - particularly the virtual filesystem
 - [Zhe Cheng](https://github.com/njuCZ) - research, design, prototyping assistance
 - [Julio Sueiras](https://github.com/juliosueiras) - particularly his [language server implementation](https://github.com/juliosueiras/terraform-lsp)
- 
+
+## Telemetry
+
+The server may collect data depending on _client-driven_ opt-in or opt-out.
+Telemetry is opt-in from server's perspective.
+
+[Read more about telemetry](./docs/telemetry.md).
 
 ## `terraform-ls` VS `terraform-lsp`
 

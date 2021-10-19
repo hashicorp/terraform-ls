@@ -69,9 +69,15 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	pVersions := providerVersions(pv)
 
 	sErr := modStore.UpdateTerraformVersion(modPath, v, pVersions, err)
-	if err != nil {
+	if sErr != nil {
 		return sErr
 	}
+
+	ipErr := modStore.UpdateInstalledProviders(modPath, pVersions)
+	if ipErr != nil {
+		return ipErr
+	}
+
 	return err
 }
 
@@ -117,12 +123,17 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		return err
 	}
 
+	installedProviders := make(map[tfaddr.Provider]*version.Version, 0)
+
 	for rawAddr, pJsonSchema := range ps.Schemas {
 		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
 		if err != nil {
 			// skip unparsable address
 			continue
 		}
+
+		installedProviders[pAddr] = nil
+
 		if pAddr.IsLegacy() {
 			// TODO: check for migrations via Registry API?
 		}
@@ -135,7 +146,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		}
 	}
 
-	return nil
+	return modStore.UpdateInstalledProviders(modPath, installedProviders)
 }
 
 func ParseModuleConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {

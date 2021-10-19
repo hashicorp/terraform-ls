@@ -13,7 +13,9 @@ import (
 
 const (
 	moduleTableName         = "module"
+	moduleIdsTableName      = "module_ids"
 	providerSchemaTableName = "provider_schema"
+	providerIdsTableName    = "provider_ids"
 )
 
 var dbSchema = &memdb.DBSchema{
@@ -45,18 +47,41 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		providerIdsTableName: {
+			Name: providerIdsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "Address"},
+				},
+			},
+		},
+		moduleIdsTableName: {
+			Name: moduleIdsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+				},
+			},
+		},
 	},
 }
 
 type StateStore struct {
 	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
+
+	db *memdb.MemDB
 }
 
 type ModuleStore struct {
-	db        *memdb.MemDB
-	tableName string
-	logger    *log.Logger
+	db          *memdb.MemDB
+	ChangeHooks ModuleChangeHooks
+	tableName   string
+	logger      *log.Logger
 }
 
 type ModuleReader interface {
@@ -87,10 +112,12 @@ func NewStateStore() (*StateStore, error) {
 	}
 
 	return &StateStore{
+		db: db,
 		Modules: &ModuleStore{
-			db:        db,
-			tableName: moduleTableName,
-			logger:    defaultLogger,
+			db:          db,
+			ChangeHooks: make(ModuleChangeHooks, 0),
+			tableName:   moduleTableName,
+			logger:      defaultLogger,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
