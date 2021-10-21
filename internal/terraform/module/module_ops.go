@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -263,39 +264,25 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 	return mErr
 }
 
-func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	err := modStore.SetReferenceTargetsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
-	mod, err := modStore.ModuleByPath(modPath)
+	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	}).Path(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Terraform.String(),
+	})
 	if err != nil {
 		return err
 	}
-
-	d := decoder.NewDecoder()
-	for name, f := range mod.ParsedModuleFiles.AsMap() {
-		err := d.LoadFile(name, f)
-		if err != nil {
-			return fmt.Errorf("failed to load a file: %w", err)
-		}
-	}
-
-	fullSchema, schemaErr := schemaForModule(mod, schemaReader, modStore)
-	if schemaErr != nil {
-		sErr := modStore.UpdateReferenceTargets(modPath, lang.ReferenceTargets{}, schemaErr)
-		if sErr != nil {
-			return sErr
-		}
-		return schemaErr
-	}
-	d.SetSchema(fullSchema)
-
 	targets, rErr := d.CollectReferenceTargets()
 
-	bRefs := builtinReferences(modPath)
-	targets = append(targets, bRefs...)
+	targets = append(targets, builtinReferences(modPath)...)
 
 	sErr := modStore.UpdateReferenceTargets(modPath, targets, rErr)
 	if sErr != nil {
@@ -305,35 +292,22 @@ func DecodeReferenceTargets(modStore *state.ModuleStore, schemaReader state.Sche
 	return rErr
 }
 
-func DecodeReferenceOrigins(modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	err := modStore.SetReferenceOriginsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
-	mod, err := modStore.ModuleByPath(modPath)
+	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	}).Path(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Terraform.String(),
+	})
 	if err != nil {
 		return err
 	}
-
-	d := decoder.NewDecoder()
-	for name, f := range mod.ParsedModuleFiles.AsMap() {
-		err := d.LoadFile(name, f)
-		if err != nil {
-			return fmt.Errorf("failed to load a file: %w", err)
-		}
-	}
-
-	fullSchema, schemaErr := schemaForModule(mod, schemaReader, modStore)
-	if schemaErr != nil {
-		sErr := modStore.UpdateReferenceOrigins(modPath, lang.ReferenceOrigins{}, schemaErr)
-		if sErr != nil {
-			return sErr
-		}
-		return schemaErr
-	}
-	d.SetSchema(fullSchema)
-
 	origins, rErr := d.CollectReferenceOrigins()
 
 	sErr := modStore.UpdateReferenceOrigins(modPath, origins, rErr)

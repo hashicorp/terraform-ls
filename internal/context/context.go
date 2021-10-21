@@ -21,9 +21,6 @@ func (k *contextKey) String() string {
 
 var (
 	ctxDs                   = &contextKey{"document storage"}
-	ctxClientCapsSetter     = &contextKey{"client capabilities setter"}
-	ctxClientCaps           = &contextKey{"client capabilities"}
-	ctxClientName           = &contextKey{"client name"}
 	ctxTfExecPath           = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
@@ -54,55 +51,6 @@ func DocumentStorage(ctx context.Context) (filesystem.DocumentStorage, error) {
 	}
 
 	return fs, nil
-}
-
-func WithClientCapabilitiesSetter(ctx context.Context, caps *lsp.ClientCapabilities) context.Context {
-	return context.WithValue(ctx, ctxClientCapsSetter, caps)
-}
-
-func SetClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) error {
-	cc, ok := ctx.Value(ctxClientCapsSetter).(*lsp.ClientCapabilities)
-	if !ok {
-		return missingContextErr(ctxClientCapsSetter)
-	}
-
-	*cc = *caps
-	return nil
-}
-
-func WithClientCapabilities(ctx context.Context, caps *lsp.ClientCapabilities) context.Context {
-	return context.WithValue(ctx, ctxClientCaps, caps)
-}
-
-func ClientCapabilities(ctx context.Context) (lsp.ClientCapabilities, error) {
-	caps, ok := ctx.Value(ctxClientCaps).(*lsp.ClientCapabilities)
-	if !ok {
-		return lsp.ClientCapabilities{}, missingContextErr(ctxClientCaps)
-	}
-
-	return *caps, nil
-}
-
-func WithClientName(ctx context.Context, namePtr *string) context.Context {
-	return context.WithValue(ctx, ctxClientName, namePtr)
-}
-
-func ClientName(ctx context.Context) (string, bool) {
-	name, ok := ctx.Value(ctxClientName).(*string)
-	if !ok {
-		return "", false
-	}
-	return *name, true
-}
-
-func SetClientName(ctx context.Context, name string) error {
-	namePtr, ok := ctx.Value(ctxClientName).(*string)
-	if !ok {
-		return missingContextErr(ctxClientName)
-	}
-
-	*namePtr = name
-	return nil
 }
 
 func WithTerraformExecLogPath(ctx context.Context, path string) context.Context {

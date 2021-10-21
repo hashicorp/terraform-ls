@@ -2,13 +2,14 @@ package module
 
 import (
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/zclconf/go-cty/cty"
 )
 
 var builtinScopeId = lang.ScopeId("builtin")
 
-func builtinReferences(modPath string) lang.ReferenceTargets {
-	return lang.ReferenceTargets{
+func builtinReferences(modPath string) reference.Targets {
+	return reference.Targets{
 		{
 			Addr: lang.Address{
 				lang.RootStep{Name: "path"},

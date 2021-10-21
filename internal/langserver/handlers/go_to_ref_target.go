@@ -8,8 +8,8 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) GoToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
-	cc, err := lsctx.ClientCapabilities(ctx)
+func (svc *service) GoToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
+	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -19,51 +19,25 @@ func (h *logHandler) GoToReferenceTarget(ctx context.Context, params lsp.TextDoc
 		return nil, err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
+	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
+	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	mod, err := mf.ModuleByPath(file.Dir())
+	fPos, err := ilsp.FilePositionFromDocumentPosition(params, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := schemaForDocument(mf, file)
+	target, err := d.ReferenceTargetForOriginAtPos(doc.Filename(), fPos.Position())
 	if err != nil {
 		return nil, err
 	}
 
-	d, err := decoderForDocument(ctx, mod, file.LanguageID())
-	if err != nil {
-		return nil, err
-	}
-	d.SetSchema(schema)
-
-	fPos, err := ilsp.FilePositionFromDocumentPosition(params, file)
-	if err != nil {
-		return nil, err
-	}
-
-	h.logger.Printf("Looking for ref origin at %q -> %#v", file.Filename(), fPos.Position())
-	origin, err := d.ReferenceOriginAtPos(file.Filename(), fPos.Position())
-	if err != nil {
-		return nil, err
-	}
-	if origin == nil {
-		return nil, nil
-	}
-	h.logger.Printf("found origin: %#v", origin)
-
-	target, err := d.ReferenceTargetForOrigin(*origin)
-	if err != nil {
-		return nil, err
-	}
-
-	return ilsp.ReferenceToLocationLink(mod.Path, *origin, target, cc.TextDocument.Declaration.LinkSupport), nil
+	return ilsp.RefTargetToLocationLink(target, cc.TextDocument.Declaration.LinkSupport), nil
 }

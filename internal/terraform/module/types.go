@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -22,8 +21,6 @@ type SchemaSource struct {
 
 type ModuleFinder interface {
 	ModuleByPath(path string) (Module, error)
-	SchemaForModule(path string) (*schema.BodySchema, error)
-	SchemaForVariables(path string) (*schema.BodySchema, error)
 	SchemaSourcesForModule(path string) ([]SchemaSource, error)
 	ListModules() ([]Module, error)
 	ModuleCalls(modPath string) ([]tfmodule.ModuleCall, error)

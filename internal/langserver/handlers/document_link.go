@@ -4,53 +4,36 @@ import (
 	"context"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) TextDocumentLink(ctx context.Context, params lsp.DocumentLinkParams) ([]lsp.DocumentLink, error) {
+func (svc *service) TextDocumentLink(ctx context.Context, params lsp.DocumentLinkParams) ([]lsp.DocumentLink, error) {
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	cc, err := lsctx.ClientCapabilities(ctx)
+	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
+	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
-	if err != nil {
-		return nil, err
-	}
-
-	if file.LanguageID() != ilsp.Terraform.String() {
+	if doc.LanguageID() != ilsp.Terraform.String() {
 		return nil, nil
 	}
 
-	mod, err := mf.ModuleByPath(file.Dir())
+	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := mf.SchemaForModule(file.Dir())
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := decoder.DecoderForModule(ctx, mod)
-	if err != nil {
-		return nil, err
-	}
-	d.SetSchema(schema)
-
-	links, err := d.LinksInFile(file.Filename())
+	links, err := d.LinksInFile(doc.Filename())
 	if err != nil {
 		return nil, err
 	}

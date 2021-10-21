@@ -4,52 +4,76 @@ import (
 	"context"
 
 	"github.com/hashicorp/hcl-lang/decoder"
-	"github.com/hashicorp/hcl-lang/lang"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/codelens"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/state"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func DecoderForModule(ctx context.Context, mod module.Module) (*decoder.Decoder, error) {
-	d := decoder.NewDecoder()
+func NewDecoder(ctx context.Context, pathReader decoder.PathReader) *decoder.Decoder {
+	d := decoder.NewDecoder(pathReader)
+	d.SetContext(decoderContext(ctx))
+	return d
+}
 
-	d.SetReferenceTargetReader(func() lang.ReferenceTargets {
-		return mod.RefTargets
-	})
+func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
+	schema, err := schemaForModule(mod, schemaReader, modReader)
+	if err != nil {
+		return nil, err
+	}
 
-	d.SetReferenceOriginReader(func() lang.ReferenceOrigins {
-		return mod.RefOrigins
-	})
-
-	d.SetUtmSource("terraform-ls")
-	d.UseUtmContent(true)
-
-	clientName, ok := lsctx.ClientName(ctx)
-	if ok {
-		d.SetUtmMedium(clientName)
+	pathCtx := &decoder.PathContext{
+		Schema:           schema,
+		ReferenceOrigins: mod.RefOrigins,
+		ReferenceTargets: mod.RefTargets,
+		Files:            make(map[string]*hcl.File, 0),
 	}
 
 	for name, f := range mod.ParsedModuleFiles {
-		err := d.LoadFile(name.String(), f)
-		if err != nil {
-			// skip unreadable files
-			continue
-		}
+		pathCtx.Files[name.String()] = f
 	}
 
-	return d, nil
+	return pathCtx, nil
 }
 
-func DecoderForVariables(varsFiles ast.VarsFiles) (*decoder.Decoder, error) {
-	d := decoder.NewDecoder()
+func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
+	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables)
+	if err != nil {
+		return nil, err
+	}
 
-	for name, f := range varsFiles {
-		err := d.LoadFile(name.String(), f)
-		if err != nil {
-			// skip unreadable files
-			continue
+	pathCtx := &decoder.PathContext{
+		Schema:           schema,
+		ReferenceOrigins: mod.RefOrigins,
+		ReferenceTargets: mod.RefTargets,
+		Files:            make(map[string]*hcl.File, 0),
+	}
+
+	for name, f := range mod.ParsedVarsFiles {
+		pathCtx.Files[name.String()] = f
+	}
+	return pathCtx, nil
+}
+
+func decoderContext(ctx context.Context) decoder.DecoderContext {
+	dCtx := decoder.DecoderContext{
+		UtmSource:     "terraform-ls",
+		UseUtmContent: true,
+	}
+
+	cc, err := ilsp.ClientCapabilities(ctx)
+	if err == nil {
+		cmdId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId()
+		if ok {
+			dCtx.CodeLenses = append(dCtx.CodeLenses, codelens.ReferenceCount(cmdId))
 		}
 	}
 
-	return d, nil
+	clientName, ok := ilsp.ClientName(ctx)
+	if ok {
+		dCtx.UtmMedium = clientName
+	}
+	return dCtx
 }

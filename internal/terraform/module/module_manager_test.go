@@ -10,14 +10,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	tfmodule "github.com/hashicorp/terraform-schema/module"
-	"github.com/zclconf/go-cty-debug/ctydebug"
-	"github.com/zclconf/go-cty/cty"
 )
 
 func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
@@ -378,124 +373,10 @@ func schemaSourcesPaths(t *testing.T, srcs []SchemaSource) []string {
 	return paths
 }
 
-func TestSchemaForModule_uninitialized(t *testing.T) {
-	mmock := NewModuleManagerMock(nil)
-
-	ctx := context.Background()
-	fs := filesystem.NewFilesystem()
-	ss, err := state.NewStateStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
-	t.Cleanup(mm.CancelLoading)
-
-	testData, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(testData, "uninitialized-root")
-
-	_, err = mm.AddModule(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = mm.SchemaForModule(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func testLogger() *log.Logger {
 	if testing.Verbose() {
 		return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
 	}
 
 	return log.New(ioutil.Discard, "", 0)
-}
-
-func TestSchemaForVariables(t *testing.T) {
-	mmock := NewModuleManagerMock(nil)
-	ctx := context.Background()
-	fs := filesystem.NewFilesystem()
-	ss, err := state.NewStateStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
-	t.Cleanup(mm.CancelLoading)
-
-	testData, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(testData, "testdata-path")
-
-	mod, err := mm.AddModule(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	mod.Meta.Variables = map[string]tfmodule.Variable{
-		"name": {
-			Description: "name of the module",
-			Type:        cty.String,
-		},
-	}
-	expectedSchema := &schema.BodySchema{Attributes: map[string]*schema.AttributeSchema{
-		"name": {
-			Description: lang.MarkupContent{
-				Value: "name of the module",
-				Kind:  lang.PlainTextKind,
-			},
-			IsRequired: true,
-			Expr:       schema.LiteralTypeOnly(cty.String),
-		},
-	}}
-
-	actualSchema, err := mm.SchemaForVariables(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	diff := cmp.Diff(expectedSchema, actualSchema, ctydebug.CmpOptions)
-	if diff != "" {
-		t.Fatalf("unexpected schema: %s", diff)
-	}
-}
-
-func TestSchemaForModule(t *testing.T) {
-	mmock := NewModuleManagerMock(nil)
-	ctx := context.Background()
-	fs := filesystem.NewFilesystem()
-	ss, err := state.NewStateStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
-	t.Cleanup(mm.CancelLoading)
-	testData, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(testData, "testdata-path")
-	_, err = mm.AddModule(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	actualSchema, err := mm.SchemaForModule(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if actualSchema.Attributes != nil {
-		t.Fatalf("unexpected attributes in schema")
-	}
-	for _, key := range []string{"resource", "data", "provider"} {
-		if val, ok := actualSchema.Blocks[key]; !ok || val == nil {
-			t.Fatalf("missing %s block in schema", key)
-		}
-	}
 }
