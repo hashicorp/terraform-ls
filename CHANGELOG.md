@@ -1,4 +1,8 @@
-## 0.23.1 (Unreleased)
+## 0.24.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Implement opt-in telemetry (documented in [`docs/telemetry.md`](https://github.com/hashicorp/terraform-ls/blob/v0.24.0/docs/telemetry.md)) ([#681](https://github.com/hashicorp/terraform-ls/pull/681))
 
 INTERNAL:
 
