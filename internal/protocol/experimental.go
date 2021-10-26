@@ -21,3 +21,15 @@ func (cc ExpClientCapabilities) ShowReferencesCommandId() (string, bool) {
 	cmdId, ok := cc["showReferencesCommandId"].(string)
 	return cmdId, ok
 }
+
+func (cc ExpClientCapabilities) TelemetryVersion() (int, bool) {
+	if cc == nil {
+		return 0, false
+	}
+
+	// numbers are unmarshalled as float64 from JSON
+	// per https://pkg.go.dev/encoding/json#Unmarshal
+	v, ok := cc["telemetryVersion"].(float64)
+
+	return int(v), ok
+}

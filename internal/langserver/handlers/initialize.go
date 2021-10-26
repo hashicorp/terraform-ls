@@ -52,12 +52,41 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		serverCaps.ServerInfo.Version = version
 	}
 
+	clientCaps := params.Capabilities
+
+	properties := map[string]interface{}{
+		"experimentalCapabilities.referenceCountCodeLens": false,
+		"options.rootModulePaths":                         false,
+		"options.excludeModulePaths":                      false,
+		"options.commandPrefix":                           false,
+		"options.experimentalFeatures.validateOnSave":     false,
+		"options.terraformExecPath":                       false,
+		"options.terraformExecTimeout":                    "",
+		"options.terraformLogFilePath":                    false,
+		"root_uri":                                        "dir",
+		"lsVersion":                                       serverCaps.ServerInfo.Version,
+	}
+
+	expClientCaps := lsp.ExperimentalClientCapabilities(clientCaps.Experimental)
+
+	if tv, ok := expClientCaps.TelemetryVersion(); ok {
+		svc.logger.Printf("enabling telemetry (version: %d)", tv)
+		err := svc.setupTelemetry(tv, jrpc2.ServerFromContext(ctx))
+		if err != nil {
+			svc.logger.Printf("failed to setup telemetry: %s", err)
+		}
+		svc.logger.Printf("telemetry enabled (version: %d)", tv)
+	}
+	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
+
 	fh := ilsp.FileHandlerFromDirURI(params.RootURI)
 	if fh.URI() == "" || !fh.IsDir() {
+		properties["root_uri"] = "file"
 		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +
 			" Please open a directory.")
 	}
 	if !fh.Valid() {
+		properties["root_uri"] = "invalid"
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
@@ -74,12 +103,11 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	}
 
-	clientCaps := params.Capabilities
-
-	if _, ok = lsp.ExperimentalClientCapabilities(clientCaps.Experimental).ShowReferencesCommandId(); ok {
+	if _, ok = expClientCaps.ShowReferencesCommandId(); ok {
 		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
 			ReferenceCountCodeLens: true,
 		}
+		properties["experimentalCapabilities.referenceCountCodeLens"] = true
 	}
 
 	err = lsctx.SetClientCapabilities(ctx, &clientCaps)
@@ -91,6 +119,16 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	if err != nil {
 		return serverCaps, err
 	}
+
+	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
+	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
+	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
+	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
+	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
+	properties["options.terraformExecPath"] = len(out.Options.TerraformExecPath) > 0
+	properties["options.terraformExecTimeout"] = out.Options.TerraformExecTimeout
+	properties["options.terraformLogFilePath"] = len(out.Options.TerraformLogFilePath) > 0
+
 	err = out.Options.Validate()
 	if err != nil {
 		return serverCaps, err

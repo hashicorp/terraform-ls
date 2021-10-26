@@ -17,6 +17,7 @@ import (
 
 type ModuleMetadata struct {
 	CoreRequirements     version.Constraints
+	Backend              *tfmod.Backend
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
 	ProviderRequirements map[tfaddr.Provider]version.Constraints
 	Variables            map[string]tfmod.Variable
@@ -27,6 +28,13 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	newMm := ModuleMetadata{
 		// version.Constraints is practically immutable once parsed
 		CoreRequirements: mm.CoreRequirements,
+	}
+
+	if mm.Backend != nil {
+		newMm.Backend = &tfmod.Backend{
+			Type: mm.Backend.Type,
+			Data: mm.Backend.Data.Copy(),
+		}
 	}
 
 	if mm.ProviderReferences != nil {
@@ -71,6 +79,8 @@ type Module struct {
 	TerraformVersion      *version.Version
 	TerraformVersionErr   error
 	TerraformVersionState op.OpState
+
+	InstalledProviders map[tfaddr.Provider]*version.Version
 
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
@@ -133,6 +143,14 @@ func (m *Module) Copy() *Module {
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
+	}
+
+	if m.InstalledProviders != nil {
+		newMod.InstalledProviders = make(map[tfaddr.Provider]*version.Version, 0)
+		for addr, pv := range m.InstalledProviders {
+			// version.Version is practically immutable once parsed
+			newMod.InstalledProviders[addr] = pv
+		}
 	}
 
 	if m.ParsedModuleFiles != nil {
@@ -203,10 +221,15 @@ func (s *ModuleStore) Add(modPath string) error {
 		}
 	}
 
-	err = txn.Insert(s.tableName, newModule(modPath))
+	mod := newModule(modPath)
+	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(nil, mod)
+	})
 
 	txn.Commit()
 	return nil
@@ -216,7 +239,22 @@ func (s *ModuleStore) Remove(modPath string) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	_, err := txn.DeleteAll(s.tableName, "id", modPath)
+	oldObj, err := txn.First(s.tableName, "id", modPath)
+	if err != nil {
+		return err
+	}
+
+	if oldObj == nil {
+		// already removed
+		return nil
+	}
+
+	txn.Defer(func() {
+		oldMod := oldObj.(*Module)
+		go s.ChangeHooks.notifyModuleChange(oldMod, nil)
+	})
+
+	_, err = txn.DeleteAll(s.tableName, "id", modPath)
 	if err != nil {
 		return err
 	}
@@ -313,6 +351,44 @@ func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
 	}
 
 	return mod.Copy(), nil
+}
+
+func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provider]*version.Version) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	oldMod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod := oldMod.Copy()
+
+	// Providers may come from different sources (schema or version command)
+	// and we don't get their versions in both cases, so we make sure the existing
+	// versions are retained to get the most of both sources.
+	newProviders := make(map[tfaddr.Provider]*version.Version, 0)
+	for addr, pv := range pvs {
+		if pv == nil {
+			if v, ok := oldMod.InstalledProviders[addr]; ok && v != nil {
+				pv = v
+			}
+		}
+		newProviders[addr] = pv
+	}
+	mod.InstalledProviders = newProviders
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
+
+	txn.Commit()
+	return nil
 }
 
 func (s *ModuleStore) List() ([]*Module, error) {
@@ -421,17 +497,22 @@ func (s *ModuleStore) FinishProviderSchemaLoading(path string, psErr error) erro
 	})
 	defer txn.Abort()
 
-	mod, err := moduleCopyByPath(txn, path)
+	oldMod, err := moduleByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
+	mod := oldMod.Copy()
 	mod.ProviderSchemaErr = psErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
 
 	txn.Commit()
 	return nil
@@ -444,11 +525,12 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 	})
 	defer txn.Abort()
 
-	mod, err := moduleCopyByPath(txn, modPath)
+	oldMod, err := moduleByPath(txn, modPath)
 	if err != nil {
 		return err
 	}
 
+	mod := oldMod.Copy()
 	mod.TerraformVersion = tfVer
 	mod.TerraformVersionErr = vErr
 
@@ -456,6 +538,10 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
 
 	err = updateProviderVersions(txn, modPath, pv)
 	if err != nil {
@@ -580,13 +666,15 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	})
 	defer txn.Abort()
 
-	mod, err := moduleCopyByPath(txn, path)
+	oldMod, err := moduleByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
+	mod := oldMod.Copy()
 	mod.Meta = ModuleMetadata{
 		CoreRequirements:     meta.CoreRequirements,
+		Backend:              meta.Backend,
 		ProviderReferences:   meta.ProviderReferences,
 		ProviderRequirements: meta.ProviderRequirements,
 		Variables:            meta.Variables,
@@ -598,6 +686,10 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
 
 	txn.Commit()
 	return nil
