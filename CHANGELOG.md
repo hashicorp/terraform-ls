@@ -2,7 +2,7 @@
 
 INTERNAL:
 
- - build(deps): bump github.com/creachadair/jrpc2 from 0.28.0 to 0.28.4 ([#683](https://github.com/hashicorp/terraform-ls/pull/683))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.28.0 to 0.28.5 ([#683](https://github.com/hashicorp/terraform-ls/pull/683), [#684](https://github.com/hashicorp/terraform-ls/pull/684))
 
 ## 0.23.0 (14 October 2021)
 
