@@ -98,7 +98,6 @@ Please follow the [relevant guide for your IDE](./docs/USAGE.md).
 ## Telemetry
 
 The server will collect data only if the _client_ requests it during initialization. Telemetry is opt-in by default.
-Telemetry is opt-in from server's perspective.
 
 [Read more about telemetry](./docs/telemetry.md).
 
