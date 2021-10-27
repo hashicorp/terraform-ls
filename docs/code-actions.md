@@ -18,7 +18,7 @@ The server will format a given document according to Terraform formatting conven
 
 > *Important:* Disable `editor.formatOnSave` if using `source.formatAll.terraform`
 
-The `source.formatAll.terraform` code action is is meant to be used instead of `editor.formatOnSave`, as it provides a guarantee of order of execution based on the list provided. If you have both settings enabled, then your document will be formatted twice.
+The `source.formatAll.terraform` code action is is meant to be used instead of `editor.formatOnSave`, as it provides a [guarantee of order of execution](https://github.com/microsoft/vscode-docs/blob/71643d75d942e2c32cfd781c2b5322521775fb4a/release-notes/v1_44.md#explicit-ordering-for-editorcodeactionsonsave) based on the list provided. If you have both settings enabled, then your document will be formatted twice.
 
 ## Usage
 

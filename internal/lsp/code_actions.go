@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// SourceFormatAllTerraform is a Terraform specific format code action.
 	SourceFormatAllTerraform = "source.formatAll.terraform"
 )
 
@@ -30,7 +31,6 @@ var (
 	// A user should be able to set `source.formatAll` to true, and source.formatAll.terraform to false to allow all
 	// files to be formatted, but not terraform files (or vice versa).
 	SupportedCodeActions = CodeActions{
-		// `source.formatAll.terraform`: Terraform specific format code action.
 		SourceFormatAllTerraform: true,
 	}
 )
