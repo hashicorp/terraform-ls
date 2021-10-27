@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	SourceFormatAll          = "source.formatAll"
 	SourceFormatAllTerraform = "source.formatAll.terraform"
 )
 

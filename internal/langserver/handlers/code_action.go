@@ -22,7 +22,6 @@ func (h *logHandler) TextDocumentCodeAction(ctx context.Context, params lsp.Code
 
 func (h *logHandler) textDocumentCodeAction(ctx context.Context, params lsp.CodeActionParams) ([]lsp.CodeAction, error) {
 	var ca []lsp.CodeAction
-	h.logger.Printf("Code action handler initiated")
 
 	// For action definitions, refer to https://code.visualstudio.com/api/references/vscode-api#CodeActionKind
 	// We only support format type code actions at the moment, and do not want to format without the client asking for
@@ -33,7 +32,7 @@ func (h *logHandler) textDocumentCodeAction(ctx context.Context, params lsp.Code
 	}
 
 	for _, o := range params.Context.Only {
-		h.logger.Printf("Code action %q received", o)
+		h.logger.Printf("Code actions requested: %q", o)
 	}
 
 	wantedCodeActions := ilsp.SupportedCodeActions.Only(params.Context.Only)
@@ -42,9 +41,7 @@ func (h *logHandler) textDocumentCodeAction(ctx context.Context, params lsp.Code
 			params.TextDocument.URI, params.Context.Only)
 	}
 
-	for ca := range wantedCodeActions {
-		h.logger.Printf("Code action %q supported", ca)
-	}
+	h.logger.Printf("Code actions supported: %q", wantedCodeActions)
 
 	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
 
