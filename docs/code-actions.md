@@ -4,15 +4,7 @@ The Terraform Language Server implements a set of Code Actions which perform dif
 
 ## Available Actions
 
-### User Code Actions
-
-There are currently no Code Actions that can be invoked by the user yet.
-
-### Automatic Code Actions
-
-Automatic Code Actions happen when certain events are trigged, for example saving a document.
-
-#### `source.formatAll.terraform`
+### `source.formatAll.terraform`
 
 The server will format a given document according to Terraform formatting conventions.
 
@@ -68,7 +60,7 @@ Alternatively, you can include all terraform related Code Actions inside the lan
 
 A Code Action is an action that changes content in the active editor. Each Code Action is grouped into kinds that have a `command` and/or a series of `edits`. They are triggered either by the user or through events.
 
-### Code Action Events
+### Triggers
 
 A `Code Action` can have either an `invoke` trigger or an `automatic` [CodeActionTriggerKind](https://code.visualstudio.com/api/references/vscode-api#CodeActionTriggerKind).
 
@@ -76,11 +68,11 @@ A `Code Action` can have either an `invoke` trigger or an `automatic` [CodeActio
 
 `Automatic` actions come from events like the `editor.codeActionsOnSave` setting. These usually do not give much choice to the user, they are either on or off, as they cannot accept user input. For example, formatting a document or removing simple style errors don't prompt for user action before or during execution.
 
-### Code Action Types
+### Kinds
 
 Each `Code Action` has a [`CodeActionKind`](https://code.visualstudio.com/api/references/vscode-api#CodeActionKind). `Code Action Kinds` are a hierarchical list of identifiers separated by `.`. For example in `refactor.extract.function`: `refactor` is the trunk, `extract` is the branch, and `function` is the leaf. The branches and leaves are the point of intended customization, you add new branches and/or leaves for each type of function you perform. In this example, a new code action that operated on variables would be called `refactor.extract.variable`.
 
-### Custom Code Action Types
+#### Custom Kinds
 
 Adding new roots or branches of the hierarchy is not emphasized or really encouraged. In most cases they are meant to be concepts that can be applied generically, not specifically to a certain language. For example, extracting a value to a variable is something common to most languages. You do not need a `refactor.extract.golang.variable` to extract a variable in Go, it still makes sense to use `refactor.extract.variable` whether in Go or in PowerShell.
 
