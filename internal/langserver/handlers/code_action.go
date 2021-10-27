@@ -41,7 +41,7 @@ func (h *logHandler) textDocumentCodeAction(ctx context.Context, params lsp.Code
 			params.TextDocument.URI, params.Context.Only)
 	}
 
-	h.logger.Printf("Code actions supported: %q", wantedCodeActions)
+	h.logger.Printf("Code actions supported: %v", wantedCodeActions)
 
 	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
 
