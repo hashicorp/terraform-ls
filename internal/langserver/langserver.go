@@ -65,7 +65,7 @@ func DefaultConcurrency() int {
 }
 
 func (ls *langServer) SetLogger(logger *log.Logger) {
-	ls.srvOptions.Logger = logger
+	ls.srvOptions.Logger = jrpc2.StdLogger(logger)
 	ls.srvOptions.RPCLog = &rpcLogger{logger}
 	ls.logger = logger
 }

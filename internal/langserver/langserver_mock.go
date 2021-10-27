@@ -96,7 +96,7 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
 	opts := &jrpc2.ClientOptions{}
 	if testing.Verbose() {
-		opts.Logger = testLogger(os.Stdout, "[CLIENT] ")
+		opts.Logger = jrpc2.StdLogger(testLogger(os.Stdout, "[CLIENT] "))
 	}
 	lsm.client = jrpc2.NewClient(clientCh, opts)
 
