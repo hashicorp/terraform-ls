@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-getter v1.5.9
 	github.com/hashicorp/go-memdb v1.3.2
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/hashicorp/go-uuid v1.0.1
+	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/go-version v1.3.0
 	github.com/hashicorp/hcl-lang v0.0.0-20211014152429-0bfbdcca0902
 	github.com/hashicorp/hcl/v2 v2.10.1
