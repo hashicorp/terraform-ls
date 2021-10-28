@@ -1,12 +1,21 @@
 ## 0.24.0 (Unreleased)
 
+BREAKING CHANGES:
+
+ - `source.formatAll.terraform-ls` is renamed to `source.formatAll.terraform` to follow other similar existing actions in the wild ([#680](https://github.com/hashicorp/terraform-ls/pull/680))
+
 ENHANCEMENTS:
 
  - Implement opt-in telemetry (documented in [`docs/telemetry.md`](https://github.com/hashicorp/terraform-ls/blob/v0.24.0/docs/telemetry.md)) ([#681](https://github.com/hashicorp/terraform-ls/pull/681))
 
+BUG FIXES:
+
+ - The server announces just a single formatting code action, other actions `source`, `source.fixAll` and `source.formatAll` are removed which helps avoid running the same action multiple times and better follows conventions ([#680](https://github.com/hashicorp/terraform-ls/pull/680))
+ - Requesting `Only: []` code actions is now no-op ([#680](https://github.com/hashicorp/terraform-ls/pull/680))
+
 INTERNAL:
 
- - build(deps): bump github.com/creachadair/jrpc2 from 0.28.0 to 0.28.5 ([#683](https://github.com/hashicorp/terraform-ls/pull/683), [#684](https://github.com/hashicorp/terraform-ls/pull/684))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.28.0 to 0.30.0 ([#683](https://github.com/hashicorp/terraform-ls/pull/683), [#684](https://github.com/hashicorp/terraform-ls/pull/684), [#686](https://github.com/hashicorp/terraform-ls/pull/686))
 
 ## 0.23.0 (14 October 2021)
 
