@@ -761,7 +761,7 @@ func (s *ModuleStore) UpdateReferenceTargets(path string, refs reference.Targets
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -804,7 +804,7 @@ func (s *ModuleStore) UpdateReferenceOrigins(path string, origins reference.Orig
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
