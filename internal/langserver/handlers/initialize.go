@@ -97,7 +97,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	}
 
 	if params.ClientInfo.Name != "" {
-		err = lsctx.SetClientName(ctx, params.ClientInfo.Name)
+		err = ilsp.SetClientName(ctx, params.ClientInfo.Name)
 		if err != nil {
 			return serverCaps, err
 		}
@@ -110,7 +110,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		properties["experimentalCapabilities.referenceCountCodeLens"] = true
 	}
 
-	err = lsctx.SetClientCapabilities(ctx, &clientCaps)
+	err = ilsp.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {
 		return serverCaps, err
 	}
@@ -134,7 +134,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		return serverCaps, err
 	}
 
-	err = svc.configureSessionDependencies(out.Options)
+	err = svc.configureSessionDependencies(ctx, out.Options)
 	if err != nil {
 		return serverCaps, err
 	}

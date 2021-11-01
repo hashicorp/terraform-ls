@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
@@ -87,7 +88,7 @@ func (c *CompletionCommand) Run(args []string) int {
 	fs.SetLogger(logger)
 	fs.CreateAndOpenDocument(fh, "terraform", content)
 
-	file, err := fs.GetDocument(fh)
+	doc, err := fs.GetDocument(fh)
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
@@ -98,7 +99,7 @@ func (c *CompletionCommand) Run(args []string) int {
 			URI: fh.DocumentURI(),
 		},
 		Position: lspPos,
-	}, file)
+	}, doc)
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
@@ -112,29 +113,27 @@ func (c *CompletionCommand) Run(args []string) int {
 	}
 	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
 
-	mod, err := modMgr.AddModule(fh.Dir())
+	_, err = modMgr.AddModule(fh.Dir())
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
 
-	schema, err := modMgr.SchemaForModule(file.Dir())
-
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("failed to find schema: %s", err.Error()))
-		return 1
-	}
-
-	d, err := decoder.DecoderForModule(ctx, mod)
-	if err != nil {
-		c.Ui.Error(fmt.Sprintf("failed to find decoder: %s", err.Error()))
-		return 1
-	}
-	d.SetSchema(schema)
-
 	pos := fPos.Position()
 
-	candidates, err := d.CandidatesAtPos(file.Filename(), pos)
+	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+		ModuleReader: ss.Modules,
+		SchemaReader: ss.ProviderSchemas,
+	}).Path(lang.Path{
+		Path:       doc.Dir(),
+		LanguageID: doc.LanguageID(),
+	})
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
+	candidates, err := d.CandidatesAtPos(doc.Filename(), pos)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find candidates: %s", err.Error()))
 		return 1

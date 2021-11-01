@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
@@ -10,10 +9,10 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params lsp.SemanticTokensParams) (lsp.SemanticTokens, error) {
+func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params lsp.SemanticTokensParams) (lsp.SemanticTokens, error) {
 	tks := lsp.SemanticTokens{}
 
-	cc, err := lsctx.ClientCapabilities(ctx)
+	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return tks, err
 	}
@@ -25,16 +24,11 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		// This would indicate a buggy client which sent a request
 		// it didn't claim to support, so we just strictly follow
 		// the protocol here and avoid serving buggy clients.
-		lh.logger.Printf("semantic tokens full request support not announced by client")
+		svc.logger.Printf("semantic tokens full request support not announced by client")
 		return tks, code.MethodNotFound.Err()
 	}
 
 	ds, err := lsctx.DocumentStorage(ctx)
-	if err != nil {
-		return tks, err
-	}
-
-	mf, err := lsctx.ModuleFinder(ctx)
 	if err != nil {
 		return tks, err
 	}
@@ -45,21 +39,10 @@ func (lh *logHandler) TextDocumentSemanticTokensFull(ctx context.Context, params
 		return tks, err
 	}
 
-	mod, err := mf.ModuleByPath(doc.Dir())
-	if err != nil {
-		return tks, fmt.Errorf("finding compatible decoder failed: %w", err)
-	}
-
-	schema, err := schemaForDocument(mf, doc)
+	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return tks, err
 	}
-
-	d, err := decoderForDocument(ctx, mod, doc.LanguageID())
-	if err != nil {
-		return tks, err
-	}
-	d.SetSchema(schema)
 
 	tokens, err := d.SemanticTokensInFile(doc.Filename())
 	if err != nil {

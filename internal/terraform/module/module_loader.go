@@ -183,12 +183,12 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 			ml.logger.Printf("failed to load module metadata: %s", opErr)
 		}
 	case op.OpTypeDecodeReferenceTargets:
-		opErr = DecodeReferenceTargets(ml.modStore, ml.schemaStore, modOp.ModulePath)
+		opErr = DecodeReferenceTargets(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
 		if opErr != nil {
 			ml.logger.Printf("failed to decode reference targets: %s", opErr)
 		}
 	case op.OpTypeDecodeReferenceOrigins:
-		opErr = DecodeReferenceOrigins(ml.modStore, ml.schemaStore, modOp.ModulePath)
+		opErr = DecodeReferenceOrigins(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
 		if opErr != nil {
 			ml.logger.Printf("failed to decode reference origins: %s", opErr)
 		}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
@@ -85,11 +85,11 @@ type Module struct {
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
 
-	RefTargets      lang.ReferenceTargets
+	RefTargets      reference.Targets
 	RefTargetsErr   error
 	RefTargetsState op.OpState
 
-	RefOrigins      lang.ReferenceOrigins
+	RefOrigins      reference.Origins
 	RefOriginsErr   error
 	RefOriginsState op.OpState
 
@@ -754,14 +754,14 @@ func (s *ModuleStore) SetReferenceTargetsState(path string, state op.OpState) er
 	return nil
 }
 
-func (s *ModuleStore) UpdateReferenceTargets(path string, refs lang.ReferenceTargets, rErr error) error {
+func (s *ModuleStore) UpdateReferenceTargets(path string, refs reference.Targets, rErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetReferenceTargetsState(path, op.OpStateLoaded)
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -797,14 +797,14 @@ func (s *ModuleStore) SetReferenceOriginsState(path string, state op.OpState) er
 	return nil
 }
 
-func (s *ModuleStore) UpdateReferenceOrigins(path string, origins lang.ReferenceOrigins, roErr error) error {
+func (s *ModuleStore) UpdateReferenceOrigins(path string, origins reference.Origins, roErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetReferenceOriginsState(path, op.OpStateLoaded)
 	})
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}

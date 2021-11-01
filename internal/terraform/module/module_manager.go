@@ -5,14 +5,10 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl-lang/schema"
-
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfmodule "github.com/hashicorp/terraform-schema/module"
-	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
 type moduleManager struct {
@@ -102,58 +98,6 @@ func (mm *moduleManager) EnqueueModuleOp(modPath string, opType op.OpType, defer
 		<-modOp.Done()
 	}
 	return nil
-}
-
-func (mm *moduleManager) SchemaForModule(modPath string) (*schema.BodySchema, error) {
-	mod, err := mm.ModuleByPath(modPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return schemaForModule(mod, mm.schemaStore, mm.moduleStore)
-}
-
-func (mm *moduleManager) SchemaForVariables(modPath string) (*schema.BodySchema, error) {
-	mod, err := mm.ModuleByPath(modPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return tfschema.SchemaForVariables(mod.Meta.Variables)
-}
-
-func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modReader state.ModuleCallReader) (*schema.BodySchema, error) {
-	var coreSchema *schema.BodySchema
-	coreRequirements := make(version.Constraints, 0)
-	if mod.TerraformVersion != nil {
-		var err error
-		coreSchema, err = tfschema.CoreModuleSchemaForVersion(mod.TerraformVersion)
-		if err != nil {
-			return nil, err
-		}
-		coreRequirements, err = version.NewConstraint(mod.TerraformVersion.String())
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		coreSchema = tfschema.UniversalCoreModuleSchema()
-	}
-
-	sm := tfschema.NewSchemaMerger(coreSchema)
-	sm.SetSchemaReader(schemaReader)
-	sm.SetTerraformVersion(mod.TerraformVersion)
-	sm.SetModuleReader(modReader)
-
-	meta := &tfmodule.Meta{
-		Path:                 mod.Path,
-		CoreRequirements:     coreRequirements,
-		ProviderRequirements: mod.Meta.ProviderRequirements,
-		ProviderReferences:   mod.Meta.ProviderReferences,
-		Variables:            mod.Meta.Variables,
-	}
-
-	return sm.SchemaForModule(meta)
 }
 
 func (mm *moduleManager) CallersOfModule(modPath string) ([]Module, error) {

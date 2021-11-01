@@ -8,7 +8,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.DocumentSymbolParams) ([]lsp.DocumentSymbol, error) {
+func (svc *service) TextDocumentSymbol(ctx context.Context, params lsp.DocumentSymbolParams) ([]lsp.DocumentSymbol, error) {
 	var symbols []lsp.DocumentSymbol
 
 	fs, err := lsctx.DocumentStorage(ctx)
@@ -16,32 +16,22 @@ func (h *logHandler) TextDocumentSymbol(ctx context.Context, params lsp.Document
 		return symbols, err
 	}
 
-	cc, err := lsctx.ClientCapabilities(ctx)
+	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return symbols, err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
+	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
 	if err != nil {
 		return symbols, err
 	}
 
-	file, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
+	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return symbols, err
 	}
 
-	mod, err := mf.ModuleByPath(file.Dir())
-	if err != nil {
-		return symbols, err
-	}
-
-	d, err := decoderForDocument(ctx, mod, file.LanguageID())
-	if err != nil {
-		return symbols, err
-	}
-
-	sbs, err := d.SymbolsInFile(file.Filename())
+	sbs, err := d.SymbolsInFile(doc.Filename())
 	if err != nil {
 		return symbols, err
 	}
