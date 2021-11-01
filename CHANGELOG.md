@@ -7,6 +7,8 @@ BREAKING CHANGES:
 ENHANCEMENTS:
 
  - Implement opt-in telemetry (documented in [`docs/telemetry.md`](https://github.com/hashicorp/terraform-ls/blob/v0.24.0/docs/telemetry.md)) ([#681](https://github.com/hashicorp/terraform-ls/pull/681))
+ - Provide workspace-wide symbols for variables in `*.tfvars` ([#658](https://github.com/hashicorp/terraform-ls/issues/658))
+ - Go-to-definition now highlights just the definition of a block/attribute instead of the whole attribute/block ([#689](https://github.com/hashicorp/terraform-ls/pull/689))
 
 BUG FIXES:
 
