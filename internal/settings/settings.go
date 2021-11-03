@@ -15,9 +15,10 @@ type ExperimentalFeatures struct {
 
 type Options struct {
 	// ModulePaths describes a list of absolute paths to modules to load
-	ModulePaths        []string `mapstructure:"rootModulePaths"`
-	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
-	CommandPrefix      string   `mapstructure:"commandPrefix"`
+	ModulePaths          []string `mapstructure:"rootModulePaths"`
+	ExcludeModulePaths   []string `mapstructure:"excludeModulePaths"`
+	CommandPrefix        string   `mapstructure:"commandPrefix"`
+	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`

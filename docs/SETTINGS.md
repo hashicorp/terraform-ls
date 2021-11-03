@@ -68,6 +68,18 @@ Or if left empty
 This setting should be deprecated once the language server supports multiple workspaces,
 as this arises in VS code because a server instance is started per VS Code workspace.
 
+## `ignoreDirectoryNames` (`[]string`)
+
+This allows excluding directories from being checked by the walker by passing a static list of directory names.
+
+The following list of directories will always be ignored:
+
+- `.git`
+- `.idea`
+- `.vscode`
+- `terraform.tfstate.d`
+- `.terragrunt-cache`
+
 ## `experimentalFeatures` (object)
 
 This object contains inner settings used to opt into experimental features not yet ready to be on by default.
