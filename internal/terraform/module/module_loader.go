@@ -115,7 +115,6 @@ func (ml *moduleLoader) run(ctx context.Context) {
 				// This may happen when op was received from the channel
 				// and dispatcher checked capacity before loading counters
 				// were decremented.
-				ml.logger.Println("no available capacity, retrying dispatch")
 				time.Sleep(100 * time.Millisecond)
 				ml.queue.PushOp(nextOp)
 				go ml.tryDispatchingModuleOp()
