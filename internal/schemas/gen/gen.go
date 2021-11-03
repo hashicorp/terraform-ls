@@ -245,15 +245,16 @@ func listProviders(tier string) ([]provider, error) {
 // registry for registry.terraform.io/jfrog/artifactory: failed to retrieve
 // authentication checksums for provider: 404 Not Found
 var ignore = map[string]bool{
-	"Icinga/icinga2":         true,
-	"a10networks/vthunder":   true,
-	"jradtilbrook/buildkite": true,
-	"HewlettPackard/oneview": true,
-	"zerotier/zerotier":      true,
-	"nirmata/nirmata":        true,
-	"datastax/astra":         true,
-	"oktadeveloper/okta":     true,
-	"jfrog/artifactory":      true,
+	"Icinga/icinga2":          true,
+	"a10networks/vthunder":    true,
+	"jradtilbrook/buildkite":  true,
+	"HewlettPackard/oneview":  true,
+	"zerotier/zerotier":       true,
+	"nirmata/nirmata":         true,
+	"datastax/astra":          true,
+	"oktadeveloper/okta":      true,
+	"jfrog/artifactory":       true,
+	"ThalesGroup/ciphertrust": true,
 }
 
 func filter(providers []provider) (filtered []provider) {
