@@ -61,14 +61,15 @@ const queueCap = 50
 
 func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
 	return &Walker{
-		fs:        fs,
-		modMgr:    modMgr,
-		logger:    discardLogger,
-		walkingMu: &sync.RWMutex{},
-		queue:     newWalkerQueue(fs),
-		queueMu:   &sync.Mutex{},
-		pushChan:  make(chan struct{}, queueCap),
-		doneCh:    make(chan struct{}, 0),
+		fs:                   fs,
+		modMgr:               modMgr,
+		logger:               discardLogger,
+		walkingMu:            &sync.RWMutex{},
+		queue:                newWalkerQueue(fs),
+		queueMu:              &sync.Mutex{},
+		pushChan:             make(chan struct{}, queueCap),
+		doneCh:               make(chan struct{}, 0),
+		ignoreDirectoryNames: skipDirNames,
 	}
 }
 
@@ -88,7 +89,6 @@ func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
 }
 
 func (w *Walker) SetIgnoreDirectoryNames(ignoreDirectoryNames []string) {
-	w.ignoreDirectoryNames = make(map[string]bool)
 	for _, path := range ignoreDirectoryNames {
 		w.ignoreDirectoryNames[path] = true
 	}
@@ -209,6 +209,11 @@ func (w *Walker) IsWalking() bool {
 	return w.walking
 }
 
+func (w *Walker) isSkippableDir(dirName string) bool {
+	_, ok := w.ignoreDirectoryNames[dirName]
+	return ok
+}
+
 func (w *Walker) walk(ctx context.Context, rootPath string) error {
 	// We ignore the passed FS and instead read straight from OS FS
 	// because that would require reimplementing filepath.Walk and
@@ -231,7 +236,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 			return err
 		}
 
-		if _, ok := w.ignoreDirectoryNames[info.Name()]; ok {
+		if w.isSkippableDir(info.Name()) {
 			w.logger.Printf("skipping %s", path)
 			return filepath.SkipDir
 		}
@@ -287,19 +292,8 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 			return nil
 		}
 
-		// TODO? move this to the top? combine with ignoreDirectoryNames?
-		if isSkippableDir(info.Name()) {
-			w.logger.Printf("skipping %s", path)
-			return filepath.SkipDir
-		}
-
 		return nil
 	})
 	w.logger.Printf("walking of %s finished", rootPath)
 	return err
-}
-
-func isSkippableDir(dirName string) bool {
-	_, ok := skipDirNames[dirName]
-	return ok
 }
