@@ -194,7 +194,6 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
-	// TODO? do we need to validate the input here?
 	svc.walker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
 	svc.walker.SetExcludeModulePaths(excludeModulePaths)
 	svc.walker.EnqueuePath(fh.Dir())
