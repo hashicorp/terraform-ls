@@ -21,6 +21,8 @@ var (
 
 	// skipDirNames represent directory names which would never contain
 	// plugin/module cache, so it's safe to skip them during the walk
+	//
+	// please keep the list in `SETTINGS.md` in sync
 	skipDirNames = map[string]bool{
 		".git":                true,
 		".idea":               true,

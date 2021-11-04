@@ -134,7 +134,7 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 			PerWorkDir: map[string][]*mock.Call{
 				pluginDir: validTfMockCalls(),
 				emptyDir: {
-					// TODO? can this be empty?
+					// TODO! improve mock and remove entry for `emptyDir` here afterwards
 					{
 						Method:        "GetExecPath",
 						Repeatability: 1,
