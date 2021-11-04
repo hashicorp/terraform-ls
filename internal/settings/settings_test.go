@@ -1,6 +1,8 @@
 package settings
 
 import (
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -48,7 +50,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 		result string
 	}{
 		{datadir.DataDirName, `cannot ignore data directory ".terraform"`},
-		{"path/path", `expected directory name, got a path: "path/path"`},
+		{filepath.Join("path", "path"), fmt.Sprintf(`expected directory name, got a path: "path%spath"`, string(filepath.Separator))},
 	}
 
 	for _, table := range tables {
