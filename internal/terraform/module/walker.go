@@ -48,7 +48,8 @@ type Walker struct {
 	cancelFunc context.CancelFunc
 	doneCh     <-chan struct{}
 
-	excludeModulePaths map[string]bool
+	excludeModulePaths   map[string]bool
+	ignoreDirectoryNames map[string]bool
 }
 
 // queueCap represents channel buffer size
@@ -81,6 +82,13 @@ func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
 	w.excludeModulePaths = make(map[string]bool)
 	for _, path := range excludeModulePaths {
 		w.excludeModulePaths[path] = true
+	}
+}
+
+func (w *Walker) SetIgnoreDirectoryNames(ignoreDirectoryNames []string) {
+	w.ignoreDirectoryNames = make(map[string]bool)
+	for _, path := range ignoreDirectoryNames {
+		w.ignoreDirectoryNames[path] = true
 	}
 }
 
@@ -221,6 +229,11 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 			return err
 		}
 
+		if _, ok := w.ignoreDirectoryNames[info.Name()]; ok {
+			w.logger.Printf("skipping %s", path)
+			return filepath.SkipDir
+		}
+
 		if _, ok := w.excludeModulePaths[dir]; ok {
 			return filepath.SkipDir
 		}
@@ -272,6 +285,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 			return nil
 		}
 
+		// TODO? move this to the top? combine with ignoreDirectoryNames?
 		if isSkippableDir(info.Name()) {
 			w.logger.Printf("skipping %s", path)
 			return filepath.SkipDir

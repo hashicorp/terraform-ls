@@ -59,6 +59,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		"options.rootModulePaths":                         false,
 		"options.excludeModulePaths":                      false,
 		"options.commandPrefix":                           false,
+		"options.ignoreDirectoryNames":                    false,
 		"options.experimentalFeatures.validateOnSave":     false,
 		"options.terraformExecPath":                       false,
 		"options.terraformExecTimeout":                    "",
@@ -123,6 +124,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
 	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
+	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
 	properties["options.terraformExecPath"] = len(out.Options.TerraformExecPath) > 0
@@ -192,6 +194,8 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
+	// TODO? do we need to validate the input here?
+	svc.walker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
 	svc.walker.SetExcludeModulePaths(excludeModulePaths)
 	svc.walker.EnqueuePath(fh.Dir())
 
