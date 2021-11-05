@@ -50,7 +50,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 		result string
 	}{
 		{datadir.DataDirName, `cannot ignore data directory ".terraform"`},
-		{filepath.Join("path", "path"), fmt.Sprintf(`expected directory name, got a path: "path%spath"`, string(filepath.Separator))},
+		{filepath.Join("path", "path"), fmt.Sprintf(`expected directory name, got a path: %q`, filepath.Join("path", "path"))},
 	}
 
 	for _, table := range tables {
