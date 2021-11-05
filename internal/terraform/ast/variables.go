@@ -16,11 +16,17 @@ func NewVarsFilename(name string) (VarsFilename, bool) {
 }
 
 func IsVarsFilename(name string) bool {
-	return strings.HasSuffix(name, ".tfvars") && !isIgnoredFile(name)
+	return (strings.HasSuffix(name, ".tfvars") ||
+		strings.HasSuffix(name, ".tfvars.json")) &&
+		!isIgnoredFile(name)
 }
 
 func (vf VarsFilename) String() string {
 	return string(vf)
+}
+
+func (vf VarsFilename) IsJSON() bool {
+	return strings.HasSuffix(string(vf), ".json")
 }
 
 func (vf VarsFilename) IsAutoloaded() bool {
