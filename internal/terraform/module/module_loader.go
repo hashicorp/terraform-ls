@@ -249,13 +249,13 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 		}
 		ml.modStore.SetMetaState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeDecodeReferenceTargets:
-		if mod.MetaState == op.OpStateQueued {
+		if mod.RefTargetsState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
 			return nil
 		}
 		ml.modStore.SetReferenceTargetsState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeDecodeReferenceOrigins:
-		if mod.MetaState == op.OpStateQueued {
+		if mod.RefOriginsState == op.OpStateQueued {
 			// avoid enqueuing duplicate operation
 			return nil
 		}
