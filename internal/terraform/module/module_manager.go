@@ -68,7 +68,9 @@ func (mm *moduleManager) AddModule(modPath string) (Module, error) {
 
 	err := mm.moduleStore.Add(modPath)
 	if err != nil {
-		return nil, err
+		if _, ok := err.(*state.AlreadyExistsError); !ok {
+			return nil, err
+		}
 	}
 
 	// TODO: Avoid returning new module, just the error from adding
