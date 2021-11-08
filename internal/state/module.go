@@ -739,7 +739,7 @@ func (s *ModuleStore) SetReferenceTargetsState(path string, state op.OpState) er
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
@@ -782,7 +782,7 @@ func (s *ModuleStore) SetReferenceOriginsState(path string, state op.OpState) er
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleByPath(txn, path)
+	mod, err := moduleCopyByPath(txn, path)
 	if err != nil {
 		return err
 	}
