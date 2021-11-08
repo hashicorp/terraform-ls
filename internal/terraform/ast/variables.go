@@ -31,7 +31,10 @@ func (vf VarsFilename) IsJSON() bool {
 
 func (vf VarsFilename) IsAutoloaded() bool {
 	name := string(vf)
-	return strings.HasSuffix(name, ".auto.tfvars") || name == "terraform.tfvars"
+	return strings.HasSuffix(name, ".auto.tfvars") ||
+		strings.HasSuffix(name, ".auto.tfvars.json") ||
+		name == "terraform.tfvars" ||
+		name == "terraform.tfvars.json"
 }
 
 type VarsFiles map[VarsFilename]*hcl.File
