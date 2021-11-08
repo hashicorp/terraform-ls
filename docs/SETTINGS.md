@@ -70,7 +70,7 @@ as this arises in VS code because a server instance is started per VS Code works
 
 ## `ignoreDirectoryNames` (`[]string`)
 
-This allows excluding directories from being checked by the walker by passing a static list of directory names.
+This allows excluding directories from being indexed upon initialization by passing a list of directory names.
 
 The following list of directories will always be ignored:
 
