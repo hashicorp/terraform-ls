@@ -52,7 +52,7 @@ func (o *Options) Validate() error {
 	if len(o.IgnoreDirectoryNames) > 0 {
 		for _, directory := range o.IgnoreDirectoryNames {
 			if directory == datadir.DataDirName {
-				return fmt.Errorf("cannot ignore data directory %q", datadir.DataDirName)
+				return fmt.Errorf("cannot ignore directory %q", datadir.DataDirName)
 			}
 
 			if strings.Contains(directory, string(filepath.Separator)) {

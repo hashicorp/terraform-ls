@@ -55,7 +55,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 
 	for _, table := range tables {
 		out, err := DecodeOptions(map[string]interface{}{
-			"IgnoreDirectoryNames": []string{table.input},
+			"ignoreDirectoryNames": []string{table.input},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +69,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 }
 func TestValidate_IgnoreDirectoryNames_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"IgnoreDirectoryNames": []string{"directory"},
+		"ignoreDirectoryNames": []string{"directory"},
 	})
 	if err != nil {
 		t.Fatal(err)
