@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
@@ -118,4 +119,43 @@ func TestInitialize_multipleFolders(t *testing.T) {
 	    	}
 	    ]
 	}`, rootDir.URI(), rootDir.URI())})
+}
+
+func TestInitialize_ignoreDirectoryNames(t *testing.T) {
+	tmpDir := TempDir(t, "plugin", "ignore")
+	pluginDir := filepath.Join(tmpDir.Dir(), "plugin")
+	emptyDir := filepath.Join(tmpDir.Dir(), "ignore")
+
+	InitPluginCache(t, pluginDir)
+	InitPluginCache(t, emptyDir)
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				pluginDir: validTfMockCalls(),
+				emptyDir: {
+					// TODO! improve mock and remove entry for `emptyDir` here afterwards
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+				},
+			},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+			"capabilities": {},
+			"rootUri": %q,
+			"processId": 12345,
+			"initializationOptions": {
+				"ignoreDirectoryNames": [%q]
+			}
+	}`, tmpDir.URI(), "ignore")})
 }

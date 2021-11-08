@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -15,9 +17,10 @@ type ExperimentalFeatures struct {
 
 type Options struct {
 	// ModulePaths describes a list of absolute paths to modules to load
-	ModulePaths        []string `mapstructure:"rootModulePaths"`
-	ExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
-	CommandPrefix      string   `mapstructure:"commandPrefix"`
+	ModulePaths          []string `mapstructure:"rootModulePaths"`
+	ExcludeModulePaths   []string `mapstructure:"excludeModulePaths"`
+	CommandPrefix        string   `mapstructure:"commandPrefix"`
+	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
@@ -43,6 +46,18 @@ func (o *Options) Validate() error {
 		}
 		if stat.IsDir() {
 			return fmt.Errorf("Expected a Terraform binary, got a directory: %q", path)
+		}
+	}
+
+	if len(o.IgnoreDirectoryNames) > 0 {
+		for _, directory := range o.IgnoreDirectoryNames {
+			if directory == datadir.DataDirName {
+				return fmt.Errorf("cannot ignore directory %q", datadir.DataDirName)
+			}
+
+			if strings.Contains(directory, string(filepath.Separator)) {
+				return fmt.Errorf("expected directory name, got a path: %q", directory)
+			}
 		}
 	}
 
