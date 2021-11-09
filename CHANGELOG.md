@@ -10,6 +10,7 @@ ENHANCEMENTS:
  - Provide workspace-wide symbols for variables in `*.tfvars` ([#658](https://github.com/hashicorp/terraform-ls/issues/658))
  - Go-to-definition now highlights just the definition of a block/attribute instead of the whole attribute/block ([#689](https://github.com/hashicorp/terraform-ls/pull/689))
  - Add configuration option allowing to exclude directories from being indexed upon initialization ([#696](https://github.com/hashicorp/terraform-ls/pull/696))
+ - Parse `*.tfvars.json` for workspace-wide symbols and diagnostics ([#697](https://github.com/hashicorp/terraform-ls/pull/697))
 
 BUG FIXES:
 
