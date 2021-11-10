@@ -1,4 +1,4 @@
-## 0.24.0 (Unreleased)
+## 0.24.0 (10 November 2021)
 
 BREAKING CHANGES:
 
