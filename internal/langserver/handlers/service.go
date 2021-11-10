@@ -300,6 +300,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
+			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 
 			return handle(ctx, req, lh.DidChangeWorkspaceFolders)

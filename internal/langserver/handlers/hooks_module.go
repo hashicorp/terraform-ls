@@ -11,6 +11,12 @@ import (
 
 func sendModuleTelemetry(ctx context.Context, store *state.StateStore, telemetrySender telemetry.Sender) state.ModuleChangeHook {
 	return func(_, newMod *state.Module) {
+		if newMod == nil {
+			// module is being removed
+			// TODO: Track module removal as an event
+			return
+		}
+
 		modId, err := store.GetModuleID(newMod.Path)
 		if err != nil {
 			return
