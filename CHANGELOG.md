@@ -17,6 +17,7 @@ BUG FIXES:
  - The server announces just a single formatting code action, other actions `source`, `source.fixAll` and `source.formatAll` are removed which helps avoid running the same action multiple times and better follows conventions ([#680](https://github.com/hashicorp/terraform-ls/pull/680))
  - Requesting `Only: []` code actions is now no-op ([#680](https://github.com/hashicorp/terraform-ls/pull/680))
  - Fix indexing of references in dependent modules ([#698](https://github.com/hashicorp/terraform-ls/pull/698))
+ - Fix workspace folder removal/addition at runtime ([#707](https://github.com/hashicorp/terraform-ls/pull/707))
 
 INTERNAL:
 
