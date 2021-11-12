@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
+	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-schema/backend"
@@ -116,6 +117,25 @@ func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) stat
 		if newMod != nil {
 			diags.Append("HCL", newMod.ModuleDiagnostics.AsMap())
 			diags.Append("HCL", newMod.VarsDiagnostics.AutoloadedOnly().AsMap())
+		}
+	}
+}
+
+func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) state.ModuleChangeHook {
+	return func(oldMod, newMod *state.Module) {
+		oldOrigins, oldTargets := 0, 0
+		if oldMod != nil {
+			oldOrigins = len(oldMod.RefOrigins)
+			oldTargets = len(oldMod.RefTargets)
+		}
+		newOrigins, newTargets := 0, 0
+		if newMod != nil {
+			oldOrigins = len(newMod.RefOrigins)
+			oldTargets = len(newMod.RefTargets)
+		}
+
+		if oldOrigins != newOrigins || oldTargets != newTargets {
+			clientRequester.Callback(ctx, "workspace/codeLens/refresh", nil)
 		}
 	}
 }
