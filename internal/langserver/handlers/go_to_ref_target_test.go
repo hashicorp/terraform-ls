@@ -87,7 +87,7 @@ output "foo" {
 		}`, tmpDir.URI())}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
-			"result": {
+			"result": [{
 				"uri":"%s/main.tf",
 				"range": {
 					"start": {
@@ -99,7 +99,7 @@ output "foo" {
 						"character": 1
 					}
 				}
-			}
+			}]
 		}`, tmpDir.URI()))
 }
 
@@ -180,7 +180,7 @@ output "foo" {
 		}`, tmpDir.URI())}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
-			"result": {
+			"result": [{
 				"uri":"%s/main.tf",
 				"range": {
 					"start": {
@@ -192,6 +192,6 @@ output "foo" {
 						"character": 1
 					}
 				}
-			}
+			}]
 		}`, tmpDir.URI()))
 }

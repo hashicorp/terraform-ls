@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -21,17 +22,17 @@ func (svc *service) References(ctx context.Context, params lsp.ReferenceParams) 
 		return list, err
 	}
 
-	d, err := svc.decoderForDocument(ctx, doc)
-	if err != nil {
-		return list, err
-	}
-
 	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, doc)
 	if err != nil {
 		return list, err
 	}
 
-	origins := d.ReferenceOriginsTargetingPos(doc.Filename(), fPos.Position())
+	path := lang.Path{
+		Path:       doc.Dir(),
+		LanguageID: doc.LanguageID(),
+	}
+
+	origins := svc.decoder.ReferenceOriginsTargetingPos(path, doc.Filename(), fPos.Position())
 
 	return ilsp.RefOriginsToLocations(origins), nil
 }
