@@ -133,7 +133,7 @@ EOF
 autocmd BufWritePre *.tf lua vim.lsp.buf.formatting()
 ```
 
-Make sure to read through to [CONFIG.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/CONFIG.md#terraformls) if you need more detailed settings.
+Make sure to read through to [server_configurations.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#terraformls) if you need more detailed settings.
 
 ## VS Code
 
