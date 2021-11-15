@@ -49,19 +49,19 @@ func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interfac
 		return response, err
 	}
 
-	found, _ := mm.ModuleByPath(modPath)
-	if found == nil {
+	mod, _ := mm.ModuleByPath(modPath)
+	if mod == nil {
 		return response, nil
 	}
 
-	for provider, version := range found.Meta.ProviderRequirements {
+	for provider, version := range mod.Meta.ProviderRequirements {
 		response.ProviderRequirements[provider.String()] = providerRequirement{
 			DisplayName:       provider.ForDisplay(),
 			VersionConstraint: version.String(),
 		}
 	}
 
-	for provider, version := range found.InstalledProviders {
+	for provider, version := range mod.InstalledProviders {
 		response.InstalledProviders[provider.String()] = version.String()
 	}
 

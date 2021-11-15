@@ -33,8 +33,8 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_argumentError(t *tes
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
-	    "capabilities": {},
-	    "rootUri": %q,
+		"capabilities": {},
+		"rootUri": %q,
 		"processId": 12345
 	}`, rootUri)})
 	ls.Notify(t, &langserver.CallRequest{
@@ -92,8 +92,8 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 	}
 
 	pVersions := map[tfaddr.Provider]*version.Version{
-		tfaddr.NewDefaultProvider("aws"):    testVersion(t, "1.2.3"),
-		tfaddr.NewDefaultProvider("google"): testVersion(t, "2.5.5"),
+		tfaddr.NewDefaultProvider("aws"):    version.Must(version.NewVersion("1.2.3")),
+		tfaddr.NewDefaultProvider("google"): version.Must(version.NewVersion("2.5.5")),
 	}
 	err = s.Modules.UpdateInstalledProviders(modDir, pVersions)
 	if err != nil {
@@ -114,8 +114,8 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 	ls.Call(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
-	    "capabilities": {},
-	    "rootUri": %q,
+		"capabilities": {},
+		"rootUri": %q,
 		"processId": 12345
 	}`, modUri)})
 	ls.Notify(t, &langserver.CallRequest{
@@ -157,12 +157,4 @@ func testConstraint(t *testing.T, v string) version.Constraints {
 		t.Fatal(err)
 	}
 	return constraints
-}
-
-func testVersion(t *testing.T, v string) *version.Version {
-	ver, err := version.NewVersion(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return ver
 }
