@@ -1,3 +1,9 @@
+## 0.25.0 (unreleased)
+
+ENHANCEMENTS:
+
+- Introduce `module.providers` command ([#712](https://github.com/hashicorp/terraform-ls/pull/712))
+
 ## 0.24.0 (10 November 2021)
 
 BREAKING CHANGES:
