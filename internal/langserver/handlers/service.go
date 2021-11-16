@@ -51,6 +51,7 @@ type service struct {
 	tfExecOpts       *exec.ExecutorOpts
 	telemetry        telemetry.Sender
 	decoder          *decoder.Decoder
+	stateStore       *state.StateStore
 
 	additionalHandlers map[string]rpch.Func
 }
@@ -434,29 +435,33 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
 	svc.sessCtx = exec.WithExecutorFactory(svc.sessCtx, svc.tfExecFactory)
 
-	store, err := state.NewStateStore()
-	if err != nil {
-		return err
-	}
-	store.SetLogger(svc.logger)
-	store.Modules.ChangeHooks = state.ModuleChangeHooks{
-		sendModuleTelemetry(svc.sessCtx, store, svc.telemetry),
+	if svc.stateStore == nil {
+		store, err := state.NewStateStore()
+		if err != nil {
+			return err
+		}
+		svc.stateStore = store
 	}
 
-	svc.modStore = store.Modules
-	svc.schemaStore = store.ProviderSchemas
+	svc.stateStore.SetLogger(svc.logger)
+	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
+		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
+	}
+
+	svc.modStore = svc.stateStore.Modules
+	svc.schemaStore = svc.stateStore.ProviderSchemas
 
 	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
 		ModuleReader: svc.modStore,
 		SchemaReader: svc.schemaStore,
 	})
 
-	err = schemas.PreloadSchemasToStore(store.ProviderSchemas)
+	err := schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
 	if err != nil {
 		return err
 	}
 
-	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, store.Modules, store.ProviderSchemas)
+	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, svc.stateStore.Modules, svc.stateStore.ProviderSchemas)
 	svc.modMgr.SetLogger(svc.logger)
 
 	svc.walker = svc.newWalker(svc.fs, svc.modMgr)

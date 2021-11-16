@@ -17,6 +17,7 @@ var handlers = cmd.Handlers{
 	cmd.Name("terraform.init"):     command.TerraformInitHandler,
 	cmd.Name("terraform.validate"): command.TerraformValidateHandler,
 	cmd.Name("module.calls"):       command.ModuleCallsHandler,
+	cmd.Name("module.providers"):   command.ModuleProvidersHandler,
 }
 
 func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
