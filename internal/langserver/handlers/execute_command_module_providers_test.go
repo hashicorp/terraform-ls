@@ -136,11 +136,13 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 			"provider_requirements": {
 				"registry.terraform.io/hashicorp/aws": {
 					"display_name": "hashicorp/aws",
-					"version_constraint":"1.2.3"
+					"version_constraint":"1.2.3",
+					"docs_link": "https://registry.terraform.io/providers/hashicorp/aws/latest"
 				},
 				"registry.terraform.io/hashicorp/google": {
 					"display_name": "hashicorp/google",
-					"version_constraint": "\u003e= 2.0.0"
+					"version_constraint": "\u003e= 2.0.0",
+					"docs_link": "https://registry.terraform.io/providers/hashicorp/google/latest"
 				}
 			},
 			"installed_providers":{

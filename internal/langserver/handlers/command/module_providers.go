@@ -8,6 +8,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
 )
 
 const moduleProvidersVersion = 0
@@ -20,7 +21,8 @@ type moduleProvidersResponse struct {
 
 type providerRequirement struct {
 	DisplayName       string `json:"display_name"`
-	VersionConstraint string `json:"version_constraint"`
+	VersionConstraint string `json:"version_constraint,omitempty"`
+	DocsLink          string `json:"docs_link,omitempty"`
 }
 
 func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -58,6 +60,7 @@ func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interfac
 		response.ProviderRequirements[provider.String()] = providerRequirement{
 			DisplayName:       provider.ForDisplay(),
 			VersionConstraint: version.String(),
+			DocsLink:          getProviderDocumentationLink(provider),
 		}
 	}
 
@@ -66,4 +69,12 @@ func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interfac
 	}
 
 	return response, nil
+}
+
+func getProviderDocumentationLink(provider tfaddr.Provider) string {
+	if provider.IsLegacy() || provider.IsBuiltIn() {
+		return ""
+	}
+
+	return fmt.Sprintf(`https://registry.terraform.io/providers/%s/latest`, provider.ForDisplay())
 }
