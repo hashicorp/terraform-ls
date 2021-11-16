@@ -77,7 +77,7 @@ func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interfac
 }
 
 func getProviderDocumentationLink(provider tfaddr.Provider) string {
-	if provider.IsLegacy() || provider.IsBuiltIn() {
+	if provider.IsLegacy() || provider.IsBuiltIn() || provider.Hostname != "registry.terraform.io" {
 		return ""
 	}
 
