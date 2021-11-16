@@ -36,7 +36,6 @@ type ModuleManager interface {
 	AddModule(modPath string) (Module, error)
 	RemoveModule(modPath string) error
 	EnqueueModuleOp(modPath string, opType op.OpType, deferFunc DeferFunc) error
-	EnqueueModuleOpWait(modPath string, opType op.OpType) error
 	CancelLoading()
 }
 

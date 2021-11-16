@@ -48,11 +48,11 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseModuleConfiguration)
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
-	modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceOrigins)
+	modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleConfiguration, nil)
+	modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseVariables, nil)
+	modMgr.EnqueueModuleOp(mod.Path, op.OpTypeLoadModuleMetadata, nil)
+	modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceTargets, nil)
+	modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceOrigins, nil)
 
 	if mod.TerraformVersionState == op.OpStateUnknown {
 		modMgr.EnqueueModuleOp(mod.Path, op.OpTypeGetTerraformVersion, nil)
@@ -70,6 +70,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
+	// TODO: move
 	notifier, err := lsctx.DiagnosticsNotifier(ctx)
 	if err != nil {
 		return err

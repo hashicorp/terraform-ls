@@ -245,8 +245,7 @@ func decodeCalledModulesFunc(modMgr ModuleManager, w Watcher, modPath string) De
 			}
 			modMgr.AddModule(mc.Path)
 
-			modMgr.EnqueueModuleOpWait(mc.Path, op.OpTypeParseModuleConfiguration)
-
+			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeParseModuleConfiguration, nil)
 			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeParseVariables, nil)
 			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeLoadModuleMetadata, nil)
 			modMgr.EnqueueModuleOp(mc.Path, op.OpTypeDecodeReferenceTargets, nil)

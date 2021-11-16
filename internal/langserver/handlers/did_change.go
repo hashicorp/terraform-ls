@@ -61,35 +61,29 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseModuleConfiguration)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleConfiguration, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseVariables, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: parallelise the operations below in a workgroup
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeLoadModuleMetadata, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceTargets, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceOrigins)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceOrigins, nil)
 	if err != nil {
 		return err
 	}
 
+	// TODO
 	notifier, err := lsctx.DiagnosticsNotifier(ctx)
-	if err != nil {
-		return err
-	}
-
-	// obtain fresh module state after the above operations finished
-	mod, err = modMgr.ModuleByPath(fh.Dir())
 	if err != nil {
 		return err
 	}
