@@ -3,6 +3,11 @@
 ENHANCEMENTS:
 
  - Introduce `module.providers` command ([#712](https://github.com/hashicorp/terraform-ls/pull/712))
+ - Diagnostics for all known modules/files are now published automatically (as opposed to just open files) ([#714](https://github.com/hashicorp/terraform-ls/pull/714))
+
+NOTES:
+
+ - Diagnostics for non-autoloaded `*.tfvars` are no longer published, see [#715](https://github.com/hashicorp/terraform-ls/issues/715) for more details ([#714](https://github.com/hashicorp/terraform-ls/pull/714))
 
 INTERNAL:
 
