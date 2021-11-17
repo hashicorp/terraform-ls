@@ -70,9 +70,11 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	expClientCaps := lsp.ExperimentalClientCapabilities(clientCaps.Experimental)
 
+	svc.server = jrpc2.ServerFromContext(ctx)
+
 	if tv, ok := expClientCaps.TelemetryVersion(); ok {
 		svc.logger.Printf("enabling telemetry (version: %d)", tv)
-		err := svc.setupTelemetry(tv, jrpc2.ServerFromContext(ctx))
+		err := svc.setupTelemetry(tv, svc.server)
 		if err != nil {
 			svc.logger.Printf("failed to setup telemetry: %s", err)
 		}

@@ -52,6 +52,8 @@ type service struct {
 	telemetry        telemetry.Sender
 	decoder          *decoder.Decoder
 	stateStore       *state.StateStore
+	server           session.Server
+	diagsNotifier    *diagnostics.Notifier
 
 	additionalHandlers map[string]rpch.Func
 }
@@ -100,8 +102,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
-	notifier := diagnostics.NewNotifier(svc.sessCtx, svc.logger)
-
 	rootDir := ""
 	commandPrefix := ""
 	clientName := ""
@@ -140,7 +140,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			return handle(ctx, req, TextDocumentDidChange)
@@ -150,7 +149,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
@@ -161,7 +159,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			return handle(ctx, req, TextDocumentDidClose)
 		},
@@ -287,7 +284,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
@@ -328,7 +325,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
-			ctx = lsctx.WithDiagnosticsNotifier(ctx, notifier)
+			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
@@ -430,6 +427,8 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		execOpts.Timeout = d
 	}
 
+	svc.diagsNotifier = diagnostics.NewNotifier(svc.server, svc.logger)
+
 	svc.tfExecOpts = execOpts
 
 	svc.sessCtx = exec.WithExecutorOpts(svc.sessCtx, execOpts)
@@ -445,6 +444,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	svc.stateStore.SetLogger(svc.logger)
 	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
+		updateDiagnostics(svc.sessCtx, svc.diagsNotifier),
 		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
 	}
 

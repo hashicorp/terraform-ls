@@ -699,17 +699,22 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleCopyByPath(txn, path)
+	oldMod, err := moduleByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
+	mod := oldMod.Copy()
 	mod.ModuleDiagnostics = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
 
 	txn.Commit()
 	return nil
@@ -719,17 +724,22 @@ func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags ast.VarsDiags) er
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
-	mod, err := moduleCopyByPath(txn, path)
+	oldMod, err := moduleByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
+	mod := oldMod.Copy()
 	mod.VarsDiagnostics = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
+	})
 
 	txn.Commit()
 	return nil

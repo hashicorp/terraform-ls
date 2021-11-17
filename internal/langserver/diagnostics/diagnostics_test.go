@@ -13,10 +13,7 @@ import (
 var discardLogger = log.New(ioutil.Discard, "", 0)
 
 func TestDiags_Closes(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	n := NewNotifier(ctx, discardLogger)
-
-	cancel()
+	n := NewNotifier(noopNotifier{}, discardLogger)
 
 	diags := NewDiagnostics()
 	diags.Append("test", map[string]hcl.Diagnostics{
@@ -27,7 +24,9 @@ func TestDiags_Closes(t *testing.T) {
 		},
 	})
 
-	n.PublishHCLDiags(context.Background(), t.TempDir(), diags)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	n.PublishHCLDiags(ctx, t.TempDir(), diags)
 
 	if _, open := <-n.diags; open {
 		t.Fatal("channel should be closed")
@@ -41,10 +40,7 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	n := NewNotifier(ctx, discardLogger)
-
-	cancel()
+	n := NewNotifier(noopNotifier{}, discardLogger)
 
 	diags := NewDiagnostics()
 	diags.Append("test", map[string]hcl.Diagnostics{
@@ -55,7 +51,9 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 		},
 	})
 
-	n.PublishHCLDiags(context.Background(), t.TempDir(), diags)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	n.PublishHCLDiags(ctx, t.TempDir(), diags)
 }
 
 func TestDiagnostics_Append(t *testing.T) {
@@ -132,4 +130,10 @@ func TestDiagnostics_Append(t *testing.T) {
 	if diff := cmp.Diff(expectedDiags, diags); diff != "" {
 		t.Fatalf("diagnostics mismatch: %s", diff)
 	}
+}
+
+type noopNotifier struct{}
+
+func (noopNotifier) Notify(ctx context.Context, method string, params interface{}) error {
+	return nil
 }

@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
-	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
@@ -61,47 +59,26 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 		return err
 	}
 
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseModuleConfiguration)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleConfiguration, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeParseVariables)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseVariables, nil)
 	if err != nil {
 		return err
 	}
-	// TODO: parallelise the operations below in a workgroup
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeLoadModuleMetadata)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeLoadModuleMetadata, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceTargets)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceTargets, nil)
 	if err != nil {
 		return err
 	}
-	err = modMgr.EnqueueModuleOpWait(mod.Path, op.OpTypeDecodeReferenceOrigins)
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceOrigins, nil)
 	if err != nil {
 		return err
 	}
-
-	notifier, err := lsctx.DiagnosticsNotifier(ctx)
-	if err != nil {
-		return err
-	}
-
-	// obtain fresh module state after the above operations finished
-	mod, err = modMgr.ModuleByPath(fh.Dir())
-	if err != nil {
-		return err
-	}
-
-	diags := diagnostics.NewDiagnostics()
-	diags.EmptyRootDiagnostic()
-	diags.Append("HCL", mod.ModuleDiagnostics.AsMap())
-	diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
-	if vf, ok := ast.NewVarsFilename(f.Filename()); ok && !vf.IsAutoloaded() {
-		diags.Append("HCL", mod.VarsDiagnostics.ForFile(vf).AsMap())
-	}
-	notifier.PublishHCLDiags(ctx, mod.Path, diags)
 
 	return nil
 }

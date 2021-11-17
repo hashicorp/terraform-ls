@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/hcl/v2"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -21,20 +20,24 @@ type diagContext struct {
 
 type DiagnosticSource string
 
+type ClientNotifier interface {
+	Notify(ctx context.Context, method string, params interface{}) error
+}
+
 // Notifier is a type responsible for queueing HCL diagnostics to be converted
 // and sent to the client
 type Notifier struct {
 	logger         *log.Logger
-	sessCtx        context.Context
 	diags          chan diagContext
+	clientNotifier ClientNotifier
 	closeDiagsOnce sync.Once
 }
 
-func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
+func NewNotifier(clientNotifier ClientNotifier, logger *log.Logger) *Notifier {
 	n := &Notifier{
-		logger:  logger,
-		sessCtx: sessCtx,
-		diags:   make(chan diagContext, 50),
+		logger:         logger,
+		diags:          make(chan diagContext, 50),
+		clientNotifier: clientNotifier,
 	}
 	go n.notify()
 	return n
@@ -44,7 +47,7 @@ func NewNotifier(sessCtx context.Context, logger *log.Logger) *Notifier {
 // A dir path is passed which is joined with the filename keys of the map, to form a file URI.
 func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags Diagnostics) {
 	select {
-	case <-n.sessCtx.Done():
+	case <-ctx.Done():
 		n.closeDiagsOnce.Do(func() {
 			close(n.diags)
 		})
@@ -68,7 +71,7 @@ func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags Di
 
 func (n *Notifier) notify() {
 	for d := range n.diags {
-		if err := jrpc2.ServerFromContext(d.ctx).Notify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
+		if err := n.clientNotifier.Notify(d.ctx, "textDocument/publishDiagnostics", lsp.PublishDiagnosticsParams{
 			URI:         d.uri,
 			Diagnostics: d.diags,
 		}); err != nil {

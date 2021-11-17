@@ -81,21 +81,12 @@ func (mm *moduleManager) RemoveModule(modPath string) error {
 	return mm.moduleStore.Remove(modPath)
 }
 
-func (mm *moduleManager) EnqueueModuleOpWait(modPath string, opType op.OpType) error {
-	modOp := NewModuleOperation(modPath, opType)
-	mm.loader.EnqueueModuleOp(modOp)
-
-	<-modOp.Done()
-
-	return nil
-}
-
 func (mm *moduleManager) EnqueueModuleOp(modPath string, opType op.OpType, deferFunc DeferFunc) error {
 	modOp := NewModuleOperation(modPath, opType)
 	modOp.Defer = deferFunc
 	mm.loader.EnqueueModuleOp(modOp)
 	if mm.syncLoading {
-		<-modOp.Done()
+		<-modOp.done()
 	}
 	return nil
 }
