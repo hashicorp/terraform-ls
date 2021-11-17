@@ -260,6 +260,11 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 				}
 			}
 
+			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleConfiguration, nil)
+			if err != nil {
+				return err
+			}
+
 			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion, nil)
 			if err != nil {
 				return err
