@@ -18,3 +18,12 @@ type ClientNotifier interface {
 }
 
 type SessionFactory func(context.Context) Session
+
+type ClientCaller interface {
+	Callback(ctx context.Context, method string, params interface{}) (*jrpc2.Response, error)
+}
+
+type Server interface {
+	ClientNotifier
+	ClientCaller
+}

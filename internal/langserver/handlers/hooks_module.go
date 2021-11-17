@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-schema/backend"
@@ -89,5 +90,32 @@ func sendModuleTelemetry(ctx context.Context, store *state.StateStore, telemetry
 		}
 
 		telemetrySender.SendEvent(ctx, "moduleData", properties)
+	}
+}
+
+func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) state.ModuleChangeHook {
+	return func(oldMod, newMod *state.Module) {
+		// TODO: check if diagnostics have actually changed
+		oldDiags, newDiags := 0, 0
+		if oldMod != nil {
+			oldDiags = len(oldMod.ModuleDiagnostics) + len(oldMod.VarsDiagnostics)
+		}
+		if newMod != nil {
+			newDiags = len(newMod.ModuleDiagnostics) + len(newMod.VarsDiagnostics)
+		}
+
+		diags := diagnostics.NewDiagnostics()
+		diags.EmptyRootDiagnostic()
+
+		defer notifier.PublishHCLDiags(ctx, newMod.Path, diags)
+
+		if oldDiags == 0 && newDiags == 0 {
+			return
+		}
+
+		if newMod != nil {
+			diags.Append("HCL", newMod.ModuleDiagnostics.AsMap())
+			diags.Append("HCL", newMod.VarsDiagnostics.AutoloadedOnly().AsMap())
+		}
 	}
 }
