@@ -46,7 +46,7 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	<-modOp.doneCh
+	<-modOp.done()
 
 	manifestOp := NewModuleOperation(modPath, op.OpTypeLoadModuleMetadata)
 	err = ml.EnqueueModuleOp(manifestOp)
@@ -66,17 +66,12 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	}
 
 	t.Log("waiting for all operations to finish")
-	for i := 0; i <= 2; i++ {
-		select {
-		case <-manifestOp.doneCh:
-			t.Log("manifest parsed")
-		case <-originsOp.doneCh:
-			t.Log("origins collected")
-		case <-targetsOp.doneCh:
-			t.Log("targets collected")
-		case <-ctx.Done():
-		}
-	}
+	<-manifestOp.done()
+	t.Log("manifest parsed")
+	<-originsOp.done()
+	t.Log("origins collected")
+	<-targetsOp.done()
+	t.Log("targets collected")
 
 	mod, err := ss.Modules.ModuleByPath(modPath)
 	if err != nil {

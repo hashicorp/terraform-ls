@@ -86,7 +86,7 @@ func (mm *moduleManager) EnqueueModuleOp(modPath string, opType op.OpType, defer
 	modOp.Defer = deferFunc
 	mm.loader.EnqueueModuleOp(modOp)
 	if mm.syncLoading {
-		<-modOp.Done()
+		<-modOp.done()
 	}
 	return nil
 }

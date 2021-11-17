@@ -39,9 +39,10 @@ func NewModuleOperation(modPath string, typ op.OpType) ModuleOperation {
 
 func (mo ModuleOperation) markAsDone() {
 	mo.doneCh <- struct{}{}
+	close(mo.doneCh)
 }
 
-func (mo ModuleOperation) Done() <-chan struct{} {
+func (mo ModuleOperation) done() <-chan struct{} {
 	return mo.doneCh
 }
 
