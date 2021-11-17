@@ -1,8 +1,12 @@
-## 0.25.0 (unreleased)
+## 0.25.0 (Unreleased)
 
 ENHANCEMENTS:
 
-- Introduce `module.providers` command ([#712](https://github.com/hashicorp/terraform-ls/pull/712))
+ - Introduce `module.providers` command ([#712](https://github.com/hashicorp/terraform-ls/pull/712))
+
+INTERNAL:
+
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.30.1 to 0.30.2 ([#713](https://github.com/hashicorp/terraform-ls/pull/713))
 
 ## 0.24.0 (10 November 2021)
 
