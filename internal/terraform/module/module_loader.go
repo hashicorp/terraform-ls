@@ -144,7 +144,7 @@ func (ml *moduleLoader) nonPrioCapacity() int64 {
 }
 
 func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperation) {
-	ml.logger.Printf("executing %q for %s", modOp.Type, modOp.ModulePath)
+	ml.logger.Printf("ML: executing %q for %q", modOp.Type, modOp.ModulePath)
 	// TODO: Report progress in % for each op based on queue length
 	defer modOp.markAsDone()
 
@@ -196,7 +196,7 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 			modOp.ModulePath, modOp.Type)
 		return
 	}
-	ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
+	ml.logger.Printf("ML: finished %q for %q", modOp.Type, modOp.ModulePath)
 
 	if modOp.Defer != nil {
 		modOp.Defer(opErr)
@@ -209,56 +209,30 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 		return err
 	}
 
-	ml.logger.Printf("ML: enqueing %q module operation: %s", modOp.Type, modOp.ModulePath)
+	ml.logger.Printf("ML: enqueing %q module operation: %q", modOp.Type, modOp.ModulePath)
+
+	if operationState(mod, modOp.Type) == op.OpStateQueued {
+		// avoid enqueuing duplicate operation
+		modOp.markAsDone()
+		return nil
+	}
 
 	switch modOp.Type {
 	case op.OpTypeGetTerraformVersion:
-		if mod.TerraformVersionState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetTerraformVersionState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeObtainSchema:
-		if mod.ProviderSchemaState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetProviderSchemaState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeParseModuleConfiguration:
-		if mod.ModuleParsingState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetModuleParsingState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeParseVariables:
-		if mod.VarsParsingState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetVarsParsingState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeParseModuleManifest:
-		if mod.ModManifestState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetModManifestState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeLoadModuleMetadata:
-		if mod.MetaState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetMetaState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeDecodeReferenceTargets:
-		if mod.RefTargetsState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetReferenceTargetsState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeDecodeReferenceOrigins:
-		if mod.RefOriginsState == op.OpStateQueued {
-			// avoid enqueuing duplicate operation
-			return nil
-		}
 		ml.modStore.SetReferenceOriginsState(modOp.ModulePath, op.OpStateQueued)
 	}
 
@@ -266,6 +240,28 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 	ml.tryDispatchingModuleOp()
 
 	return nil
+}
+
+func operationState(mod *state.Module, opType op.OpType) op.OpState {
+	switch opType {
+	case op.OpTypeGetTerraformVersion:
+		return mod.TerraformVersionState
+	case op.OpTypeObtainSchema:
+		return mod.ProviderSchemaState
+	case op.OpTypeParseModuleConfiguration:
+		return mod.ModuleParsingState
+	case op.OpTypeParseVariables:
+		return mod.VarsParsingState
+	case op.OpTypeParseModuleManifest:
+		return mod.ModManifestState
+	case op.OpTypeLoadModuleMetadata:
+		return mod.MetaState
+	case op.OpTypeDecodeReferenceTargets:
+		return mod.RefTargetsState
+	case op.OpTypeDecodeReferenceOrigins:
+		return mod.RefOriginsState
+	}
+	return op.OpStateUnknown
 }
 
 func (ml *moduleLoader) DequeueModule(modPath string) {
