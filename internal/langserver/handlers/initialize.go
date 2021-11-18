@@ -266,7 +266,7 @@ func resolvePath(rootDir, rawPath string) (string, error) {
 }
 
 func cleanupPath(path string) (string, error) {
-	absPath, err := filepath.EvalSymlinks(path)
+	absPath, err := filepath.Abs(path)
 	return toLowerVolumePath(absPath), err
 }
 
