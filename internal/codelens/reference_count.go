@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -86,6 +87,11 @@ func ReferenceCount(showReferencesCmdId string) lang.CodeLensFunc {
 				},
 			})
 		}
+
+		sort.SliceStable(lenses, func(i, j int) bool {
+			return lenses[i].Range.Start.Byte < lenses[j].Range.Start.Byte
+		})
+
 		return lenses, nil
 	}
 }

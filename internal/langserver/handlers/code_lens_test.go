@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -193,5 +195,158 @@ output "test" {
 						}
 					}
 				]
+	}`)
+}
+
+func TestCodeLens_referenceCount_crossModule(t *testing.T) {
+	rootModPath, err := filepath.Abs(filepath.Join("testdata", "single-submodule"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	submodPath := filepath.Join(rootModPath, "application")
+
+	rootModUri := lsp.FileHandlerFromDirPath(rootModPath)
+	submodUri := lsp.FileHandlerFromDirPath(submodPath)
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				submodPath:  validTfMockCalls(),
+				rootModPath: validTfMockCalls(),
+			},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {
+			"experimental": {
+				"showReferencesCommandId": "test.id"
+			}
+		},
+		"rootUri": %q,
+		"processId": 12345
+	}`, rootModUri.URI())})
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": %q,
+			"uri": "%s/main.tf"
+		}
+	}`, `variable "environment_name" {
+  type = string
+}
+
+variable "app_prefix" {
+  type = string
+}
+
+variable "instances" {
+  type = number
+}
+`, submodUri.URI())})
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/codeLens",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			}
+		}`, submodUri.URI()),
+	}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": [
+				{
+					"range": {
+						"start": {
+							"line": 0,
+							"character": 0
+						},
+						"end": {
+							"line": 2,
+							"character": 1
+						}
+					},
+					"command": {
+						"title": "1 reference",
+						"command": "test.id",
+						"arguments": [
+							{
+								"line": 0,
+								"character": 13
+							},
+							{
+								"includeDeclaration": false
+							}
+						]
+					}
+				},
+				{
+					"range": {
+						"start": {
+							"line": 4,
+							"character": 0
+						},
+						"end": {
+							"line": 6,
+							"character": 1
+						}
+					},
+					"command": {
+						"title": "1 reference",
+						"command": "test.id",
+						"arguments": [
+							{
+								"line": 4,
+								"character": 10
+							},
+							{
+								"includeDeclaration": false
+							}
+						]
+					}
+				},
+				{
+					"range": {
+						"start": {
+							"line": 8,
+							"character": 0
+						},
+						"end": {
+							"line": 10,
+							"character": 1
+						}
+					},
+					"command": {
+						"title": "1 reference",
+						"command": "test.id",
+						"arguments": [
+							{
+								"line": 8,
+								"character": 10
+							},
+							{
+								"includeDeclaration": false
+							}
+						]
+					}
+				}
+			]
 	}`)
 }
