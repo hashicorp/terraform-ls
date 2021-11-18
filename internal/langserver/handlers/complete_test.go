@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-exec/tfinstall"
@@ -716,12 +715,6 @@ output "test" {
 			"uri": "%s/main.tf"
 		}
 	}`, mainCfg, tmpDir.URI())})
-
-	// module manifest-dependent tasks are scheduled & executed
-	// asynchronously and we currently have no way of waiting
-	// for them to complete.
-	// TODO remove once we support synchronous dependent tasks
-	time.Sleep(1500 * time.Millisecond)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",

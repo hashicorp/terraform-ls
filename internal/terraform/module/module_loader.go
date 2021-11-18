@@ -199,7 +199,7 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 	ml.logger.Printf("finished %q for %s", modOp.Type, modOp.ModulePath)
 
 	if modOp.Defer != nil {
-		go modOp.Defer(opErr)
+		modOp.Defer(opErr)
 	}
 }
 
