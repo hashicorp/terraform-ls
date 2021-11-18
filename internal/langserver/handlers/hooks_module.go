@@ -130,7 +130,7 @@ func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) 
 		}
 		newOrigins, newTargets := 0, 0
 		if newMod != nil {
-			oldOrigins = len(newMod.RefOrigins)
+			newOrigins = len(newMod.RefOrigins)
 			oldTargets = len(newMod.RefTargets)
 		}
 
