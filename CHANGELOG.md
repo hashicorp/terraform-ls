@@ -12,6 +12,7 @@ NOTES:
 INTERNAL:
 
  - build(deps): bump github.com/creachadair/jrpc2 from 0.30.1 to 0.30.2 ([#713](https://github.com/hashicorp/terraform-ls/pull/713))
+ - Avoid duplicate state entries (by avoiding symlink evaluation) ([#699](https://github.com/hashicorp/terraform-ls/pull/699))
 
 ## 0.24.0 (10 November 2021)
 
