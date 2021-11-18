@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
@@ -178,6 +179,9 @@ variable "instances" {
 			"uri": "%s/main.tf"
 		}
 	}`, submodUri.URI())})
+	// TODO remove once we support synchronous dependent tasks
+	// See https://github.com/hashicorp/terraform-ls/issues/719
+	time.Sleep(2 * time.Second)
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/references",
 		ReqParams: fmt.Sprintf(`{
