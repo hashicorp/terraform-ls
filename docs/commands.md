@@ -143,4 +143,38 @@ List of module which are called from the current module.
 }
 ```
 
+### `module.providers`
+
+Provides information about the providers of the current module, including requirements and
+installed version.
+
+**Arguments:**
+
+ - `uri` - URI of the directory of the module in question, e.g. `file:///path/to/network`
+
+**Outputs:**
+
+ - `v` - describes version of the format; Will be used in the future to communicate format changes.
+ - `provider_requirements` - map of provider FQN string to requirements object
+   - `display_name` - a user-friendly FQN string, simplified for readability
+   - `version_constraint` - a comma-separated list of version constraints
+   - `docs_link` - a link to the provider documentation; if available
+ - `installed_providers` - map of provider FQN string to installed version string; can be empty if none installed
+
+```json
+{
+  "v": 0,
+  "provider_requirements": {
+    "registry.terraform.io/hashicorp/aws": {
+      "display_name": "hashicorp/aws",
+      "version_constraint": "~> 3.64.0",
+      "docs_link": "https://registry.terraform.io/providers/hashicorp/aws/latest"
+    }
+  },
+  "installed_providers": {
+    "registry.terraform.io/hashicorp/aws": "3.64.2"
+  }
+}
+```
+
 ### `rootmodules` (DEPRECATED, use `module.callers` instead)
