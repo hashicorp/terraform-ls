@@ -87,7 +87,7 @@ func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
 		subModuleName := ""
 
 		// determine if this module is nested in another module
-		// in the currecnt workspace by finding a period in the moduleName
+		// in the current workspace by finding a period in the moduleName
 		// is it better to look at SourceAddr and compare?
 		if strings.Contains(manifest.Key, ".") {
 			v := strings.Split(manifest.Key, ".")

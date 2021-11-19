@@ -102,4 +102,45 @@ can be used to hint the user e.g. where to run `init` or `validate` from.
 }
 ```
 
+### `module.calls`
+
+List of module which are called from the current module.
+
+**Arguments:**
+
+ - `uri` - URI of the directory of the module in question, e.g. `file:///path/to/network`
+
+**Outputs:**
+
+ - `v` - describes version of the format; Will be used in the future to communicate format changes.
+ - `module_calls` - array of modules which are called from the module in question
+   - `name` - a unique identifier for this particular module
+   - `source_addr` - the source address given for this module in configuration
+   - `version` - the exact version of the module
+   - `source_type` - source of the Terraform module, e.g. github or tfregistry
+   - `docs_link` - a link to the module documentation; if available
+   - `dependent_modules` - array of dependent modules with the same structure as `module_calls`
+
+```json
+{
+  "v": 0,
+  "module_calls": [
+    {
+      "name": "child",
+      "source_addr": "./child",
+      "source_type": "local",
+      "dependent_modules": []
+    },
+    {
+      "name": "vpc",
+      "source_addr": "terraform-aws-modules/vpc/aws",
+      "version": "3.11.0",
+      "source_type": "tfregistry",
+      "docs_link": "https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/3.11.0",
+      "dependent_modules": []
+    }
+  ]
+}
+```
+
 ### `rootmodules` (DEPRECATED, use `module.callers` instead)
