@@ -717,11 +717,9 @@ output "test" {
 		}
 	}`, mainCfg, tmpDir.URI())})
 
-	// module manifest-dependent tasks are scheduled & executed
-	// asynchronously and we currently have no way of waiting
-	// for them to complete.
 	// TODO remove once we support synchronous dependent tasks
-	time.Sleep(1500 * time.Millisecond)
+	// See https://github.com/hashicorp/terraform-ls/issues/719
+	time.Sleep(2 * time.Second)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",

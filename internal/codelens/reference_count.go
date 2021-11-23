@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -17,12 +18,17 @@ func ReferenceCount(showReferencesCmdId string) lang.CodeLensFunc {
 	return func(ctx context.Context, path lang.Path, file string) ([]lang.CodeLens, error) {
 		lenses := make([]lang.CodeLens, 0)
 
-		pathCtx, err := decoder.PathCtx(ctx)
+		localCtx, err := decoder.PathCtx(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		refTargets := pathCtx.ReferenceTargets.OutermostInFile(file)
+		pathReader, err := decoder.PathReaderFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		refTargets := localCtx.ReferenceTargets.OutermostInFile(file)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +54,14 @@ func ReferenceCount(showReferencesCmdId string) lang.CodeLensFunc {
 					defRange = refTarget.DefRangePtr
 				}
 
-				originCount += len(pathCtx.ReferenceOrigins.Targeting(refTarget))
+				paths := pathReader.Paths(ctx)
+				for _, p := range paths {
+					pathCtx, err := pathReader.PathContext(p)
+					if err != nil {
+						continue
+					}
+					originCount += len(pathCtx.ReferenceOrigins.Match(p, refTarget, path))
+				}
 			}
 
 			if originCount == 0 {
@@ -74,6 +87,11 @@ func ReferenceCount(showReferencesCmdId string) lang.CodeLensFunc {
 				},
 			})
 		}
+
+		sort.SliceStable(lenses, func(i, j int) bool {
+			return lenses[i].Range.Start.Byte < lenses[j].Range.Start.Byte
+		})
+
 		return lenses, nil
 	}
 }

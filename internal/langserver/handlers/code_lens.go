@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -22,12 +23,12 @@ func (svc *service) TextDocumentCodeLens(ctx context.Context, params lsp.CodeLen
 		return list, err
 	}
 
-	d, err := svc.decoderForDocument(ctx, doc)
-	if err != nil {
-		return nil, err
+	path := lang.Path{
+		Path:       doc.Dir(),
+		LanguageID: doc.LanguageID(),
 	}
 
-	lenses, err := d.CodeLensesForFile(ctx, doc.Filename())
+	lenses, err := svc.decoder.CodeLensesForFile(ctx, path, doc.Filename())
 	if err != nil {
 		return nil, err
 	}

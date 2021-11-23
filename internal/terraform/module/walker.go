@@ -265,6 +265,11 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 				return err
 			}
 
+			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseVariables, nil)
+			if err != nil {
+				return err
+			}
+
 			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion, nil)
 			if err != nil {
 				return err
@@ -272,12 +277,26 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			if dataDir.ModuleManifestPath != "" {
+				// References are collected *after* manifest parsing
+				// so that we reflect any references to submodules.
 				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest,
 					decodeCalledModulesFunc(w.modMgr, w.watcher, dir))
 				if err != nil {
 					return err
 				}
+			} else {
+				// If there is no module manifest we still collect references
+				// as this module may also be called by other modules.
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeDecodeReferenceTargets, nil)
+				if err != nil {
+					return err
+				}
+				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeDecodeReferenceOrigins, nil)
+				if err != nil {
+					return err
+				}
 			}
+
 			if dataDir.PluginLockFilePath != "" {
 				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeObtainSchema, nil)
 				if err != nil {

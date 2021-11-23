@@ -79,7 +79,7 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	}
 
 	expectedOrigins := reference.Origins{
-		{
+		reference.LocalOrigin{
 			Addr: lang.Address{lang.RootStep{Name: "var"}, lang.AttrStep{Name: "count"}},
 			Range: hcl.Range{
 				Filename: "main.tf",
