@@ -4,6 +4,7 @@ ENHANCEMENTS:
 
  - Introduce `module.providers` command ([#712](https://github.com/hashicorp/terraform-ls/pull/712))
  - Diagnostics for all known modules/files are now published automatically (as opposed to just open files) ([#714](https://github.com/hashicorp/terraform-ls/pull/714))
+ - Introduce go-to-variable from module input name ([#700](https://github.com/hashicorp/terraform-ls/pull/700))
 
 NOTES:
 
