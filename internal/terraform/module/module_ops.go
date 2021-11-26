@@ -299,17 +299,32 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
-	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+	d := decoder.NewDecoder(ctx, &decoder.PathReader{
 		ModuleReader: modStore,
 		SchemaReader: schemaReader,
-	}).Path(lang.Path{
+	})
+
+	moduleDecoder, err := d.Path(lang.Path{
 		Path:       modPath,
 		LanguageID: ilsp.Terraform.String(),
 	})
 	if err != nil {
 		return err
 	}
-	origins, rErr := d.CollectReferenceOrigins()
+
+	varsDecoder, err := d.Path(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Tfvars.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// TODO! merge errors?
+	moduleOrigins, _ := moduleDecoder.CollectReferenceOrigins()
+	varOrigins, rErr := varsDecoder.CollectReferenceOrigins()
+
+	origins := append(moduleOrigins, varOrigins...)
 
 	sErr := modStore.UpdateReferenceOrigins(modPath, origins, rErr)
 	if sErr != nil {
