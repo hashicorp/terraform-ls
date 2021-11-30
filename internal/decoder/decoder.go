@@ -66,7 +66,7 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 		Files:            make(map[string]*hcl.File, 0),
 	}
 
-	for _, origin := range mod.RefOrigins {
+	for _, origin := range mod.VarsRefOrigins {
 		if ast.IsVarsFilename(origin.OriginRange().Filename) {
 			pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
 		}

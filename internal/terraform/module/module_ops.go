@@ -312,6 +312,14 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
+	moduleOrigins, rModuleErr := moduleDecoder.CollectReferenceOrigins()
+
+	sErr := modStore.UpdateReferenceOrigins(modPath, moduleOrigins, rModuleErr)
+	if sErr != nil {
+		return sErr
+	}
+
+	// TODO? move into own module operation?
 	varsDecoder, err := d.Path(lang.Path{
 		Path:       modPath,
 		LanguageID: ilsp.Tfvars.String(),
@@ -320,16 +328,11 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
-	// TODO! merge errors?
-	moduleOrigins, _ := moduleDecoder.CollectReferenceOrigins()
-	varOrigins, rErr := varsDecoder.CollectReferenceOrigins()
-
-	origins := append(moduleOrigins, varOrigins...)
-
-	sErr := modStore.UpdateReferenceOrigins(modPath, origins, rErr)
+	varOrigins, rVarsErr := varsDecoder.CollectReferenceOrigins()
+	sErr = modStore.UpdateVarsReferenceOrigins(modPath, varOrigins, rVarsErr)
 	if sErr != nil {
 		return sErr
 	}
 
-	return rErr
+	return rModuleErr
 }
