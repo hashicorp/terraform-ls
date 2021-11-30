@@ -130,7 +130,7 @@ let g:LanguageClient_serverCommands = {
 lua <<EOF
   require'lspconfig'.terraformls.setup{} 
 EOF
-autocmd BufWritePre *.tf lua vim.lsp.buf.formatting()
+autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
 ```
 
 Make sure to read through to [server_configurations.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#terraformls) if you need more detailed settings.
