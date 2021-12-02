@@ -164,6 +164,11 @@ func (ml *moduleLoader) executeModuleOp(ctx context.Context, modOp ModuleOperati
 		if opErr != nil {
 			ml.logger.Printf("failed to decode reference origins: %s", opErr)
 		}
+	case op.OpTypeDecodeVarsReferences:
+		opErr = DecodeVarsReferences(ctx, ml.modStore, ml.schemaStore, modOp.ModulePath)
+		if opErr != nil {
+			ml.logger.Printf("failed to decode vars references: %s", opErr)
+		}
 	default:
 		ml.logger.Printf("%s: unknown operation (%#v) for module operation",
 			modOp.ModulePath, modOp.Type)
@@ -207,6 +212,8 @@ func (ml *moduleLoader) EnqueueModuleOp(modOp ModuleOperation) error {
 		ml.modStore.SetReferenceTargetsState(modOp.ModulePath, op.OpStateQueued)
 	case op.OpTypeDecodeReferenceOrigins:
 		ml.modStore.SetReferenceOriginsState(modOp.ModulePath, op.OpStateQueued)
+	case op.OpTypeDecodeVarsReferences:
+		ml.modStore.SetVarsReferenceOriginsState(modOp.ModulePath, op.OpStateQueued)
 	}
 
 	ml.queue.PushOp(modOp)
@@ -233,6 +240,8 @@ func operationState(mod *state.Module, opType op.OpType) op.OpState {
 		return mod.RefTargetsState
 	case op.OpTypeDecodeReferenceOrigins:
 		return mod.RefOriginsState
+	case op.OpTypeDecodeVarsReferences:
+		return mod.VarsRefOriginsState
 	}
 	return op.OpStateUnknown
 }

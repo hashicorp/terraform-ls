@@ -79,6 +79,10 @@ func TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocument
 	if err != nil {
 		return err
 	}
+	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeVarsReferences, nil)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

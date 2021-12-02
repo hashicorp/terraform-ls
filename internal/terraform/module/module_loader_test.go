@@ -64,6 +64,11 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	varsOriginsOp := NewModuleOperation(modPath, op.OpTypeDecodeVarsReferences)
+	err = ml.EnqueueModuleOp(varsOriginsOp)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Log("waiting for all operations to finish")
 	<-manifestOp.done()
@@ -72,6 +77,8 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	t.Log("origins collected")
 	<-targetsOp.done()
 	t.Log("targets collected")
+	<-varsOriginsOp.done()
+	t.Log("vars origins collected")
 
 	mod, err := ss.Modules.ModuleByPath(modPath)
 	if err != nil {
