@@ -8,7 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-exec/tfinstall"
+	"github.com/hashicorp/go-version"
+	hcinstall "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/fs"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 )
 
 func TestExec_timeout(t *testing.T) {
@@ -17,7 +22,7 @@ func TestExec_timeout(t *testing.T) {
 	// See https://github.com/hashicorp/terraform-exec/issues/129
 	t.Skip("upstream implementation prone to race conditions")
 
-	e := newExecutor(t)
+	e := newExecutor(t, "1.1.0")
 	timeout := 1 * time.Millisecond
 	e.SetTimeout(timeout)
 
@@ -37,7 +42,7 @@ func TestExec_timeout(t *testing.T) {
 }
 
 func TestExec_cancel(t *testing.T) {
-	e := newExecutor(t)
+	e := newExecutor(t, "1.1.0")
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
@@ -57,21 +62,29 @@ func TestExec_cancel(t *testing.T) {
 	t.Fatalf("expected cancel error: %#v, given: %#v", expectedErr, err)
 }
 
-func newExecutor(t *testing.T) TerraformExecutor {
-	tmpDir := TempDir(t)
-	workDir := filepath.Join(tmpDir, "workdir")
-	err := os.MkdirAll(workDir, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
-	installDir := filepath.Join(tmpDir, "installdir")
-	err = os.MkdirAll(installDir, 0755)
+func newExecutor(t *testing.T, tfVersion string) TerraformExecutor {
+	ctx := context.Background()
+	workDir := TempDir(t)
+	installDir := filepath.Join(workDir, "hcinstall")
+	err := os.MkdirAll(installDir, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	opts := tfinstall.ExactVersion("1.1.0", installDir)
-	execPath, err := opts.ExecPath(context.Background())
+	i := hcinstall.NewInstaller()
+	v := version.Must(version.NewVersion(tfVersion))
+
+	execPath, err := i.Ensure(ctx, []src.Source{
+		&fs.ExactVersion{
+			Product: product.Terraform,
+			Version: v,
+		},
+		&releases.ExactVersion{
+			Product:    product.Terraform,
+			Version:    v,
+			InstallDir: installDir,
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
