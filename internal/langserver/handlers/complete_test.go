@@ -457,50 +457,82 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 }
 
 var testModuleSchemaOutput = `{
-  "format_version": "0.1",
-  "provider_schemas": {
-	"test/test": {
-	  "provider": {
-		"version": 0,
-		"block": {
-		  "attributes": {
-			"anonymous": {
-			  "type": "number",
-			  "description": "Desc 1",
-			  "description_kind": "plaintext",
-			  "optional": true
+	"format_version": "0.1",
+	"provider_schemas": {
+		"test/test": {
+			"provider": {
+				"version": 0,
+				"block": {
+					"attributes": {
+						"anonymous": {
+							"type": "number",
+							"description": "Desc 1",
+							"description_kind": "plaintext",
+							"optional": true
+						},
+						"base_url": {
+							"type": "string",
+							"description": "Desc **2**",
+							"description_kind": "markdown",
+							"optional": true
+						},
+						"individual": {
+							"type": "bool",
+							"description": "Desc _3_",
+							"description_kind": "markdown",
+							"optional": true
+						}
+					}
+				}
 			},
-			"base_url": {
-			  "type": "string",
-			  "description": "Desc **2**",
-			  "description_kind": "markdown",
-			  "optional": true
-			},
-			"individual": {
-			  "type": "bool",
-			  "description": "Desc _3_",
-			  "description_kind": "markdown",
-			  "optional": true
+			"resource_schemas": {
+				"test_resource_1": {
+					"version": 0,
+					"block": {
+						"description": "Resource 1 description",
+						"description_kind": "markdown",
+						"attributes": {
+							"deprecated_attr": {
+								"deprecated": true
+							}
+						}
+					}
+				},
+				"test_resource_2": {
+					"version": 0,
+					"block": {
+						"description_kind": "markdown",
+						"attributes": {
+							"optional_attr": {
+								"type": "string",
+								"description_kind": "plain",
+								"optional": true
+							}
+						},
+						"block_types": {
+							"setting": {
+								"nesting_mode": "set",
+								"block": {
+									"attributes": {
+										"name": {
+											"type": "string",
+											"description_kind": "plain",
+											"required": true
+										},
+										"value": {
+											"type": "string",
+											"description_kind": "plain",
+											"required": true
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
-		  }
 		}
-	  }
 	}
-  },
-  "resource_schemas": {
-	"test_resource_1": {
-	  "version": 0,
-	  "block": {
-		"description": "Resource 1 description",
-		"description_kind": "markdown",
-		"attributes": {
-		  "deprecated_attr": {
-			"deprecated": true
-		  }
-		}
-	  }
-	}
-  }
 }`
 
 func TestVarsCompletion_withValidData(t *testing.T) {

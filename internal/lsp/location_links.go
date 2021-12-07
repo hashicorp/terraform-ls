@@ -31,6 +31,7 @@ func refTargetToLocationLink(target *decoder.ReferenceTarget) lsp.LocationLink {
 		OriginSelectionRange: HCLRangeToLSP(target.OriginRange),
 		TargetURI:            lsp.DocumentURI(targetUri),
 		TargetRange:          HCLRangeToLSP(target.Range),
+		TargetSelectionRange: HCLRangeToLSP(target.Range),
 	}
 
 	if target.DefRangePtr != nil {
