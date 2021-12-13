@@ -1,3 +1,4 @@
+//go:build generate
 // +build generate
 
 package main
@@ -228,33 +229,11 @@ func listProviders(tier string) ([]provider, error) {
 	return filter(providers), nil
 }
 
-// these providers fail to download
-
-// Could not retrieve the list of available versions for provider icinga/icinga2:
-// no available releases match the given constraints
-
-// Error while installing a10networks/vthunder v0.4.21: could not query provider
-// registry for registry.terraform.io/a10networks/vthunder: failed to retrieve
-// authentication checksums for provider: 404 Not Found
-
-// Error while installing jradtilbrook/buildkite v0.1.0: provider
-// registry.terraform.io/jradtilbrook/buildkite 0.1.0 is not available for
-// linux_amd64
-
-// Error while installing jfrog/artifactory v2.6.4: could not query provider
-// registry for registry.terraform.io/jfrog/artifactory: failed to retrieve
-// authentication checksums for provider: 404 Not Found
 var ignore = map[string]bool{
-	"Icinga/icinga2":          true,
 	"a10networks/vthunder":    true,
-	"jradtilbrook/buildkite":  true,
 	"HewlettPackard/oneview":  true,
-	"zerotier/zerotier":       true,
-	"nirmata/nirmata":         true,
-	"datastax/astra":          true,
-	"oktadeveloper/okta":      true,
-	"jfrog/artifactory":       true,
 	"ThalesGroup/ciphertrust": true,
+	"nullstone-io/ns":         true,
 }
 
 func filter(providers []provider) (filtered []provider) {
