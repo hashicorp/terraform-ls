@@ -70,7 +70,7 @@ func newExecutor(t *testing.T) TerraformExecutor {
 		t.Fatal(err)
 	}
 
-	opts := tfinstall.ExactVersion("0.13.1", installDir)
+	opts := tfinstall.ExactVersion("1.1.0", installDir)
 	execPath, err := opts.ExecPath(context.Background())
 	if err != nil {
 		t.Fatal(err)
