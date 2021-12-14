@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -16,6 +17,12 @@ import (
 )
 
 func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// The underlying API is now deprecated anyway
+		// so it's not worth adapting tests for all platforms.
+		// We just skip tests on Apple Silicon.
+		t.Skip("deprecated API")
+	}
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)

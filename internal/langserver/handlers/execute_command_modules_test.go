@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
@@ -116,6 +117,13 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 }
 
 func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		// The underlying API is now deprecated anyway
+		// so it's not worth adapting tests for all platforms.
+		// We just skip tests on Apple Silicon.
+		t.Skip("deprecated API")
+	}
+
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)
