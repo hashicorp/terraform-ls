@@ -8,9 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	hcinstall "github.com/hashicorp/hc-install"
-	"github.com/hashicorp/hc-install/fs"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/hc-install/src"
@@ -22,7 +20,7 @@ func TestExec_timeout(t *testing.T) {
 	// See https://github.com/hashicorp/terraform-exec/issues/129
 	t.Skip("upstream implementation prone to race conditions")
 
-	e := newExecutor(t, "1.1.0")
+	e := newExecutor(t)
 	timeout := 1 * time.Millisecond
 	e.SetTimeout(timeout)
 
@@ -42,7 +40,7 @@ func TestExec_timeout(t *testing.T) {
 }
 
 func TestExec_cancel(t *testing.T) {
-	e := newExecutor(t, "1.1.0")
+	e := newExecutor(t)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
@@ -62,7 +60,7 @@ func TestExec_cancel(t *testing.T) {
 	t.Fatalf("expected cancel error: %#v, given: %#v", expectedErr, err)
 }
 
-func newExecutor(t *testing.T, tfVersion string) TerraformExecutor {
+func newExecutor(t *testing.T) TerraformExecutor {
 	ctx := context.Background()
 	workDir := TempDir(t)
 	installDir := filepath.Join(workDir, "hcinstall")
@@ -72,16 +70,10 @@ func newExecutor(t *testing.T, tfVersion string) TerraformExecutor {
 	}
 
 	i := hcinstall.NewInstaller()
-	v := version.Must(version.NewVersion(tfVersion))
 
 	execPath, err := i.Ensure(ctx, []src.Source{
-		&fs.ExactVersion{
-			Product: product.Terraform,
-			Version: v,
-		},
-		&releases.ExactVersion{
+		&releases.LatestVersion{
 			Product:    product.Terraform,
-			Version:    v,
 			InstallDir: installDir,
 		},
 	})
