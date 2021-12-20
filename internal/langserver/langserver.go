@@ -125,7 +125,7 @@ func (ls *langServer) StartTCP(address string) error {
 
 	go func() {
 		ls.logger.Println("Starting loop server ...")
-		err = server.Loop(accepter, ls.newService, &server.LoopOptions{
+		err = server.Loop(context.TODO(), accepter, ls.newService, &server.LoopOptions{
 			ServerOptions: ls.srvOptions,
 		})
 		if err != nil {
