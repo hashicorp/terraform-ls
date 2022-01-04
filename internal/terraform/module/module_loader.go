@@ -3,7 +3,6 @@ package module
 import (
 	"context"
 	"log"
-	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -30,13 +29,12 @@ type moduleLoader struct {
 }
 
 func newModuleLoader(fs filesystem.Filesystem, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore) *moduleLoader {
-	p := loaderParallelism(runtime.NumCPU())
 	plc, lc := int64(0), int64(0)
 	ml := &moduleLoader{
 		queue:              newModuleOpsQueue(fs),
 		logger:             defaultLogger,
-		nonPrioParallelism: p.NonPriority,
-		prioParallelism:    p.Priority,
+		nonPrioParallelism: 1,
+		prioParallelism:    1,
 		opsToDispatch:      make(chan ModuleOperation, 1),
 		loadingCount:       &lc,
 		prioLoadingCount:   &plc,
@@ -46,31 +44,6 @@ func newModuleLoader(fs filesystem.Filesystem, modStore *state.ModuleStore, sche
 	}
 
 	return ml
-}
-
-type parallelism struct {
-	NonPriority, Priority int64
-}
-
-func loaderParallelism(cpu int) parallelism {
-	// Cap utilization for powerful machines
-	if cpu >= 4 {
-		return parallelism{
-			NonPriority: int64(3),
-			Priority:    int64(1),
-		}
-	}
-	if cpu == 3 {
-		return parallelism{
-			NonPriority: int64(2),
-			Priority:    int64(1),
-		}
-	}
-
-	return parallelism{
-		NonPriority: 1,
-		Priority:    1,
-	}
 }
 
 func (ml *moduleLoader) SetLogger(logger *log.Logger) {
