@@ -9,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -40,6 +42,7 @@ type Walker struct {
 	watcher Watcher
 	logger  *log.Logger
 	sync    bool
+	srv     Server
 
 	queue    *walkerQueue
 	queueMu  *sync.Mutex
@@ -59,10 +62,11 @@ type Walker struct {
 // until a path is consumed
 const queueCap = 50
 
-func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
+func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager, srv Server) *Walker {
 	return &Walker{
 		fs:                   fs,
 		modMgr:               modMgr,
+		srv:                  srv,
 		logger:               discardLogger,
 		walkingMu:            &sync.RWMutex{},
 		queue:                newWalkerQueue(fs),
@@ -215,6 +219,34 @@ func (w *Walker) isSkippableDir(dirName string) bool {
 }
 
 func (w *Walker) walk(ctx context.Context, rootPath string) error {
+	token := fmt.Sprintf("progress-walk-%s", rootPath)
+	// TODO: err handling
+	w.srv.Callback(ctx, "window/workDoneProgress/create", lsp.WorkDoneProgressCreateParams{
+		Token: token,
+	})
+	w.srv.Notify(ctx, "$/progress", lsp.ProgressParams{
+		Token: token,
+		Value: lsp.WorkDoneProgressBegin{
+			Kind:       "begin",
+			Title:      "Indexing...",
+			Percentage: 0,
+		},
+	})
+	w.srv.Notify(ctx, "$/progress", lsp.ProgressParams{
+		Token: token,
+		Value: lsp.WorkDoneProgressReport{
+			Kind:       "report",
+			Percentage: 10,
+		},
+	})
+	time.Sleep(3 * time.Second)
+	defer w.srv.Notify(ctx, "$/progress", lsp.ProgressParams{
+		Token: token,
+		Value: lsp.WorkDoneProgressEnd{
+			Kind:    "end",
+			Message: "Indexing finished.",
+		},
+	})
 	// We ignore the passed FS and instead read straight from OS FS
 	// because that would require reimplementing filepath.Walk and
 	// the data directory should never be on the virtual filesystem anyway

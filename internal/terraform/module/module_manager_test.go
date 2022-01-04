@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/creachadair/jrpc2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -350,7 +351,7 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 			mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
 			t.Cleanup(mm.CancelLoading)
 
-			w := SyncWalker(fs, mm)
+			w := SyncWalker(fs, mm, noopServer{})
 			w.SetLogger(testLogger())
 			w.EnqueuePath(tc.walkerRoot)
 			err = w.StartWalking(ctx)
@@ -369,6 +370,16 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+type noopServer struct{}
+
+func (s noopServer) Notify(ctx context.Context, method string, params interface{}) error {
+	return nil
+}
+
+func (s noopServer) Callback(ctx context.Context, method string, params interface{}) (*jrpc2.Response, error) {
+	return nil, nil
 }
 
 func schemaSourcesPaths(t *testing.T, srcs []SchemaSource) []string {

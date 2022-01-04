@@ -465,7 +465,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, svc.stateStore.Modules, svc.stateStore.ProviderSchemas)
 	svc.modMgr.SetLogger(svc.logger)
 
-	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
+	svc.walker = svc.newWalker(svc.fs, svc.modMgr, svc.server)
 	svc.walker.SetLogger(svc.logger)
 
 	ww, err := svc.newWatcher(svc.fs, svc.modMgr)

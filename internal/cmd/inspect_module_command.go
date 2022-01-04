@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/go-multierror"
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
@@ -94,7 +95,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
 	modMgr.SetLogger(c.logger)
 
-	walker := module.SyncWalker(fs, modMgr)
+	walker := module.SyncWalker(fs, modMgr, noopServer{})
 	walker.SetLogger(c.logger)
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),
@@ -153,6 +154,16 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	c.Ui.Output("")
 
 	return nil
+}
+
+type noopServer struct{}
+
+func (s noopServer) Notify(ctx context.Context, method string, params interface{}) error {
+	return nil
+}
+
+func (s noopServer) Callback(ctx context.Context, method string, params interface{}) (*jrpc2.Response, error) {
+	return nil, nil
 }
 
 func formatErrors(errors []error) string {
