@@ -224,6 +224,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 	w.srv.Callback(ctx, "window/workDoneProgress/create", lsp.WorkDoneProgressCreateParams{
 		Token: token,
 	})
+	w.logger.Printf("created progress")
 	w.srv.Notify(ctx, "$/progress", lsp.ProgressParams{
 		Token: token,
 		Value: lsp.WorkDoneProgressBegin{

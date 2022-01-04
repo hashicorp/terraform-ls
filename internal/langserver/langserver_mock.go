@@ -94,7 +94,12 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	}()
 
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
-	opts := &jrpc2.ClientOptions{}
+	opts := &jrpc2.ClientOptions{
+		OnCallback: func(c context.Context, r *jrpc2.Request) (interface{}, error) {
+			lsm.logger.Println("Discarded callback request")
+			return nil, nil
+		},
+	}
 	if testing.Verbose() {
 		opts.Logger = jrpc2.StdLogger(testLogger(os.Stdout, "[CLIENT] "))
 	}
