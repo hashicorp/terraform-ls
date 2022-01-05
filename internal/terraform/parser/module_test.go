@@ -69,12 +69,12 @@ func TestParseModuleFiles(t *testing.T) {
 				"missing-brace.tf": {
 					{
 						Severity: hcl.DiagError,
-						Summary:  "Argument or block definition required",
-						Detail:   "An argument or block definition is required here.",
+						Summary:  "Unclosed configuration block",
+						Detail:   "There is no closing brace for this block before the end of the file. This may be caused by incorrect brace nesting elsewhere in this file.",
 						Subject: &hcl.Range{
 							Filename: "missing-brace.tf",
-							Start:    hcl.Pos{Line: 10, Column: 1, Byte: 207},
-							End:      hcl.Pos{Line: 10, Column: 1, Byte: 207},
+							Start:    hcl.Pos{Line: 1, Column: 40, Byte: 39},
+							End:      hcl.Pos{Line: 1, Column: 41, Byte: 40},
 						},
 					},
 				},
