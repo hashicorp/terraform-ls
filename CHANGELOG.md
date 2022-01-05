@@ -1,5 +1,9 @@
 ## 0.25.1 (Unreleased)
 
+BUG FIXES:
+
+ - Reduce parallelism for background operations to flatten CPU spikes triggered by workspaces with many modules on machines w/ >2 CPUs (which would previously had higher parallelism) ([#752](https://github.com/hashicorp/terraform-ls/pull/752))
+
 INTERNAL:
 
  - build(deps): bump github.com/creachadair/jrpc2 from 0.32.0 to 0.35.2 ([#748](https://github.com/hashicorp/terraform-ls/pull/748))
