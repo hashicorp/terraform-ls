@@ -431,19 +431,19 @@ provider "blah" {
 		"test.tf": {
 			{
 				Severity: hcl.DiagError,
-				Summary:  "Argument or block definition required",
-				Detail:   "An argument or block definition is required here.",
+				Summary:  "Unclosed configuration block",
+				Detail:   "There is no closing brace for this block before the end of the file. This may be caused by incorrect brace nesting elsewhere in this file.",
 				Subject: &hcl.Range{
 					Filename: "test.tf",
 					Start: hcl.Pos{
-						Line:   4,
-						Column: 1,
-						Byte:   39,
+						Line:   2,
+						Column: 17,
+						Byte:   17,
 					},
 					End: hcl.Pos{
-						Line:   4,
-						Column: 1,
-						Byte:   39,
+						Line:   2,
+						Column: 18,
+						Byte:   18,
 					},
 				},
 			},
@@ -485,8 +485,8 @@ dev = {
 		"test.tfvars": {
 			{
 				Severity: hcl.DiagError,
-				Summary:  "Invalid expression",
-				Detail:   "Expected the start of an expression, but found an invalid expression token.",
+				Summary:  "Missing expression",
+				Detail:   "Expected the start of an expression, but found the end of the file.",
 				Subject: &hcl.Range{
 					Filename: "test.tfvars",
 					Start: hcl.Pos{
