@@ -64,10 +64,14 @@ func newExecutor(t *testing.T) TerraformExecutor {
 	ctx := context.Background()
 	workDir := TempDir(t)
 	installDir := filepath.Join(workDir, "hcinstall")
-	err := os.MkdirAll(installDir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(installDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		if err := os.Remove(installDir); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	i := hcinstall.NewInstaller()
 
@@ -80,6 +84,12 @@ func newExecutor(t *testing.T) TerraformExecutor {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	t.Cleanup(func() {
+		if err := i.Remove(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	e, err := NewExecutor(workDir, execPath)
 	if err != nil {

@@ -106,6 +106,8 @@ func gen() error {
 		return err
 	}
 
+	defer i.Remove(ctx)
+
 	log.Println("running terraform init")
 
 	cwd, err := os.Getwd()

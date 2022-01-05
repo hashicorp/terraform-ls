@@ -854,6 +854,11 @@ func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor 
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		if err := os.Remove(installDir); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	i := hcinstall.NewInstaller()
 	v := version.Must(version.NewVersion(tfVersion))
@@ -872,6 +877,12 @@ func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor 
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	t.Cleanup(func() {
+		if err := i.Remove(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	tfExec, err := exec.NewExecutor(workdir, execPath)
 	if err != nil {
