@@ -96,7 +96,7 @@ func (c *ServeCommand) Run(args []string) int {
 	}
 
 	ctx, cancelFunc := lsctx.WithSignalCancel(context.Background(), logger,
-		syscall.SIGINT, syscall.SIGTERM)
+		os.Interrupt, syscall.SIGTERM)
 	defer cancelFunc()
 
 	// Setting this option as a CLI flag is deprecated
