@@ -7,7 +7,7 @@ BUG FIXES:
 INTERNAL:
 
  - build(deps): bump github.com/creachadair/jrpc2 from 0.32.0 to 0.35.2 ([#748](https://github.com/hashicorp/terraform-ls/pull/748))
- - build(deps): bump github.com/spf13/afero from 1.6.0 to 1.7.1 ([#747](https://github.com/hashicorp/terraform-ls/pull/747))
+ - build(deps): bump github.com/spf13/afero from 1.6.0 to 1.8.0 ([#747](https://github.com/hashicorp/terraform-ls/pull/747), [#754](https://github.com/hashicorp/terraform-ls/pull/754))
  - build(deps): bump github.com/mitchellh/mapstructure from 1.4.2 to 1.4.3 ([#732](https://github.com/hashicorp/terraform-ls/pull/732))
  - build(deps): bump github.com/hashicorp/hcl/v2 from 2.10.1 to 2.11.1 ([#731](https://github.com/hashicorp/terraform-ls/pull/731))
 
