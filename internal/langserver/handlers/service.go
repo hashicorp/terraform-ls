@@ -446,7 +446,14 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
 		updateDiagnostics(svc.sessCtx, svc.diagsNotifier),
 		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
-		refreshCodeLens(svc.sessCtx, svc.server),
+	}
+
+	cc, err := ilsp.ClientCapabilities(ctx)
+	if err == nil {
+		if _, ok = lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
+			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
+				refreshCodeLens(svc.sessCtx, svc.server))
+		}
 	}
 
 	svc.modStore = svc.stateStore.Modules
@@ -457,7 +464,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		SchemaReader: svc.schemaStore,
 	})
 
-	err := schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
+	err = schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
 	if err != nil {
 		return err
 	}
