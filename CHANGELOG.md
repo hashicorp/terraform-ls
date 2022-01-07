@@ -3,6 +3,7 @@
 BUG FIXES:
 
  - fix: avoid sending empty diagnostics ([#756](https://github.com/hashicorp/terraform-ls/pull/756))
+ - fix: avoid code lens updates when disabled ([#757](https://github.com/hashicorp/terraform-ls/pull/757))
 
 ## 0.25.1 (6 January 2022)
 
