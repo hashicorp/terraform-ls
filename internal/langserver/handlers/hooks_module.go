@@ -96,23 +96,22 @@ func sendModuleTelemetry(ctx context.Context, store *state.StateStore, telemetry
 
 func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) state.ModuleChangeHook {
 	return func(oldMod, newMod *state.Module) {
-		// TODO: check if diagnostics have actually changed
 		oldDiags, newDiags := 0, 0
 		if oldMod != nil {
-			oldDiags = len(oldMod.ModuleDiagnostics) + len(oldMod.VarsDiagnostics)
+			oldDiags = oldMod.ModuleDiagnostics.Count() + oldMod.VarsDiagnostics.Count()
 		}
 		if newMod != nil {
-			newDiags = len(newMod.ModuleDiagnostics) + len(newMod.VarsDiagnostics)
+			newDiags = newMod.ModuleDiagnostics.Count() + newMod.VarsDiagnostics.Count()
+		}
+
+		if oldDiags == 0 && newDiags == 0 {
+			return
 		}
 
 		diags := diagnostics.NewDiagnostics()
 		diags.EmptyRootDiagnostic()
 
 		defer notifier.PublishHCLDiags(ctx, newMod.Path, diags)
-
-		if oldDiags == 0 && newDiags == 0 {
-			return
-		}
 
 		if newMod != nil {
 			diags.Append("HCL", newMod.ModuleDiagnostics.AsMap())

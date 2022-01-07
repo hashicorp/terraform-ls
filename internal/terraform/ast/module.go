@@ -57,3 +57,11 @@ func (md ModDiags) AsMap() map[string]hcl.Diagnostics {
 	}
 	return m
 }
+
+func (md ModDiags) Count() int {
+	count := 0
+	for _, diags := range md {
+		count += len(diags)
+	}
+	return count
+}
