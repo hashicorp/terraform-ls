@@ -84,3 +84,11 @@ func (vd VarsDiags) AsMap() map[string]hcl.Diagnostics {
 	}
 	return m
 }
+
+func (vd VarsDiags) Count() int {
+	count := 0
+	for _, diags := range vd {
+		count += len(diags)
+	}
+	return count
+}
