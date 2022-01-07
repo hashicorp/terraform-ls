@@ -1,3 +1,9 @@
+## 0.25.2 (Unreleased)
+
+BUG FIXES:
+
+ - fix: avoid sending empty diagnostics ([#756](https://github.com/hashicorp/terraform-ls/pull/756))
+
 ## 0.25.1 (6 January 2022)
 
 BUG FIXES:
