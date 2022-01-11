@@ -15,8 +15,12 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-version"
+	hcinstall "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/fs"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"github.com/hashicorp/terraform-exec/tfinstall"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/shurcooL/vfsgen"
 )
@@ -82,16 +86,27 @@ func gen() error {
 
 	log.Println("ensuring terraform is installed")
 
-	tmpDir, err := ioutil.TempDir("", "tfinstall")
+	installDir, err := ioutil.TempDir("", "hcinstall")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(installDir)
 
-	execPath, err := tfinstall.Find(ctx, tfinstall.LookPath(), tfinstall.LatestVersion(tmpDir, false))
+	i := hcinstall.NewInstaller()
+	execPath, err := i.Ensure(ctx, []src.Source{
+		&fs.AnyVersion{
+			Product: &product.Terraform,
+		},
+		&releases.LatestVersion{
+			Product:    product.Terraform,
+			InstallDir: installDir,
+		},
+	})
 	if err != nil {
 		return err
 	}
+
+	defer i.Remove(ctx)
 
 	log.Println("running terraform init")
 

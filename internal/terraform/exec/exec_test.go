@@ -8,7 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-exec/tfinstall"
+	hcinstall "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 )
 
 func TestExec_timeout(t *testing.T) {
@@ -58,23 +61,35 @@ func TestExec_cancel(t *testing.T) {
 }
 
 func newExecutor(t *testing.T) TerraformExecutor {
-	tmpDir := TempDir(t)
-	workDir := filepath.Join(tmpDir, "workdir")
-	err := os.MkdirAll(workDir, 0755)
-	if err != nil {
+	ctx := context.Background()
+	workDir := TempDir(t)
+	installDir := filepath.Join(workDir, "hcinstall")
+	if err := os.MkdirAll(installDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	installDir := filepath.Join(tmpDir, "installdir")
-	err = os.MkdirAll(installDir, 0755)
+	t.Cleanup(func() {
+		if err := os.Remove(installDir); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	i := hcinstall.NewInstaller()
+
+	execPath, err := i.Ensure(ctx, []src.Source{
+		&releases.LatestVersion{
+			Product:    product.Terraform,
+			InstallDir: installDir,
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	opts := tfinstall.ExactVersion("1.1.0", installDir)
-	execPath, err := opts.ExecPath(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Cleanup(func() {
+		if err := i.Remove(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	e, err := NewExecutor(workDir, execPath)
 	if err != nil {

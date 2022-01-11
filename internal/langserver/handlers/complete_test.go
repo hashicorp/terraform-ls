@@ -10,7 +10,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-exec/tfinstall"
+	hcinstall "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/fs"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
@@ -603,7 +607,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 						"detail": "required, string",
 						"insertTextFormat":1,
 						"textEdit": {
-							"range": {"start":{"line":0,"character":0}, "end":{"line":0,"character":0}}, 
+							"range": {"start":{"line":0,"character":0}, "end":{"line":0,"character":0}},
 							"newText":"test"
 						}
 					}
@@ -844,17 +848,41 @@ output "test" {
 		}`)
 }
 
-func tfExecutor(t *testing.T, workdir, version string) exec.TerraformExecutor {
+func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor {
 	ctx := context.Background()
-	installPath := filepath.Join(t.TempDir(), "tfinstall")
-	err := os.MkdirAll(installPath, 0o755)
+	installDir := filepath.Join(t.TempDir(), "hcinstall")
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Remove(installDir); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	i := hcinstall.NewInstaller()
+	v := version.Must(version.NewVersion(tfVersion))
+
+	execPath, err := i.Ensure(ctx, []src.Source{
+		&fs.ExactVersion{
+			Product: product.Terraform,
+			Version: v,
+		},
+		&releases.ExactVersion{
+			Product:    product.Terraform,
+			Version:    v,
+			InstallDir: installDir,
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	execPath, err := tfinstall.Find(ctx, tfinstall.ExactVersion(version, installPath))
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	t.Cleanup(func() {
+		if err := i.Remove(ctx); err != nil {
+			t.Fatal(err)
+		}
+	})
 
 	tfExec, err := exec.NewExecutor(workdir, execPath)
 	if err != nil {
