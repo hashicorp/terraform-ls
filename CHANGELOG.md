@@ -5,6 +5,7 @@ BUG FIXES:
  - fix: avoid sending empty diagnostics ([#756](https://github.com/hashicorp/terraform-ls/pull/756))
  - fix: avoid code lens updates when disabled ([#757](https://github.com/hashicorp/terraform-ls/pull/757))
  - fix: Catch OS agnostic interrupt signal ([#755](https://github.com/hashicorp/terraform-ls/pull/755))
+ - telemetry: Only send requests if data has changed ([#758](https://github.com/hashicorp/terraform-ls/pull/758))
 
 INTERNAL:
 
