@@ -6,6 +6,10 @@ BUG FIXES:
  - fix: avoid code lens updates when disabled ([#757](https://github.com/hashicorp/terraform-ls/pull/757))
  - fix: Catch OS agnostic interrupt signal ([#755](https://github.com/hashicorp/terraform-ls/pull/755))
 
+INTERNAL:
+
+ - Switch to hc-install from tfinstall ([#737](https://github.com/hashicorp/terraform-ls/pull/737))
+
 ## 0.25.1 (6 January 2022)
 
 BUG FIXES:
