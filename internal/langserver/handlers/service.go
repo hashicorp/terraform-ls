@@ -194,7 +194,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
-			return handle(ctx, req, svc.GoToReferenceTarget)
+			return handle(ctx, req, svc.GoToDeclaration)
 		},
 		"textDocument/definition": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -205,7 +205,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
-			return handle(ctx, req, svc.GoToReferenceTarget)
+			return handle(ctx, req, svc.GoToDefinition)
 		},
 		"textDocument/completion": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()

@@ -3,18 +3,42 @@ package handlers
 import (
 	"context"
 
+	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (svc *service) GoToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
+func (svc *service) GoToDefinition(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	targets, err := svc.goToReferenceTarget(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return ilsp.RefTargetsToLocationLinks(targets, cc.TextDocument.Definition.LinkSupport), nil
+}
+
+func (svc *service) GoToDeclaration(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
+	cc, err := ilsp.ClientCapabilities(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	targets, err := svc.goToReferenceTarget(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return ilsp.RefTargetsToLocationLinks(targets, cc.TextDocument.Declaration.LinkSupport), nil
+}
+
+func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (decoder.ReferenceTargets, error) {
 	fs, err := lsctx.DocumentStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -34,10 +58,6 @@ func (svc *service) GoToReferenceTarget(ctx context.Context, params lsp.TextDocu
 		Path:       doc.Dir(),
 		LanguageID: doc.LanguageID(),
 	}
-	targets, err := svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename(), fPos.Position())
-	if err != nil {
-		return nil, err
-	}
 
-	return ilsp.RefTargetsToLocationLinks(targets, cc.TextDocument.Declaration.LinkSupport), nil
+	return svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename(), fPos.Position())
 }
