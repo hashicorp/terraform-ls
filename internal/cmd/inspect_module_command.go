@@ -98,7 +98,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	walker.SetLogger(c.logger)
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),
-		c.logger, syscall.SIGINT, syscall.SIGTERM)
+		c.logger, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	walker.EnqueuePath(rootPath)
