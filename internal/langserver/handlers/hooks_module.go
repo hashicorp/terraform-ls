@@ -12,86 +12,117 @@ import (
 )
 
 func sendModuleTelemetry(ctx context.Context, store *state.StateStore, telemetrySender telemetry.Sender) state.ModuleChangeHook {
-	return func(_, newMod *state.Module) {
+	return func(oldMod, newMod *state.Module) {
 		if newMod == nil {
 			// module is being removed
 			// TODO: Track module removal as an event
 			return
 		}
 
-		modId, err := store.GetModuleID(newMod.Path)
-		if err != nil {
+		properties, hasChanged := moduleTelemetryData(oldMod, newMod, store)
+		if !hasChanged {
+			// avoid sending telemetry if nothing has changed
 			return
-		}
-
-		properties := map[string]interface{}{
-			"moduleId": modId,
-		}
-
-		if len(newMod.Meta.CoreRequirements) > 0 {
-			properties["tfRequirements"] = newMod.Meta.CoreRequirements.String()
-		}
-		if newMod.Meta.Backend != nil {
-			properties["backend"] = newMod.Meta.Backend.Type
-			if data, ok := newMod.Meta.Backend.Data.(*backend.Remote); ok {
-				hostname := data.Hostname
-
-				// anonymize any non-default hostnames
-				if hostname != "" && hostname != "app.terraform.io" {
-					hostname = "custom-hostname"
-				}
-
-				properties["backend.remote.hostname"] = hostname
-			}
-		}
-		if len(newMod.Meta.ProviderRequirements) > 0 {
-			reqs := make(map[string]string, 0)
-			for pAddr, cons := range newMod.Meta.ProviderRequirements {
-				if telemetry.IsPublicProvider(pAddr) {
-					reqs[pAddr.String()] = cons.String()
-					continue
-				}
-
-				// anonymize any unknown providers or the ones not publicly listed
-				id, err := store.GetProviderID(pAddr)
-				if err != nil {
-					continue
-				}
-				addr := fmt.Sprintf("unlisted/%s", id)
-				reqs[addr] = cons.String()
-			}
-			properties["providerRequirements"] = reqs
-		}
-
-		if newMod.TerraformVersion != nil {
-			properties["tfVersion"] = newMod.TerraformVersion.String()
-		}
-
-		if len(newMod.InstalledProviders) > 0 {
-			installedProviders := make(map[string]string, 0)
-			for pAddr, pv := range newMod.InstalledProviders {
-				if telemetry.IsPublicProvider(pAddr) {
-					versionString := ""
-					if pv != nil {
-						versionString = pv.String()
-					}
-					installedProviders[pAddr.String()] = versionString
-					continue
-				}
-
-				// anonymize any unknown providers or the ones not publicly listed
-				id, err := store.GetProviderID(pAddr)
-				if err != nil {
-					continue
-				}
-				addr := fmt.Sprintf("unlisted/%s", id)
-				installedProviders[addr] = ""
-			}
-			properties["installedProviders"] = installedProviders
 		}
 
 		telemetrySender.SendEvent(ctx, "moduleData", properties)
 	}
+}
+
+func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) (map[string]interface{}, bool) {
+	properties := make(map[string]interface{})
+	hasChanged := false
+
+	if oldMod == nil || !oldMod.Meta.CoreRequirements.Equals(newMod.Meta.CoreRequirements) {
+		hasChanged = true
+	}
+	if len(newMod.Meta.CoreRequirements) > 0 {
+		properties["tfRequirements"] = newMod.Meta.CoreRequirements.String()
+	}
+
+	if oldMod == nil || !oldMod.Meta.Backend.Equals(newMod.Meta.Backend) {
+		hasChanged = true
+	}
+	if newMod.Meta.Backend != nil {
+		properties["backend"] = newMod.Meta.Backend.Type
+		if data, ok := newMod.Meta.Backend.Data.(*backend.Remote); ok {
+			hostname := data.Hostname
+
+			// anonymize any non-default hostnames
+			if hostname != "" && hostname != "app.terraform.io" {
+				hostname = "custom-hostname"
+			}
+
+			properties["backend.remote.hostname"] = hostname
+		}
+	}
+
+	if oldMod == nil || !oldMod.Meta.ProviderRequirements.Equals(newMod.Meta.ProviderRequirements) {
+		hasChanged = true
+	}
+	if len(newMod.Meta.ProviderRequirements) > 0 {
+		reqs := make(map[string]string, 0)
+		for pAddr, cons := range newMod.Meta.ProviderRequirements {
+			if telemetry.IsPublicProvider(pAddr) {
+				reqs[pAddr.String()] = cons.String()
+				continue
+			}
+
+			// anonymize any unknown providers or the ones not publicly listed
+			id, err := store.GetProviderID(pAddr)
+			if err != nil {
+				continue
+			}
+			addr := fmt.Sprintf("unlisted/%s", id)
+			reqs[addr] = cons.String()
+		}
+		properties["providerRequirements"] = reqs
+	}
+
+	if oldMod == nil || !oldMod.TerraformVersion.Equal(newMod.TerraformVersion) {
+		hasChanged = true
+	}
+	if newMod.TerraformVersion != nil {
+		properties["tfVersion"] = newMod.TerraformVersion.String()
+	}
+
+	if oldMod == nil || !oldMod.InstalledProviders.Equals(newMod.InstalledProviders) {
+		hasChanged = true
+	}
+	if len(newMod.InstalledProviders) > 0 {
+		installedProviders := make(map[string]string, 0)
+		for pAddr, pv := range newMod.InstalledProviders {
+			if telemetry.IsPublicProvider(pAddr) {
+				versionString := ""
+				if pv != nil {
+					versionString = pv.String()
+				}
+				installedProviders[pAddr.String()] = versionString
+				continue
+			}
+
+			// anonymize any unknown providers or the ones not publicly listed
+			id, err := store.GetProviderID(pAddr)
+			if err != nil {
+				continue
+			}
+			addr := fmt.Sprintf("unlisted/%s", id)
+			installedProviders[addr] = ""
+		}
+		properties["installedProviders"] = installedProviders
+	}
+
+	if !hasChanged {
+		return nil, false
+	}
+
+	modId, err := store.GetModuleID(newMod.Path)
+	if err != nil {
+		return nil, false
+	}
+	properties["moduleId"] = modId
+
+	return properties, true
 }
 
 func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) state.ModuleChangeHook {

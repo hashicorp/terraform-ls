@@ -19,7 +19,7 @@ type ModuleMetadata struct {
 	CoreRequirements     version.Constraints
 	Backend              *tfmod.Backend
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
-	ProviderRequirements map[tfaddr.Provider]version.Constraints
+	ProviderRequirements tfmod.ProviderRequirements
 	Variables            map[string]tfmod.Variable
 	Outputs              map[string]tfmod.Output
 }
@@ -45,7 +45,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	}
 
 	if mm.ProviderRequirements != nil {
-		newMm.ProviderRequirements = make(map[tfaddr.Provider]version.Constraints, len(mm.ProviderRequirements))
+		newMm.ProviderRequirements = make(tfmod.ProviderRequirements, len(mm.ProviderRequirements))
 		for provider, vc := range mm.ProviderRequirements {
 			// version.Constraints is never mutated in this context
 			newMm.ProviderRequirements[provider] = vc
@@ -80,7 +80,7 @@ type Module struct {
 	TerraformVersionErr   error
 	TerraformVersionState op.OpState
 
-	InstalledProviders map[tfaddr.Provider]*version.Version
+	InstalledProviders InstalledProviders
 
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
@@ -146,7 +146,7 @@ func (m *Module) Copy() *Module {
 	}
 
 	if m.InstalledProviders != nil {
-		newMod.InstalledProviders = make(map[tfaddr.Provider]*version.Version, 0)
+		newMod.InstalledProviders = make(InstalledProviders, 0)
 		for addr, pv := range m.InstalledProviders {
 			// version.Version is practically immutable once parsed
 			newMod.InstalledProviders[addr] = pv
