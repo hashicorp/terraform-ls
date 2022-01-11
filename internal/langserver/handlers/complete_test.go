@@ -850,7 +850,7 @@ output "test" {
 
 func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor {
 	ctx := context.Background()
-	installDir := filepath.Join(workdir, "hcinstall")
+	installDir := filepath.Join(t.TempDir(), "hcinstall")
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
