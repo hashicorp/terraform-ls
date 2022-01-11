@@ -9,7 +9,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/google/go-cmp v0.5.6
 	github.com/google/uuid v1.2.0 // indirect
-	github.com/hashicorp/go-getter v1.5.10
+	github.com/hashicorp/go-getter v1.5.11
 	github.com/hashicorp/go-memdb v1.3.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.2
