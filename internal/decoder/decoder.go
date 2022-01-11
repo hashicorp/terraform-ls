@@ -54,7 +54,7 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 }
 
 func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
-	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables)
+	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables, mod.Path)
 	if err != nil {
 		return nil, err
 	}
