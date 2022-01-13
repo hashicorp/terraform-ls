@@ -250,6 +250,7 @@ var ignore = map[string]bool{
 	"HewlettPackard/hpegl":    true,
 	"ThalesGroup/ciphertrust": true,
 	"nullstone-io/ns":         true,
+	"zededa/zedcloud":         true,
 }
 
 func filter(providers []provider) (filtered []provider) {
