@@ -1,3 +1,9 @@
+## 0.26.0 (unreleased)
+
+ENHANCEMENTS:
+
+ - Introduce go-to-variable from `tfvars` files ([#727](https://github.com/hashicorp/terraform-ls/pull/727))
+
 ## 0.25.2 (11 January 2022)
 
 BUG FIXES:
