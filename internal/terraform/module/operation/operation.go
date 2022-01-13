@@ -23,4 +23,5 @@ const (
 	OpTypeLoadModuleMetadata
 	OpTypeDecodeReferenceTargets
 	OpTypeDecodeReferenceOrigins
+	OpTypeDecodeVarsReferences
 )

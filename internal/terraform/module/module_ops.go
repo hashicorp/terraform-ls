@@ -299,19 +299,50 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
-	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+	d := decoder.NewDecoder(ctx, &decoder.PathReader{
 		ModuleReader: modStore,
 		SchemaReader: schemaReader,
-	}).Path(lang.Path{
+	})
+
+	moduleDecoder, err := d.Path(lang.Path{
 		Path:       modPath,
 		LanguageID: ilsp.Terraform.String(),
 	})
 	if err != nil {
 		return err
 	}
-	origins, rErr := d.CollectReferenceOrigins()
+
+	origins, rErr := moduleDecoder.CollectReferenceOrigins()
 
 	sErr := modStore.UpdateReferenceOrigins(modPath, origins, rErr)
+	if sErr != nil {
+		return sErr
+	}
+
+	return rErr
+}
+
+func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	err := modStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	d := decoder.NewDecoder(ctx, &decoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	})
+
+	varsDecoder, err := d.Path(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Tfvars.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	origins, rErr := varsDecoder.CollectReferenceOrigins()
+	sErr := modStore.UpdateVarsReferenceOrigins(modPath, origins, rErr)
 	if sErr != nil {
 		return sErr
 	}

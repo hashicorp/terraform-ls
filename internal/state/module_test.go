@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
@@ -15,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
+	"github.com/zclconf/go-cty/cty"
 )
 
 func TestModuleStore_Add_duplicate(t *testing.T) {
@@ -505,6 +508,88 @@ dev = {
 	})
 	if diff := cmp.Diff(expectedDiags, mod.VarsDiagnostics, cmpOpts); diff != "" {
 		t.Fatalf("unexpected diagnostics: %s", diff)
+	}
+}
+
+func TestModuleStore_SetVarsReferenceOriginsState(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	err = s.Modules.Add(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.Modules.SetVarsReferenceOriginsState(tmpDir, operation.OpStateQueued)
+
+	mod, err := s.Modules.ModuleByPath(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(mod.VarsRefOriginsState, operation.OpStateQueued, cmpOpts); diff != "" {
+		t.Fatalf("unexpected module vars ref origins state: %s", diff)
+	}
+}
+
+func TestModuleStore_UpdateVarsReferenceOrigins(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	err = s.Modules.Add(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	origins := reference.Origins{
+		reference.PathOrigin{
+			Range: hcl.Range{
+				Filename: "terraform.tfvars",
+				Start: hcl.Pos{
+					Line:   1,
+					Column: 1,
+					Byte:   0,
+				},
+				End: hcl.Pos{
+					Line:   1,
+					Column: 5,
+					Byte:   4,
+				},
+			},
+			TargetAddr: lang.Address{
+				lang.RootStep{Name: "var"},
+				lang.AttrStep{Name: "name"},
+			},
+			TargetPath: lang.Path{
+				Path:       tmpDir,
+				LanguageID: "terraform",
+			},
+			Constraints: reference.OriginConstraints{
+				reference.OriginConstraint{
+					OfScopeId: "variable",
+					OfType:    cty.String,
+				},
+			},
+		},
+	}
+	s.Modules.UpdateVarsReferenceOrigins(tmpDir, origins, nil)
+
+	mod, err := s.Modules.ModuleByPath(tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(mod.VarsRefOrigins, origins, cmpOpts); diff != "" {
+		t.Fatalf("unexpected module vars ref origins: %s", diff)
+	}
+	if diff := cmp.Diff(mod.VarsRefOriginsState, operation.OpStateLoaded, cmpOpts); diff != "" {
+		t.Fatalf("unexpected module vars ref origins state: %s", diff)
 	}
 }
 
