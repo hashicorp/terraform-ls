@@ -287,6 +287,14 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, svc.DidChangeWorkspaceFolders)
 		},
+		"workspace/didChangeWatchedFiles": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			return handle(ctx, req, svc.DidChangeWatchedFiles)
+		},
 		"textDocument/references": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
