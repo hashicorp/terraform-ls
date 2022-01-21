@@ -1,73 +1,43 @@
 package filesystem
 
 import (
-	"bytes"
-	"path/filepath"
+	"io/fs"
 
-	"github.com/hashicorp/terraform-ls/internal/source"
-	"github.com/hashicorp/terraform-ls/internal/uri"
-	"github.com/spf13/afero"
+	"github.com/hashicorp/terraform-ls/internal/document"
 )
 
-type document struct {
-	meta *documentMetadata
-	fs   afero.Fs
-}
-
-func (d *document) Text() ([]byte, error) {
-	return afero.ReadFile(d.fs, d.meta.dh.FullPath())
-}
-
-func (d *document) FullPath() string {
-	return d.meta.dh.FullPath()
-}
-
-func (d *document) Dir() string {
-	return filepath.Dir(d.meta.dh.FullPath())
-}
-
-func (d *document) Filename() string {
-	return filepath.Base(d.meta.dh.FullPath())
-}
-
-func (d *document) URI() string {
-	return uri.FromPath(d.meta.dh.FullPath())
-}
-
-func (d *document) Lines() source.Lines {
-	return d.meta.Lines()
-}
-
-func (d *document) Version() int {
-	return d.meta.Version()
-}
-
-func (d *document) LanguageID() string {
-	return d.meta.langId
-}
-
-func (d *document) IsOpen() bool {
-	return d.meta.IsOpen()
-}
-
-func (d *document) Equal(doc *document) bool {
-	if d.URI() != doc.URI() {
-		return false
+func documentAsFile(doc *document.Document) fs.File {
+	return inMemFile{
+		bytes: doc.Text,
+		info:  documentAsFileInfo(doc),
 	}
-	if d.IsOpen() != doc.IsOpen() {
-		return false
+}
+
+func documentAsFileInfo(doc *document.Document) fs.FileInfo {
+	return inMemFileInfo{
+		name:    doc.Filename,
+		size:    len(doc.Text),
+		modTime: doc.ModTime,
+		mode:    0o755,
+		isDir:   false,
 	}
-	if d.Version() != doc.Version() {
-		return false
+}
+
+func documentsAsDirEntries(docs []*document.Document) []fs.DirEntry {
+	entries := make([]fs.DirEntry, len(docs))
+
+	for i, doc := range docs {
+		entries[i] = documentAsDirEntry(doc)
 	}
 
-	leftB, err := d.Text()
-	if err != nil {
-		return false
+	return entries
+}
+
+func documentAsDirEntry(doc *document.Document) fs.DirEntry {
+	return inMemDirEntry{
+		name:  doc.Filename,
+		isDir: false,
+		typ:   0,
+		info:  documentAsFileInfo(doc),
 	}
-	rightB, err := doc.Text()
-	if err != nil {
-		return false
-	}
-	return bytes.Equal(leftB, rightB)
 }
