@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-json"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
@@ -26,7 +25,7 @@ func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
 		tfCalls = input.TerraformCalls
 	}
 
-	return func(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
+	return func(ctx context.Context, fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
 		if tfCalls != nil {
 			ctx = exec.WithExecutorFactory(ctx, exec.NewMockExecutor(tfCalls))
 			ctx = exec.WithExecutorOpts(ctx, &exec.ExecutorOpts{
@@ -34,7 +33,7 @@ func NewModuleManagerMock(input *ModuleManagerMockInput) ModuleManagerFactory {
 			})
 		}
 
-		mm := NewSyncModuleManager(ctx, fs, ms, pss)
+		mm := NewSyncModuleManager(ctx, fs, ds, ms, pss)
 
 		if logger != nil {
 			mm.SetLogger(logger)

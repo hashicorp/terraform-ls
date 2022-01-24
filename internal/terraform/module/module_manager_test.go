@@ -336,21 +336,24 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 		base := filepath.Base(tc.walkerRoot)
 		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
 			ctx := context.Background()
-			fs := filesystem.NewFilesystem()
+
+			ss, err := state.NewStateStore()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			fs := filesystem.NewFilesystem(ss.DocumentStore)
 			mmock := NewModuleManagerMock(&ModuleManagerMockInput{
 				Logger: testLogger(),
 				TerraformCalls: &exec.TerraformMockCalls{
 					AnyWorkDir: validTfMockCalls(tc.totalModuleCount),
 				},
 			})
-			ss, err := state.NewStateStore()
-			if err != nil {
-				t.Fatal(err)
-			}
-			mm := mmock(ctx, fs, ss.Modules, ss.ProviderSchemas)
+
+			mm := mmock(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
 			t.Cleanup(mm.CancelLoading)
 
-			w := SyncWalker(fs, mm)
+			w := SyncWalker(fs, ss.DocumentStore, mm)
 			w.SetLogger(testLogger())
 			w.EnqueuePath(tc.walkerRoot)
 			err = w.StartWalking(ctx)

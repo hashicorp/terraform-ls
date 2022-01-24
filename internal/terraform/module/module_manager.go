@@ -5,14 +5,13 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfmodule "github.com/hashicorp/terraform-schema/module"
 )
 
 type moduleManager struct {
-	fs          filesystem.Filesystem
+	fs          ReadOnlyFS
 	moduleStore *state.ModuleStore
 	schemaStore *state.ProviderSchemaStore
 
@@ -22,8 +21,8 @@ type moduleManager struct {
 	logger      *log.Logger
 }
 
-func NewModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
-	mm := newModuleManager(fs, ms, pss)
+func NewModuleManager(ctx context.Context, fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
+	mm := newModuleManager(fs, ds, ms, pss)
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	mm.cancelFunc = cancelFunc
@@ -32,8 +31,8 @@ func NewModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *state.M
 	return mm
 }
 
-func NewSyncModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
-	mm := newModuleManager(fs, ms, pss)
+func NewSyncModuleManager(ctx context.Context, fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore) ModuleManager {
+	mm := newModuleManager(fs, ds, ms, pss)
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	mm.cancelFunc = cancelFunc
@@ -44,13 +43,13 @@ func NewSyncModuleManager(ctx context.Context, fs filesystem.Filesystem, ms *sta
 	return mm
 }
 
-func newModuleManager(fs filesystem.Filesystem, ms *state.ModuleStore, pss *state.ProviderSchemaStore) *moduleManager {
+func newModuleManager(fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore) *moduleManager {
 	mm := &moduleManager{
 		fs:          fs,
 		moduleStore: ms,
 		schemaStore: pss,
 		logger:      defaultLogger,
-		loader:      newModuleLoader(fs, ms, pss),
+		loader:      newModuleLoader(fs, ds, ms, pss),
 	}
 	return mm
 }

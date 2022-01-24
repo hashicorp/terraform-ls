@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -19,7 +18,6 @@ import (
 // (rather than just events that may not be changing any bytes)
 type watcher struct {
 	fw      *fsnotify.Watcher
-	fs      filesystem.Filesystem
 	modMgr  ModuleManager
 	modules []*watchedModule
 	logger  *log.Logger
@@ -28,7 +26,7 @@ type watcher struct {
 	cancelFunc context.CancelFunc
 }
 
-type WatcherFactory func(filesystem.Filesystem, ModuleManager) (Watcher, error)
+type WatcherFactory func(ModuleManager) (Watcher, error)
 
 type watchedModule struct {
 	Path      string
@@ -36,7 +34,7 @@ type watchedModule struct {
 	Watchable *datadir.WatchablePaths
 }
 
-func NewWatcher(fs filesystem.Filesystem, modMgr ModuleManager) (Watcher, error) {
+func NewWatcher(modMgr ModuleManager) (Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -44,7 +42,6 @@ func NewWatcher(fs filesystem.Filesystem, modMgr ModuleManager) (Watcher, error)
 
 	return &watcher{
 		fw:      fw,
-		fs:      fs,
 		modMgr:  modMgr,
 		logger:  defaultLogger,
 		modules: make([]*watchedModule, 0),

@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -20,7 +20,8 @@ type moduleLoader struct {
 	tfExecOpts         *exec.ExecutorOpts
 	opsToDispatch      chan ModuleOperation
 
-	fs          filesystem.Filesystem
+	fs          ReadOnlyFS
+	docStore    DocumentStore
 	modStore    *state.ModuleStore
 	schemaStore *state.ProviderSchemaStore
 
@@ -28,10 +29,12 @@ type moduleLoader struct {
 	prioLoadingCount *int64
 }
 
-func newModuleLoader(fs filesystem.Filesystem, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore) *moduleLoader {
+func newModuleLoader(fs ReadOnlyFS, docStore DocumentStore,
+	modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore) *moduleLoader {
+
 	plc, lc := int64(0), int64(0)
 	ml := &moduleLoader{
-		queue:              newModuleOpsQueue(fs),
+		queue:              newModuleOpsQueue(docStore),
 		logger:             defaultLogger,
 		nonPrioParallelism: 1,
 		prioParallelism:    1,
@@ -39,6 +42,7 @@ func newModuleLoader(fs filesystem.Filesystem, modStore *state.ModuleStore, sche
 		loadingCount:       &lc,
 		prioLoadingCount:   &plc,
 		fs:                 fs,
+		docStore:           docStore,
 		modStore:           modStore,
 		schemaStore:        schemaStore,
 	}
@@ -66,7 +70,7 @@ func (ml *moduleLoader) run(ctx context.Context) {
 				return
 			}
 
-			hasOpenFiles, _ := ml.fs.HasOpenFiles(nextOp.ModulePath)
+			hasOpenFiles, _ := ml.docStore.HasOpenDocuments(document.DirHandleFromPath(nextOp.ModulePath))
 
 			if hasOpenFiles && ml.prioCapacity() > 0 {
 				atomic.AddInt64(ml.prioLoadingCount, 1)

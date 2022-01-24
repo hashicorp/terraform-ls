@@ -1,10 +1,9 @@
 package datadir
 
 import (
+	"io/fs"
 	"path/filepath"
 	"strings"
-
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
 type DataDir struct {
@@ -54,7 +53,7 @@ func ModulePath(filePath string) (string, bool) {
 	return "", false
 }
 
-func WalkDataDirOfModule(fs filesystem.Filesystem, modPath string) *DataDir {
+func WalkDataDirOfModule(fs fs.StatFS, modPath string) *DataDir {
 	dir := &DataDir{}
 
 	path, ok := ModuleManifestFilePath(fs, modPath)

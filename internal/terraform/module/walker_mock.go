@@ -1,9 +1,11 @@
 package module
 
-import "github.com/hashicorp/terraform-ls/internal/filesystem"
+import (
+	"io/fs"
+)
 
-func SyncWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
-	w := NewWalker(fs, modMgr)
+func SyncWalker(fs fs.StatFS, ds DocumentStore, modMgr ModuleManager) *Walker {
+	w := NewWalker(fs, ds, modMgr)
 	w.sync = true
 	return w
 }
