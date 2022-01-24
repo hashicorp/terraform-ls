@@ -2,9 +2,10 @@ package module
 
 import (
 	"context"
+	"io/fs"
 	"log"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfmodule "github.com/hashicorp/terraform-schema/module"
@@ -44,9 +45,9 @@ type Module *state.Module
 
 type ModuleFactory func(string) (Module, error)
 
-type ModuleManagerFactory func(context.Context, filesystem.Filesystem, *state.ModuleStore, *state.ProviderSchemaStore) ModuleManager
+type ModuleManagerFactory func(context.Context, ReadOnlyFS, DocumentStore, *state.ModuleStore, *state.ProviderSchemaStore) ModuleManager
 
-type WalkerFactory func(filesystem.Filesystem, ModuleManager) *Walker
+type WalkerFactory func(fs.StatFS, DocumentStore, ModuleManager) *Walker
 
 type Watcher interface {
 	Start() error
@@ -55,4 +56,15 @@ type Watcher interface {
 	AddModule(string) error
 	RemoveModule(string) error
 	IsModuleWatched(string) bool
+}
+
+type ReadOnlyFS interface {
+	fs.FS
+	ReadDir(name string) ([]fs.DirEntry, error)
+	ReadFile(name string) ([]byte, error)
+	Stat(name string) (fs.FileInfo, error)
+}
+
+type DocumentStore interface {
+	HasOpenDocuments(dirHandle document.DirHandle) (bool, error)
 }

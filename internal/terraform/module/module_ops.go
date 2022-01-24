@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/decoder"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
@@ -151,7 +150,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return modStore.UpdateInstalledProviders(modPath, installedProviders)
 }
 
-func ParseModuleConfiguration(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+func ParseModuleConfiguration(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	err := modStore.SetModuleParsingState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
@@ -172,7 +171,7 @@ func ParseModuleConfiguration(fs filesystem.Filesystem, modStore *state.ModuleSt
 	return err
 }
 
-func ParseVariables(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+func ParseVariables(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	err := modStore.SetVarsParsingState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
@@ -193,7 +192,7 @@ func ParseVariables(fs filesystem.Filesystem, modStore *state.ModuleStore, modPa
 	return err
 }
 
-func ParseModuleManifest(fs filesystem.Filesystem, modStore *state.ModuleStore, modPath string) error {
+func ParseModuleManifest(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	err := modStore.SetModManifestState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err

@@ -5,18 +5,19 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	"github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
-	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func TestModuleOpsQueue_modulePriority(t *testing.T) {
-	fs := filesystem.NewFilesystem()
-	fs.SetLogger(testLogger())
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.SetLogger(testLogger())
 
-	mq := newModuleOpsQueue(fs)
+	mq := newModuleOpsQueue(ss.DocumentStore)
 
 	dir := t.TempDir()
 	t.Cleanup(func() {
@@ -25,22 +26,23 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 
 	ops := []ModuleOperation{
 		NewModuleOperation(
-			closedModPath(t, fs, dir, "alpha"),
+			closedModPath(t, dir, "alpha"),
 			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
-			openModAtPath(t, fs, dir, "beta"),
+			openModAtPath(t, ss.DocumentStore, dir, "beta"),
 			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
-			openModAtPath(t, fs, dir, "gamma"),
+			openModAtPath(t, ss.DocumentStore, dir, "gamma"),
 			op.OpTypeGetTerraformVersion,
 		),
 		NewModuleOperation(
-			closedModPath(t, fs, dir, "delta"),
+			closedModPath(t, dir, "delta"),
 			op.OpTypeGetTerraformVersion,
 		),
 	}
+	t.Logf("total operations: %d", len(ops))
 
 	for _, op := range ops {
 		mq.PushOp(op)
@@ -67,24 +69,31 @@ func TestModuleOpsQueue_modulePriority(t *testing.T) {
 	}
 }
 
-func closedModPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) string {
+func closedModPath(t *testing.T, dir, modName string) string {
 	modPath := filepath.Join(dir, modName)
 
-	docPath := filepath.Join(modPath, "main.tf")
-	dh := ilsp.FileHandlerFromDocumentURI(protocol.DocumentURI(uri.FromPath(docPath)))
-	err := fs.CreateDocument(dh, "test", []byte{})
+	err := os.Mkdir(modPath, 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	path := filepath.Join(modPath, "main.tf")
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
 	return modPath
 }
 
-func openModAtPath(t *testing.T, fs filesystem.Filesystem, dir, modName string) string {
+func openModAtPath(t *testing.T, ds *state.DocumentStore, dir, modName string) string {
 	modPath := filepath.Join(dir, modName)
-	docPath := filepath.Join(modPath, "main.tf")
-	dh := ilsp.FileHandlerFromDocumentURI(protocol.DocumentURI(uri.FromPath(docPath)))
-	err := fs.CreateAndOpenDocument(dh, "test", []byte{})
+
+	dh := document.HandleFromPath(filepath.Join(modPath, "main.tf"))
+
+	err := ds.OpenDocument(dh, "test", 0, []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}

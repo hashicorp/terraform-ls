@@ -3,21 +3,21 @@ package module
 import (
 	"container/heap"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 )
 
 type walkerQueue struct {
 	paths []string
 
-	fs filesystem.Filesystem
+	ds DocumentStore
 }
 
 var _ heap.Interface = &walkerQueue{}
 
-func newWalkerQueue(fs filesystem.Filesystem) *walkerQueue {
+func newWalkerQueue(ds DocumentStore) *walkerQueue {
 	wq := &walkerQueue{
 		paths: make([]string, 0),
-		fs:    fs,
+		ds:    ds,
 	}
 	heap.Init(wq)
 	return wq
@@ -74,10 +74,13 @@ func (q *walkerQueue) Less(i, j int) bool {
 func (q *walkerQueue) moduleOperationLess(leftModPath, rightModPath string) bool {
 	leftOpen, rightOpen := 0, 0
 
-	if hasOpenFiles, _ := q.fs.HasOpenFiles(leftModPath); hasOpenFiles {
+	leftMod := document.DirHandleFromPath(leftModPath)
+	if hasOpenFiles, _ := q.ds.HasOpenDocuments(leftMod); hasOpenFiles {
 		leftOpen = 1
 	}
-	if hasOpenFiles, _ := q.fs.HasOpenFiles(rightModPath); hasOpenFiles {
+
+	rightMod := document.DirHandleFromPath(rightModPath)
+	if hasOpenFiles, _ := q.ds.HasOpenDocuments(rightMod); hasOpenFiles {
 		rightOpen = 1
 	}
 

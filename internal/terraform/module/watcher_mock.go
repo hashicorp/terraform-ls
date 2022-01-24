@@ -2,12 +2,10 @@ package module
 
 import (
 	"log"
-
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
 func MockWatcher() WatcherFactory {
-	return func(filesystem.Filesystem, ModuleManager) (Watcher, error) {
+	return func(ModuleManager) (Watcher, error) {
 		return &mockWatcher{}, nil
 	}
 }

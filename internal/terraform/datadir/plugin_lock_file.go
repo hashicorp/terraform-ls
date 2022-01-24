@@ -1,12 +1,11 @@
 package datadir
 
 import (
+	"io/fs"
 	"path/filepath"
-
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 )
 
-func PluginLockFilePath(fs filesystem.Filesystem, modPath string) (string, bool) {
+func PluginLockFilePath(fs fs.StatFS, modPath string) (string, bool) {
 	for _, pathElems := range pluginLockFilePathElements {
 		fullPath := filepath.Join(append([]string{modPath}, pathElems...)...)
 		fi, err := fs.Stat(fullPath)
