@@ -6,21 +6,21 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
-type sourceLine struct {
-	content []byte
-	rng     hcl.Range
+type Line struct {
+	// Bytes returns the line byte inc. any trailing end-of-line markers
+	Bytes []byte
+
+	// Range returns range of the line bytes inc. any trailing end-of-line markers
+	// The range will span across two lines in most cases
+	// (other than last line without trailing new line)
+	Range hcl.Range
 }
 
-// Range returns range of the line bytes inc. any trailing end-of-line markers
-// The range will span across two lines in most cases
-// (other than last line without trailing new line)
-func (l sourceLine) Range() hcl.Range {
-	return l.rng
-}
-
-// Bytes returns the line byte inc. any trailing end-of-line markers
-func (l sourceLine) Bytes() []byte {
-	return l.content
+func (l Line) Copy() Line {
+	return Line{
+		Bytes: l.Bytes,
+		Range: l.Range,
+	}
 }
 
 func MakeSourceLines(filename string, s []byte) []Line {
@@ -33,17 +33,17 @@ func MakeSourceLines(filename string, s []byte) []Line {
 	}
 	sc := hcl.NewRangeScanner(s, filename, scanLines)
 	for sc.Scan() {
-		ret = append(ret, sourceLine{
-			content: sc.Bytes(),
-			rng:     sc.Range(),
+		ret = append(ret, Line{
+			Bytes: sc.Bytes(),
+			Range: sc.Range(),
 		})
 		lastRng = sc.Range()
 	}
 
 	// Account for the last (virtual) user-percieved line
-	ret = append(ret, sourceLine{
-		content: []byte{},
-		rng: hcl.Range{
+	ret = append(ret, Line{
+		Bytes: []byte{},
+		Range: hcl.Range{
 			Filename: lastRng.Filename,
 			Start:    lastRng.End,
 			End:      lastRng.End,
@@ -76,7 +76,7 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 func StringLines(lines Lines) []string {
 	strLines := make([]string, len(lines))
 	for i, l := range lines {
-		strLines[i] = string(l.Bytes())
+		strLines[i] = string(l.Bytes)
 	}
 	return strLines
 }
