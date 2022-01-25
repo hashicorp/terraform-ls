@@ -76,8 +76,7 @@ checksum:
 signs:
   -
     id: with_key_id
-    # TODO: Replace with variable once goreleaser supports variables here
-    signature: "${artifact}.72D7468F.sig"
+    signature: "${artifact}.{{ .Env.GPG_KEY_ID }}.sig"
     cmd: signore
     args: ["sign", "--dearmor", "--file", "${artifact}", "--out", "${signature}"]
     artifacts: checksum
