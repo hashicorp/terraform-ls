@@ -2,7 +2,7 @@ package hcl
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/source"
 	"github.com/pmezard/go-difflib/difflib"
 )
@@ -17,17 +17,17 @@ func (ch *fileChange) Text() string {
 	return ch.newText
 }
 
-func (ch *fileChange) Range() *filesystem.Range {
+func (ch *fileChange) Range() *document.Range {
 	if ch.rng == nil {
 		return nil
 	}
 
-	return &filesystem.Range{
-		Start: filesystem.Pos{
+	return &document.Range{
+		Start: document.Pos{
 			Line:   ch.rng.Start.Line - 1,
 			Column: ch.rng.Start.Column - 1,
 		},
-		End: filesystem.Pos{
+		End: document.Pos{
 			Line:   ch.rng.End.Line - 1,
 			Column: ch.rng.End.Column - 1,
 		},
@@ -42,23 +42,23 @@ const (
 )
 
 // Diff calculates difference between Document's content
-// and after byte sequence and returns it as filesystem.DocumentChanges
-func Diff(f filesystem.DocumentHandler, before, after []byte) filesystem.DocumentChanges {
-	return diffLines(f.Filename(),
-		source.MakeSourceLines(f.Filename(), before),
-		source.MakeSourceLines(f.Filename(), after))
+// and after byte sequence and returns it as document.Changes
+func Diff(f document.Handle, before, after []byte) document.Changes {
+	return diffLines(f.Filename,
+		source.MakeSourceLines(f.Filename, before),
+		source.MakeSourceLines(f.Filename, after))
 }
 
 // diffLines calculates difference between two source.Lines
-// and returns them as filesystem.DocumentChanges
-func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem.DocumentChanges {
+// and returns them as document.Changes
+func diffLines(filename string, beforeLines, afterLines source.Lines) document.Changes {
 	context := 3
 
 	m := difflib.NewMatcher(
 		source.StringLines(beforeLines),
 		source.StringLines(afterLines))
 
-	changes := make(filesystem.DocumentChanges, 0)
+	changes := make(document.Changes, 0)
 
 	for _, group := range m.GetGroupedOpCodes(context) {
 		for _, c := range group {
@@ -75,15 +75,15 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 
 				for i, line := range beforeLines[beforeStart:beforeEnd] {
 					if i == 0 {
-						lr := line.Range()
+						lr := line.Range
 						rng = &lr
 						continue
 					}
-					rng.End = line.Range().End
+					rng.End = line.Range.End
 				}
 
 				for _, line := range afterLines[afterStart:afterEnd] {
-					newBytes = append(newBytes, line.Bytes()...)
+					newBytes = append(newBytes, line.Bytes...)
 				}
 
 				changes = append(changes, &fileChange{
@@ -97,11 +97,11 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 				var deleteRng *hcl.Range
 				for i, line := range beforeLines[beforeStart:beforeEnd] {
 					if i == 0 {
-						lr := line.Range()
+						lr := line.Range
 						deleteRng = &lr
 						continue
 					}
-					deleteRng.End = line.Range().End
+					deleteRng.End = line.Range.End
 				}
 				changes = append(changes, &fileChange{
 					newText: "",
@@ -120,21 +120,21 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) filesystem
 
 				if beforeStart == beforeEnd {
 					line := beforeLines[beforeStart]
-					insertRng = line.Range().Ptr()
+					insertRng = line.Range.Ptr()
 				} else {
 					for i, line := range beforeLines[beforeStart:beforeEnd] {
 						if i == 0 {
-							insertRng = line.Range().Ptr()
+							insertRng = line.Range.Ptr()
 							continue
 						}
-						insertRng.End = line.Range().End
+						insertRng.End = line.Range.End
 					}
 				}
 
 				var newBytes []byte
 
 				for _, line := range afterLines[afterStart:afterEnd] {
-					newBytes = append(newBytes, line.Bytes()...)
+					newBytes = append(newBytes, line.Bytes...)
 				}
 
 				changes = append(changes, &fileChange{

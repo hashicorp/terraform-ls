@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/source"
 	"github.com/pmezard/go-difflib/difflib"
 )
@@ -16,7 +16,7 @@ func TestDiff(t *testing.T) {
 	testCases := []struct {
 		name                string
 		beforeCfg, afterCfg string
-		expectedChanges     filesystem.DocumentChanges
+		expectedChanges     document.Changes
 	}{
 		{
 			"no-op",
@@ -26,7 +26,7 @@ ccc`,
 			`aaa
 bbb
 ccc`,
-			filesystem.DocumentChanges{},
+			document.Changes{},
 		},
 		{
 			"two separate lines replaced",
@@ -46,7 +46,7 @@ ccc`,
     s      = 3
   }
 }`,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: `    "key"  = "value"
 `,
@@ -87,7 +87,7 @@ ccc`,
     s      = 3
   }
 }`,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: "",
 					rng: &hcl.Range{
@@ -106,7 +106,7 @@ ccc`,
 			`resource "aws_vpc" "name" {
 
 }`,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: "\n",
 					rng: &hcl.Range{
@@ -122,7 +122,7 @@ ccc`,
 			`resource "aws_vpc" "name" {}`,
 			`resource "aws_vpc" "name" {
 }`,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: `resource "aws_vpc" "name" {
 }`,
@@ -143,7 +143,7 @@ ccc`,
 }
 
 `,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: "\n",
 					rng: &hcl.Range{
@@ -166,7 +166,7 @@ ccc`,
   attr2 = "two"
   attr3 = "three"
 }`,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: `  attr2 = "two"
 `,
@@ -183,7 +183,7 @@ ccc`,
 			``,
 			`
 `,
-			filesystem.DocumentChanges{
+			document.Changes{
 				&fileChange{
 					newText: "\n",
 					rng: &hcl.Range{
