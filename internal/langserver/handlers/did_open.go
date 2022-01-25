@@ -10,14 +10,11 @@ import (
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
-	fs, err := lsctx.DocumentStorage(ctx)
-	if err != nil {
-		return err
-	}
+func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
 
-	f := ilsp.FileFromDocumentItem(params.TextDocument)
-	err = fs.CreateAndOpenDocument(f, f.LanguageID(), f.Text())
+	err := svc.stateStore.DocumentStore.OpenDocument(dh, params.TextDocument.LanguageID,
+		int(params.TextDocument.Version), []byte(params.TextDocument.Text))
 	if err != nil {
 		return err
 	}
@@ -29,10 +26,10 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 
 	var mod module.Module
 
-	mod, err = modMgr.ModuleByPath(f.Dir())
+	mod, err = modMgr.ModuleByPath(dh.Dir.Path())
 	if err != nil {
 		if module.IsModuleNotFound(err) {
-			mod, err = modMgr.AddModule(f.Dir())
+			mod, err = modMgr.AddModule(dh.Dir.Path())
 			if err != nil {
 				return err
 			}
@@ -41,7 +38,7 @@ func (lh *logHandler) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpe
 		}
 	}
 
-	lh.logger.Printf("opened module: %s", mod.Path)
+	svc.logger.Printf("opened module: %s", mod.Path)
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk

@@ -17,7 +17,7 @@ func TestInitialize_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -30,14 +30,14 @@ func TestInitialize_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())}, code.SystemError.Err())
+	}`, TempDir(t).URI)}, code.SystemError.Err())
 }
 
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
@@ -45,7 +45,7 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -70,7 +70,7 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	    "capabilities": {},
 	    "processId": 12345,
 	    "rootUri": %q
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 }
 
 func TestInitialize_withInvalidRootURI(t *testing.T) {
@@ -78,7 +78,7 @@ func TestInitialize_withInvalidRootURI(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -99,7 +99,7 @@ func TestInitialize_multipleFolders(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				rootDir.Dir(): validTfMockCalls(),
+				rootDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -118,13 +118,13 @@ func TestInitialize_multipleFolders(t *testing.T) {
 	    		"name": "root"
 	    	}
 	    ]
-	}`, rootDir.URI(), rootDir.URI())})
+	}`, rootDir.URI, rootDir.URI)})
 }
 
 func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 	tmpDir := TempDir(t, "plugin", "ignore")
-	pluginDir := filepath.Join(tmpDir.Dir(), "plugin")
-	emptyDir := filepath.Join(tmpDir.Dir(), "ignore")
+	pluginDir := filepath.Join(tmpDir.Path(), "plugin")
+	emptyDir := filepath.Join(tmpDir.Path(), "ignore")
 
 	InitPluginCache(t, pluginDir)
 	InitPluginCache(t, emptyDir)
@@ -157,5 +157,5 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 			"initializationOptions": {
 				"ignoreDirectoryNames": [%q]
 			}
-	}`, tmpDir.URI(), "ignore")})
+	}`, tmpDir.URI, "ignore")})
 }

@@ -28,12 +28,12 @@ func TestHover_withoutInitialization(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
+		}`, TempDir(t).URI)}, session.SessionNotInitialized.Err())
 }
 
 func TestHover_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -44,7 +44,7 @@ func TestHover_withValidData(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -88,7 +88,7 @@ func TestHover_withValidData(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -102,7 +102,7 @@ func TestHover_withValidData(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/hover",
@@ -114,7 +114,7 @@ func TestHover_withValidData(t *testing.T) {
 				"character": 3,
 				"line": 0
 			}
-		}`, TempDir(t).URI())}, `{
+		}`, TempDir(t).URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -132,7 +132,7 @@ func TestHover_withValidData(t *testing.T) {
 
 func TestVarsHover_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -143,7 +143,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -186,7 +186,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -200,7 +200,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 			"text": "variable \"test\" {\n type=string\n sensitive=true}\n",
 			"uri": "%s/variables.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
@@ -210,7 +210,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 			"text": "test = \"dev\"\n",
 			"uri": "%s/terraform.tfvars"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/hover",
@@ -222,7 +222,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 				"character": 3,
 				"line": 0
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 4,
 			"result": {

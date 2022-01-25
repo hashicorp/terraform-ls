@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/decoder"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -63,8 +64,6 @@ func (c *CompletionCommand) Run(args []string) int {
 		return 1
 	}
 
-	fh := ilsp.FileHandlerFromPath(path)
-
 	parts := strings.Split(c.atPos, ":")
 	if len(parts) != 2 {
 		c.Ui.Error(fmt.Sprintf("Error parsing at-pos argument: %q (expected line:col format)", c.atPos))
@@ -84,56 +83,57 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	logger := logging.NewLogger(os.Stderr)
 
-	fs := filesystem.NewFilesystem()
-	fs.SetLogger(logger)
-	fs.CreateAndOpenDocument(fh, "terraform", content)
-
-	doc, err := fs.GetDocument(fh)
+	ss, err := state.NewStateStore()
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
 
-	fPos, err := ilsp.FilePositionFromDocumentPosition(lsp.TextDocumentPositionParams{
-		TextDocument: lsp.TextDocumentIdentifier{
-			URI: fh.DocumentURI(),
-		},
-		Position: lspPos,
-	}, doc)
+	dh := document.HandleFromPath(path)
+	err = ss.DocumentStore.OpenDocument(dh, "terraform", 0, content)
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	fs.SetLogger(logger)
+
+	doc, err := ss.DocumentStore.GetDocument(dh)
+	if err != nil {
+		c.Ui.Error(err.Error())
+		return 1
+	}
+
+	pos, err := ilsp.HCLPositionFromLspPosition(lspPos, doc)
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
 
 	ctx := context.Background()
-	ss, err := state.NewStateStore()
+
+	modMgr := module.NewSyncModuleManager(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
+
+	_, err = modMgr.AddModule(dh.Dir.Path())
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
-	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
-
-	_, err = modMgr.AddModule(fh.Dir())
-	if err != nil {
-		c.Ui.Error(err.Error())
-		return 1
-	}
-
-	pos := fPos.Position()
 
 	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
 		ModuleReader: ss.Modules,
 		SchemaReader: ss.ProviderSchemas,
 	}).Path(lang.Path{
-		Path:       doc.Dir(),
-		LanguageID: doc.LanguageID(),
+		Path:       doc.Dir.Path(),
+		LanguageID: doc.LanguageID,
 	})
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1
 	}
 
-	candidates, err := d.CandidatesAtPos(doc.Filename(), pos)
+	candidates, err := d.CandidatesAtPos(doc.Filename, pos)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("failed to find candidates: %s", err.Error()))
 		return 1

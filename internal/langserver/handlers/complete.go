@@ -11,17 +11,13 @@ import (
 func (svc *service) TextDocumentComplete(ctx context.Context, params lsp.CompletionParams) (lsp.CompletionList, error) {
 	var list lsp.CompletionList
 
-	fs, err := lsctx.DocumentStorage(ctx)
-	if err != nil {
-		return list, err
-	}
-
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return list, err
 	}
 
-	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
+	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
 	if err != nil {
 		return list, err
 	}
@@ -38,13 +34,13 @@ func (svc *service) TextDocumentComplete(ctx context.Context, params lsp.Complet
 
 	d.PrefillRequiredFields = expFeatures.PrefillRequiredFields
 
-	fPos, err := ilsp.FilePositionFromDocumentPosition(params.TextDocumentPositionParams, doc)
+	pos, err := ilsp.HCLPositionFromLspPosition(params.TextDocumentPositionParams.Position, doc)
 	if err != nil {
 		return list, err
 	}
 
-	svc.logger.Printf("Looking for candidates at %q -> %#v", doc.Filename(), fPos.Position())
-	candidates, err := d.CandidatesAtPos(doc.Filename(), fPos.Position())
+	svc.logger.Printf("Looking for candidates at %q -> %#v", doc.Filename, pos)
+	candidates, err := d.CandidatesAtPos(doc.Filename, pos)
 	svc.logger.Printf("received candidates: %#v", candidates)
 	return ilsp.ToCompletionList(candidates, cc.TextDocument), err
 }

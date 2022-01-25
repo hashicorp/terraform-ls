@@ -15,7 +15,7 @@ func TestShutdown_twice(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -28,7 +28,7 @@ func TestShutdown_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`})
 

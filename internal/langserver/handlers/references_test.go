@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -19,7 +19,7 @@ func TestReferences_basic(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -56,7 +56,7 @@ func TestReferences_basic(t *testing.T) {
 	    },
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -76,7 +76,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/references",
 		ReqParams: fmt.Sprintf(`{
@@ -87,7 +87,7 @@ output "foo" {
 				"line": 0,
 				"character": 2
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -118,7 +118,7 @@ output "foo" {
 					}
 				}
 			]
-		}`, tmpDir.URI(), tmpDir.URI()))
+		}`, tmpDir.URI, tmpDir.URI))
 }
 
 func TestReferences_variableToModuleInput(t *testing.T) {
@@ -129,8 +129,8 @@ func TestReferences_variableToModuleInput(t *testing.T) {
 
 	submodPath := filepath.Join(rootModPath, "application")
 
-	rootModUri := lsp.FileHandlerFromDirPath(rootModPath)
-	submodUri := lsp.FileHandlerFromDirPath(submodPath)
+	rootHandle := document.DirHandleFromPath(rootModPath)
+	subHandle := document.DirHandleFromPath(submodPath)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -152,7 +152,7 @@ func TestReferences_variableToModuleInput(t *testing.T) {
 			},
 			"rootUri": %q,
 			"processId": 12345
-	}`, rootModUri.URI())})
+	}`, rootHandle.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -178,7 +178,7 @@ variable "instances" {
 `)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, submodUri.URI())})
+	}`, subHandle.URI)})
 	// TODO remove once we support synchronous dependent tasks
 	// See https://github.com/hashicorp/terraform-ls/issues/719
 	time.Sleep(2 * time.Second)
@@ -192,7 +192,7 @@ variable "instances" {
 				"line": 0,
 				"character": 5
 			}
-		}`, submodUri.URI())}, fmt.Sprintf(`{
+		}`, subHandle.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -210,5 +210,5 @@ variable "instances" {
 					}
 				}
 			]
-		}`, rootModUri.URI()))
+		}`, rootHandle.URI))
 }

@@ -53,7 +53,7 @@ func TestLangServer_cancelRequest(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

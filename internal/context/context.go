@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -20,7 +19,6 @@ func (k *contextKey) String() string {
 }
 
 var (
-	ctxDs                   = &contextKey{"document storage"}
 	ctxTfExecPath           = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
@@ -38,19 +36,6 @@ var (
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
 	return &MissingContextErr{ctxKey}
-}
-
-func WithDocumentStorage(ctx context.Context, fs filesystem.DocumentStorage) context.Context {
-	return context.WithValue(ctx, ctxDs, fs)
-}
-
-func DocumentStorage(ctx context.Context) (filesystem.DocumentStorage, error) {
-	fs, ok := ctx.Value(ctxDs).(filesystem.DocumentStorage)
-	if !ok {
-		return nil, missingContextErr(ctxDs)
-	}
-
-	return fs, nil
 }
 
 func WithTerraformExecLogPath(ctx context.Context, path string) context.Context {
