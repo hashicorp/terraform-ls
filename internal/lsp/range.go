@@ -2,38 +2,38 @@ package lsp
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func fsRangeToLSP(fsRng *filesystem.Range) lsp.Range {
-	if fsRng == nil {
+func documentRangeToLSP(docRng *document.Range) lsp.Range {
+	if docRng == nil {
 		return lsp.Range{}
 	}
 
 	return lsp.Range{
 		Start: lsp.Position{
-			Character: uint32(fsRng.Start.Column),
-			Line:      uint32(fsRng.Start.Line),
+			Character: uint32(docRng.Start.Column),
+			Line:      uint32(docRng.Start.Line),
 		},
 		End: lsp.Position{
-			Character: uint32(fsRng.End.Column),
-			Line:      uint32(fsRng.End.Line),
+			Character: uint32(docRng.End.Column),
+			Line:      uint32(docRng.End.Line),
 		},
 	}
 }
 
-func lspRangeToFsRange(rng *lsp.Range) *filesystem.Range {
+func lspRangeToDocRange(rng *lsp.Range) *document.Range {
 	if rng == nil {
 		return nil
 	}
 
-	return &filesystem.Range{
-		Start: filesystem.Pos{
+	return &document.Range{
+		Start: document.Pos{
 			Line:   int(rng.Start.Line),
 			Column: int(rng.Start.Character),
 		},
-		End: filesystem.Pos{
+		End: document.Pos{
 			Line:   int(rng.End.Line),
 			Column: int(rng.End.Character),
 		},

@@ -2,16 +2,16 @@ package lsp
 
 import (
 	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func TextEditsFromDocumentChanges(changes filesystem.DocumentChanges) []lsp.TextEdit {
+func TextEditsFromDocumentChanges(changes document.Changes) []lsp.TextEdit {
 	edits := make([]lsp.TextEdit, len(changes))
 
 	for i, change := range changes {
 		edits[i] = lsp.TextEdit{
-			Range:   fsRangeToLSP(change.Range()),
+			Range:   documentRangeToLSP(change.Range()),
 			NewText: change.Text(),
 		}
 	}
