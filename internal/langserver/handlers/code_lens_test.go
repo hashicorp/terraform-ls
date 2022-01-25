@@ -9,9 +9,9 @@ import (
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,12 +27,12 @@ func TestCodeLens_withoutInitialization(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
+		}`, TempDir(t).URI)}, session.SessionNotInitialized.Err())
 }
 
 func TestCodeLens_withoutOptIn(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -50,7 +50,7 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -64,14 +64,14 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeLens",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI()),
+		}`, TempDir(t).URI),
 	}, `{
 				"jsonrpc": "2.0",
 				"id": 3,
@@ -81,7 +81,7 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 
 func TestCodeLens_referenceCount(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -92,7 +92,7 @@ func TestCodeLens_referenceCount(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -139,7 +139,7 @@ func TestCodeLens_referenceCount(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -158,14 +158,14 @@ func TestCodeLens_referenceCount(t *testing.T) {
 output "test" {
 	value = var.test
 }
-`, tmpDir.URI())})
+`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeLens",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI()),
+		}`, TempDir(t).URI),
 	}, `{
 				"jsonrpc": "2.0",
 				"id": 3,
@@ -207,8 +207,8 @@ func TestCodeLens_referenceCount_crossModule(t *testing.T) {
 
 	submodPath := filepath.Join(rootModPath, "application")
 
-	rootModUri := lsp.FileHandlerFromDirPath(rootModPath)
-	submodUri := lsp.FileHandlerFromDirPath(submodPath)
+	rootModUri := document.DirHandleFromPath(rootModPath)
+	submodUri := document.DirHandleFromPath(submodPath)
 
 	var testSchema tfjson.ProviderSchemas
 	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -236,7 +236,7 @@ func TestCodeLens_referenceCount_crossModule(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, rootModUri.URI())})
+	}`, rootModUri.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -261,7 +261,7 @@ variable "app_prefix" {
 variable "instances" {
   type = number
 }
-`, submodUri.URI())})
+`, submodUri.URI)})
 	// TODO remove once we support synchronous dependent tasks
 	// See https://github.com/hashicorp/terraform-ls/issues/719
 	time.Sleep(2 * time.Second)
@@ -271,7 +271,7 @@ variable "instances" {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, submodUri.URI()),
+		}`, submodUri.URI),
 	}, `{
 			"jsonrpc": "2.0",
 			"id": 3,

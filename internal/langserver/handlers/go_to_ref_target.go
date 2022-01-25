@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -39,25 +38,21 @@ func (svc *service) GoToDeclaration(ctx context.Context, params lsp.TextDocument
 }
 
 func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (decoder.ReferenceTargets, error) {
-	fs, err := lsctx.DocumentStorage(ctx)
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
+	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
-	if err != nil {
-		return nil, err
-	}
-
-	fPos, err := ilsp.FilePositionFromDocumentPosition(params, doc)
+	pos, err := ilsp.HCLPositionFromLspPosition(params.Position, doc)
 	if err != nil {
 		return nil, err
 	}
 
 	path := lang.Path{
-		Path:       doc.Dir(),
-		LanguageID: doc.LanguageID(),
+		Path:       doc.Dir.Path(),
+		LanguageID: doc.LanguageID,
 	}
 
-	return svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename(), fPos.Position())
+	return svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename, pos)
 }

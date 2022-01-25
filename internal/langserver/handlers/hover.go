@@ -3,23 +3,18 @@ package handlers
 import (
 	"context"
 
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 func (svc *service) TextDocumentHover(ctx context.Context, params lsp.TextDocumentPositionParams) (*lsp.Hover, error) {
-	fs, err := lsctx.DocumentStorage(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	doc, err := fs.GetDocument(ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI))
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
+	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
 	if err != nil {
 		return nil, err
 	}
@@ -29,13 +24,13 @@ func (svc *service) TextDocumentHover(ctx context.Context, params lsp.TextDocume
 		return nil, err
 	}
 
-	fPos, err := ilsp.FilePositionFromDocumentPosition(params, doc)
+	pos, err := ilsp.HCLPositionFromLspPosition(params.Position, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	svc.logger.Printf("Looking for hover data at %q -> %#v", doc.Filename(), fPos.Position())
-	hoverData, err := d.HoverAtPos(doc.Filename(), fPos.Position())
+	svc.logger.Printf("Looking for hover data at %q -> %#v", doc.Filename, pos)
+	hoverData, err := d.HoverAtPos(doc.Filename, pos)
 	svc.logger.Printf("received hover data: %#v", hoverData)
 	if err != nil {
 		return nil, err

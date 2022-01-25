@@ -7,22 +7,22 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/code"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
-	InitPluginCache(t, tmpDir.Dir())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
+	InitPluginCache(t, tmpDir.Path())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -35,7 +35,7 @@ func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) 
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -60,13 +60,13 @@ func TestLangServer_workspaceExecuteCommand_modules_argumentError(t *testing.T) 
 
 func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
-	InitPluginCache(t, tmpDir.Dir())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
+	InitPluginCache(t, tmpDir.Path())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -79,7 +79,7 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -113,7 +113,7 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 				}
 			]
 		}
-	}`, tmpDir.URI(), t.Name()))
+	}`, tmpDir.URI, t.Name()))
 }
 
 func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
@@ -129,19 +129,19 @@ func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	root := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv"))
-	mod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "main", "main.tf"))
+	root := document.DirHandleFromPath(filepath.Join(testData, "main-module-multienv"))
+	mod := document.DirHandleFromPath(filepath.Join(testData, "main-module-multienv", "main", "main.tf"))
 
-	dev := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "dev"))
-	staging := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "staging"))
-	prod := lsp.FileHandlerFromDirPath(filepath.Join(testData, "main-module-multienv", "env", "prod"))
+	dev := document.DirHandleFromPath(filepath.Join(testData, "main-module-multienv", "env", "dev"))
+	staging := document.DirHandleFromPath(filepath.Join(testData, "main-module-multienv", "env", "staging"))
+	prod := document.DirHandleFromPath(filepath.Join(testData, "main-module-multienv", "env", "prod"))
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				dev.Dir():     validTfMockCalls(),
-				staging.Dir(): validTfMockCalls(),
-				prod.Dir():    validTfMockCalls(),
+				dev.Path():     validTfMockCalls(),
+				staging.Path(): validTfMockCalls(),
+				prod.Path():    validTfMockCalls(),
 			},
 		},
 	}))
@@ -154,7 +154,7 @@ func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, root.URI())})
+	}`, root.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -167,7 +167,7 @@ func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, cmd.Name("rootmodules"), mod.URI())}, fmt.Sprintf(`{
+	}`, cmd.Name("rootmodules"), mod.URI)}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 2,
 		"result": {
@@ -188,5 +188,5 @@ func TestLangServer_workspaceExecuteCommand_modules_multiple(t *testing.T) {
 				}
 			]
 		}
-	}`, dev.URI(), filepath.Join("env", "dev"), prod.URI(), filepath.Join("env", "prod"), staging.URI(), filepath.Join("env", "staging")))
+	}`, dev.URI, filepath.Join("env", "dev"), prod.URI, filepath.Join("env", "prod"), staging.URI, filepath.Join("env", "staging")))
 }

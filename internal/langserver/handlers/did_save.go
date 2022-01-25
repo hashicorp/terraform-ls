@@ -19,11 +19,10 @@ func (lh *logHandler) TextDocumentDidSave(ctx context.Context, params lsp.DidSav
 		return nil
 	}
 
-	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
-	dh := ilsp.FileHandlerFromDirPath(fh.Dir())
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
 
 	_, err = command.TerraformValidateHandler(ctx, cmd.CommandArgs{
-		"uri": dh.URI(),
+		"uri": dh.Dir.URI,
 	})
 
 	return err

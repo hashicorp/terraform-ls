@@ -8,9 +8,11 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -82,19 +84,19 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	}
 	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
 
-	fh := ilsp.FileHandlerFromDirURI(params.RootURI)
-	if fh.URI() == "" || !fh.IsDir() {
+	if params.RootURI == "" {
 		properties["root_uri"] = "file"
 		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +
 			" Please open a directory.")
 	}
-	if !fh.Valid() {
+	if !uri.IsURIValid(string(params.RootURI)) {
 		properties["root_uri"] = "invalid"
 		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 	}
 
-	rootDir := fh.FullPath()
-	err := lsctx.SetRootDirectory(ctx, rootDir)
+	root := document.DirHandleFromURI(string(params.RootURI))
+
+	err := lsctx.SetRootDirectory(ctx, root.Path())
 	if err != nil {
 		return serverCaps, err
 	}
@@ -188,7 +190,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	var excludeModulePaths []string
 	for _, rawPath := range cfgOpts.ExcludeModulePaths {
-		modPath, err := resolvePath(rootDir, rawPath)
+		modPath, err := resolvePath(root.Path(), rawPath)
 		if err != nil {
 			svc.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
 			continue
@@ -198,7 +200,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	svc.walker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
 	svc.walker.SetExcludeModulePaths(excludeModulePaths)
-	svc.walker.EnqueuePath(fh.Dir())
+	svc.walker.EnqueuePath(root.Path())
 
 	// Walker runs asynchronously so we're intentionally *not*
 	// passing the request context here
@@ -231,7 +233,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	if len(cfgOpts.ModulePaths) > 0 {
 		svc.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
 		for _, rawPath := range cfgOpts.ModulePaths {
-			modPath, err := resolvePath(rootDir, rawPath)
+			modPath, err := resolvePath(root.Path(), rawPath)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type:    lsp.Warning,

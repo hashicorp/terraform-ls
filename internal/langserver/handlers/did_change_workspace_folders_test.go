@@ -14,7 +14,7 @@ func TestDidChangeWorkspaceFolders(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				rootDir.Dir(): validTfMockCalls(),
+				rootDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -33,7 +33,7 @@ func TestDidChangeWorkspaceFolders(t *testing.T) {
 				"name": "first"
 			}
 		]
-	}`, rootDir.URI(), rootDir.URI())})
+	}`, rootDir.URI, rootDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -49,5 +49,5 @@ func TestDidChangeWorkspaceFolders(t *testing.T) {
 				{"uri": %q, "name": "first"}
 			]
 		}
-	}`, rootDir.URI(), rootDir.URI())})
+	}`, rootDir.URI, rootDir.URI)})
 }

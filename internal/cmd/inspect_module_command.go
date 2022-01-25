@@ -84,17 +84,19 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		return fmt.Errorf("expected %s to be a directory", rootPath)
 	}
 
-	fs := filesystem.NewFilesystem()
-
-	ctx := context.Background()
 	ss, err := state.NewStateStore()
 	if err != nil {
 		return err
 	}
-	modMgr := module.NewSyncModuleManager(ctx, fs, ss.Modules, ss.ProviderSchemas)
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	ctx := context.Background()
+
+	modMgr := module.NewSyncModuleManager(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
 	modMgr.SetLogger(c.logger)
 
-	walker := module.SyncWalker(fs, modMgr)
+	walker := module.SyncWalker(fs, ss.DocumentStore, modMgr)
 	walker.SetLogger(c.logger)
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),

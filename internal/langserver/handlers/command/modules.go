@@ -8,9 +8,8 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
@@ -34,12 +33,12 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 		return nil, err
 	}
 
-	fileUri, ok := args.GetString("uri")
-	if !ok || fileUri == "" {
+	docUri, ok := args.GetString("uri")
+	if !ok || docUri == "" {
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
 	}
 
-	fh := ilsp.FileHandlerFromDocumentURI(lsp.DocumentURI(fileUri))
+	dh := document.HandleFromURI(docUri)
 
 	modMgr, err := lsctx.ModuleManager(ctx)
 	if err != nil {
@@ -49,14 +48,14 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 	doneLoading := !walker.IsWalking()
 
 	var sources []module.SchemaSource
-	sources, err = modMgr.SchemaSourcesForModule(fh.Dir())
+	sources, err = modMgr.SchemaSourcesForModule(dh.Dir.Path())
 	if err != nil {
 		if module.IsModuleNotFound(err) {
-			_, err := modMgr.AddModule(fh.Dir())
+			_, err := modMgr.AddModule(dh.Dir.Path())
 			if err != nil {
 				return nil, err
 			}
-			sources, err = modMgr.SchemaSourcesForModule(fh.Dir())
+			sources, err = modMgr.SchemaSourcesForModule(dh.Dir.Path())
 			if err != nil {
 				return nil, err
 			}

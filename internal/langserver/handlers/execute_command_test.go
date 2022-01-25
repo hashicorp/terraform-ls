@@ -12,14 +12,14 @@ import (
 
 func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
 
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -32,7 +32,7 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

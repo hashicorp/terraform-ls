@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -16,15 +16,18 @@ import (
 func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {
 	tmpDir := TempDir(t)
 
-	fs := filesystem.NewFilesystem()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
-		Filesystem: fs,
+		StateStore: ss,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -35,7 +38,7 @@ func TestLangServer_didChange_sequenceOfPartialChanges(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -64,7 +67,7 @@ module "app" {
         "uri": "%s/main.tf",
         "text": %q
     }
-}`, TempDir(t).URI(), originalText)})
+}`, TempDir(t).URI, originalText)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didChange",
 		ReqParams: fmt.Sprintf(`{
@@ -102,7 +105,7 @@ module "app" {
             }
         }
     ]
-}`, TempDir(t).URI())})
+}`, TempDir(t).URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didChange",
 		ReqParams: fmt.Sprintf(`{
@@ -126,17 +129,15 @@ module "app" {
             }
         }
     ]
-}`, TempDir(t).URI())})
+}`, TempDir(t).URI)})
 
-	path := filepath.Join(TempDir(t).Dir(), "main.tf")
-	doc, err := fs.GetDocument(lsp.FileHandlerFromPath(path))
+	path := filepath.Join(TempDir(t).Path(), "main.tf")
+	dh := document.HandleFromPath(path)
+	doc, err := ss.DocumentStore.GetDocument(dh)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text, err := doc.Text()
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	expectedText := `variable "service_host" {
   default = "blah"
 }
@@ -153,7 +154,7 @@ module "app" {
 }
 `
 
-	if diff := cmp.Diff(expectedText, string(text)); diff != "" {
+	if diff := cmp.Diff(expectedText, string(doc.Text)); diff != "" {
 		t.Fatalf("unexpected text: %s", diff)
 	}
 }

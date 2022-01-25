@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
@@ -37,7 +38,7 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	fs               filesystem.Filesystem
+	fs               *filesystem.Filesystem
 	modStore         *state.ModuleStore
 	schemaStore      *state.ProviderSchemaStore
 	watcher          module.Watcher
@@ -61,13 +62,11 @@ type service struct {
 var discardLogs = log.New(ioutil.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
-	fs := filesystem.NewFilesystem()
 	d := &discovery.Discovery{}
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
 		logger:           discardLogs,
-		fs:               fs,
 		srvCtx:           srvCtx,
 		sessCtx:          sessCtx,
 		stopSession:      stopSession,
@@ -97,7 +96,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	}
 
 	svc.telemetry = &telemetry.NoopSender{Logger: svc.logger}
-	svc.fs.SetLogger(svc.logger)
 
 	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
@@ -140,27 +138,24 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			return handle(ctx, req, TextDocumentDidChange)
+			return handle(ctx, req, svc.TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
-			return handle(ctx, req, lh.TextDocumentDidOpen)
+			return handle(ctx, req, svc.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-			return handle(ctx, req, TextDocumentDidClose)
+			return handle(ctx, req, svc.TextDocumentDidClose)
 		},
 		"textDocument/documentSymbol": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -168,7 +163,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
 			return handle(ctx, req, svc.TextDocumentSymbol)
@@ -179,7 +173,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 			ctx = ilsp.ContextWithClientName(ctx, &clientName)
 
@@ -191,7 +184,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
 			return handle(ctx, req, svc.GoToDeclaration)
@@ -202,7 +194,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
 			return handle(ctx, req, svc.GoToDefinition)
@@ -213,7 +204,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 
@@ -225,7 +215,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 			ctx = ilsp.ContextWithClientName(ctx, &clientName)
 
@@ -238,11 +227,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
-			return handle(ctx, req, lh.TextDocumentCodeAction)
+			return handle(ctx, req, svc.TextDocumentCodeAction)
 		},
 		"textDocument/codeLens": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -251,7 +239,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 
 			return handle(ctx, req, svc.TextDocumentCodeLens)
 		},
@@ -261,11 +248,10 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
-			return handle(ctx, req, lh.TextDocumentFormatting)
+			return handle(ctx, req, svc.TextDocumentFormatting)
 		},
 		"textDocument/semanticTokens/full": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -273,7 +259,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
 			return handle(ctx, req, svc.TextDocumentSemanticTokensFull)
@@ -309,8 +294,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
-
 			return handle(ctx, req, svc.References)
 		},
 		"workspace/executeCommand": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -337,7 +320,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
 
 			return handle(ctx, req, svc.WorkspaceSymbol)
@@ -347,7 +329,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithDocumentStorage(ctx, svc.fs)
 			svc.shutdown()
 			return handle(ctx, req, Shutdown)
 		},
@@ -459,6 +440,9 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.modStore = svc.stateStore.Modules
 	svc.schemaStore = svc.stateStore.ProviderSchemas
 
+	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
+	svc.fs.SetLogger(svc.logger)
+
 	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
 		ModuleReader: svc.modStore,
 		SchemaReader: svc.schemaStore,
@@ -469,13 +453,13 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		return err
 	}
 
-	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, svc.stateStore.Modules, svc.stateStore.ProviderSchemas)
+	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, svc.stateStore.DocumentStore, svc.stateStore.Modules, svc.stateStore.ProviderSchemas)
 	svc.modMgr.SetLogger(svc.logger)
 
-	svc.walker = svc.newWalker(svc.fs, svc.modMgr)
+	svc.walker = svc.newWalker(svc.fs, svc.stateStore.DocumentStore, svc.modMgr)
 	svc.walker.SetLogger(svc.logger)
 
-	ww, err := svc.newWatcher(svc.fs, svc.modMgr)
+	ww, err := svc.newWatcher(svc.modMgr)
 	if err != nil {
 		return err
 	}
@@ -556,9 +540,9 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 	return result, err
 }
 
-func (svc *service) decoderForDocument(ctx context.Context, doc filesystem.Document) (*decoder.PathDecoder, error) {
+func (svc *service) decoderForDocument(ctx context.Context, doc *document.Document) (*decoder.PathDecoder, error) {
 	return svc.decoder.Path(lang.Path{
-		Path:       doc.Dir(),
-		LanguageID: doc.LanguageID(),
+		Path:       doc.Dir.Path(),
+		LanguageID: doc.LanguageID,
 	})
 }

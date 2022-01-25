@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/handler"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
@@ -18,7 +17,6 @@ import (
 )
 
 type MockSessionInput struct {
-	Filesystem         filesystem.Filesystem
 	TerraformCalls     *exec.TerraformMockCalls
 	AdditionalHandlers map[string]handler.Func
 	StateStore         *state.StateStore
@@ -43,14 +41,9 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		}
 	}
 
-	var fs filesystem.Filesystem
-	fs = filesystem.NewFilesystem()
 	var handlers map[string]handler.Func
 	var stateStore *state.StateStore
 	if ms.mockInput != nil {
-		if ms.mockInput.Filesystem != nil {
-			fs = ms.mockInput.Filesystem
-		}
 		stateStore = ms.mockInput.StateStore
 		handlers = ms.mockInput.AdditionalHandlers
 	}
@@ -69,7 +62,6 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		srvCtx:             srvCtx,
 		sessCtx:            sessCtx,
 		stopSession:        ms.stop,
-		fs:                 fs,
 		newModuleManager:   module.NewModuleManagerMock(input),
 		newWatcher:         module.MockWatcher(),
 		newWalker:          module.SyncWalker,

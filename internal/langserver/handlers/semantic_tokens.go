@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -28,13 +27,8 @@ func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params l
 		return tks, code.MethodNotFound.Err()
 	}
 
-	ds, err := lsctx.DocumentStorage(ctx)
-	if err != nil {
-		return tks, err
-	}
-
-	fh := ilsp.FileHandlerFromDocumentURI(params.TextDocument.URI)
-	doc, err := ds.GetDocument(fh)
+	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
+	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
 	if err != nil {
 		return tks, err
 	}
@@ -44,13 +38,13 @@ func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params l
 		return tks, err
 	}
 
-	tokens, err := d.SemanticTokensInFile(doc.Filename())
+	tokens, err := d.SemanticTokensInFile(doc.Filename)
 	if err != nil {
 		return tks, err
 	}
 
 	te := &ilsp.TokenEncoder{
-		Lines:      doc.Lines(),
+		Lines:      doc.Lines,
 		Tokens:     tokens,
 		ClientCaps: cc.TextDocument.SemanticTokens,
 	}
