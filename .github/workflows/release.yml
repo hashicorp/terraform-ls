@@ -71,7 +71,6 @@ jobs:
           version: latest
           args: release
         env:
-          GPG_KEY_ID: ${{ secrets.GPG_PUBLIC_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

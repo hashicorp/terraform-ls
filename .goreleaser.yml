@@ -76,7 +76,8 @@ checksum:
 signs:
   -
     id: with_key_id
-    signature: "${artifact}.{{ .Env.GPG_KEY_ID }}.sig"
+    # TODO: Replace with variable once signore provides the primary_key_id
+    signature: "${artifact}.72D7468F.sig"
     cmd: signore
     args: ["sign", "--dearmor", "--file", "${artifact}", "--out", "${signature}"]
     artifacts: checksum
