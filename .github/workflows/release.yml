@@ -48,6 +48,9 @@ jobs:
         env:
           VERSION: v0
       -
+        name: Install signore
+        uses: hashicorp/setup-signore-package@v1
+      -
         uses: hashicorp/setup-hc-releases@v1
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
@@ -61,9 +64,6 @@ jobs:
           role-to-assume: ${{ secrets.TERRAFORM_PROD_AWS_ROLE_TO_ASSUME }}
           role-skip-session-tagging: true
           role-duration-seconds: 3600
-      -
-        name: Install signore
-        uses: hashicorp/setup-signore-package@v1
       -
         name: Release
         uses: goreleaser/goreleaser-action@v2
