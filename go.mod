@@ -7,7 +7,7 @@ require (
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.35.2
 	github.com/fsnotify/fsnotify v1.5.1
-	github.com/google/go-cmp v0.5.6
+	github.com/google/go-cmp v0.5.7
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/hashicorp/go-getter v1.5.11
 	github.com/hashicorp/go-memdb v1.3.2
