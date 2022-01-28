@@ -48,13 +48,13 @@ jobs:
         env:
           VERSION: v0
       -
+        name: Install signore
+        uses: hashicorp/setup-signore-package@v1
+      -
         uses: hashicorp/setup-hc-releases@v1
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
-        name: Import key for archive signing
-        run: echo -e "${{ secrets.GPG_PRIVATE_KEY_DECRYPTED }}" | gpg --import --batch --no-tty
-      - 
         name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -71,13 +71,15 @@ jobs:
           version: latest
           args: release
         env:
-          GPG_KEY_ID: ${{ secrets.GPG_PUBLIC_KEY_ID }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
           ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
           CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+          SIGNORE_CLIENT_ID: ${{ secrets.SIGNORE_CLIENT_ID }}
+          SIGNORE_CLIENT_SECRET: ${{ secrets.SIGNORE_CLIENT_SECRET }}
+          SIGNORE_SIGNER: ${{ secrets.SIGNORE_SIGNER }}
       -
         name: Publish released artifacts
         run: hc-releases publish -product=terraform-ls
