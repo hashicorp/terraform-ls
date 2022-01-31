@@ -3,6 +3,7 @@ package state
 import (
 	"io/ioutil"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-memdb"
@@ -14,6 +15,7 @@ import (
 
 const (
 	documentsTableName      = "documents"
+	jobsTableName           = "jobs"
 	moduleTableName         = "module"
 	moduleIdsTableName      = "module_ids"
 	providerSchemaTableName = "provider_schema"
@@ -32,6 +34,61 @@ var dbSchema = &memdb.DBSchema{
 						Indexes: []memdb.Indexer{
 							&DirHandleFieldIndexer{Field: "Dir"},
 							&memdb.StringFieldIndex{Field: "Filename"},
+						},
+					},
+				},
+			},
+		},
+		jobsTableName: {
+			Name: jobsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &StringerFieldIndexer{Field: "ID"},
+				},
+				"is_dir_open_state": {
+					Name: "is_dir_open_state",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&memdb.BoolFieldIndex{Field: "IsDirOpen"},
+							&memdb.UintFieldIndex{Field: "State"},
+						},
+					},
+				},
+				"dir_state": {
+					Name: "dir_state",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&DirHandleFieldIndexer{Field: "Dir"},
+							&memdb.UintFieldIndex{Field: "State"},
+						},
+					},
+				},
+				"dir_state_type": {
+					Name: "dir_state_type",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&DirHandleFieldIndexer{Field: "Dir"},
+							&memdb.UintFieldIndex{Field: "State"},
+							&memdb.StringFieldIndex{Field: "Type"},
+						},
+					},
+				},
+				"state_type": {
+					Name: "state_type",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&memdb.UintFieldIndex{Field: "State"},
+							&memdb.StringFieldIndex{Field: "Type"},
+						},
+					},
+				},
+				"state": {
+					Name: "state",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&memdb.UintFieldIndex{Field: "State"},
 						},
 					},
 				},
@@ -89,6 +146,7 @@ var dbSchema = &memdb.DBSchema{
 
 type StateStore struct {
 	DocumentStore   *DocumentStore
+	JobStore        *JobStore
 	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
 
@@ -137,6 +195,13 @@ func NewStateStore() (*StateStore, error) {
 			logger:       defaultLogger,
 			TimeProvider: time.Now,
 		},
+		JobStore: &JobStore{
+			db:                 db,
+			tableName:          jobsTableName,
+			logger:             defaultLogger,
+			nextJobOpenDirMu:   &sync.Mutex{},
+			nextJobClosedDirMu: &sync.Mutex{},
+		},
 		Modules: &ModuleStore{
 			db:          db,
 			ChangeHooks: make(ModuleChangeHooks, 0),
@@ -153,6 +218,7 @@ func NewStateStore() (*StateStore, error) {
 
 func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.DocumentStore.logger = logger
+	s.JobStore.logger = logger
 	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
 }
