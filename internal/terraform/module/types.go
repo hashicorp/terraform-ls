@@ -6,7 +6,9 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfmodule "github.com/hashicorp/terraform-schema/module"
 )
@@ -47,10 +49,10 @@ type ModuleFactory func(string) (Module, error)
 
 type ModuleManagerFactory func(context.Context, ReadOnlyFS, DocumentStore, *state.ModuleStore, *state.ProviderSchemaStore) ModuleManager
 
-type WalkerFactory func(fs.StatFS, DocumentStore, ModuleManager) *Walker
+type WalkerFactory func(fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) *Walker
 
 type Watcher interface {
-	Start() error
+	Start(context.Context) error
 	Stop() error
 	SetLogger(*log.Logger)
 	AddModule(string) error

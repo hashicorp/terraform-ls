@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"context"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,7 +11,11 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
@@ -35,8 +38,13 @@ var (
 type pathToWatch struct{}
 
 type Walker struct {
-	fs      fs.StatFS
-	modMgr  ModuleManager
+	fs ReadOnlyFS
+
+	modStore      *state.ModuleStore
+	schemaStore   *state.ProviderSchemaStore
+	jobStore      job.JobStore
+	tfExecFactory exec.ExecutorFactory
+
 	watcher Watcher
 	logger  *log.Logger
 	sync    bool
@@ -59,10 +67,13 @@ type Walker struct {
 // until a path is consumed
 const queueCap = 50
 
-func NewWalker(fs fs.StatFS, ds DocumentStore, modMgr ModuleManager) *Walker {
+func NewWalker(fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) *Walker {
 	return &Walker{
 		fs:                   fs,
-		modMgr:               modMgr,
+		modStore:             ms,
+		jobStore:             js,
+		schemaStore:          pss,
+		tfExecFactory:        tfExec,
 		logger:               discardLogger,
 		walkingMu:            &sync.RWMutex{},
 		queue:                newWalkerQueue(ds),
@@ -141,23 +152,35 @@ func (w *Walker) StartWalking(ctx context.Context) error {
 
 	if w.sync {
 		var errs *multierror.Error
+
+		jobIds := make(job.IDs, 0)
 		for {
 			w.queueMu.Lock()
 			if w.queue.Len() == 0 {
 				w.queueMu.Unlock()
-				w.Stop()
-				return errs.ErrorOrNil()
+				break
 			}
 			nextPath := heap.Pop(w.queue)
 			w.queueMu.Unlock()
 
 			path := nextPath.(string)
 			w.logger.Printf("synchronously walking through %s", path)
-			err := w.walk(ctx, path)
+			ids, err := w.walk(ctx, path)
 			if err != nil {
 				multierror.Append(errs, err)
 			}
+			jobIds = append(jobIds, ids...)
 		}
+
+		w.logger.Printf("waiting for %d jobs before stopping walker", len(jobIds))
+		err := w.jobStore.WaitForJobs(ctx, jobIds...)
+		if err != nil {
+			return err
+		}
+		w.logger.Println("waiting done, synchronous walking finished")
+
+		w.Stop()
+		return errs.ErrorOrNil()
 	}
 
 	var nextPathToWalk = make(chan string)
@@ -189,7 +212,7 @@ func (w *Walker) StartWalking(ctx context.Context) error {
 				return
 			case path := <-pathsChan:
 				w.logger.Printf("asynchronously walking through %s", path)
-				err := w.walk(ctx, path)
+				_, err := w.walk(ctx, path)
 				if err != nil {
 					w.logger.Printf("async walking through %s failed: %s", path, err)
 					return
@@ -214,11 +237,11 @@ func (w *Walker) isSkippableDir(dirName string) bool {
 	return ok
 }
 
-func (w *Walker) walk(ctx context.Context, rootPath string) error {
+func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err error) {
 	// We ignore the passed FS and instead read straight from OS FS
 	// because that would require reimplementing filepath.Walk and
 	// the data directory should never be on the virtual filesystem anyway
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		select {
 		case <-w.doneCh:
 			w.logger.Printf("cancelling walk of %s...", rootPath)
@@ -248,10 +271,10 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 		if info.Name() == datadir.DataDirName {
 			w.logger.Printf("found module %s", dir)
 
-			_, err := w.modMgr.ModuleByPath(dir)
+			_, err := w.modStore.ModuleByPath(dir)
 			if err != nil {
-				if IsModuleNotFound(err) {
-					_, err := w.modMgr.AddModule(dir)
+				if state.IsModuleNotFound(err) {
+					err := w.modStore.Add(dir)
 					if err != nil {
 						return err
 					}
@@ -260,52 +283,117 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 				}
 			}
 
-			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleConfiguration, nil)
-			if err != nil {
-				return err
-			}
+			modHandle := document.DirHandleFromPath(dir)
 
-			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseVariables, nil)
+			id, err := w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return ParseModuleConfiguration(w.fs, w.modStore, dir)
+				},
+				Type: op.OpTypeParseModuleConfiguration.String(),
+			})
 			if err != nil {
 				return err
 			}
+			jobIds = append(jobIds, id)
 
-			err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeGetTerraformVersion, nil)
+			id, err = w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return ParseVariables(w.fs, w.modStore, dir)
+				},
+				Type: op.OpTypeParseVariables.String(),
+			})
 			if err != nil {
 				return err
 			}
+			jobIds = append(jobIds, id)
+
+			id, err = w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					ctx = exec.WithExecutorFactory(ctx, w.tfExecFactory)
+					return GetTerraformVersion(ctx, w.modStore, dir)
+				},
+				Type: op.OpTypeGetTerraformVersion.String(),
+			})
+			if err != nil {
+				return err
+			}
+			jobIds = append(jobIds, id)
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			if dataDir.ModuleManifestPath != "" {
 				// References are collected *after* manifest parsing
 				// so that we reflect any references to submodules.
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeParseModuleManifest,
-					decodeCalledModulesFunc(w.modMgr, w.watcher, dir))
+				id, err = w.jobStore.EnqueueJob(job.Job{
+					Dir: modHandle,
+					Func: func(ctx context.Context) error {
+						return ParseModuleManifest(w.fs, w.modStore, dir)
+					},
+					Type:  op.OpTypeParseModuleManifest.String(),
+					Defer: decodeCalledModulesFunc(w.fs, w.modStore, w.schemaStore, w.watcher, dir),
+				})
 				if err != nil {
 					return err
 				}
-			} else {
-				// If there is no module manifest we still collect references
-				// as this module may also be called by other modules.
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeDecodeReferenceTargets, nil)
-				if err != nil {
-					return err
-				}
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeDecodeReferenceOrigins, nil)
-				if err != nil {
-					return err
-				}
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeDecodeVarsReferences, nil)
-				if err != nil {
-					return err
-				}
+
+				// Here we wait for all module calls to be processed to
+				// reflect any metadata required to collect reference origins.
+				// This assumes scheduler is running to consume the jobs
+				// by the time we reach this point.
+				w.jobStore.WaitForJobs(ctx, id)
 			}
 
+			id, err = w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return DecodeReferenceTargets(ctx, w.modStore, w.schemaStore, dir)
+				},
+				Type: op.OpTypeDecodeReferenceTargets.String(),
+			})
+			if err != nil {
+				return err
+			}
+			jobIds = append(jobIds, id)
+
+			id, err = w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return DecodeReferenceOrigins(ctx, w.modStore, w.schemaStore, dir)
+				},
+				Type: op.OpTypeDecodeReferenceOrigins.String(),
+			})
+			if err != nil {
+				return err
+			}
+			jobIds = append(jobIds, id)
+
+			id, err = w.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return DecodeVarsReferences(ctx, w.modStore, w.schemaStore, dir)
+				},
+				Type: op.OpTypeDecodeVarsReferences.String(),
+			})
+			if err != nil {
+				return err
+			}
+			jobIds = append(jobIds, id)
+
 			if dataDir.PluginLockFilePath != "" {
-				err = w.modMgr.EnqueueModuleOp(dir, op.OpTypeObtainSchema, nil)
+				id, err = w.jobStore.EnqueueJob(job.Job{
+					Dir: modHandle,
+					Func: func(ctx context.Context) error {
+						ctx = exec.WithExecutorFactory(ctx, w.tfExecFactory)
+						return ObtainSchema(ctx, w.modStore, w.schemaStore, dir)
+					},
+					Type: op.OpTypeObtainSchema.String(),
+				})
 				if err != nil {
 					return err
 				}
+				jobIds = append(jobIds, id)
 			}
 
 			if w.watcher != nil {
@@ -323,5 +411,5 @@ func (w *Walker) walk(ctx context.Context, rootPath string) error {
 		return nil
 	})
 	w.logger.Printf("walking of %s finished", rootPath)
-	return err
+	return
 }
