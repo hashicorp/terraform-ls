@@ -446,6 +446,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
 		updateDiagnostics(svc.sessCtx, svc.diagsNotifier),
 		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
+		refreshSemanticTokens(ctx, svc.srvCtx, svc.logger),
 	}
 
 	cc, err := ilsp.ClientCapabilities(ctx)
