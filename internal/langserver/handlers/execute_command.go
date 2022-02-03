@@ -11,16 +11,21 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-var handlers = cmd.Handlers{
-	cmd.Name("rootmodules"):        command.ModulesHandler,
-	cmd.Name("module.callers"):     command.ModuleCallersHandler,
-	cmd.Name("terraform.init"):     command.TerraformInitHandler,
-	cmd.Name("terraform.validate"): command.TerraformValidateHandler,
-	cmd.Name("module.calls"):       command.ModuleCallsHandler,
-	cmd.Name("module.providers"):   command.ModuleProvidersHandler,
+func cmdHandlers(svc *service) cmd.Handlers {
+	cmdHandler := &command.CmdHandler{
+		StateStore: svc.stateStore,
+	}
+	return cmd.Handlers{
+		cmd.Name("rootmodules"):        cmdHandler.ModulesHandler,
+		cmd.Name("module.callers"):     cmdHandler.ModuleCallersHandler,
+		cmd.Name("terraform.init"):     cmdHandler.TerraformInitHandler,
+		cmd.Name("terraform.validate"): cmdHandler.TerraformValidateHandler,
+		cmd.Name("module.calls"):       cmdHandler.ModuleCallsHandler,
+		cmd.Name("module.providers"):   cmdHandler.ModuleProvidersHandler,
+	}
 }
 
-func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
+func (svc *service) WorkspaceExecuteCommand(ctx context.Context, params lsp.ExecuteCommandParams) (interface{}, error) {
 	if params.Command == "editor.action.triggerSuggest" {
 		// If this was actually received by the server, it means the client
 		// does not support explicit suggest triggering, so we fail silently
@@ -29,7 +34,7 @@ func (lh *logHandler) WorkspaceExecuteCommand(ctx context.Context, params lsp.Ex
 	}
 
 	commandPrefix, _ := lsctx.CommandPrefix(ctx)
-	handler, ok := handlers.Get(params.Command, commandPrefix)
+	handler, ok := cmdHandlers(svc).Get(params.Command, commandPrefix)
 	if !ok {
 		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
 	}

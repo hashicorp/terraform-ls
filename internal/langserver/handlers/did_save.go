@@ -10,7 +10,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (lh *logHandler) TextDocumentDidSave(ctx context.Context, params lsp.DidSaveTextDocumentParams) error {
+func (svc *service) TextDocumentDidSave(ctx context.Context, params lsp.DidSaveTextDocumentParams) error {
 	expFeatures, err := lsctx.ExperimentalFeatures(ctx)
 	if err != nil {
 		return err
@@ -21,7 +21,10 @@ func (lh *logHandler) TextDocumentDidSave(ctx context.Context, params lsp.DidSav
 
 	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
 
-	_, err = command.TerraformValidateHandler(ctx, cmd.CommandArgs{
+	cmdHandler := &command.CmdHandler{
+		StateStore: svc.stateStore,
+	}
+	_, err = cmdHandler.TerraformValidateHandler(ctx, cmd.CommandArgs{
 		"uri": dh.Dir.URI,
 	})
 

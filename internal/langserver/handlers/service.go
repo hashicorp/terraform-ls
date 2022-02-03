@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -38,23 +39,24 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	fs               *filesystem.Filesystem
-	modStore         *state.ModuleStore
-	schemaStore      *state.ProviderSchemaStore
-	watcher          module.Watcher
-	walker           *module.Walker
-	modMgr           module.ModuleManager
-	newModuleManager module.ModuleManagerFactory
-	newWatcher       module.WatcherFactory
-	newWalker        module.WalkerFactory
-	tfDiscoFunc      discovery.DiscoveryFunc
-	tfExecFactory    exec.ExecutorFactory
-	tfExecOpts       *exec.ExecutorOpts
-	telemetry        telemetry.Sender
-	decoder          *decoder.Decoder
-	stateStore       *state.StateStore
-	server           session.Server
-	diagsNotifier    *diagnostics.Notifier
+	closedDirIndexer *scheduler.Scheduler
+	openDirIndexer   *scheduler.Scheduler
+
+	fs            *filesystem.Filesystem
+	modStore      *state.ModuleStore
+	schemaStore   *state.ProviderSchemaStore
+	watcher       module.Watcher
+	walker        *module.Walker
+	newWatcher    module.WatcherFactory
+	newWalker     module.WalkerFactory
+	tfDiscoFunc   discovery.DiscoveryFunc
+	tfExecFactory exec.ExecutorFactory
+	tfExecOpts    *exec.ExecutorOpts
+	telemetry     telemetry.Sender
+	decoder       *decoder.Decoder
+	stateStore    *state.StateStore
+	server        session.Server
+	diagsNotifier *diagnostics.Notifier
 
 	additionalHandlers map[string]rpch.Func
 }
@@ -66,16 +68,15 @@ func NewSession(srvCtx context.Context) session.Session {
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
-		logger:           discardLogs,
-		srvCtx:           srvCtx,
-		sessCtx:          sessCtx,
-		stopSession:      stopSession,
-		newModuleManager: module.NewModuleManager,
-		newWatcher:       module.NewWatcher,
-		newWalker:        module.NewWalker,
-		tfDiscoFunc:      d.LookPath,
-		tfExecFactory:    exec.NewExecutor,
-		telemetry:        &telemetry.NoopSender{},
+		logger:        discardLogs,
+		srvCtx:        srvCtx,
+		sessCtx:       sessCtx,
+		stopSession:   stopSession,
+		newWatcher:    module.NewWatcher,
+		newWalker:     module.NewWalker,
+		tfDiscoFunc:   d.LookPath,
+		tfExecFactory: exec.NewExecutor,
+		telemetry:     &telemetry.NoopSender{},
 	}
 }
 
@@ -97,7 +98,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	svc.telemetry = &telemetry.NoopSender{Logger: svc.logger}
 
-	lh := LogHandler(svc.logger)
 	cc := &lsp.ClientCapabilities{}
 
 	rootDir := ""
@@ -138,7 +138,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			return handle(ctx, req, svc.TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -146,7 +145,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			return handle(ctx, req, svc.TextDocumentDidOpen)
 		},
@@ -271,10 +269,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 
-			return handle(ctx, req, lh.TextDocumentDidSave)
+			return handle(ctx, req, svc.TextDocumentDidSave)
 		},
 		"workspace/didChangeWorkspaceFolders": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -283,10 +280,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 
-			return handle(ctx, req, lh.DidChangeWorkspaceFolders)
+			return handle(ctx, req, svc.DidChangeWorkspaceFolders)
 		},
 		"textDocument/references": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -303,8 +299,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithModuleManager(ctx, svc.modMgr)
-			ctx = lsctx.WithModuleFinder(ctx, svc.modMgr)
 			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
@@ -312,7 +306,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
-			return handle(ctx, req, lh.WorkspaceExecuteCommand)
+			return handle(ctx, req, svc.WorkspaceExecuteCommand)
 		},
 		"workspace/symbol": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -430,6 +424,16 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		refreshSemanticTokens(ctx, svc.srvCtx, svc.logger),
 	}
 
+	svc.closedDirIndexer = scheduler.NewScheduler(&closedDirJobStore{svc.stateStore.JobStore}, 1)
+	svc.closedDirIndexer.SetLogger(svc.logger)
+	svc.closedDirIndexer.Start(svc.sessCtx)
+	svc.logger.Printf("running closed dir scheduler")
+
+	svc.openDirIndexer = scheduler.NewScheduler(&openDirJobStore{svc.stateStore.JobStore}, 1)
+	svc.openDirIndexer.SetLogger(svc.logger)
+	svc.openDirIndexer.Start(svc.sessCtx)
+	svc.logger.Printf("running open dir scheduler")
+
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {
 		if _, ok = lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
@@ -454,19 +458,16 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		return err
 	}
 
-	svc.modMgr = svc.newModuleManager(svc.sessCtx, svc.fs, svc.stateStore.DocumentStore, svc.stateStore.Modules, svc.stateStore.ProviderSchemas)
-	svc.modMgr.SetLogger(svc.logger)
-
-	svc.walker = svc.newWalker(svc.fs, svc.stateStore.DocumentStore, svc.modMgr)
+	svc.walker = svc.newWalker(svc.fs, svc.stateStore.DocumentStore, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
 	svc.walker.SetLogger(svc.logger)
 
-	ww, err := svc.newWatcher(svc.modMgr)
+	ww, err := svc.newWatcher(svc.fs, svc.modStore, svc.stateStore.ProviderSchemas, svc.stateStore.JobStore, svc.tfExecFactory)
 	if err != nil {
 		return err
 	}
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
-	err = svc.watcher.Start()
+	err = svc.watcher.Start(ctx)
 	if err != nil {
 		return err
 	}
@@ -510,10 +511,11 @@ func (svc *service) shutdown() {
 		}
 	}
 
-	if svc.modMgr != nil {
-		svc.logger.Println("cancelling any module loading ...")
-		svc.modMgr.CancelLoading()
-		svc.logger.Println("module loading cancelled")
+	if svc.closedDirIndexer != nil {
+		svc.closedDirIndexer.Stop()
+	}
+	if svc.openDirIndexer != nil {
+		svc.openDirIndexer.Stop()
 	}
 }
 

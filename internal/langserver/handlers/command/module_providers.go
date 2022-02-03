@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
@@ -26,7 +25,7 @@ type providerRequirement struct {
 	DocsLink          string `json:"docs_link,omitempty"`
 }
 
-func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	response := moduleProvidersResponse{
 		FormatVersion:        moduleProvidersVersion,
 		ProviderRequirements: make(map[string]providerRequirement),
@@ -47,12 +46,7 @@ func ModuleProvidersHandler(ctx context.Context, args cmd.CommandArgs) (interfac
 		return response, err
 	}
 
-	mm, err := lsctx.ModuleFinder(ctx)
-	if err != nil {
-		return response, err
-	}
-
-	mod, _ := mm.ModuleByPath(modPath)
+	mod, _ := h.StateStore.Modules.ModuleByPath(modPath)
 	if mod == nil {
 		return response, nil
 	}

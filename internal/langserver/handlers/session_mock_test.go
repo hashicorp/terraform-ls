@@ -34,13 +34,6 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	ms.stopFunc = stopSession
 
-	var input *module.ModuleManagerMockInput
-	if ms.mockInput != nil {
-		input = &module.ModuleManagerMockInput{
-			Logger: testLogger(),
-		}
-	}
-
 	var handlers map[string]handler.Func
 	var stateStore *state.StateStore
 	if ms.mockInput != nil {
@@ -62,7 +55,6 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		srvCtx:             srvCtx,
 		sessCtx:            sessCtx,
 		stopSession:        ms.stop,
-		newModuleManager:   module.NewModuleManagerMock(input),
 		newWatcher:         module.MockWatcher(),
 		newWalker:          module.SyncWalker,
 		tfDiscoFunc:        d.LookPath,

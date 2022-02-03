@@ -6,22 +6,18 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.DidChangeWorkspaceFoldersParams) error {
+func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.DidChangeWorkspaceFoldersParams) error {
 	watcher, err := lsctx.Watcher(ctx)
 	if err != nil {
 		return err
 	}
 
 	walker, err := lsctx.ModuleWalker(ctx)
-	if err != nil {
-		return err
-	}
-
-	mm, err := lsctx.ModuleManager(ctx)
 	if err != nil {
 		return err
 	}
@@ -40,17 +36,25 @@ func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.
 
 		err = watcher.RemoveModule(modPath)
 		if err != nil {
-			lh.logger.Printf("failed to remove module from watcher: %s", err)
+			svc.logger.Printf("failed to remove module from watcher: %s", err)
 			continue
 		}
 
-		callers, err := mm.CallersOfModule(modPath)
+		modHandle := document.DirHandleFromPath(modPath)
+		err = svc.stateStore.JobStore.DequeueJobsForDir(modHandle)
 		if err != nil {
-			lh.logger.Printf("failed to remove module from watcher: %s", err)
+			svc.logger.Printf("failed to dequeue jobs for module: %s", err)
+			continue
+		}
+
+		callers, err := svc.modStore.CallersOfModule(modPath)
+		if err != nil {
+			svc.logger.Printf("failed to remove module from watcher: %s", err)
 			continue
 		}
 		if len(callers) == 0 {
-			mm.RemoveModule(modPath)
+			err = svc.modStore.Remove(modPath)
+			svc.logger.Printf("failed to remove module: %s", err)
 		}
 	}
 
@@ -66,7 +70,7 @@ func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.
 		}
 		err = watcher.AddModule(modPath)
 		if err != nil {
-			lh.logger.Printf("failed to add module to watcher: %s", err)
+			svc.logger.Printf("failed to add module to watcher: %s", err)
 			continue
 		}
 
