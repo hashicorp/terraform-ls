@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -25,6 +27,7 @@ func TestWatcher_initFromScratch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ss.SetLogger(testLogger())
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
 
@@ -40,47 +43,47 @@ func TestWatcher_initFromScratch(t *testing.T) {
 			"registry.terraform.io/hashicorp/aws": {},
 		},
 	}
-	mmm := NewModuleManagerMock(&ModuleManagerMockInput{
-		Logger: testLogger(),
-		TerraformCalls: &exec.TerraformMockCalls{
-			PerWorkDir: map[string][]*mock.Call{
-				modPath: {
-					{
-						Method: "ProviderSchemas",
-						Arguments: []interface{}{
-							mock.AnythingOfType("*context.cancelCtx"),
-						},
-						ReturnArguments: []interface{}{
-							psMock,
-							nil,
-						},
+	tfCalls := &exec.TerraformMockCalls{
+		PerWorkDir: map[string][]*mock.Call{
+			modPath: {
+				{
+					Method: "ProviderSchemas",
+					Arguments: []interface{}{
+						mock.AnythingOfType("*context.valueCtx"),
 					},
-					{
-						Method: "Version",
-						Arguments: []interface{}{
-							mock.AnythingOfType("*context.cancelCtx"),
-						},
-						ReturnArguments: []interface{}{
-							version.Must(version.NewVersion("1.0.0")),
-							nil,
-							nil,
-						},
+					ReturnArguments: []interface{}{
+						psMock,
+						nil,
+					},
+				},
+				{
+					Method: "Version",
+					Arguments: []interface{}{
+						mock.AnythingOfType("*context.valueCtx"),
+					},
+					ReturnArguments: []interface{}{
+						version.Must(version.NewVersion("1.0.0")),
+						nil,
+						nil,
 					},
 				},
 			},
 		},
-	})
+	}
+
 	ctx := context.Background()
 
-	modMgr := mmm(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
+	ctx = exec.WithExecutorOpts(ctx, &exec.ExecutorOpts{
+		ExecPath: "tf-mock",
+	})
 
-	w, err := NewWatcher(modMgr)
+	w, err := NewWatcher(fs, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))
 	if err != nil {
 		t.Fatal(err)
 	}
 	w.SetLogger(testLogger())
 
-	_, err = modMgr.AddModule(modPath)
+	err = ss.Modules.Add(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +116,7 @@ resource "aws_vpc" "example" {
 		t.Fatal(err)
 	}
 
-	err = w.Start()
+	err = w.Start(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,6 +131,21 @@ resource "aws_vpc" "example" {
 
 	// Give watcher some time to react
 	time.Sleep(250 * time.Millisecond)
+
+	jobIds, err := ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("queued jobs: %q", jobIds)
+
+	scheduler := scheduler.NewScheduler(&closedJobStore{ss.JobStore}, 1)
+	scheduler.Start(ctx)
+	t.Cleanup(scheduler.Stop)
+
+	err = ss.JobStore.WaitForJobs(ctx, jobIds...)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	vc, err := version.NewConstraint("~> 3.0")
 	if err != nil {
@@ -156,4 +174,24 @@ resource "aws_vpc" "example" {
 		t.Fatalf("version mismatch.\ngiven:   %q\nexpected: %q",
 			mod.TerraformVersion.String(), "1.0.0")
 	}
+}
+
+type closedJobStore struct {
+	js *state.JobStore
+}
+
+func (js *closedJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
+	return js.js.EnqueueJob(newJob)
+}
+
+func (js *closedJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
+	return js.js.AwaitNextJob(ctx, false)
+}
+
+func (js *closedJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
+	return js.js.FinishJob(id, jobErr, deferredJobIds...)
+}
+
+func (js *closedJobStore) WaitForJobs(ctx context.Context, jobIds ...job.ID) error {
+	return js.js.WaitForJobs(ctx, jobIds...)
 }
