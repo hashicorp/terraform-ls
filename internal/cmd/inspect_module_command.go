@@ -94,9 +94,6 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	ctx := context.Background()
 
-	modMgr := module.NewSyncModuleManager(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
-	modMgr.SetLogger(c.logger)
-
 	walker := module.SyncWalker(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewExecutor)
 	walker.SetLogger(c.logger)
 
@@ -110,7 +107,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		return err
 	}
 
-	modules, err := modMgr.ListModules()
+	modules, err := ss.Modules.List()
 	if err != nil {
 		return err
 	}
