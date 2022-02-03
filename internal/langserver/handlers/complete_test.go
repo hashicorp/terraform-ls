@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	hcinstall "github.com/hashicorp/hc-install"
@@ -18,6 +17,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -50,7 +50,13 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore: ss,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): {
@@ -752,10 +758,6 @@ output "test" {
 			"uri": "%s/main.tf"
 		}
 	}`, mainCfg, tmpDir.URI)})
-
-	// TODO remove once we support synchronous dependent tasks
-	// See https://github.com/hashicorp/terraform-ls/issues/719
-	time.Sleep(2 * time.Second)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",

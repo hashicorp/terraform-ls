@@ -163,7 +163,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	lsctx.SetCommandPrefix(ctx, out.Options.CommandPrefix)
 	// apply prefix to executeCommand handler names
 	serverCaps.Capabilities.ExecuteCommandProvider = lsp.ExecuteCommandOptions{
-		Commands: handlers.Names(out.Options.CommandPrefix),
+		Commands: cmdHandlers(svc).Names(out.Options.CommandPrefix),
 		WorkDoneProgressOptions: lsp.WorkDoneProgressOptions{
 			WorkDoneProgress: true,
 		},
@@ -202,17 +202,6 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	svc.walker.SetExcludeModulePaths(excludeModulePaths)
 	svc.walker.EnqueuePath(root.Path())
 
-	// Walker runs asynchronously so we're intentionally *not*
-	// passing the request context here
-	walkerCtx := context.Background()
-
-	// Walker is also started early to allow gradual consumption
-	// and avoid overfilling the queue
-	err = svc.walker.StartWalking(walkerCtx)
-	if err != nil {
-		return serverCaps, err
-	}
-
 	if len(params.WorkspaceFolders) > 0 {
 		for _, folderPath := range params.WorkspaceFolders {
 			modPath, err := pathFromDocumentURI(folderPath.URI)
@@ -227,6 +216,14 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 			svc.walker.EnqueuePath(modPath)
 		}
+	}
+
+	// Walker runs asynchronously so we're intentionally *not*
+	// passing the request context here
+	walkerCtx := context.Background()
+	err = svc.walker.StartWalking(walkerCtx)
+	if err != nil {
+		return serverCaps, err
 	}
 
 	// Static user-provided paths take precedence over dynamic discovery

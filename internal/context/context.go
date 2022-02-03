@@ -23,8 +23,6 @@ var (
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
 	ctxWatcher              = &contextKey{"watcher"}
-	ctxModuleMngr           = &contextKey{"module manager"}
-	ctxModuleFinder         = &contextKey{"module finder"}
 	ctxModuleWalker         = &contextKey{"module walker"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
@@ -68,18 +66,6 @@ func Watcher(ctx context.Context) (module.Watcher, error) {
 	return w, nil
 }
 
-func WithModuleManager(ctx context.Context, wm module.ModuleManager) context.Context {
-	return context.WithValue(ctx, ctxModuleMngr, wm)
-}
-
-func ModuleManager(ctx context.Context) (module.ModuleManager, error) {
-	wm, ok := ctx.Value(ctxModuleMngr).(module.ModuleManager)
-	if !ok {
-		return nil, missingContextErr(ctxModuleMngr)
-	}
-	return wm, nil
-}
-
 func WithTerraformExecPath(ctx context.Context, path string) context.Context {
 	return context.WithValue(ctx, ctxTfExecPath, path)
 }
@@ -87,18 +73,6 @@ func WithTerraformExecPath(ctx context.Context, path string) context.Context {
 func TerraformExecPath(ctx context.Context) (string, bool) {
 	path, ok := ctx.Value(ctxTfExecPath).(string)
 	return path, ok
-}
-
-func WithModuleFinder(ctx context.Context, mf module.ModuleFinder) context.Context {
-	return context.WithValue(ctx, ctxModuleFinder, mf)
-}
-
-func ModuleFinder(ctx context.Context) (module.ModuleFinder, error) {
-	cf, ok := ctx.Value(ctxModuleFinder).(module.ModuleFinder)
-	if !ok {
-		return nil, missingContextErr(ctxModuleFinder)
-	}
-	return cf, nil
 }
 
 func WithRootDirectory(ctx context.Context, dir *string) context.Context {

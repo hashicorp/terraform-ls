@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/uri"
@@ -29,7 +28,7 @@ type moduleCall struct {
 	DependentModules []moduleCall       `json:"dependent_modules"`
 }
 
-func ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	response := moduleCallsResponse{
 		FormatVersion: moduleCallsVersion,
 		ModuleCalls:   make([]moduleCall, 0),
@@ -49,12 +48,7 @@ func ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{},
 		return response, err
 	}
 
-	mm, err := lsctx.ModuleFinder(ctx)
-	if err != nil {
-		return response, err
-	}
-
-	found, _ := mm.ModuleByPath(modPath)
+	found, _ := h.StateStore.Modules.ModuleByPath(modPath)
 	if found == nil {
 		return response, nil
 	}

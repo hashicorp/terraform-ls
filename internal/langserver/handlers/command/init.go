@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	dirUri, ok := args.GetString("uri")
 	if !ok || dirUri == "" {
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
@@ -26,15 +26,14 @@ func TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 
 	dirHandle := document.DirHandleFromURI(dirUri)
 
-	modMgr, err := lsctx.ModuleManager(ctx)
+	mod, err := h.StateStore.Modules.ModuleByPath(dirHandle.Path())
 	if err != nil {
-		return nil, err
-	}
-
-	mod, err := modMgr.ModuleByPath(dirHandle.Path())
-	if err != nil {
-		if module.IsModuleNotFound(err) {
-			mod, err = modMgr.AddModule(dirHandle.Path())
+		if state.IsModuleNotFound(err) {
+			err = h.StateStore.Modules.Add(dirHandle.Path())
+			if err != nil {
+				return nil, err
+			}
+			mod, err = h.StateStore.Modules.ModuleByPath(dirHandle.Path())
 			if err != nil {
 				return nil, err
 			}
