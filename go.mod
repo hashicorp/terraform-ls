@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.16.0
 	github.com/hashicorp/terraform-json v0.13.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20210816115301-cb2034eba045
-	github.com/hashicorp/terraform-schema v0.0.0-20220111104703-762daa2d811e
+	github.com/hashicorp/terraform-schema v0.0.0-20220131121055-6a09682bb5c1
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.2
@@ -30,7 +30,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
-	github.com/spf13/afero v1.8.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/vektra/mockery/v2 v2.10.0
 	github.com/zclconf/go-cty v1.10.0
