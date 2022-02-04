@@ -323,6 +323,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			jobIds = append(jobIds, id)
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
+			w.logger.Printf("parsed datadir: %#v", dataDir)
 			if dataDir.ModuleManifestPath != "" {
 				// References are collected *after* manifest parsing
 				// so that we reflect any references to submodules.
