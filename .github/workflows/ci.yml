@@ -68,18 +68,11 @@ jobs:
         name: Unshallow
         run: git fetch --prune --unshallow
       -
-        name: Read go version (Unix)
-        if: ${{ runner.os != 'Windows' }}
-        id: go-version-unix
+        name: Read go version
+        id: go-version
+        shell: bash
         run: |
           content=`cat ./.go-version`
-          echo "::set-output name=content::$content"
-      -
-        name: Read go version (Windows)
-        if: ${{ runner.os == 'Windows' }}
-        id: go-version-win
-        run: |
-          $content = Get-Content .\.go-version -Raw
           echo "::set-output name=content::$content"
       -
         name: Set up Go
@@ -87,7 +80,7 @@ jobs:
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
-          go-version: ${{ steps.go-version-unix.outputs.content || steps.go-version-win.outputs.content }}
+          go-version: ${{ steps.go-version.outputs.content }}
       -
         name: Go mod download
         run: go mod download -x
