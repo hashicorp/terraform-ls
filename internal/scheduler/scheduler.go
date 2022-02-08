@@ -54,6 +54,7 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) eval(ctx context.Context) {
 	for {
+		s.logger.Println("waiting for next job...")
 		id, nextJob, err := s.jobStorage.AwaitNextJob(ctx)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
@@ -62,6 +63,7 @@ func (s *Scheduler) eval(ctx context.Context) {
 			s.logger.Printf("failed to obtain next job: %s", err)
 			return
 		}
+		s.logger.Printf("received next job: %q", id)
 
 		jobErr := nextJob.Func(ctx)
 
@@ -76,6 +78,8 @@ func (s *Scheduler) eval(ctx context.Context) {
 			s.logger.Printf("failed to finish job: %s", err)
 			return
 		}
+
+		s.logger.Printf("finished job: %q", id)
 
 		select {
 		case <-ctx.Done():

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-uuid"
@@ -19,13 +20,35 @@ type JobStore struct {
 
 	nextJobOpenDirMu   *sync.Mutex
 	nextJobClosedDirMu *sync.Mutex
+
+	ProgressStartHook JobProgressHook
+	ProgressHook      JobProgressHook
+	ProgressEndHook   JobProgressHook
+
+	progressToken atomic.Value
+	jobCount      jobCount
 }
+
+func newJobCount() jobCount {
+	var queued, running, done int64
+	return jobCount{
+		StateQueued:  &queued,
+		StateRunning: &running,
+		StateDone:    &done,
+	}
+}
+
+type JobProgressHook func(ctx context.Context, pTkn string, dir document.DirHandle, jobType string, jobCount JobCountSnapshot)
+
+func noopProgressHook(context.Context, string, document.DirHandle, string, JobCountSnapshot) {}
 
 type ScheduledJob struct {
 	job.ID
 	job.Job
 	IsDirOpen bool
 	State     State
+
+	// TODO: ProgressToken ? (passed within EnqueueJob via ctx by e.g. walker)
 
 	// JobErr contains error when job finishes (State = StateDone)
 	JobErr error
@@ -94,6 +117,16 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 
 	txn.Commit()
 
+	js.jobCount.add(StateQueued, 1)
+	progressToken := js.progressToken.Load()
+	if progressToken == "" {
+		progressToken, err := uuid.GenerateUUID()
+		if err != nil {
+			return "", err
+		}
+		js.progressToken.Store(progressToken)
+	}
+
 	return newJobID, nil
 }
 
@@ -106,6 +139,11 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 		return fmt.Errorf("failed to find queued jobs for %q: %w", dir, err)
 	}
 
+	countDelta := jobCountDelta{
+		StateQueued:  0,
+		StateRunning: 0,
+		StateDone:    0,
+	}
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		sJob := obj.(*ScheduledJob)
 
@@ -119,6 +157,9 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 			return err
 		}
 
+		countDelta[sj.State]--
+		countDelta[StateDone]++
+
 		sj.State = StateDone
 		sj.Defer = nil
 		sj.Func = nil
@@ -131,6 +172,21 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 	}
 
 	txn.Commit()
+
+	ctx := context.Background()
+	jobCount := js.jobCount.applyDelta(countDelta)
+	progressToken := js.progressToken.Load().(string)
+	if progressToken != "" {
+		js.ProgressEndHook(ctx, progressToken, dir, "", jobCount)
+		js.progressToken.Store("")
+		err := js.removeDoneJobs()
+		if err != nil {
+			return err
+		}
+	} else {
+		js.ProgressHook(ctx, progressToken, dir, "", jobCount)
+	}
+
 	return nil
 }
 
@@ -246,10 +302,12 @@ func (js *JobStore) WaitForJobs(ctx context.Context, ids ...job.ID) error {
 
 		deferredJobIds := make(job.IDs, 0)
 		for _, id := range ids {
+			js.logger.Printf("waiting for %q", id)
 			ids, err := js.waitForJobId(ctx, id)
 			if err != nil {
 				return
 			}
+			js.logger.Printf("finished waiting for %q", id)
 			deferredJobIds = append(deferredJobIds, ids...)
 		}
 
@@ -314,6 +372,16 @@ func (js *JobStore) markJobAsRunning(sJob *ScheduledJob) error {
 
 	txn.Commit()
 
+	js.jobCount.add(StateRunning, 1)
+	jobCount := js.jobCount.add(StateQueued, -1)
+	ctx := context.Background()
+	progressToken := js.progressToken.Load().(string)
+	if jobCount[StateRunning] == 1 && jobCount[StateDone] == 0 && progressToken != "" {
+		js.ProgressStartHook(ctx, progressToken, sJob.Dir, sJob.Type, jobCount)
+	} else {
+		js.ProgressHook(ctx, progressToken, sJob.Dir, sJob.Type, jobCount)
+	}
+
 	return nil
 }
 
@@ -333,6 +401,9 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 		return err
 	}
 
+	js.jobCount.add(sj.State, -1)
+	jobCount := js.jobCount.add(StateDone, 1)
+
 	sj.Func = nil
 	sj.State = StateDone
 	sj.JobErr = jobErr
@@ -344,6 +415,45 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 	}
 
 	txn.Commit()
+
+	ctx := context.Background()
+	progressToken := js.progressToken.Load().(string)
+
+	if jobCount[StateQueued] == 0 && jobCount[StateRunning] == 0 && progressToken != "" {
+		js.ProgressEndHook(ctx, progressToken, sj.Dir, sj.Type, jobCount)
+		js.progressToken.Store("")
+		js.logger.Println("removing done jobs ...")
+		err = js.removeDoneJobs()
+		if err != nil {
+			return err
+		}
+		js.logger.Println("removed done jobs ...")
+	} else {
+		js.ProgressHook(ctx, progressToken, sj.Dir, sj.Type, jobCount)
+	}
+
+	return nil
+}
+
+func (js *JobStore) removeDoneJobs() error {
+	txn := js.db.Txn(true)
+	defer txn.Abort()
+
+	it, err := txn.Get(js.tableName, "state", StateDone)
+	if err != nil {
+		return err
+	}
+	ids := make(job.IDs, 0)
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		job := obj.(*ScheduledJob)
+		ids = append(ids, job.ID)
+		_, err = txn.DeleteAll(js.tableName, "id", job.ID)
+		if err != nil {
+			return err
+		}
+	}
+	txn.Commit()
+	js.jobCount.add(StateDone, int64(-len(ids)))
 
 	return nil
 }

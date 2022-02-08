@@ -172,7 +172,7 @@ func (w *Walker) StartWalking(ctx context.Context) error {
 			jobIds = append(jobIds, ids...)
 		}
 
-		w.logger.Printf("waiting for %d jobs before stopping walker", len(jobIds))
+		w.logger.Printf("waiting for %d jobs before stopping walker: %q", len(jobIds), jobIds)
 		err := w.jobStore.WaitForJobs(ctx, jobIds...)
 		if err != nil {
 			return err

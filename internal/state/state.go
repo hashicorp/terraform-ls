@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/go-memdb"
@@ -187,6 +188,9 @@ func NewStateStore() (*StateStore, error) {
 		return nil, err
 	}
 
+	var progressToken atomic.Value
+	progressToken.Store("")
+
 	return &StateStore{
 		db: db,
 		DocumentStore: &DocumentStore{
@@ -201,6 +205,11 @@ func NewStateStore() (*StateStore, error) {
 			logger:             defaultLogger,
 			nextJobOpenDirMu:   &sync.Mutex{},
 			nextJobClosedDirMu: &sync.Mutex{},
+			jobCount:           newJobCount(),
+			progressToken:      progressToken,
+			ProgressStartHook:  noopProgressHook,
+			ProgressHook:       noopProgressHook,
+			ProgressEndHook:    noopProgressHook,
 		},
 		Modules: &ModuleStore{
 			db:          db,
