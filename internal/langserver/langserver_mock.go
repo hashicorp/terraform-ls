@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -94,7 +95,14 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	}()
 
 	clientCh := channel.LSP(lsm.clientStdin, lsm.clientStdout)
-	opts := &jrpc2.ClientOptions{}
+	opts := &jrpc2.ClientOptions{
+		OnCallback: func(c context.Context, r *jrpc2.Request) (interface{}, error) {
+			if r.Method() == "window/workDoneProgress/create" {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("method not implemented: %q", r.Method())
+		},
+	}
 	if testing.Verbose() {
 		opts.Logger = jrpc2.StdLogger(testLogger(os.Stdout, "[CLIENT] "))
 	}

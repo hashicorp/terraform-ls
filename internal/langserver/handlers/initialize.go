@@ -218,14 +218,6 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	}
 
-	// Walker runs asynchronously so we're intentionally *not*
-	// passing the request context here
-	walkerCtx := context.Background()
-	err = svc.walker.StartWalking(walkerCtx)
-	if err != nil {
-		return serverCaps, err
-	}
-
 	// Static user-provided paths take precedence over dynamic discovery
 	if len(cfgOpts.ModulePaths) > 0 {
 		svc.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))

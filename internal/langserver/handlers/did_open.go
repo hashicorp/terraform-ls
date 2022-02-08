@@ -17,11 +17,13 @@ import (
 func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenTextDocumentParams) error {
 	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
 
+	svc.logger.Printf("opening document for %q", params.TextDocument.URI)
 	err := svc.stateStore.DocumentStore.OpenDocument(dh, params.TextDocument.LanguageID,
 		int(params.TextDocument.Version), []byte(params.TextDocument.Text))
 	if err != nil {
 		return err
 	}
+	svc.logger.Printf("opened document for %q", params.TextDocument.URI)
 
 	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
 	if err != nil {
@@ -77,6 +79,7 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		}
 	}
 
+	svc.logger.Printf("didOpen waiting for jobs: %q", jobIds)
 	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
 }
 

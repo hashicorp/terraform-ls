@@ -131,7 +131,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			return handle(ctx, req, Initialized)
+			return handle(ctx, req, svc.Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -423,6 +423,66 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
 	}
 
+	svc.stateStore.JobStore.ProgressStartHook = func(ctx context.Context, tkn string, dir document.DirHandle, jobType string, jc state.JobCountSnapshot) {
+		svc.logger.Printf("attempting to create progress for %q", tkn)
+		_, err := svc.server.Callback(ctx, "window/workDoneProgress/create", lsp.WorkDoneProgressCreateParams{
+			Token: lsp.ProgressToken(tkn),
+		})
+		if err != nil {
+			svc.logger.Printf("Error creating progress report: %s", err)
+		}
+		svc.logger.Printf("progress created for %q", tkn)
+
+		total := jc[state.StateQueued] + jc[state.StateRunning] + jc[state.StateDone]
+
+		err = svc.server.Notify(ctx, "$/progress", lsp.ProgressParams{
+			Token: lsp.ProgressToken(tkn),
+			Value: lsp.WorkDoneProgressBegin{
+				Kind:       "begin",
+				Title:      "Indexing",
+				Message:    fmt.Sprintf("%d/%d operations", jc[state.StateDone], total),
+				Percentage: uint32(100 * (jc[state.StateDone] / total)),
+			},
+		})
+		if err != nil {
+			svc.logger.Printf("Error beginning progress report: %s", err)
+		}
+	}
+
+	svc.stateStore.JobStore.ProgressHook = func(ctx context.Context, tkn string, dir document.DirHandle, jobType string, jc state.JobCountSnapshot) {
+		total := jc[state.StateQueued] + jc[state.StateRunning] + jc[state.StateDone]
+		if total == 0 {
+			return
+		}
+
+		err := svc.server.Notify(ctx, "$/progress", lsp.ProgressParams{
+			Token: lsp.ProgressToken(tkn),
+			Value: lsp.WorkDoneProgressReport{
+				Kind:       "report",
+				Message:    fmt.Sprintf("%d/%d operations", jc[state.StateDone], total),
+				Percentage: uint32(100 * (jc[state.StateDone] / total)),
+			},
+		})
+		if err != nil {
+			svc.logger.Printf("Error reporting progress: %s", err)
+		}
+	}
+
+	svc.stateStore.JobStore.ProgressEndHook = func(ctx context.Context, tkn string, dir document.DirHandle, jobType string, jc state.JobCountSnapshot) {
+		total := jc[state.StateQueued] + jc[state.StateRunning] + jc[state.StateDone]
+
+		err := svc.server.Notify(ctx, "$/progress", lsp.ProgressParams{
+			Token: lsp.ProgressToken(tkn),
+			Value: lsp.WorkDoneProgressEnd{
+				Kind:    "end",
+				Message: fmt.Sprintf("%d/%d operations", jc[state.StateDone], total),
+			},
+		})
+		if err != nil {
+			svc.logger.Printf("Error ending progress: %s", err)
+		}
+	}
+
 	svc.closedDirIndexer = scheduler.NewScheduler(&closedDirJobStore{svc.stateStore.JobStore}, 1)
 	svc.closedDirIndexer.SetLogger(svc.logger)
 	svc.closedDirIndexer.Start(svc.sessCtx)
@@ -466,10 +526,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	}
 	svc.watcher = ww
 	svc.watcher.SetLogger(svc.logger)
-	err = svc.watcher.Start(ctx)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
