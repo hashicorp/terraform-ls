@@ -43,14 +43,9 @@ var dbSchema = &memdb.DBSchema{
 			Name: jobsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
 				"id": {
-					Name:   "id",
-					Unique: true,
-					Indexer: &memdb.CompoundIndex{
-						Indexes: []memdb.Indexer{
-							&StringerFieldIndexer{Field: "ID"},
-							&memdb.UintFieldIndex{Field: "State"},
-						},
-					},
+					Name:    "id",
+					Unique:  true,
+					Indexer: &StringerFieldIndexer{Field: "ID"},
 				},
 				"is_dir_open_state": {
 					Name: "is_dir_open_state",

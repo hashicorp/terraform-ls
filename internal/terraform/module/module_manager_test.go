@@ -224,7 +224,7 @@ func TestWalker_complexModules(t *testing.T) {
 			})
 
 			s := scheduler.NewScheduler(&closedJobStore{ss.JobStore}, 1)
-			ss.SetLogger(testLogger())
+			s.SetLogger(testLogger())
 			s.Start(ctx)
 
 			w := SyncWalker(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))

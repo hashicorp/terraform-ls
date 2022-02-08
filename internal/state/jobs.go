@@ -114,7 +114,7 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 			return err
 		}
 
-		_, err = txn.DeleteAll(js.tableName, "id_prefix", sJob.ID)
+		_, err = txn.DeleteAll(js.tableName, "id", sJob.ID)
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func updateJobsDirOpenMark(txn *memdb.Txn, dirHandle document.DirHandle, isDirOp
 			return err
 		}
 
-		_, err = txn.DeleteAll(jobsTableName, "id_prefix", sJob.ID)
+		_, err = txn.DeleteAll(jobsTableName, "id", sJob.ID)
 		if err != nil {
 			return err
 		}
@@ -215,7 +215,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job
 
 	sJob := obj.(*ScheduledJob)
 
-	err = js.markJobAsRunning(sJob.ID)
+	err = js.markJobAsRunning(sJob)
 	if err != nil {
 		return "", job.Job{}, err
 	}
@@ -225,7 +225,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job
 }
 
 func isDirOpen(txn *memdb.Txn, dirHandle document.DirHandle) bool {
-	docObj, err := txn.First(documentsTableName, "id_prefix", dirHandle)
+	docObj, err := txn.First(documentsTableName, "id", dirHandle)
 	if err != nil {
 		return false
 	}
@@ -268,12 +268,17 @@ func (js *JobStore) WaitForJobs(ctx context.Context, ids ...job.ID) error {
 func (js *JobStore) waitForJobId(ctx context.Context, id job.ID) (job.IDs, error) {
 	txn := js.db.Txn(false)
 
-	wCh, obj, err := txn.FirstWatch(js.tableName, "id", id, StateDone)
+	wCh, obj, err := txn.FirstWatch(js.tableName, "id", id)
 	if err != nil {
 		return nil, err
 	}
 
 	if obj == nil {
+		return nil, nil
+	}
+
+	sJob := obj.(*ScheduledJob)
+	if sJob.State != StateDone {
 		select {
 		case <-wCh:
 		case <-ctx.Done():
@@ -283,21 +288,19 @@ func (js *JobStore) waitForJobId(ctx context.Context, id job.ID) (job.IDs, error
 		return js.waitForJobId(ctx, id)
 	}
 
-	doneJob := obj.(*ScheduledJob)
-
-	return doneJob.DeferredJobIDs, nil
+	return sJob.DeferredJobIDs, nil
 }
 
-func (js *JobStore) markJobAsRunning(id job.ID) error {
+func (js *JobStore) markJobAsRunning(sJob *ScheduledJob) error {
 	txn := js.db.Txn(true)
 	defer txn.Abort()
 
-	sj, err := copyJob(txn, id)
+	sj, err := copyJob(txn, sJob.ID)
 	if err != nil {
 		return err
 	}
 
-	_, err = txn.DeleteAll(js.tableName, "id_prefix", id)
+	_, err = txn.DeleteAll(js.tableName, "id", sJob.ID)
 	if err != nil {
 		return err
 	}
@@ -323,9 +326,9 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 		return err
 	}
 
-	js.logger.Printf("JOBS: Finishing job: %q for %q (err = %#v)", sj.Type, sj.Dir, jobErr)
+	js.logger.Printf("JOBS: Finishing job %q: %q for %q (err = %#v)", sj.ID, sj.Type, sj.Dir, jobErr)
 
-	_, err = txn.DeleteAll(js.tableName, "id_prefix", id)
+	_, err = txn.DeleteAll(js.tableName, "id", id)
 	if err != nil {
 		return err
 	}
@@ -363,7 +366,7 @@ func (js *JobStore) ListQueuedJobs() (job.IDs, error) {
 }
 
 func copyJob(txn *memdb.Txn, id job.ID) (*ScheduledJob, error) {
-	obj, err := txn.First(jobsTableName, "id_prefix", id)
+	obj, err := txn.First(jobsTableName, "id", id)
 	if err != nil {
 		return nil, err
 	}
