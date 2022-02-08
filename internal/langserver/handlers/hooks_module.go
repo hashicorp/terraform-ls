@@ -174,8 +174,6 @@ func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) 
 
 func refreshSemanticTokens(ctx context.Context, svrCtx context.Context, logger *log.Logger) state.ModuleChangeHook {
 	return func(_, newMod *state.Module) {
-		logger.Printf("Request semantic token refresh for %s", newMod.Path)
-
 		jrpcsvc := jrpc2.ServerFromContext(ctx)
 		_, err := jrpcsvc.Callback(svrCtx, "workspace/semanticTokens/refresh", nil)
 		if err != nil {
