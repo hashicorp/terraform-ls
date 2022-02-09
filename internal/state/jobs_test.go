@@ -3,7 +3,11 @@ package state
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
@@ -57,6 +61,101 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 	if diff := cmp.Diff(expectedIds, ids); diff != "" {
 		t.Fatalf("unexpected job IDs: %s", diff)
 	}
+}
+
+func BenchmarkJobStore_EnqueueJob_basic(b *testing.B) {
+	ss, err := NewStateStore()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	tmpDir := b.TempDir()
+
+	for i := 0; i < b.N; i++ {
+		i := i
+		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
+
+		_, err := ss.JobStore.EnqueueJob(job.Job{
+			Func: func(c context.Context) error {
+				return nil
+			},
+			Dir:  document.DirHandleFromPath(dirPath),
+			Type: "test-type",
+		})
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	ids, err := ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	if len(ids) != b.N {
+		b.Fatalf("expected %d jobs, %d given", b.N, len(ids))
+	}
+}
+
+func TestJobStore_EnqueueJob_verify(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.SetLogger(testLogger())
+
+	tmpDir := t.TempDir()
+
+	jobCount := 50
+
+	for i := 0; i < jobCount; i++ {
+		i := i
+		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
+
+		_, err := ss.JobStore.EnqueueJob(job.Job{
+			Func: func(c context.Context) error {
+				return nil
+			},
+			Dir:  document.DirHandleFromPath(dirPath),
+			Type: "test-type",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	ids, err := ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ids) != jobCount {
+		t.Fatalf("expected %d jobs, %d given", jobCount, len(ids))
+	}
+
+	for _, id := range ids {
+		err := ss.JobStore.FinishJob(id, nil)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	ids, err = ss.JobStore.allJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ids) != 0 {
+		t.Fatalf("expected %d jobs, %d given", 0, len(ids))
+	}
+}
+
+func testLogger() *log.Logger {
+	if testing.Verbose() {
+		return log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
+	}
+
+	return log.New(ioutil.Discard, "", 0)
 }
 
 func TestJobStore_DequeueJobsForDir(t *testing.T) {

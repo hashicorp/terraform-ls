@@ -65,6 +65,45 @@ func TestScheduler_basic(t *testing.T) {
 	}
 }
 
+func BenchmarkScheduler_EnqueueAndWaitForJob(b *testing.B) {
+	ss, err := state.NewStateStore()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	tmpDir := b.TempDir()
+	ctx := context.Background()
+
+	s := NewScheduler(&closedDirJobs{js: ss.JobStore}, 1)
+	s.Start(ctx)
+	b.Cleanup(func() {
+		s.Stop()
+	})
+
+	ids := make(job.IDs, 0)
+	for i := 0; i < b.N; i++ {
+		i := i
+		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
+
+		newId, err := ss.JobStore.EnqueueJob(job.Job{
+			Func: func(c context.Context) error {
+				return nil
+			},
+			Dir:  document.DirHandleFromPath(dirPath),
+			Type: "test-type",
+		})
+		if err != nil {
+			b.Fatal(err)
+		}
+		ids = append(ids, newId)
+	}
+
+	err = ss.JobStore.WaitForJobs(ctx, ids...)
+	if err != nil {
+		b.Fatal(err)
+	}
+}
+
 func TestScheduler_defer(t *testing.T) {
 	ss, err := state.NewStateStore()
 	if err != nil {
