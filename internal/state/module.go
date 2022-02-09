@@ -456,6 +456,11 @@ func (s *ModuleStore) UpdateModManifest(path string, manifest *datadir.ModuleMan
 		return err
 	}
 
+	txn.Defer(func() {
+		s.logger.Printf("Queuing refresh for %s", path)
+		go s.ChangeHooks.notifyModuleChange(nil, mod)
+	})
+
 	txn.Commit()
 	return nil
 }
@@ -474,6 +479,10 @@ func (s *ModuleStore) SetTerraformVersionState(path string, state op.OpState) er
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(nil, mod)
+	})
 
 	txn.Commit()
 	return nil
@@ -555,6 +564,10 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 	if err != nil {
 		return err
 	}
+
+	txn.Defer(func() {
+		go s.ChangeHooks.notifyModuleChange(nil, mod)
+	})
 
 	txn.Commit()
 	return nil

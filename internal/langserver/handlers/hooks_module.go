@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -166,6 +168,16 @@ func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) 
 
 		if oldOrigins != newOrigins || oldTargets != newTargets {
 			clientRequester.Callback(ctx, "workspace/codeLens/refresh", nil)
+		}
+	}
+}
+
+func refreshSemanticTokens(ctx context.Context, svrCtx context.Context, logger *log.Logger) state.ModuleChangeHook {
+	return func(_, newMod *state.Module) {
+		jrpcsvc := jrpc2.ServerFromContext(ctx)
+		_, err := jrpcsvc.Callback(svrCtx, "workspace/semanticTokens/refresh", nil)
+		if err != nil {
+			logger.Printf("Error refreshing %s: %s", newMod.Path, err)
 		}
 	}
 }
