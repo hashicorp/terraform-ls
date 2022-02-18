@@ -1,10 +1,6 @@
 package document
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -26,8 +22,6 @@ func (dh DirHandle) Path() string {
 // It is however outside the scope of the function to verify
 // this is actually the case or whether the directory exists.
 func DirHandleFromPath(dirPath string) DirHandle {
-	dirPath = strings.TrimSuffix(dirPath, fmt.Sprintf("%c", os.PathSeparator))
-
 	return DirHandle{
 		URI: uri.FromPath(dirPath),
 	}
@@ -39,10 +33,8 @@ func DirHandleFromPath(dirPath string) DirHandle {
 // It is however outside the scope of the function to verify
 // this is actually the case or whether the directory exists.
 func DirHandleFromURI(dirUri string) DirHandle {
-	// Dir URIs are usually without trailing separator already
-	// but we double check anyway, so we deal with the same URI
-	// regardless of language client differences
-	dirUri = strings.TrimSuffix(string(dirUri), "/")
+	// Normalize the raw URI to account for any escaping differences
+	dirUri = uri.MustParseURI(dirUri)
 
 	return DirHandle{
 		URI: dirUri,

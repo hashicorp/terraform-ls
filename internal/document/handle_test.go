@@ -25,6 +25,13 @@ func TestHandleFromURI(t *testing.T) {
 				Filename: "config.tf",
 			},
 		},
+		{
+			RawURI: "file:///C%3A/random/path/to/config.tf",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///C:/random/path/to"},
+				Filename: "config.tf",
+			},
+		},
 	}
 
 	for i, tc := range testCases {

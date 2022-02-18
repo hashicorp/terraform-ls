@@ -24,6 +24,12 @@ func TestDirHandleFromURI(t *testing.T) {
 				URI: "file:///C:/random/path",
 			},
 		},
+		{
+			RawURI: "file:///C%3A/random/path",
+			ExpectedHandle: DirHandle{
+				URI: "file:///C:/random/path",
+			},
+		},
 	}
 
 	for i, tc := range testCases {

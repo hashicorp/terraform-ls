@@ -1,10 +1,11 @@
 package document
 
 import (
+	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 // Handle represents a document location
@@ -22,13 +23,11 @@ type Handle struct {
 // It is however outside the scope of the function to verify
 // this is actually the case or whether the file exists.
 func HandleFromURI(docUri string) Handle {
-	path := uri.MustPathFromURI(docUri)
-
-	filename := filepath.Base(path)
+	filename := path.Base(docUri)
 	dirUri := strings.TrimSuffix(docUri, "/"+filename)
 
 	return Handle{
-		Dir:      DirHandle{URI: dirUri},
+		Dir:      DirHandleFromURI(dirUri),
 		Filename: filename,
 	}
 }
@@ -39,13 +38,11 @@ func HandleFromURI(docUri string) Handle {
 // It is however outside the scope of the function to verify
 // this is actually the case or whether the file exists.
 func HandleFromPath(docPath string) Handle {
-	docUri := uri.FromPath(docPath)
-
 	filename := filepath.Base(docPath)
-	dirUri := strings.TrimSuffix(docUri, "/"+filename)
+	dirPath := strings.TrimSuffix(docPath, fmt.Sprintf("%c%s", os.PathSeparator, filename))
 
 	return Handle{
-		Dir:      DirHandle{URI: dirUri},
+		Dir:      DirHandleFromPath(dirPath),
 		Filename: filename,
 	}
 }
