@@ -95,6 +95,19 @@ func PathFromURI(rawUri string) (string, error) {
 	return osPath, nil
 }
 
+// MustParseURI returns a normalized RFC 8089 URI.
+// It will panic if rawUri is invalid.
+//
+// Use IsURIValid for checking validity upfront.
+func MustParseURI(rawUri string) string {
+	uri, err := parseUri(rawUri)
+	if err != nil {
+		panic(fmt.Sprintf("invalid URI: %s", uri))
+	}
+
+	return uri.String()
+}
+
 func trimLeftPathSeparator(s string) string {
 	return strings.TrimLeftFunc(s, func(r rune) bool {
 		return r == os.PathSeparator

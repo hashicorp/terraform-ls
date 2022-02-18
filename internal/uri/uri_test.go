@@ -126,3 +126,30 @@ func TestPathFromURI(t *testing.T) {
 		})
 	}
 }
+
+func TestMustParseURI(t *testing.T) {
+	type testCase struct {
+		RawURI      string
+		ExpectedURI string
+	}
+
+	testCases := []testCase{
+		{
+			RawURI:      "file:///C:/Users/With Space/tf-test/file.tf",
+			ExpectedURI: "file:///C:/Users/With%20Space/tf-test/file.tf",
+		},
+		{
+			RawURI:      "file:///C:/Users/With%20Space/tf-test/file.tf",
+			ExpectedURI: "file:///C:/Users/With%20Space/tf-test/file.tf",
+		},
+	}
+
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			uri := MustParseURI(tc.RawURI)
+			if tc.ExpectedURI != uri {
+				t.Fatalf("Expected %q, given %q", tc.ExpectedURI, uri)
+			}
+		})
+	}
+}
