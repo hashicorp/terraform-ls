@@ -21,6 +21,14 @@ func FromPath(rawPath string) string {
 
 	volume := filepath.VolumeName(rawPath)
 	if isWindowsDriveVolume(volume) {
+		// VSCode normalizes drive letters for unknown reasons.
+		// See https://github.com/microsoft/vscode/issues/42159#issuecomment-360533151
+		// While it is a relatively safe assumption that letters are
+		// case insensitive, this doesn't seem to be documented anywhere.
+		//
+		// We just account for VSCode's past decisions here.
+		path = strings.ToUpper(string(path[0])) + path[1:]
+
 		// Per RFC 8089 (Appendix F. Collected Nonstandard Rules)
 		// file-absolute = "/" drive-letter path-absolute
 		// i.e. paths with drive-letters (such as C:) are prepended
@@ -153,5 +161,27 @@ func parseUri(rawUri string) (*url.URL, error) {
 	// clean re-escaping of the (unescaped) Path.
 	uri.RawPath = ""
 
+	// The upstream net/url parser (correctly) does not interpret Path
+	// within URI based on the filesystem or OS where they may (or may not)
+	// be pointing.
+	// VSCode normalizes drive letters for unknown reasons.
+	// See https://github.com/microsoft/vscode/issues/42159#issuecomment-360533151
+	// While it is a relatively safe assumption that letters are
+	// case insensitive, this doesn't seem to be documented anywhere.
+	//
+	// We just account for VSCode's past decisions here.
+	if isLikelyWindowsDriveURIPath(uri.Path) {
+		uri.Path = string(uri.Path[0]) + strings.ToUpper(string(uri.Path[1])) + uri.Path[2:]
+	}
+
 	return uri, nil
+}
+
+// isLikelyWindowsDrivePath returns true if the URI path is of the form used by
+// Windows URIs. We check if the URI path has a drive prefix (e.g. "/C:")
+func isLikelyWindowsDriveURIPath(uriPath string) bool {
+	if len(uriPath) < 4 {
+		return false
+	}
+	return uriPath[0] == '/' && unicode.IsLetter(rune(uriPath[1])) && uriPath[2] == ':'
 }

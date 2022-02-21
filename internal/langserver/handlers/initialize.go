@@ -215,7 +215,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	if len(params.WorkspaceFolders) > 0 {
 		for _, folderPath := range params.WorkspaceFolders {
-			modPath, err := pathFromDocumentURI(folderPath.URI)
+			modPath, err := uri.PathFromURI(folderPath.URI)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type: lsp.Warning,

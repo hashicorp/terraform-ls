@@ -27,7 +27,7 @@ func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.
 	}
 
 	for _, removed := range params.Event.Removed {
-		modPath, err := pathFromDocumentURI(removed.URI)
+		modPath, err := uri.PathFromURI(removed.URI)
 		if err != nil {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 				Type: lsp.Warning,
@@ -55,7 +55,7 @@ func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.
 	}
 
 	for _, added := range params.Event.Added {
-		modPath, err := pathFromDocumentURI(added.URI)
+		modPath, err := uri.PathFromURI(added.URI)
 		if err != nil {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 				Type: lsp.Warning,
@@ -74,13 +74,4 @@ func (lh *logHandler) DidChangeWorkspaceFolders(ctx context.Context, params lsp.
 	}
 
 	return nil
-}
-
-func pathFromDocumentURI(docUri string) (string, error) {
-	rawPath, err := uri.PathFromURI(docUri)
-	if err != nil {
-		return "", err
-	}
-
-	return cleanupPath(rawPath)
 }

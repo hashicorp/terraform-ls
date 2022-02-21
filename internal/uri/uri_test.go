@@ -35,6 +35,11 @@ func TestFromPath(t *testing.T) {
 				RawPath:     `C:\Users\TrailingSeparator\`,
 				ExpectedURI: "file:///C:/Users/TrailingSeparator",
 			},
+			// Ensure any-cased drive letter (which may come from VS Code) is uppercased
+			{
+				RawPath:     `c:\test`,
+				ExpectedURI: "file:///C:/test",
+			},
 		}
 	} else {
 		// unix
@@ -92,6 +97,11 @@ func TestPathFromURI(t *testing.T) {
 			{
 				URI:          "file:///C%3A/Users/With%20Space/tf-test",
 				ExpectedPath: `C:\Users\With Space\tf-test`,
+			},
+			// Ensure any-cased drive letter (which may come from VS Code) is uppercased
+			{
+				URI:          "file:///c:/tf-test",
+				ExpectedPath: `C:\tf-test`,
 			},
 		}
 	} else {
@@ -151,6 +161,11 @@ func TestMustParseURI(t *testing.T) {
 		{
 			RawURI:      "file:///C%3A/Users/With%20Space/tf-test/file.tf",
 			ExpectedURI: "file:///C:/Users/With%20Space/tf-test/file.tf",
+		},
+		// Ensure any-cased drive letter (which may come from VS Code) is uppercased
+		{
+			RawURI:      "file:///c:/tf-test",
+			ExpectedURI: "file:///C:/tf-test",
 		},
 	}
 
