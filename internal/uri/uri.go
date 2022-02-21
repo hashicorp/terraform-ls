@@ -141,5 +141,17 @@ func parseUri(rawUri string) (*url.URL, error) {
 	// as it is relevant in LSP (which uses the file scheme).
 	uri.Path = strings.TrimSuffix(uri.Path, "/")
 
+	// Upstream net/url parser (correctly) escapes only
+	// non-ASCII characters as per § 2.1 of RFC 3986.
+	// https://datatracker.ietf.org/doc/html/rfc3986#section-2.1
+	// Unfortunately VSCode effectively violates that section
+	// by escaping ASCII characters such as colon.
+	// See https://github.com/microsoft/vscode/issues/75027
+	//
+	// To account for this we reset RawPath which would
+	// otherwise be used by String() to effectively enforce
+	// clean re-escaping of the (unescaped) Path.
+	uri.RawPath = ""
+
 	return uri, nil
 }

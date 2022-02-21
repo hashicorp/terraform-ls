@@ -88,6 +88,11 @@ func TestPathFromURI(t *testing.T) {
 				URI:          "file:///C:/Users/Test/tf-test/",
 				ExpectedPath: `C:\Users\Test\tf-test`,
 			},
+			// Ensure over-escaped colon (which may come from VS Code) is normalized
+			{
+				URI:          "file:///C%3A/Users/With%20Space/tf-test",
+				ExpectedPath: `C:\Users\With Space\tf-test`,
+			},
 		}
 	} else {
 		// unix
@@ -140,6 +145,11 @@ func TestMustParseURI(t *testing.T) {
 		},
 		{
 			RawURI:      "file:///C:/Users/With%20Space/tf-test/file.tf",
+			ExpectedURI: "file:///C:/Users/With%20Space/tf-test/file.tf",
+		},
+		// Ensure over-escaped colon (which may come from VS Code) is normalized
+		{
+			RawURI:      "file:///C%3A/Users/With%20Space/tf-test/file.tf",
 			ExpectedURI: "file:///C:/Users/With%20Space/tf-test/file.tf",
 		},
 	}
