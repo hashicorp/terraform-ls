@@ -11,12 +11,12 @@ import (
 
 func TestLangServer_workspace_symbol_basic(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -44,7 +44,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -58,7 +58,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 			"text": "provider \"github\" {}",
 			"uri": "%s/first.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
@@ -68,7 +68,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 			"text": "provider \"google\" {}",
 			"uri": "%s/second.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
@@ -78,7 +78,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 			"text": "myblock \"custom\" {}",
 			"uri": "%s/blah/third.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/symbol",
@@ -122,7 +122,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 				}
 			}
 		]
-	}`, tmpDir.URI(), tmpDir.URI(), tmpDir.URI()))
+	}`, tmpDir.URI, tmpDir.URI, tmpDir.URI))
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/symbol",
@@ -144,5 +144,5 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 				}
 			}
 		]
-	}`, tmpDir.URI()))
+	}`, tmpDir.URI))
 }

@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -35,7 +35,7 @@ var (
 type pathToWatch struct{}
 
 type Walker struct {
-	fs      filesystem.Filesystem
+	fs      fs.StatFS
 	modMgr  ModuleManager
 	watcher Watcher
 	logger  *log.Logger
@@ -59,13 +59,13 @@ type Walker struct {
 // until a path is consumed
 const queueCap = 50
 
-func NewWalker(fs filesystem.Filesystem, modMgr ModuleManager) *Walker {
+func NewWalker(fs fs.StatFS, ds DocumentStore, modMgr ModuleManager) *Walker {
 	return &Walker{
 		fs:                   fs,
 		modMgr:               modMgr,
 		logger:               discardLogger,
 		walkingMu:            &sync.RWMutex{},
-		queue:                newWalkerQueue(fs),
+		queue:                newWalkerQueue(ds),
 		queueMu:              &sync.Mutex{},
 		pushChan:             make(chan struct{}, queueCap),
 		doneCh:               make(chan struct{}, 0),

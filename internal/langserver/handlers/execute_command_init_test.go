@@ -15,12 +15,12 @@ import (
 
 func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -33,7 +33,7 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -58,7 +58,7 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 
 func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
 
 	tfMockCalls := []*mock.Call{
 		{
@@ -95,7 +95,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): tfMockCalls,
+				tmpDir.Path(): tfMockCalls,
 			},
 		},
 	}))
@@ -108,7 +108,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -129,7 +129,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"]
-	}`, cmd.Name("terraform.init"), tmpDir.URI())}, `{
+	}`, cmd.Name("terraform.init"), tmpDir.URI)}, `{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": null
@@ -138,7 +138,7 @@ func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
 
 func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	tmpDir := TempDir(t)
-	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI())
+	testFileURI := fmt.Sprintf("%s/main.tf", tmpDir.URI)
 
 	tfMockCalls := []*mock.Call{
 		{
@@ -175,7 +175,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): tfMockCalls,
+				tmpDir.Path(): tfMockCalls,
 			},
 		},
 	}))
@@ -188,7 +188,7 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

@@ -1,35 +1,35 @@
 package lsp
 
 import (
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
 type contentChange struct {
 	text string
-	rng  *filesystem.Range
+	rng  *document.Range
 }
 
-func ContentChange(chEvent lsp.TextDocumentContentChangeEvent) filesystem.DocumentChange {
+func ContentChange(chEvent lsp.TextDocumentContentChangeEvent) document.Change {
 	return &contentChange{
 		text: chEvent.Text,
-		rng:  lspRangeToFsRange(chEvent.Range),
+		rng:  lspRangeToDocRange(chEvent.Range),
 	}
 }
 
-func DocumentChanges(events []lsp.TextDocumentContentChangeEvent, f File) (filesystem.DocumentChanges, error) {
-	changes := make(filesystem.DocumentChanges, len(events))
+func DocumentChanges(events []lsp.TextDocumentContentChangeEvent) document.Changes {
+	changes := make(document.Changes, len(events))
 	for i, event := range events {
 		ch := ContentChange(event)
 		changes[i] = ch
 	}
-	return changes, nil
+	return changes
 }
 
 func (fc *contentChange) Text() string {
 	return fc.text
 }
 
-func (fc *contentChange) Range() *filesystem.Range {
+func (fc *contentChange) Range() *document.Range {
 	return fc.rng
 }

@@ -3,16 +3,16 @@ package datadir
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 
 	version "github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/pathcmp"
 )
 
-func ModuleManifestFilePath(fs filesystem.Filesystem, modulePath string) (string, bool) {
+func ModuleManifestFilePath(fs fs.StatFS, modulePath string) (string, bool) {
 	manifestPath := filepath.Join(
 		append([]string{modulePath},
 			manifestPathElements...)...)

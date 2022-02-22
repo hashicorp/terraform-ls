@@ -10,8 +10,8 @@ import (
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -83,7 +83,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -96,7 +96,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())}, initializeResponse(t, ""))
+	}`, tmpDir.URI)}, initializeResponse(t, ""))
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
 		`{
@@ -112,7 +112,7 @@ func TestInitalizeWithCommandPrefix(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	}))
@@ -128,7 +128,7 @@ func TestInitalizeWithCommandPrefix(t *testing.T) {
 		"initializationOptions": {
 			"commandPrefix": "1"
 		}
-	}`, tmpDir.URI())}, initializeResponse(t, "1"))
+	}`, tmpDir.URI)}, initializeResponse(t, "1"))
 }
 
 func TestEOF(t *testing.T) {
@@ -137,7 +137,7 @@ func TestEOF(t *testing.T) {
 	ms := newMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
 	})
@@ -151,7 +151,7 @@ func TestEOF(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())}, initializeResponse(t, ""))
+	}`, tmpDir.URI)}, initializeResponse(t, ""))
 
 	ls.CloseClientStdout(t)
 
@@ -219,7 +219,7 @@ func validTfMockCalls() []*mock.Call {
 //  └── c
 //
 // The returned filehandler is the parent tmp dir
-func TempDir(t *testing.T, nested ...string) lsp.FileHandler {
+func TempDir(t *testing.T, nested ...string) document.DirHandle {
 	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
 	err := os.MkdirAll(tmpDir, 0755)
 	if err != nil && !os.IsExist(err) {
@@ -239,7 +239,7 @@ func TempDir(t *testing.T, nested ...string) lsp.FileHandler {
 		}
 	}
 
-	return lsp.FileHandlerFromDirPath(tmpDir)
+	return document.DirHandleFromPath(tmpDir)
 }
 
 func InitPluginCache(t *testing.T, dir string) {

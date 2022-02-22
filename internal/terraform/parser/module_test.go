@@ -2,13 +2,14 @@ package parser
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
-	"github.com/spf13/afero"
 )
 
 func TestParseModuleFiles(t *testing.T) {
@@ -82,7 +83,7 @@ func TestParseModuleFiles(t *testing.T) {
 		},
 	}
 
-	fs := afero.NewIOFS(afero.NewOsFs())
+	fs := osFs{}
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d-%s", i, tc.dirName), func(t *testing.T) {
@@ -111,4 +112,22 @@ func mapKeys(mf ast.ModFiles) map[string]struct{} {
 		m[name.String()] = struct{}{}
 	}
 	return m
+}
+
+type osFs struct{}
+
+func (osfs osFs) Open(name string) (fs.File, error) {
+	return os.Open(name)
+}
+
+func (osfs osFs) Stat(name string) (fs.FileInfo, error) {
+	return os.Stat(name)
+}
+
+func (osfs osFs) ReadDir(name string) ([]fs.DirEntry, error) {
+	return os.ReadDir(name)
+}
+
+func (osfs osFs) ReadFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
 }

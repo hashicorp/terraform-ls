@@ -3,6 +3,7 @@ package state
 import (
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
@@ -12,6 +13,7 @@ import (
 )
 
 const (
+	documentsTableName      = "documents"
 	moduleTableName         = "module"
 	moduleIdsTableName      = "module_ids"
 	providerSchemaTableName = "provider_schema"
@@ -20,6 +22,21 @@ const (
 
 var dbSchema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
+		documentsTableName: {
+			Name: documentsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:   "id",
+					Unique: true,
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&DirHandleFieldIndexer{Field: "Dir"},
+							&memdb.StringFieldIndex{Field: "Filename"},
+						},
+					},
+				},
+			},
+		},
 		moduleTableName: {
 			Name: moduleTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -71,6 +88,7 @@ var dbSchema = &memdb.DBSchema{
 }
 
 type StateStore struct {
+	DocumentStore   *DocumentStore
 	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
 
@@ -113,6 +131,12 @@ func NewStateStore() (*StateStore, error) {
 
 	return &StateStore{
 		db: db,
+		DocumentStore: &DocumentStore{
+			db:           db,
+			tableName:    documentsTableName,
+			logger:       defaultLogger,
+			TimeProvider: time.Now,
+		},
 		Modules: &ModuleStore{
 			db:          db,
 			ChangeHooks: make(ModuleChangeHooks, 0),
@@ -128,6 +152,7 @@ func NewStateStore() (*StateStore, error) {
 }
 
 func (s *StateStore) SetLogger(logger *log.Logger) {
+	s.DocumentStore.logger = logger
 	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
 }

@@ -14,7 +14,7 @@ import (
 
 func TestSemanticTokensFull(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -25,7 +25,7 @@ func TestSemanticTokensFull(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -85,7 +85,7 @@ func TestSemanticTokensFull(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -99,7 +99,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -107,7 +107,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI())}, `{
+		}`, TempDir(t).URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -121,7 +121,7 @@ func TestSemanticTokensFull(t *testing.T) {
 
 func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -132,7 +132,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -194,7 +194,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -208,7 +208,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -216,7 +216,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI())}, `{
+		}`, TempDir(t).URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -230,7 +230,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 
 func TestVarsSemanticTokensFull(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -241,7 +241,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -301,7 +301,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI())})
+	}`, TempDir(t).URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -315,7 +315,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 			"text": "variable \"test\" {\n type=string\n}\n",
 			"uri": "%s/variables.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
@@ -325,7 +325,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 				"text": "test = \"dev\"\n",
 				"uri": "%s/terraform.tfvars"
 			}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -333,7 +333,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/terraform.tfvars"
 			}
-		}`, TempDir(t).URI())}, `{
+		}`, TempDir(t).URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 4,
 			"result": {

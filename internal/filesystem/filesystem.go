@@ -1,225 +1,71 @@
 package filesystem
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
-	"sync"
 
-	"github.com/hashicorp/terraform-ls/internal/source"
-	"github.com/spf13/afero"
+	"github.com/hashicorp/terraform-ls/internal/document"
 )
 
-type fsystem struct {
-	memFs afero.Fs
-	osFs  afero.Fs
-
-	docMeta   map[string]*documentMetadata
-	docMetaMu *sync.RWMutex
+// Filesystem provides io/fs.FS compatible two-layer read-only filesystem
+// with preferred source being DocumentStore and native OS FS acting as fallback.
+//
+// This allows for reading files in a directory while reflecting unsaved changes.
+type Filesystem struct {
+	osFs     osFs
+	docStore DocumentStore
 
 	logger *log.Logger
 }
 
-func NewFilesystem() *fsystem {
-	return &fsystem{
-		memFs:     afero.NewMemMapFs(),
-		osFs:      afero.NewReadOnlyFs(afero.NewOsFs()),
-		docMeta:   make(map[string]*documentMetadata, 0),
-		docMetaMu: &sync.RWMutex{},
-		logger:    log.New(ioutil.Discard, "", 0),
+type DocumentStore interface {
+	GetDocument(document.Handle) (*document.Document, error)
+	ListDocumentsInDir(document.DirHandle) ([]*document.Document, error)
+}
+
+func NewFilesystem(docStore DocumentStore) *Filesystem {
+	return &Filesystem{
+		osFs:     osFs{},
+		docStore: docStore,
+		logger:   log.New(ioutil.Discard, "", 0),
 	}
 }
 
-func (fs *fsystem) SetLogger(logger *log.Logger) {
+func (fs *Filesystem) SetLogger(logger *log.Logger) {
 	fs.logger = logger
 }
 
-func (fs *fsystem) CreateDocument(dh DocumentHandler, langId string, text []byte) error {
-	_, err := fs.memFs.Stat(dh.Dir())
+func (fs *Filesystem) ReadFile(name string) ([]byte, error) {
+	doc, err := fs.docStore.GetDocument(document.HandleFromPath(name))
 	if err != nil {
-		if os.IsNotExist(err) {
-			err := fs.memFs.MkdirAll(dh.Dir(), 0755)
-			if err != nil {
-				return fmt.Errorf("failed to create parent dir: %w", err)
-			}
-		} else {
-			return err
+		if errors.Is(err, &document.DocumentNotFound{}) {
+			return fs.osFs.ReadFile(name)
 		}
-	}
-
-	f, err := fs.memFs.Create(dh.FullPath())
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(text)
-	if err != nil {
-		return err
-	}
-
-	return fs.createDocumentMetadata(dh, langId, text)
-}
-
-func (fs *fsystem) CreateAndOpenDocument(dh DocumentHandler, langId string, text []byte) error {
-	err := fs.CreateDocument(dh, langId, text)
-	if err != nil {
-		return err
-	}
-
-	return fs.markDocumentAsOpen(dh)
-}
-
-func (fs *fsystem) ChangeDocument(dh VersionedDocumentHandler, changes DocumentChanges) error {
-	if len(changes) == 0 {
-		return nil
-	}
-
-	isOpen, err := fs.isDocumentOpen(dh)
-	if err != nil {
-		return err
-	}
-
-	if !isOpen {
-		return &DocumentNotOpenErr{dh}
-	}
-
-	f, err := fs.memFs.OpenFile(dh.FullPath(), os.O_RDWR, 0700)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	var buf bytes.Buffer
-	_, err = buf.ReadFrom(f)
-	if err != nil {
-		return err
-	}
-
-	for _, ch := range changes {
-		err := fs.applyDocumentChange(&buf, ch)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = f.Truncate(0)
-	if err != nil {
-		return err
-	}
-	_, err = f.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(buf.Bytes())
-	if err != nil {
-		return err
-	}
-
-	return fs.updateDocumentMetadataLines(dh, buf.Bytes())
-}
-
-func (fs *fsystem) applyDocumentChange(buf *bytes.Buffer, change DocumentChange) error {
-	// if the range is nil, we assume it is full content change
-	if change.Range() == nil {
-		buf.Reset()
-		_, err := buf.WriteString(change.Text())
-		return err
-	}
-
-	lines := source.MakeSourceLines("", buf.Bytes())
-
-	startByte, err := ByteOffsetForPos(lines, change.Range().Start)
-	if err != nil {
-		return err
-	}
-	endByte, err := ByteOffsetForPos(lines, change.Range().End)
-	if err != nil {
-		return err
-	}
-
-	diff := endByte - startByte
-	if diff > 0 {
-		buf.Grow(diff)
-	}
-
-	beforeChange := make([]byte, startByte, startByte)
-	copy(beforeChange, buf.Bytes())
-	afterBytes := buf.Bytes()[endByte:]
-	afterChange := make([]byte, len(afterBytes), len(afterBytes))
-	copy(afterChange, afterBytes)
-
-	buf.Reset()
-
-	_, err = buf.Write(beforeChange)
-	if err != nil {
-		return err
-	}
-	_, err = buf.WriteString(change.Text())
-	if err != nil {
-		return err
-	}
-	_, err = buf.Write(afterChange)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (fs *fsystem) CloseAndRemoveDocument(dh DocumentHandler) error {
-	isOpen, err := fs.isDocumentOpen(dh)
-	if err != nil {
-		return err
-	}
-
-	if !isOpen {
-		return &DocumentNotOpenErr{dh}
-	}
-
-	err = fs.memFs.Remove(dh.FullPath())
-	if err != nil {
-		return err
-	}
-
-	return fs.removeDocumentMetadata(dh)
-}
-
-func (fs *fsystem) GetDocument(dh DocumentHandler) (Document, error) {
-	dm, err := fs.getDocumentMetadata(dh)
-	if err != nil {
 		return nil, err
 	}
 
-	return &document{
-		meta: dm,
-		fs:   fs.memFs,
-	}, nil
+	return []byte(doc.Text), err
 }
 
-func (fs *fsystem) ReadFile(name string) ([]byte, error) {
-	b, err := afero.ReadFile(fs.memFs, name)
-	if err != nil && os.IsNotExist(err) {
-		return afero.ReadFile(fs.osFs, name)
+func (fs *Filesystem) ReadDir(name string) ([]fs.DirEntry, error) {
+	dirHandle := document.DirHandleFromPath(name)
+	docList, err := fs.docStore.ListDocumentsInDir(dirHandle)
+	if err != nil {
+		return nil, fmt.Errorf("doc FS: %w", err)
 	}
 
-	return b, err
-}
-
-func (fsys *fsystem) ReadDir(name string) ([]fs.DirEntry, error) {
-	memList, err := afero.NewIOFS(fsys.memFs).ReadDir(name)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("memory FS: %w", err)
-	}
-	osList, err := afero.NewIOFS(fsys.osFs).ReadDir(name)
+	osList, err := fs.osFs.ReadDir(name)
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("OS FS: %w", err)
 	}
 
-	list := memList
+	list := documentsAsDirEntries(docList)
 	for _, osEntry := range osList {
-		if fileIsInList(list, osEntry) {
+		if entryIsInList(list, osEntry) {
 			continue
 		}
 		list = append(list, osEntry)
@@ -228,7 +74,7 @@ func (fsys *fsystem) ReadDir(name string) ([]fs.DirEntry, error) {
 	return list, nil
 }
 
-func fileIsInList(list []fs.DirEntry, entry fs.DirEntry) bool {
+func entryIsInList(list []fs.DirEntry, entry fs.DirEntry) bool {
 	for _, di := range list {
 		if di.Name() == entry.Name() {
 			return true
@@ -237,20 +83,26 @@ func fileIsInList(list []fs.DirEntry, entry fs.DirEntry) bool {
 	return false
 }
 
-func (fs *fsystem) Open(name string) (fs.File, error) {
-	f, err := fs.memFs.Open(name)
-	if err != nil && os.IsNotExist(err) {
-		return fs.osFs.Open(name)
+func (fs *Filesystem) Open(name string) (fs.File, error) {
+	doc, err := fs.docStore.GetDocument(document.HandleFromPath(name))
+	if err != nil {
+		if errors.Is(err, &document.DocumentNotFound{}) {
+			return fs.osFs.Open(name)
+		}
+		return nil, err
 	}
 
-	return f, err
+	return documentAsFile(doc), err
 }
 
-func (fs *fsystem) Stat(name string) (os.FileInfo, error) {
-	fi, err := fs.memFs.Stat(name)
-	if err != nil && os.IsNotExist(err) {
-		return fs.osFs.Stat(name)
+func (fs *Filesystem) Stat(name string) (os.FileInfo, error) {
+	doc, err := fs.docStore.GetDocument(document.HandleFromPath(name))
+	if err != nil {
+		if errors.Is(err, &document.DocumentNotFound{}) {
+			return fs.osFs.Stat(name)
+		}
+		return nil, err
 	}
 
-	return fi, err
+	return documentAsFileInfo(doc), err
 }

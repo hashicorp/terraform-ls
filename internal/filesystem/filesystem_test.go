@@ -9,162 +9,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/internal/uri"
+	"github.com/hashicorp/terraform-ls/internal/document"
 )
 
-func TestFilesystem_Change_notOpen(t *testing.T) {
-	fs := testDocumentStorage()
-
-	var changes DocumentChanges
-	changes = append(changes, &testChange{})
-	h := &testHandler{uri: "file:///doesnotexist"}
-
-	err := fs.ChangeDocument(h, changes)
-
-	expectedErr := &UnknownDocumentErr{h}
-	if err == nil {
-		t.Fatalf("Expected error: %s", expectedErr)
-	}
-	if err.Error() != expectedErr.Error() {
-		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
-			expectedErr, err)
-	}
-}
-
-func TestFilesystem_Change_closed(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///doesnotexist"}
-	fs.CreateAndOpenDocument(fh, "test", []byte{})
-	err := fs.CloseAndRemoveDocument(fh)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var changes DocumentChanges
-	changes = append(changes, &testChange{})
-	err = fs.ChangeDocument(fh, changes)
-
-	expectedErr := &UnknownDocumentErr{fh}
-	if err == nil {
-		t.Fatalf("Expected error: %s", expectedErr)
-	}
-	if err.Error() != expectedErr.Error() {
-		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
-			expectedErr, err)
-	}
-}
-
-func TestFilesystem_Remove_unknown(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///doesnotexist"}
-	fs.CreateAndOpenDocument(fh, "test", []byte{})
-	err := fs.CloseAndRemoveDocument(fh)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = fs.CloseAndRemoveDocument(fh)
-
-	expectedErr := &UnknownDocumentErr{fh}
-	if err == nil {
-		t.Fatalf("Expected error: %s", expectedErr)
-	}
-	if err.Error() != expectedErr.Error() {
-		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
-			expectedErr, err)
-	}
-}
-
-func TestFilesystem_Close_closed(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///isnotopen"}
-	fs.CreateDocument(fh, "test", []byte{})
-	err := fs.CloseAndRemoveDocument(fh)
-	expectedErr := &DocumentNotOpenErr{fh}
-	if err == nil {
-		t.Fatalf("Expected error: %s", expectedErr)
-	}
-	if err.Error() != expectedErr.Error() {
-		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
-			expectedErr, err)
-	}
-}
-
-func TestFilesystem_Change_noChanges(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///test.tf"}
-	fs.CreateAndOpenDocument(fh, "test", []byte{})
-
-	var changes DocumentChanges
-	err := fs.ChangeDocument(fh, changes)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestFilesystem_Change_multipleChanges(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///test.tf"}
-	fs.CreateAndOpenDocument(fh, "test", []byte{})
-
-	var changes DocumentChanges
-	changes = append(changes, &testChange{text: "ahoy"})
-	changes = append(changes, &testChange{text: ""})
-	changes = append(changes, &testChange{text: "quick brown fox jumped over\nthe lazy dog"})
-	changes = append(changes, &testChange{text: "bye"})
-
-	err := fs.ChangeDocument(fh, changes)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestFilesystem_GetDocument_success(t *testing.T) {
-	fs := testDocumentStorage()
-
-	dh := &testHandler{uri: "file:///test.tf"}
-	err := fs.CreateAndOpenDocument(dh, "test", []byte("hello world"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	f, err := fs.GetDocument(dh)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	b := []byte("hello world")
-	meta := NewDocumentMetadata(dh, "test", b)
-	meta.isOpen = true
-	expectedFile := testDocument(t, dh, meta, b)
-	if diff := cmp.Diff(expectedFile, f); diff != "" {
-		t.Fatalf("File doesn't match: %s", diff)
-	}
-}
-
-func TestFilesystem_GetDocument_unknownDocument(t *testing.T) {
-	fs := testDocumentStorage()
-
-	fh := &testHandler{uri: "file:///test.tf"}
-	_, err := fs.GetDocument(fh)
-
-	expectedErr := &UnknownDocumentErr{fh}
-	if err == nil {
-		t.Fatalf("Expected error: %s", expectedErr)
-	}
-	if err.Error() != expectedErr.Error() {
-		t.Fatalf("Unexpected error.\nexpected: %#v\ngiven: %#v",
-			expectedErr, err)
-	}
-}
-
 func TestFilesystem_ReadFile_osOnly(t *testing.T) {
-	tmpDir := TempDir(t)
+	tmpDir := t.TempDir()
 	f, err := os.Create(filepath.Join(tmpDir, "testfile"))
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +25,7 @@ func TestFilesystem_ReadFile_osOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := NewFilesystem()
+	fs := NewFilesystem(testDocumentStore{})
 	b, err := fs.ReadFile(filepath.Join(tmpDir, "testfile"))
 	if err != nil {
 		t.Fatal(err)
@@ -197,14 +46,20 @@ func TestFilesystem_ReadFile_osOnly(t *testing.T) {
 }
 
 func TestFilesystem_ReadFile_memOnly(t *testing.T) {
-	fs := NewFilesystem()
-	fh := &testHandler{uri: "file:///tmp/test.tf"}
+	testHandle := document.HandleFromURI("file:///tmp/test.tf")
 	content := "test content"
-	err := fs.CreateDocument(fh, "test", []byte(content))
-	if err != nil {
-		t.Fatal(err)
-	}
-	b, err := fs.ReadFile(fh.FullPath())
+
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte(content),
+		},
+	})
+
+	b, err := fs.ReadFile(testHandle.FullPath())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +79,7 @@ func TestFilesystem_ReadFile_memOnly(t *testing.T) {
 }
 
 func TestFilesystem_ReadFile_memAndOs(t *testing.T) {
-	tmpDir := TempDir(t)
+	tmpDir := t.TempDir()
 	testPath := filepath.Join(tmpDir, "testfile")
 
 	f, err := os.Create(testPath)
@@ -238,16 +93,19 @@ func TestFilesystem_ReadFile_memAndOs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := NewFilesystem()
-
-	fh := testHandlerFromPath(testPath)
+	testHandle := document.HandleFromPath(testPath)
 	memContent := "in-mem content"
-	err = fs.CreateDocument(fh, "test", []byte(memContent))
-	if err != nil {
-		t.Fatal(err)
-	}
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte(memContent),
+		},
+	})
 
-	b, err := fs.ReadFile(fh.FullPath())
+	b, err := fs.ReadFile(testPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,8 +124,8 @@ func TestFilesystem_ReadFile_memAndOs(t *testing.T) {
 	}
 }
 
-func TestFilesystem_ReadDir(t *testing.T) {
-	tmpDir := TempDir(t)
+func TestFilesystem_ReadDir_memAndOs(t *testing.T) {
+	tmpDir := t.TempDir()
 
 	f, err := os.Create(filepath.Join(tmpDir, "osfile"))
 	if err != nil {
@@ -275,13 +133,16 @@ func TestFilesystem_ReadDir(t *testing.T) {
 	}
 	defer f.Close()
 
-	fs := NewFilesystem()
-
-	fh := testHandlerFromPath(filepath.Join(tmpDir, "memfile"))
-	err = fs.CreateDocument(fh, "test", []byte("test"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testHandle := document.HandleFromPath(filepath.Join(tmpDir, "memfile"))
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte("test"),
+		},
+	})
 
 	fis, err := fs.ReadDir(tmpDir)
 	if err != nil {
@@ -296,15 +157,18 @@ func TestFilesystem_ReadDir(t *testing.T) {
 }
 
 func TestFilesystem_ReadDir_memFsOnly(t *testing.T) {
-	fs := NewFilesystem()
-
 	tmpDir := t.TempDir()
 
-	fh := testHandlerFromPath(filepath.Join(tmpDir, "memfile"))
-	err := fs.CreateDocument(fh, "test", []byte("test"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	testHandle := document.HandleFromPath(filepath.Join(tmpDir, "memfile"))
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte("test"),
+		},
+	})
 
 	fis, err := fs.ReadDir(tmpDir)
 	if err != nil {
@@ -318,16 +182,9 @@ func TestFilesystem_ReadDir_memFsOnly(t *testing.T) {
 	}
 }
 
-func namesFromFileInfos(entries []fs.DirEntry) []string {
-	names := make([]string, len(entries), len(entries))
-	for i, entry := range entries {
-		names[i] = entry.Name()
-	}
-	return names
-}
-
 func TestFilesystem_Open_osOnly(t *testing.T) {
-	tmpDir := TempDir(t)
+	tmpDir := t.TempDir()
+
 	f, err := os.Create(filepath.Join(tmpDir, "testfile"))
 	if err != nil {
 		t.Fatal(err)
@@ -339,7 +196,7 @@ func TestFilesystem_Open_osOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := NewFilesystem()
+	fs := NewFilesystem(testDocumentStore{})
 	f1, err := fs.Open(filepath.Join(tmpDir, "testfile"))
 	if err != nil {
 		t.Fatal(err)
@@ -358,17 +215,22 @@ func TestFilesystem_Open_osOnly(t *testing.T) {
 }
 
 func TestFilesystem_Open_memOnly(t *testing.T) {
-	fs := NewFilesystem()
-	tmpDir := TempDir(t)
-	testPath := filepath.Join(tmpDir, "test.tf")
-	fh := testHandlerFromPath(testPath)
+	tmpDir := t.TempDir()
 
-	content := "test content"
-	err := fs.CreateDocument(fh, "test", []byte(content))
-	if err != nil {
-		t.Fatal(err)
-	}
-	f1, err := fs.Open(fh.FullPath())
+	path := filepath.Join(tmpDir, "test.tf")
+	testHandle := document.HandleFromPath(path)
+
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte("test"),
+		},
+	})
+
+	f1, err := fs.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +248,7 @@ func TestFilesystem_Open_memOnly(t *testing.T) {
 }
 
 func TestFilesystem_Open_memAndOs(t *testing.T) {
-	tmpDir := TempDir(t)
+	tmpDir := t.TempDir()
 	testPath := filepath.Join(tmpDir, "testfile")
 
 	f, err := os.Create(testPath)
@@ -400,16 +262,20 @@ func TestFilesystem_Open_memAndOs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fs := NewFilesystem()
-
-	fh := testHandlerFromPath(testPath)
+	testHandle := document.HandleFromPath(testPath)
 	memContent := "in-mem content"
-	err = fs.CreateDocument(fh, "test", []byte(memContent))
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	f1, err := fs.Open(fh.FullPath())
+	fs := NewFilesystem(testDocumentStore{
+		testHandle: &document.Document{
+			Dir:        testHandle.Dir,
+			Filename:   testHandle.Filename,
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte(memContent),
+		},
+	})
+
+	f1, err := fs.Open(testPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -433,170 +299,38 @@ func TestFilesystem_Open_memAndOs(t *testing.T) {
 	}
 }
 
-func TestFilesystem_Create_memOnly(t *testing.T) {
-	fs := NewFilesystem()
-	tmpDir := TempDir(t)
-	testPath := filepath.Join(tmpDir, "test.tf")
-	fh := testHandlerFromPath(testPath)
-
-	content := "test content"
-	err := fs.CreateDocument(fh, "test", []byte(content))
-	if err != nil {
-		t.Fatal(err)
+func namesFromFileInfos(entries []fs.DirEntry) []string {
+	names := make([]string, len(entries), len(entries))
+	for i, entry := range entries {
+		names[i] = entry.Name()
 	}
-
-	infos, err := fs.ReadDir(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	expectedFis := []string{"test.tf"}
-	names := namesFromFileInfos(infos)
-	if diff := cmp.Diff(expectedFis, names); diff != "" {
-		t.Fatalf("file list mismatch: %s", diff)
-	}
+	return names
 }
 
-func TestFilesystem_CreateDocument_missingParentDir(t *testing.T) {
-	fs := NewFilesystem()
+type testDocumentStore map[document.Handle]*document.Document
 
-	tmpDir := t.TempDir()
-	testPath := filepath.Join(tmpDir, "foo", "bar", "test.tf")
-	fh := testHandlerFromPath(testPath)
-
-	err := fs.CreateDocument(fh, "test", []byte("test"))
-	if err != nil {
-		t.Fatal(err)
+func (ds testDocumentStore) GetDocument(dh document.Handle) (*document.Document, error) {
+	doc, ok := ds[dh]
+	if !ok {
+		return nil, &document.DocumentNotFound{URI: dh.FullURI()}
 	}
-
-	fooPath := filepath.Join(tmpDir, "foo")
-	fi, err := fs.memFs.Stat(fooPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !fi.IsDir() {
-		t.Fatalf("expected %q to be a dir", fooPath)
-	}
-
-	barPath := filepath.Join(tmpDir, "foo", "bar")
-	fi, err = fs.memFs.Stat(barPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !fi.IsDir() {
-		t.Fatalf("expected %q to be a dir", barPath)
-	}
+	return doc, nil
 }
 
-func TestFilesystem_HasOpenFiles(t *testing.T) {
-	fs := NewFilesystem()
+func (ds testDocumentStore) ListDocumentsInDir(dirHandle document.DirHandle) ([]*document.Document, error) {
+	docs := make([]*document.Document, 0)
 
-	tmpDir := t.TempDir()
-
-	notOpenHandler := filepath.Join(tmpDir, "not-open.tf")
-	noFh := testHandlerFromPath(notOpenHandler)
-	err := fs.CreateDocument(noFh, "test", []byte("test1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	of, err := fs.HasOpenFiles(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if of {
-		t.Fatalf("expected no open files for %s", tmpDir)
-	}
-
-	openHandler := filepath.Join(tmpDir, "open.tf")
-	ofh := testHandlerFromPath(openHandler)
-	err = fs.CreateAndOpenDocument(ofh, "test", []byte("test2"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	of, err = fs.HasOpenFiles(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !of {
-		t.Fatalf("expected open files for %s", tmpDir)
-	}
-
-	err = fs.CloseAndRemoveDocument(ofh)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	of, err = fs.HasOpenFiles(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if of {
-		t.Fatalf("expected no open files for %s", tmpDir)
-	}
-}
-
-func TempDir(t *testing.T) string {
-	tmpDir := filepath.Join(os.TempDir(), "terraform-ls", t.Name())
-
-	err := os.MkdirAll(tmpDir, 0755)
-	if err != nil {
-		if os.IsExist(err) {
-			return tmpDir
+	for dh, doc := range ds {
+		if dh.Dir == dirHandle {
+			docs = append(docs, doc)
 		}
-		t.Fatal(err)
 	}
 
-	t.Cleanup(func() {
-		err := os.RemoveAll(tmpDir)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	return tmpDir
+	return docs, nil
 }
 
-func testHandlerFromPath(path string) DocumentHandler {
-	return &testHandler{uri: uri.FromPath(path), fullPath: path}
-}
-
-type testHandler struct {
-	uri      string
-	fullPath string
-}
-
-func (fh *testHandler) URI() string {
-	return fh.uri
-}
-
-func (fh *testHandler) FullPath() string {
-	return fh.fullPath
-}
-
-func (fh *testHandler) Dir() string {
-	return ""
-}
-
-func (fh *testHandler) Filename() string {
-	return ""
-}
-
-func (fh *testHandler) IsOpen() bool {
-	return false
-}
-
-func (fh *testHandler) Version() int {
-	return 0
-}
-
-func (fh *testHandler) LanguageID() string {
-	return "terraform"
-}
-
-func testDocumentStorage() DocumentStorage {
-	fs := NewFilesystem()
+func testFilesystem(docStore DocumentStore) *Filesystem {
+	fs := NewFilesystem(docStore)
 	fs.logger = testLogger()
 	return fs
 }

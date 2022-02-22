@@ -21,10 +21,15 @@ import (
 )
 
 func TestWatcher_initFromScratch(t *testing.T) {
-	fs := filesystem.NewFilesystem()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
 
 	modPath := filepath.Join(t.TempDir(), "module")
-	err := os.Mkdir(modPath, 0755)
+	err = os.Mkdir(modPath, 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,13 +71,10 @@ func TestWatcher_initFromScratch(t *testing.T) {
 		},
 	})
 	ctx := context.Background()
-	ss, err := state.NewStateStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	modMgr := mmm(ctx, fs, ss.Modules, ss.ProviderSchemas)
 
-	w, err := NewWatcher(fs, modMgr)
+	modMgr := mmm(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
+
+	w, err := NewWatcher(modMgr)
 	if err != nil {
 		t.Fatal(err)
 	}

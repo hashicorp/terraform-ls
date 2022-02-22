@@ -1,4 +1,4 @@
-package filesystem
+package document
 
 import (
 	"unicode/utf16"
@@ -29,7 +29,7 @@ func ByteOffsetForPos(lines source.Lines, pos Pos) (int, error) {
 // way.
 func byteOffsetForLSPColumn(l source.Line, lspCol int) int {
 	if lspCol < 0 {
-		return l.Range().Start.Byte
+		return l.Range.Start.Byte
 	}
 
 	// Normally ASCII-only lines could be short-circuited here
@@ -43,13 +43,13 @@ func byteOffsetForLSPColumn(l source.Line, lspCol int) int {
 	byteCt := 0
 	utf16Ct := 0
 	colIdx := 1
-	remain := l.Bytes()
+	remain := l.Bytes
 	for {
 		if len(remain) == 0 { // ran out of characters on the line, so given column is invalid
-			return l.Range().End.Byte
+			return l.Range.End.Byte
 		}
 		if utf16Ct >= lspCol { // we've found it
-			return l.Range().Start.Byte + byteCt
+			return l.Range.Start.Byte + byteCt
 		}
 		// Unlike our other conversion functions we're intentionally using
 		// individual UTF-8 sequences here rather than grapheme clusters because

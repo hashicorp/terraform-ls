@@ -121,7 +121,7 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 				deltaStartChar = token.Range.Start.Column - 1 - previousStartChar
 			}
 
-			lineBytes := bytes.TrimRight(te.Lines[tokenLine].Bytes(), "\n\r")
+			lineBytes := bytes.TrimRight(te.Lines[tokenLine].Bytes, "\n\r")
 			length := len(lineBytes)
 
 			if tokenLine == token.Range.End.Line-1 {

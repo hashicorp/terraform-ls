@@ -22,9 +22,9 @@ func TestModuleLoader_referenceCollection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fs := filesystem.NewFilesystem()
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
 
-	ml := newModuleLoader(fs, ss.Modules, ss.ProviderSchemas)
+	ml := newModuleLoader(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
 	ml.logger = testLogger()
 
 	testData, err := filepath.Abs("testdata")

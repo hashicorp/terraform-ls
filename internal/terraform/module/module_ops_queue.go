@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"sync"
 
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 )
 
 type moduleOpsQueue struct {
@@ -12,11 +12,11 @@ type moduleOpsQueue struct {
 	mu *sync.Mutex
 }
 
-func newModuleOpsQueue(fs filesystem.Filesystem) moduleOpsQueue {
+func newModuleOpsQueue(ds DocumentStore) moduleOpsQueue {
 	q := moduleOpsQueue{
 		q: &queue{
 			ops: make([]ModuleOperation, 0),
-			fs:  fs,
+			ds:  ds,
 		},
 		mu: &sync.Mutex{},
 	}
@@ -67,7 +67,7 @@ func (q *moduleOpsQueue) Len() int {
 
 type queue struct {
 	ops []ModuleOperation
-	fs  filesystem.Filesystem
+	ds  DocumentStore
 }
 
 var _ heap.Interface = &queue{}
@@ -100,10 +100,12 @@ func (q *queue) Less(i, j int) bool {
 func (q *queue) moduleOperationLess(aModOp, bModOp ModuleOperation) bool {
 	leftOpen, rightOpen := 0, 0
 
-	if hasOpenFiles, _ := q.fs.HasOpenFiles(aModOp.ModulePath); hasOpenFiles {
+	aModHandle := document.DirHandleFromPath(aModOp.ModulePath)
+	if hasOpenFiles, _ := q.ds.HasOpenDocuments(aModHandle); hasOpenFiles {
 		leftOpen = 1
 	}
-	if hasOpenFiles, _ := q.fs.HasOpenFiles(bModOp.ModulePath); hasOpenFiles {
+	bModHandle := document.DirHandleFromPath(bModOp.ModulePath)
+	if hasOpenFiles, _ := q.ds.HasOpenDocuments(bModHandle); hasOpenFiles {
 		rightOpen = 1
 	}
 

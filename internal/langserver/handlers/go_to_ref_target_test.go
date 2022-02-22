@@ -9,8 +9,8 @@ import (
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -21,7 +21,7 @@ func TestDefinition_basic(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -54,7 +54,7 @@ func TestDefinition_basic(t *testing.T) {
 			"capabilities": {},
 			"rootUri": %q,
 			"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -74,7 +74,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -85,7 +85,7 @@ output "foo" {
 				"line": 4,
 				"character": 13
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [{
@@ -101,12 +101,12 @@ output "foo" {
 					}
 				}
 			}]
-		}`, tmpDir.URI()))
+		}`, tmpDir.URI))
 }
 
 func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -117,7 +117,7 @@ func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -167,7 +167,7 @@ func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 			},
 			"rootUri": %q,
 			"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -191,7 +191,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -202,7 +202,7 @@ output "foo" {
 				"line": 8,
 				"character": 35
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -240,12 +240,12 @@ output "foo" {
 					}
 				}
 			]
-		}`, tmpDir.URI()))
+		}`, tmpDir.URI))
 }
 
 func TestDefinition_withLinkToDefBlock(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -256,7 +256,7 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -306,7 +306,7 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 			},
 			"rootUri": %q,
 			"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -330,7 +330,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -341,7 +341,7 @@ output "foo" {
 				"line": 8,
 				"character": 30
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -379,7 +379,7 @@ output "foo" {
 					}
 				}
 			]
-		}`, tmpDir.URI()))
+		}`, tmpDir.URI))
 }
 
 func TestDefinition_moduleInputToVariable(t *testing.T) {
@@ -387,7 +387,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	modUri := lsp.FileHandlerFromDirPath(modPath)
+	modHandle := document.DirHandleFromPath(modPath)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -405,7 +405,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 			"capabilities": {},
 			"rootUri": %q,
 			"processId": 12345
-	}`, modUri.URI())})
+	}`, modHandle.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -426,7 +426,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 `)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, modUri.URI())})
+	}`, modHandle.URI)})
 	// TODO remove once we support synchronous dependent tasks
 	// See https://github.com/hashicorp/terraform-ls/issues/719
 	time.Sleep(2 * time.Second)
@@ -440,7 +440,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 				"line": 2,
 				"character": 6
 			}
-		}`, modUri.URI())}, fmt.Sprintf(`{
+		}`, modHandle.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -458,7 +458,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 						}
 				}
 			]
-		}`, modUri.URI()))
+		}`, modHandle.URI))
 }
 
 func TestDeclaration_basic(t *testing.T) {
@@ -467,7 +467,7 @@ func TestDeclaration_basic(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -500,7 +500,7 @@ func TestDeclaration_basic(t *testing.T) {
 			"capabilities": {},
 			"rootUri": %q,
 			"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -520,7 +520,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/declaration",
 		ReqParams: fmt.Sprintf(`{
@@ -531,7 +531,7 @@ output "foo" {
 				"line": 4,
 				"character": 13
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [{
@@ -547,12 +547,12 @@ output "foo" {
 					}
 				}
 			}]
-		}`, tmpDir.URI()))
+		}`, tmpDir.URI))
 }
 
 func TestDeclaration_withLinkSupport(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -563,7 +563,7 @@ func TestDeclaration_withLinkSupport(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -613,7 +613,7 @@ func TestDeclaration_withLinkSupport(t *testing.T) {
 			},
 			"rootUri": %q,
 			"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -637,7 +637,7 @@ output "foo" {
 }`)+`,
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/declaration",
 		ReqParams: fmt.Sprintf(`{
@@ -648,7 +648,7 @@ output "foo" {
 				"line": 8,
 				"character": 35
 			}
-		}`, tmpDir.URI())}, fmt.Sprintf(`{
+		}`, tmpDir.URI)}, fmt.Sprintf(`{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": [
@@ -686,5 +686,5 @@ output "foo" {
 					}
 				}
 			]
-		}`, tmpDir.URI()))
+		}`, tmpDir.URI))
 }

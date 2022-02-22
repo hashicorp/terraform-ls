@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,20 +28,24 @@ func TestLangServer_didOpenWithoutInitialization(t *testing.T) {
 			"text": "provider \"github\" {}",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
+	}`, TempDir(t).URI)}, session.SessionNotInitialized.Err())
 }
 
 func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
 	tmpDir := TempDir(t)
-	fs := filesystem.NewFilesystem()
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): validTfMockCalls(),
+				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
-		Filesystem: fs,
+		StateStore: ss,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -52,7 +56,7 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -71,21 +75,21 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
         "uri": "%s/main.tf",
         "text": %q
     }
-}`, TempDir(t).URI(), originalText)})
-	path := filepath.Join(TempDir(t).Dir(), "main.tf")
-	doc, err := fs.GetDocument(lsp.FileHandlerFromPath(path))
+}`, TempDir(t).URI, originalText)})
+	path := filepath.Join(TempDir(t).Path(), "main.tf")
+	dh := document.HandleFromPath(path)
+	doc, err := ss.DocumentStore.GetDocument(dh)
 	if err != nil {
 		t.Fatal(err)
 	}
-	languageID := doc.LanguageID()
-	if diff := cmp.Diff(languageID, string("terraform")); diff != "" {
+	if diff := cmp.Diff(doc.LanguageID, string("terraform")); diff != "" {
 		t.Fatalf("unexpected languageID: %s", diff)
 	}
 	fullPath := doc.FullPath()
 	if diff := cmp.Diff(fullPath, string(path)); diff != "" {
 		t.Fatalf("unexpected fullPath: %s", diff)
 	}
-	version := doc.Version()
+	version := doc.Version
 	if diff := cmp.Diff(version, int(0)); diff != "" {
 		t.Fatalf("unexpected version: %s", diff)
 	}

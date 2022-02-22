@@ -37,12 +37,12 @@ func TestModuleCompletion_withoutInitialization(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, TempDir(t).URI())}, session.SessionNotInitialized.Err())
+		}`, TempDir(t).URI)}, session.SessionNotInitialized.Err())
 }
 
 func TestModuleCompletion_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -53,7 +53,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -96,7 +96,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -110,7 +110,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -122,7 +122,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -240,7 +240,7 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 
 func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -251,7 +251,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -302,7 +302,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -316,7 +316,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -328,7 +328,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 				"character": 0,
 				"line": 1
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -537,7 +537,7 @@ var testModuleSchemaOutput = `{
 
 func TestVarsCompletion_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
-	InitPluginCache(t, tmpDir.Dir())
+	InitPluginCache(t, tmpDir.Path())
 
 	var testSchema tfjson.ProviderSchemas
 	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -548,7 +548,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -591,7 +591,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -605,7 +605,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 			"text": "variable \"test\" {\n type=string\n}\n",
 			"uri": "%s/variables.tf"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didOpen",
 		ReqParams: fmt.Sprintf(`{
@@ -614,7 +614,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 			"languageId": "terraform-vars",
 			"uri": "%s/terraform.tfvars"
 		}
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -626,7 +626,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 				"character": 0,
 				"line": 0
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 4,
 			"result": {
@@ -651,7 +651,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 func TestCompletion_moduleWithValidData(t *testing.T) {
 	tmpDir := TempDir(t)
 
-	writeContentToFile(t, filepath.Join(tmpDir.Dir(), "submodule", "main.tf"), `variable "testvar" {
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "submodule", "main.tf"), `variable "testvar" {
 	type = string
 }
 
@@ -668,7 +668,7 @@ output "test" {
 
 }
 `
-	writeContentToFile(t, filepath.Join(tmpDir.Dir(), "main.tf"), mainCfg)
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
 	mainCfg = `module "refname" {
   source = "./submodule"
 
@@ -679,7 +679,7 @@ output "test" {
 }
 `
 
-	tfExec := tfExecutor(t, tmpDir.Dir(), "1.0.2")
+	tfExec := tfExecutor(t, tmpDir.Path(), "1.0.2")
 	err := tfExec.Get(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -694,7 +694,7 @@ output "test" {
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				tmpDir.Dir(): {
+				tmpDir.Path(): {
 					{
 						Method:        "Version",
 						Repeatability: 1,
@@ -737,7 +737,7 @@ output "test" {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, tmpDir.URI())})
+	}`, tmpDir.URI)})
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -751,7 +751,7 @@ output "test" {
 			"text": %q,
 			"uri": "%s/main.tf"
 		}
-	}`, mainCfg, tmpDir.URI())})
+	}`, mainCfg, tmpDir.URI)})
 
 	// TODO remove once we support synchronous dependent tasks
 	// See https://github.com/hashicorp/terraform-ls/issues/719
@@ -767,7 +767,7 @@ output "test" {
 				"character": 0,
 				"line": 2
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -849,7 +849,7 @@ output "test" {
 				"character": 25,
 				"line": 6
 			}
-		}`, tmpDir.URI())}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 4,
 			"result": {
