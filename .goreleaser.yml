@@ -94,6 +94,7 @@ brews:
       owner: hashicorp
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    skip_upload: auto
     url_template: "https://releases.hashicorp.com/terraform-ls/{{ .Version }}/{{ .ArtifactName }}"
     commit_author:
       name: hc-espd-packager
@@ -123,6 +124,9 @@ publishers:
 milestones:
   - name_template: "{{ .Tag }}"
     close: true
+
+release:
+  prerelease: auto
 
 changelog:
   skip: true
