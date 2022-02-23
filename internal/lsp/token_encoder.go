@@ -34,7 +34,7 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	case lang.TokenBlockType:
 		tokenType = TokenTypeType
 	case lang.TokenBlockLabel:
-		tokenType = TokenTypeString
+		tokenType = TokenTypeEnumMember
 	case lang.TokenAttrName:
 		tokenType = TokenTypeProperty
 	case lang.TokenBool:

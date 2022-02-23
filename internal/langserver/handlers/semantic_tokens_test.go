@@ -71,7 +71,8 @@ func TestSemanticTokensFull(t *testing.T) {
 					"tokenTypes": [
 						"type",
 						"property",
-						"string"
+						"string",
+						"enumMember"
 					],
 					"tokenModifiers": [
 						"deprecated",
@@ -113,7 +114,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"result": {
 				"data": [
 					0,0,8,0,0,
-					0,9,6,1,2
+					0,9,6,3,2
 				]
 			}
 		}`)
@@ -178,7 +179,8 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 					"tokenTypes": [
 						"type",
 						"property",
-						"string"
+						"string",
+						"enumMember"
 					],
 					"tokenModifiers": [
 						"deprecated",
@@ -222,7 +224,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"result": {
 				"data": [
 					0,0,8,0,0,
-					0,9,6,1,2
+					0,9,6,3,2
 				]
 			}
 		}`)

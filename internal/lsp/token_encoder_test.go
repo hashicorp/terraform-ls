@@ -68,7 +68,7 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 	data := te.Encode()
 	expectedData := []uint32{
 		0, 0, 7, 0, 0,
-		0, 8, 8, 1, 0,
+		0, 8, 8, 7, 0,
 		1, 2, 8, 2, 0,
 		1, 2, 8, 2, 0,
 		1, 2, 9, 2, 0,
@@ -162,8 +162,8 @@ func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
 	data := te.Encode()
 	expectedData := []uint32{
 		0, 0, 8, 0, 0,
-		0, 9, 21, 1, 2,
-		0, 22, 20, 1, 0,
+		0, 9, 21, 7, 2,
+		0, 22, 20, 7, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -243,7 +243,7 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 	data := te.Encode()
 	expectedData := []uint32{
 		0, 0, 7, 0, 0,
-		0, 8, 8, 1, 1,
+		0, 8, 8, 7, 1,
 		1, 2, 8, 2, 1,
 		1, 2, 8, 2, 2,
 		1, 2, 9, 2, 3,
