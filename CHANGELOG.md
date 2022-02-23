@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - Introduce go-to-variable from `tfvars` files ([#727](https://github.com/hashicorp/terraform-ls/pull/727))
+ - Automatically refresh semantic tokens for more reliable highlighting ([#630](https://github.com/hashicorp/terraform-ls/pull/630))
 
 INTERNAL:
 
