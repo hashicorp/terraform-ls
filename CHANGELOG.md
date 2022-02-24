@@ -6,10 +6,15 @@ ENHANCEMENTS:
  - Automatically refresh semantic tokens for more reliable highlighting ([#630](https://github.com/hashicorp/terraform-ls/pull/630))
  - Enhance semantic highlighting of block labels ([#802](https://github.com/hashicorp/terraform-ls/pull/802))
 
+BUG FIXES:
+
+ - Address race conditions typically surfaced as "out of range" errors, lack of completion/hover/etc. data or data associated with wrong position within the document ([#782](https://github.com/hashicorp/terraform-ls/pull/782))
+
 INTERNAL:
 
  - Store documents in a memdb-backed table ([#771](https://github.com/hashicorp/terraform-ls/pull/771))
- - build(deps): bump github.com/creachadair/jrpc2 from 0.35.2 to 0.35.4 ([#774](https://github.com/hashicorp/terraform-ls/pull/774))
+ - Refactor job scheduler to use memdb for jobs ([#782](https://github.com/hashicorp/terraform-ls/pull/782))
+ - build(deps): bump github.com/creachadair/jrpc2 from 0.35.2 to 0.36.0 ([#774](https://github.com/hashicorp/terraform-ls/pull/774), [#795](https://github.com/hashicorp/terraform-ls/pull/795))
 
 ## 0.25.2 (11 January 2022)
 
