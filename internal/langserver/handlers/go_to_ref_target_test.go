@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -253,6 +253,11 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -331,6 +336,13 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+
+	jobIds, err := ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("queued jobs: %q", jobIds)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -427,9 +439,6 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, modHandle.URI)})
-	// TODO remove once we support synchronous dependent tasks
-	// See https://github.com/hashicorp/terraform-ls/issues/719
-	time.Sleep(2 * time.Second)
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{

@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
@@ -48,40 +46,16 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
-	modMgr, err := lsctx.ModuleManager(ctx)
+	// check existence
+	_, err = svc.modStore.ModuleByPath(dh.Dir.Path())
 	if err != nil {
 		return err
 	}
 
-	mod, err := modMgr.ModuleByPath(dh.Dir.Path())
+	jobIds, err := svc.parseAndDecodeModule(dh.Dir)
 	if err != nil {
 		return err
 	}
 
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseModuleConfiguration, nil)
-	if err != nil {
-		return err
-	}
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeParseVariables, nil)
-	if err != nil {
-		return err
-	}
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeLoadModuleMetadata, nil)
-	if err != nil {
-		return err
-	}
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceTargets, nil)
-	if err != nil {
-		return err
-	}
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeReferenceOrigins, nil)
-	if err != nil {
-		return err
-	}
-	err = modMgr.EnqueueModuleOp(mod.Path, op.OpTypeDecodeVarsReferences, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
 }

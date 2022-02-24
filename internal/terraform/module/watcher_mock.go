@@ -1,18 +1,23 @@
 package module
 
 import (
+	"context"
 	"log"
+
+	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 )
 
 func MockWatcher() WatcherFactory {
-	return func(ModuleManager) (Watcher, error) {
+	return func(fs ReadOnlyFS, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) (Watcher, error) {
 		return &mockWatcher{}, nil
 	}
 }
 
 type mockWatcher struct{}
 
-func (w *mockWatcher) Start() error {
+func (w *mockWatcher) Start(context.Context) error {
 	return nil
 }
 func (w *mockWatcher) Stop() error {

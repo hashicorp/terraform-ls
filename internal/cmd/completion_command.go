@@ -18,7 +18,6 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/mitchellh/cli"
 )
 
@@ -113,9 +112,7 @@ func (c *CompletionCommand) Run(args []string) int {
 
 	ctx := context.Background()
 
-	modMgr := module.NewSyncModuleManager(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
-
-	_, err = modMgr.AddModule(dh.Dir.Path())
+	err = ss.Modules.Add(dh.Dir.Path())
 	if err != nil {
 		c.Ui.Error(err.Error())
 		return 1

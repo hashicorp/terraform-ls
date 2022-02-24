@@ -17,7 +17,7 @@ import (
 )
 
 func initializeResponse(t *testing.T, commandPrefix string) string {
-	jsonArray, err := json.Marshal(handlers.Names(commandPrefix))
+	jsonArray, err := json.Marshal(cmdHandlers(&service{}).Names(commandPrefix))
 	if err != nil {
 		t.Fatal(err)
 	}

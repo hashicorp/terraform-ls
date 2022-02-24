@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
 )
@@ -132,7 +132,13 @@ func TestReferences_variableToModuleInput(t *testing.T) {
 	rootHandle := document.DirHandleFromPath(rootModPath)
 	subHandle := document.DirHandleFromPath(submodPath)
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore: ss,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				submodPath: validTfMockCalls(),
@@ -179,9 +185,6 @@ variable "instances" {
 			"uri": "%s/main.tf"
 		}
 	}`, subHandle.URI)})
-	// TODO remove once we support synchronous dependent tasks
-	// See https://github.com/hashicorp/terraform-ls/issues/719
-	time.Sleep(2 * time.Second)
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/references",
 		ReqParams: fmt.Sprintf(`{

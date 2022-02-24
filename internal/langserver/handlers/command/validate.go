@@ -11,11 +11,12 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	dirUri, ok := args.GetString("uri")
 	if !ok || dirUri == "" {
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
@@ -27,15 +28,14 @@ func TerraformValidateHandler(ctx context.Context, args cmd.CommandArgs) (interf
 
 	dirHandle := document.DirHandleFromURI(dirUri)
 
-	modMgr, err := lsctx.ModuleManager(ctx)
+	mod, err := h.StateStore.Modules.ModuleByPath(dirHandle.Path())
 	if err != nil {
-		return nil, err
-	}
-
-	mod, err := modMgr.ModuleByPath(dirHandle.Path())
-	if err != nil {
-		if module.IsModuleNotFound(err) {
-			mod, err = modMgr.AddModule(dirHandle.Path())
+		if state.IsModuleNotFound(err) {
+			err = h.StateStore.Modules.Add(dirHandle.Path())
+			if err != nil {
+				return nil, err
+			}
+			mod, err = h.StateStore.Modules.ModuleByPath(dirHandle.Path())
 			if err != nil {
 				return nil, err
 			}

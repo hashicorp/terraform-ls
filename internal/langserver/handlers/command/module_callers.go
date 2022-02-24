@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/creachadair/jrpc2/code"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
@@ -22,7 +21,7 @@ type moduleCaller struct {
 	URI string `json:"uri"`
 }
 
-func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
 		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
@@ -37,12 +36,7 @@ func ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{
 		return nil, err
 	}
 
-	mf, err := lsctx.ModuleFinder(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	modCallers, err := mf.CallersOfModule(modPath)
+	modCallers, err := h.StateStore.Modules.CallersOfModule(modPath)
 	if err != nil {
 		return nil, err
 	}

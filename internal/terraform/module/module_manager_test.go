@@ -7,193 +7,126 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/go-version"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
-	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		// The underlying API is now deprecated anyway
-		// so it's not worth adapting tests for all platforms.
-		// We just skip tests on Apple Silicon.
-		t.Skip("deprecated API")
-	}
+func TestWalker_complexModules(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	testCases := []struct {
-		name               string
-		walkerRoot         string
-		totalModuleCount   int
-		lookupPath         string
-		expectedCandidates []string
+		root             string
+		totalModuleCount int
+
+		expectedModules     []string
+		expectedSchemaPaths []string
 	}{
 		{
-			"dir-based lookup (exact match)",
 			filepath.Join(testData, "single-root-ext-modules-only"),
 			1,
-			filepath.Join(testData, "single-root-ext-modules-only"),
+			[]string{
+				filepath.Join(testData, "single-root-ext-modules-only"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "vpc"),
+			},
 			[]string{
 				filepath.Join(testData, "single-root-ext-modules-only"),
 			},
 		},
 
 		{
-			"dir-based lookup (exact match)",
 			filepath.Join(testData, "single-root-local-and-ext-modules"),
 			1,
-			filepath.Join(testData, "single-root-local-and-ext-modules"),
+			[]string{
+				filepath.Join(testData, "single-root-local-and-ext-modules"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", "alpha"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", "beta"),
+			},
 			[]string{
 				filepath.Join(testData, "single-root-local-and-ext-modules"),
 			},
-		},
-		{
-			"mod-ref-based lookup",
-			filepath.Join(testData, "single-root-local-and-ext-modules"),
-			1,
-			filepath.Join(testData, "single-root-local-and-ext-modules/alpha"),
-			[]string{
-				filepath.Join(testData, "single-root-local-and-ext-modules"),
-			},
-		},
-		{
-			"mod-ref-based lookup",
-			filepath.Join(testData, "single-root-local-and-ext-modules"),
-			1,
-			filepath.Join(testData, "single-root-local-and-ext-modules/beta"),
-			[]string{
-				filepath.Join(testData, "single-root-local-and-ext-modules"),
-			},
-		},
-		{
-			"mod-ref-based lookup (not referenced)",
-			filepath.Join(testData, "single-root-local-and-ext-modules"),
-			1,
-			filepath.Join(testData, "single-root-local-and-ext-modules/charlie"),
-			[]string{},
 		},
 
 		{
-			"dir-based lookup (exact match)",
 			filepath.Join(testData, "single-root-local-modules-only"),
 			1,
-			filepath.Join(testData, "single-root-local-modules-only"),
+			[]string{
+				filepath.Join(testData, "single-root-local-modules-only"),
+				filepath.Join(testData, "single-root-local-modules-only", "alpha"),
+				filepath.Join(testData, "single-root-local-modules-only", "beta"),
+			},
 			[]string{
 				filepath.Join(testData, "single-root-local-modules-only"),
 			},
-		},
-		{
-			"mod-ref-based lookup",
-			filepath.Join(testData, "single-root-local-modules-only"),
-			1,
-			filepath.Join(testData, "single-root-local-modules-only/alpha"),
-			[]string{
-				filepath.Join(testData, "single-root-local-modules-only"),
-			},
-		},
-		{
-			"mod-ref-based lookup",
-			filepath.Join(testData, "single-root-local-modules-only"),
-			1,
-			filepath.Join(testData, "single-root-local-modules-only/beta"),
-			[]string{
-				filepath.Join(testData, "single-root-local-modules-only"),
-			},
-		},
-		{
-			"mod-ref-based lookup (not referenced)",
-			filepath.Join(testData, "single-root-local-modules-only"),
-			1,
-			filepath.Join(testData, "single-root-local-modules-only/charlie"),
-			[]string{},
 		},
 
 		{
-			"dir-based lookup (exact match)",
 			filepath.Join(testData, "single-root-no-modules"),
 			1,
-			filepath.Join(testData, "single-root-no-modules"),
+			[]string{
+				filepath.Join(testData, "single-root-no-modules"),
+			},
 			[]string{
 				filepath.Join(testData, "single-root-no-modules"),
 			},
 		},
 
 		{
-			"directory-based lookup",
-			filepath.Join(testData, "nested-single-root-no-modules"),
-			1,
-			filepath.Join(testData, "nested-single-root-no-modules", "tf-root"),
-			[]string{
-				filepath.Join(testData, "nested-single-root-no-modules", "tf-root"),
-			},
-		},
-
-		{
-			"directory-based lookup",
 			filepath.Join(testData, "nested-single-root-ext-modules-only"),
 			1,
-			filepath.Join(testData, "nested-single-root-ext-modules-only", "tf-root"),
+			[]string{
+				filepath.Join(testData, "nested-single-root-ext-modules-only", "tf-root"),
+			},
 			[]string{
 				filepath.Join(testData, "nested-single-root-ext-modules-only", "tf-root"),
 			},
 		},
 
 		{
-			"directory-based lookup",
 			filepath.Join(testData, "nested-single-root-local-modules-down"),
 			1,
-			filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root"),
 			[]string{
 				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root"),
+				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "alpha"),
+				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "charlie"),
 			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "nested-single-root-local-modules-down"),
-			1,
-			filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "alpha"),
-			[]string{
-				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root"),
-			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "nested-single-root-local-modules-down"),
-			1,
-			filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "beta"),
-			[]string{},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "nested-single-root-local-modules-down"),
-			1,
-			filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "charlie"),
 			[]string{
 				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root"),
 			},
 		},
 
 		{
-			"dir-based lookup",
 			filepath.Join(testData, "nested-single-root-local-modules-up"),
 			1,
-			filepath.Join(testData, "nested-single-root-local-modules-up", "module", "tf-root"),
 			[]string{
+				filepath.Join(testData, "nested-single-root-local-modules-up", "module"),
 				filepath.Join(testData, "nested-single-root-local-modules-up", "module", "tf-root"),
 			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "nested-single-root-local-modules-up"),
-			1,
-			filepath.Join(testData, "nested-single-root-local-modules-up", "module"),
 			[]string{
 				filepath.Join(testData, "nested-single-root-local-modules-up", "module", "tf-root"),
 			},
@@ -202,28 +135,16 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 		// Multi-root
 
 		{
-			"directory-env-based lookup",
 			filepath.Join(testData, "main-module-multienv"),
 			3,
-			filepath.Join(testData, "main-module-multienv", "env", "dev"),
 			[]string{
 				filepath.Join(testData, "main-module-multienv", "env", "dev"),
-			},
-		},
-		{
-			"directory-env-based lookup",
-			filepath.Join(testData, "main-module-multienv"),
-			3,
-			filepath.Join(testData, "main-module-multienv", "env", "prod"),
-			[]string{
 				filepath.Join(testData, "main-module-multienv", "env", "prod"),
+				filepath.Join(testData, "main-module-multienv", "env", "staging"),
+				filepath.Join(testData, "main-module-multienv", "main"),
+				filepath.Join(testData, "main-module-multienv", "modules", "application"),
+				filepath.Join(testData, "main-module-multienv", "modules", "database"),
 			},
-		},
-		{
-			"main module lookup",
-			filepath.Join(testData, "main-module-multienv"),
-			3,
-			filepath.Join(testData, "main-module-multienv", "main"),
 			[]string{
 				filepath.Join(testData, "main-module-multienv", "env", "dev"),
 				filepath.Join(testData, "main-module-multienv", "env", "prod"),
@@ -232,98 +153,50 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 		},
 
 		{
-			"dir-based lookup",
 			filepath.Join(testData, "multi-root-no-modules"),
 			3,
-			filepath.Join(testData, "multi-root-no-modules", "first-root"),
 			[]string{
 				filepath.Join(testData, "multi-root-no-modules", "first-root"),
-			},
-		},
-		{
-			"dir-based lookup",
-			filepath.Join(testData, "multi-root-no-modules"),
-			3,
-			filepath.Join(testData, "multi-root-no-modules", "second-root"),
-			[]string{
 				filepath.Join(testData, "multi-root-no-modules", "second-root"),
+				filepath.Join(testData, "multi-root-no-modules", "third-root"),
+			},
+			[]string{
+				filepath.Join(testData, "multi-root-no-modules", "first-root"),
+				filepath.Join(testData, "multi-root-no-modules", "second-root"),
+				filepath.Join(testData, "multi-root-no-modules", "third-root"),
 			},
 		},
 
 		{
-			"dir-based lookup",
 			filepath.Join(testData, "multi-root-local-modules-down"),
 			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "first-root"),
 			[]string{
 				filepath.Join(testData, "multi-root-local-modules-down", "first-root"),
+				filepath.Join(testData, "multi-root-local-modules-down", "first-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "first-root", "charlie"),
+				filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
+				filepath.Join(testData, "multi-root-local-modules-down", "second-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "second-root", "charlie"),
+				filepath.Join(testData, "multi-root-local-modules-down", "third-root"),
+				filepath.Join(testData, "multi-root-local-modules-down", "third-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "third-root", "charlie"),
 			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "first-root", "alpha"),
 			[]string{
 				filepath.Join(testData, "multi-root-local-modules-down", "first-root"),
-			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "first-root", "beta"),
-			[]string{},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "first-root", "charlie"),
-			[]string{
-				filepath.Join(testData, "multi-root-local-modules-down", "first-root"),
-			},
-		},
-		{
-			"dir-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
-			[]string{
 				filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
-			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "second-root", "alpha"),
-			[]string{
-				filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
-			},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "second-root", "beta"),
-			[]string{},
-		},
-		{
-			"mod-based lookup",
-			filepath.Join(testData, "multi-root-local-modules-down"),
-			3,
-			filepath.Join(testData, "multi-root-local-modules-down", "second-root", "charlie"),
-			[]string{
-				filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
+				filepath.Join(testData, "multi-root-local-modules-down", "third-root"),
 			},
 		},
 
 		{
-			"dir-based lookup",
 			filepath.Join(testData, "multi-root-local-modules-up"),
 			3,
-			filepath.Join(testData, "multi-root-local-modules-up", "main-module"),
+			[]string{
+				filepath.Join(testData, "multi-root-local-modules-up", "main-module"),
+				filepath.Join(testData, "multi-root-local-modules-up", "main-module", "modules", "first"),
+				filepath.Join(testData, "multi-root-local-modules-up", "main-module", "modules", "second"),
+				filepath.Join(testData, "multi-root-local-modules-up", "main-module", "modules", "third"),
+			},
 			[]string{
 				filepath.Join(testData, "multi-root-local-modules-up", "main-module", "modules", "first"),
 				filepath.Join(testData, "multi-root-local-modules-up", "main-module", "modules", "second"),
@@ -332,55 +205,124 @@ func TestModuleManager_ModuleCandidatesByPath(t *testing.T) {
 		},
 	}
 
-	for i, tc := range testCases {
-		base := filepath.Base(tc.walkerRoot)
-		t.Run(fmt.Sprintf("%d-%s/%s", i, tc.name, base), func(t *testing.T) {
-			ctx := context.Background()
+	ctx := context.Background()
 
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("%d-%s", i, tc.root), func(t *testing.T) {
 			ss, err := state.NewStateStore()
 			if err != nil {
 				t.Fatal(err)
 			}
+			ss.SetLogger(testLogger())
 
 			fs := filesystem.NewFilesystem(ss.DocumentStore)
-			mmock := NewModuleManagerMock(&ModuleManagerMockInput{
-				Logger: testLogger(),
-				TerraformCalls: &exec.TerraformMockCalls{
-					AnyWorkDir: validTfMockCalls(tc.totalModuleCount),
-				},
+			tfCalls := &exec.TerraformMockCalls{
+				AnyWorkDir: validTfMockCalls(tc.totalModuleCount),
+			}
+			ctx = exec.WithExecutorOpts(ctx, &exec.ExecutorOpts{
+				ExecPath: "tf-mock",
 			})
 
-			mm := mmock(ctx, fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas)
-			t.Cleanup(mm.CancelLoading)
+			s := scheduler.NewScheduler(&closedJobStore{ss.JobStore}, 1)
+			ss.SetLogger(testLogger())
+			s.Start(ctx)
 
-			w := SyncWalker(fs, ss.DocumentStore, mm)
+			w := SyncWalker(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))
 			w.SetLogger(testLogger())
-			w.EnqueuePath(tc.walkerRoot)
+			w.EnqueuePath(tc.root)
 			err = w.StartWalking(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			mm.AddModule(tc.lookupPath)
+			s.Stop()
 
-			candidates, err := mm.SchemaSourcesForModule(tc.lookupPath)
+			modules, err := ss.Modules.List()
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(tc.expectedCandidates, schemaSourcesPaths(t, candidates)); diff != "" {
-				t.Fatalf("candidates don't match: %s", diff)
+			if diff := cmp.Diff(tc.expectedModules, modulePaths(modules)); diff != "" {
+				t.Fatalf("modules don't match: %s", diff)
+			}
+
+			it, err := ss.ProviderSchemas.ListSchemas()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(tc.expectedSchemaPaths, localProviderSchemaPaths(t, it)); diff != "" {
+				t.Fatalf("schemas don't match: %s", diff)
 			}
 		})
 	}
 }
 
-func schemaSourcesPaths(t *testing.T, srcs []SchemaSource) []string {
-	paths := make([]string, len(srcs))
-	for i, src := range srcs {
-		paths[i] = src.Path
+func modulePaths(modules []*state.Module) []string {
+	paths := make([]string, len(modules))
+
+	for i, mod := range modules {
+		paths[i] = mod.Path
 	}
 
 	return paths
+}
+
+func localProviderSchemaPaths(t *testing.T, it *state.ProviderSchemaIterator) []string {
+	schemas := make([]string, 0)
+
+	for ps := it.Next(); ps != nil; ps = it.Next() {
+		localSrc, ok := ps.Source.(state.LocalSchemaSource)
+		if !ok {
+			t.Fatalf("expected only local sources, found: %q", ps.Source)
+		}
+
+		schemas = append(schemas, localSrc.ModulePath)
+	}
+
+	return schemas
+}
+
+func validTfMockCalls(repeatability int) []*mock.Call {
+	return []*mock.Call{
+		{
+			Method:        "Version",
+			Repeatability: repeatability,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.valueCtx"),
+			},
+			ReturnArguments: []interface{}{
+				version.Must(version.NewVersion("0.12.0")),
+				nil,
+				nil,
+			},
+		},
+		{
+			Method:        "GetExecPath",
+			Repeatability: repeatability,
+			ReturnArguments: []interface{}{
+				"",
+			},
+		},
+		{
+			Method:        "ProviderSchemas",
+			Repeatability: repeatability,
+			Arguments: []interface{}{
+				mock.AnythingOfType("*context.valueCtx"),
+			},
+			ReturnArguments: []interface{}{
+				testProviderSchema,
+				nil,
+			},
+		},
+	}
+}
+
+var testProviderSchema = &tfjson.ProviderSchemas{
+	FormatVersion: "0.1",
+	Schemas: map[string]*tfjson.ProviderSchema{
+		"test": {
+			ConfigSchema: &tfjson.Schema{},
+		},
+	},
 }
 
 func testLogger() *log.Logger {

@@ -10,7 +10,7 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -27,7 +27,7 @@ type moduleInfo struct {
 	Name string `json:"name"`
 }
 
-func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+func (h *CmdHandler) ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	walker, err := lsctx.ModuleWalker(ctx)
 	if err != nil {
 		return nil, err
@@ -40,22 +40,17 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 
 	dh := document.HandleFromURI(docUri)
 
-	modMgr, err := lsctx.ModuleManager(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	doneLoading := !walker.IsWalking()
 
-	var sources []module.SchemaSource
-	sources, err = modMgr.SchemaSourcesForModule(dh.Dir.Path())
+	var sources []SchemaSource
+	sources, err = h.schemaSourcesForModule(dh.Dir.Path())
 	if err != nil {
-		if module.IsModuleNotFound(err) {
-			_, err := modMgr.AddModule(dh.Dir.Path())
+		if state.IsModuleNotFound(err) {
+			err := h.StateStore.Modules.Add(dh.Dir.Path())
 			if err != nil {
 				return nil, err
 			}
-			sources, err = modMgr.SchemaSourcesForModule(dh.Dir.Path())
+			sources, err = h.schemaSourcesForModule(dh.Dir.Path())
 			if err != nil {
 				return nil, err
 			}
@@ -80,6 +75,65 @@ func ModulesHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, err
 		DoneLoading:     doneLoading,
 		Modules:         modules,
 	}, nil
+}
+
+// schemaSourcesForModule is DEPRECATED and should NOT be used anymore
+// it is just maintained for backwards compatibility in the "rootmodules"
+// custom LSP command which itself will be DEPRECATED as external parties
+// should not need to know where does a matched schema come from in practice
+func (h *CmdHandler) schemaSourcesForModule(modPath string) ([]SchemaSource, error) {
+	ok, err := h.moduleHasAnyLocallySourcedSchema(modPath)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		return []SchemaSource{
+			{Path: modPath},
+		}, nil
+	}
+
+	callers, err := h.StateStore.Modules.CallersOfModule(modPath)
+	if err != nil {
+		return nil, err
+	}
+
+	sources := make([]SchemaSource, 0)
+	for _, modCaller := range callers {
+		ok, err := h.moduleHasAnyLocallySourcedSchema(modCaller.Path)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			sources = append(sources, SchemaSource{
+				Path: modCaller.Path,
+			})
+		}
+
+	}
+
+	return sources, nil
+}
+
+func (h *CmdHandler) moduleHasAnyLocallySourcedSchema(modPath string) (bool, error) {
+	si, err := h.StateStore.ProviderSchemas.ListSchemas()
+	if err != nil {
+		return false, err
+	}
+
+	for ps := si.Next(); ps != nil; ps = si.Next() {
+		if lss, ok := ps.Source.(state.LocalSchemaSource); ok {
+			if lss.ModulePath == modPath {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}
+
+type SchemaSource struct {
+	Path              string
+	HumanReadablePath string
 }
 
 func humanReadablePath(rootDir, modPath string) string {

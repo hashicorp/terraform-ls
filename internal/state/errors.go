@@ -31,3 +31,11 @@ func (e *ModuleNotFoundError) Error() string {
 
 	return msg
 }
+
+func IsModuleNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*ModuleNotFoundError)
+	return ok
+}
