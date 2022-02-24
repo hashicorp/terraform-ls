@@ -270,6 +270,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
+			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 
 			return handle(ctx, req, svc.TextDocumentDidSave)
 		},
