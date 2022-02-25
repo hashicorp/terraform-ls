@@ -41,18 +41,18 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 
 	fs.IntVar(&c.port, "port", 0, "port number to listen on (turns server into TCP mode)")
 	fs.StringVar(&c.logFilePath, "log-file", "", "path to a file to log into with support "+
-		"for variables (e.g. Timestamp, Pid, Ppid) via Go template syntax {{.VarName}}")
+		"for variables (e.g. timestamp, pid, ppid) via Go template syntax {{varName}}")
 	fs.StringVar(&c.tfExecPath, "tf-exec", "", "(DEPRECATED) path to Terraform binary. Use terraformExecPath LSP config option instead.")
 	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "(DEPRECATED) Overrides Terraform execution timeout (e.g. 30s)")
 	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "(DEPRECATED) path to a file for Terraform executions"+
-		" to be logged into with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
-		" syntax {{.VarName}}")
+		" to be logged into with support for variables (e.g. timestamp, pid, ppid) via Go template"+
+		" syntax {{varName}}")
 	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)"+
-		" with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
-		" syntax {{.VarName}}")
+		" with support for variables (e.g. timestamp, pid, ppid) via Go template"+
+		" syntax {{varName}}")
 	fs.StringVar(&c.memProfile, "memprofile", "", "file into which to write memory profile (if not empty)"+
-		" with support for variables (e.g. Timestamp, Pid, Ppid) via Go template"+
-		" syntax {{.VarName}}")
+		" with support for variables (e.g. timestamp, pid, ppid) via Go template"+
+		" syntax {{varName}}")
 	fs.IntVar(&c.reqConcurrency, "req-concurrency", 0, fmt.Sprintf("number of RPC requests to process concurrently,"+
 		" defaults to %d, concurrency lower than 2 is not recommended", langserver.DefaultConcurrency()))
 
