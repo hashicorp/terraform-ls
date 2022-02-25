@@ -421,7 +421,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
 		updateDiagnostics(svc.sessCtx, svc.diagsNotifier),
 		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
-		refreshSemanticTokens(ctx, svc.srvCtx, svc.logger),
 	}
 
 	svc.closedDirIndexer = scheduler.NewScheduler(&closedDirJobStore{svc.stateStore.JobStore}, 1)
@@ -439,6 +438,11 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		if _, ok = lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
 			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
 				refreshCodeLens(svc.sessCtx, svc.server))
+		}
+
+		if cc.Workspace.SemanticTokens.RefreshSupport {
+			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
+				refreshSemanticTokens(ctx, svc.srvCtx, svc.logger))
 		}
 	}
 
