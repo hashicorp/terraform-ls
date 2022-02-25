@@ -14,6 +14,7 @@ BUG FIXES:
 
 INTERNAL:
 
+ - Simplify module source detection in favour of faster CI/compilation times ([#783](https://github.com/hashicorp/terraform-ls/pull/783))
  - Store documents in a memdb-backed table ([#771](https://github.com/hashicorp/terraform-ls/pull/771))
  - Refactor job scheduler to use memdb for jobs ([#782](https://github.com/hashicorp/terraform-ls/pull/782))
  - build(deps): bump github.com/creachadair/jrpc2 from 0.35.2 to 0.36.0 ([#774](https://github.com/hashicorp/terraform-ls/pull/774), [#795](https://github.com/hashicorp/terraform-ls/pull/795))
