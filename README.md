@@ -1,6 +1,6 @@
 # Terraform Language Server
 
-`terraform-ls` is the official [Terraform](https://www.terraform.io) language server maintained by [HashiCorp](https://www.hashicorp.com). It provides IDE features to any [LSP](https://microsoft.github.io/language-server-protocol/)-compatible editor.
+The official [Terraform](https://www.terraform.io) language server (`terraform-ls`) maintained by [HashiCorp](https://www.hashicorp.com) provides IDE features to any [LSP](https://microsoft.github.io/language-server-protocol/)-compatible editor.
 
 ## Current Status
 
@@ -22,7 +22,7 @@ We ask that you [report any bugs](https://github.com/hashicorp/terraform-ls/issu
 
 Some editors have built-in logic to install and update the language server automatically, so you may not need to worry about installation or updating of the server.
 
-Read the [installation page](./docs/installation.md) for more.
+Read the [installation page](./docs/installation.md) for installation instructions.
 
 ## Usage
 

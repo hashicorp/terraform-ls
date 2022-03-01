@@ -1,14 +1,15 @@
 # Installation
 
-## Editor-handled Installation
+## Automatic Installation
 
 Some editors have built-in logic to install and update the language server automatically, so you typically shouldn't need to worry about installation or updating of the server in these editors, as long as you use the linked extension.
 
- - [Terraform VSCode extension](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform)
-   - [Terraform VSCode Preview extension](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform-preview)
+ - Terraform VS Code extension [stable](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform) / [preview](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform-preview)
  - [Sublime Text LSP-terraform](https://packagecontrol.io/packages/LSP-terraform)
 
-## Self-serve Installation
+## Manual Installation
+
+You can install the language server manually using one of the many package managers available or download an archive from the release page. After installation, follow the [install instructions for your IDE](./docs/USAGE.md)
 
 ### Homebrew (macOS / Linux)
 
