@@ -882,6 +882,355 @@ output "test" {
 		}`)
 }
 
+func TestCompletion_multipleModulesWithValidData(t *testing.T) {
+	tmpDir := TempDir(t)
+
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "submodule-alpha", "main.tf"), `
+variable "alpha-var" {
+	type = string
+}
+
+output "alpha-out" {
+	value = 1
+}
+`)
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "submodule-beta", "main.tf"), `
+variable "beta-var" {
+	type = number
+}
+
+output "beta-out" {
+	value = 2
+}
+`)
+	mainCfg := `module "alpha" {
+  source = "./submodule-alpha"
+
+}
+module "beta" {
+  source = "./submodule-beta"
+
+}
+
+output "test" {
+
+}
+`
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
+	mainCfg = `module "alpha" {
+  source = "./submodule-alpha"
+
+}
+module "beta" {
+  source = "./submodule-beta"
+
+}
+
+output "test" {
+  value = module.
+}
+`
+
+	tfExec := tfExecutor(t, tmpDir.Path(), "1.0.2")
+	err := tfExec.Get(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": %q,
+			"uri": "%s/main.tf"
+		}
+	}`, mainCfg, tmpDir.URI)})
+
+	// first module
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 0,
+				"line": 2
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"isIncomplete": false,
+				"items": [
+					{
+						"label": "alpha-var",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "required, string",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 2,
+									"character": 0
+								},
+								"end": {
+									"line": 2,
+									"character": 0
+								}
+							},
+							"newText": "alpha-var"
+						}
+					},
+					{
+						"label": "providers",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, map of provider references",
+						"documentation": "Explicit mapping of providers which the module uses",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 2,
+									"character": 0
+								},
+								"end": {
+									"line": 2,
+									"character": 0
+								}
+							},
+							"newText": "providers"
+						}
+					},
+					{
+						"label": "version",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, string",
+						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 2,
+									"character": 0
+								},
+								"end": {
+									"line": 2,
+									"character": 0
+								}
+							},
+							"newText": "version"
+						}
+					}
+				]
+			}
+		}`)
+	// second module
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 0,
+				"line": 6
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 4,
+			"result": {
+				"isIncomplete": false,
+				"items": [
+					{
+						"label": "beta-var",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "required, number",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 6,
+									"character": 0
+								},
+								"end": {
+									"line": 6,
+									"character": 0
+								}
+							},
+							"newText": "beta-var"
+						}
+					},
+					{
+						"label": "providers",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, map of provider references",
+						"documentation": "Explicit mapping of providers which the module uses",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 6,
+									"character": 0
+								},
+								"end": {
+									"line": 6,
+									"character": 0
+								}
+							},
+							"newText": "providers"
+						}
+					},
+					{
+						"label": "version",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, string",
+						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 6,
+									"character": 0
+								},
+								"end": {
+									"line": 6,
+									"character": 0
+								}
+							},
+							"newText": "version"
+						}
+					}
+				]
+			}
+		}`)
+	// outputs
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 17,
+				"line": 10
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 5,
+			"result": {
+				"isIncomplete": false,
+				"items": [
+					{
+						"label": "module.alpha",
+						"labelDetails": {},
+						"kind": 6,
+						"detail": "object",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 10,
+									"character": 10
+								},
+								"end": {
+									"line": 10,
+									"character": 17
+								}
+							},
+							"newText": "module.alpha"
+						}
+					},
+					{
+						"label": "module.beta",
+						"labelDetails": {},
+						"kind": 6,
+						"detail": "object",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 10,
+									"character": 10
+								},
+								"end": {
+									"line": 10,
+									"character": 17
+								}
+							},
+							"newText": "module.beta"
+						}
+					}
+				]
+			}
+		}`)
+}
+
 func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor {
 	ctx := context.Background()
 	installDir := filepath.Join(t.TempDir(), "hcinstall")
