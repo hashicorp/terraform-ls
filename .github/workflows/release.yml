@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   issues: write
+  packages: read
 
 env:
   GOPROXY: https://proxy.golang.org/
