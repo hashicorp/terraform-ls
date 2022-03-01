@@ -7,8 +7,8 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  packages: read
+  issues: write # for closing milestone via goreleaser
+  packages: read # for downloading signore docker image
 
 env:
   GOPROXY: https://proxy.golang.org/
