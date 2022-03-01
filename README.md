@@ -1,10 +1,6 @@
 # Terraform Language Server
 
-Experimental version of [Terraform](https://www.terraform.io) language server.
-
-## What is LSP
-
-Read more about the Language Server Protocol at https://microsoft.github.io/language-server-protocol/
+The official [Terraform](https://www.terraform.io) language server (`terraform-ls`) maintained by [HashiCorp](https://www.hashicorp.com) provides IDE features to any [LSP](https://microsoft.github.io/language-server-protocol/)-compatible editor.
 
 ## Current Status
 
@@ -16,71 +12,17 @@ We encourage you to [browse existing issues](https://github.com/hashicorp/terraf
 and/or [open new issue](https://github.com/hashicorp/terraform-ls/issues/new/choose)
 if you experience a bug or have an idea for a feature.
 
+## Stability
+
+We aim to communicate our intentions regarding breaking changes via [semver](https://semver.org). Relatedly we may use pre-releases, such as `MAJOR.MINOR.PATCH-beta1` to gather early feedback on certain features and changes.
+
+We ask that you [report any bugs](https://github.com/hashicorp/terraform-ls/issues/new/choose) in any versions but especially in pre-releases, if you decide to use them.
+
 ## Installation
 
-### Homebrew (macOS / Linux)
+Some editors have built-in logic to install and update the language server automatically, so you may not need to worry about installation or updating of the server.
 
-You can install via [Homebrew](https://brew.sh)
-
-```
-brew install hashicorp/tap/terraform-ls
-```
-
-### Ubuntu/Debian (APT)
-
-```sh
-# Add the HashiCorp GPG key
-curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-# Add the official HashiCorp Linux repository
-sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-
-sudo apt-get update && sudo apt-get install terraform-ls
-```
-
-### CentOS/RHEL (YUM)
-
-```sh
-# Install yum-config-manager to manage your repositories
-sudo yum install -y yum-utils
-# Add the official HashiCorp Linux repository
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
-
-sudo yum -y install terraform-ls
-```
-
-### Amazon Linux (YUM)
-
-```sh
-# Install yum-config-manager to manage your repositories
-sudo yum install -y yum-utils
-# Add the official HashiCorp Linux repository
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-
-$ sudo yum -y install terraform-ls
-```
-
-### Fedora (DNF)
-
-```sh
-# Install dnf config-manager to manage your repositories
-sudo dnf install -y dnf-plugins-core
-# Add the official HashiCorp Linux repository.
-sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
-
-sudo dnf -y install terraform-ls
-```
-
-### Other platforms
-
-1. [Download for the latest version](https://releases.hashicorp.com/terraform-ls/)
-  of the language server relevant for your operating system and architecture.
-2. The language server is distributed as a single binary.
-  Install it by unzipping it and moving it to a directory
-  included in your system's `PATH`.
-3. You can verify integrity by comparing the SHA256 checksums
-  which are part of the release (called `terraform-ls_<VERSION>_SHA256SUMS`).
-4. Check that you have installed the server correctly via `terraform-ls -v`.
-  You should see the latest version printed to your terminal.
+Read the [installation page](./docs/installation.md) for installation instructions.
 
 ## Usage
 
