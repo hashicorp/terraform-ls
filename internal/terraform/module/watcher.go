@@ -373,11 +373,13 @@ func decodeCalledModulesFunc(fs ReadOnlyFS, modStore *state.ModuleStore, schemaR
 			modStore.Add(mc.Path)
 
 			mcHandle := document.DirHandleFromPath(mc.Path)
+			// copy path for queued jobs below
+			mcPath := mc.Path
 
 			id, err := jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return ParseModuleConfiguration(fs, modStore, mc.Path)
+					return ParseModuleConfiguration(fs, modStore, mcPath)
 				},
 				Type: op.OpTypeParseModuleConfiguration.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
@@ -385,7 +387,7 @@ func decodeCalledModulesFunc(fs ReadOnlyFS, modStore *state.ModuleStore, schemaR
 						Dir:  mcHandle,
 						Type: op.OpTypeLoadModuleMetadata.String(),
 						Func: func(ctx context.Context) error {
-							return LoadModuleMetadata(modStore, mc.Path)
+							return LoadModuleMetadata(modStore, mcPath)
 						},
 					})
 					if err != nil {
@@ -407,14 +409,14 @@ func decodeCalledModulesFunc(fs ReadOnlyFS, modStore *state.ModuleStore, schemaR
 			id, err = jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return ParseVariables(fs, modStore, mc.Path)
+					return ParseVariables(fs, modStore, mcPath)
 				},
 				Type: op.OpTypeParseVariables.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
 					id, err = jobStore.EnqueueJob(job.Job{
 						Dir: mcHandle,
 						Func: func(ctx context.Context) error {
-							return DecodeVarsReferences(ctx, modStore, schemaReader, mc.Path)
+							return DecodeVarsReferences(ctx, modStore, schemaReader, mcPath)
 						},
 						Type: op.OpTypeDecodeVarsReferences.String(),
 					})
