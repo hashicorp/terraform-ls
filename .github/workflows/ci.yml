@@ -96,7 +96,7 @@ jobs:
         run: go mod verify
       -
         name: Run go fmt
-        run: make fmt
+        run: go run github.com/mh-cbon/go-fmt-fail ./...
       -
         name: Run tests
         run: go test -cover -covermode=atomic -timeout=5m -race ./...
