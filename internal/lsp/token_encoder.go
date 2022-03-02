@@ -69,10 +69,10 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	for _, m := range token.Modifiers {
 		switch m {
 		case lang.TokenModifierDependent:
-			if !te.tokenModifierSupported(TokenModifierModification) {
+			if !te.tokenModifierSupported(TokenModifierDefaultLibrary) {
 				continue
 			}
-			modifiers = append(modifiers, TokenModifierModification)
+			modifiers = append(modifiers, TokenModifierDefaultLibrary)
 		case lang.TokenModifierDeprecated:
 			if !te.tokenModifierSupported(TokenModifierDeprecated) {
 				continue

@@ -76,7 +76,7 @@ func TestSemanticTokensFull(t *testing.T) {
 					],
 					"tokenModifiers": [
 						"deprecated",
-						"modification"
+						"defaultLibrary"
 					],
 					"requests": {
 						"full": true
@@ -184,7 +184,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 					],
 					"tokenModifiers": [
 						"deprecated",
-						"modification"
+						"defaultLibrary"
 					],
 					"requests": {
 						"full": {
@@ -293,7 +293,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 					],
 					"tokenModifiers": [
 						"deprecated",
-						"modification"
+						"defaultLibrary"
 					],
 					"requests": {
 						"full": true
