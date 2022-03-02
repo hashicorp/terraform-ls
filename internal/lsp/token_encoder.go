@@ -12,6 +12,10 @@ type TokenEncoder struct {
 	Lines      source.Lines
 	Tokens     []lang.SemanticToken
 	ClientCaps lsp.SemanticTokensClientCapabilities
+
+	// lastEncodedTokenIdx tracks index of the last encoded token
+	// so we can account for any skipped tokens in calculating diff
+	lastEncodedTokenIdx int
 }
 
 func (te *TokenEncoder) Encode() []uint32 {
@@ -92,10 +96,10 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	previousLine := 0
 	previousStartChar := 0
 	if i > 0 {
-		previousLine = te.Tokens[i-1].Range.End.Line - 1
+		previousLine = te.Tokens[te.lastEncodedTokenIdx].Range.End.Line - 1
 		currentLine := te.Tokens[i].Range.End.Line - 1
 		if currentLine == previousLine {
-			previousStartChar = te.Tokens[i-1].Range.Start.Column - 1
+			previousStartChar = te.Tokens[te.lastEncodedTokenIdx].Range.Start.Column - 1
 		}
 	}
 
@@ -139,6 +143,8 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 			previousLine = tokenLine
 		}
 	}
+
+	te.lastEncodedTokenIdx = i
 
 	return data
 }

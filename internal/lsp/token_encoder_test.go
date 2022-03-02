@@ -80,6 +80,59 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 	}
 }
 
+func TestTokenEncoder_unknownTokenType(t *testing.T) {
+	bytes := []byte(`variable "test" {
+  type = string
+  default = "foo"
+}
+`)
+	te := &TokenEncoder{
+		Lines: source.MakeSourceLines("test.tf", bytes),
+		Tokens: []lang.SemanticToken{
+			{
+				Type:      lang.SemanticTokenType(999),
+				Modifiers: []lang.SemanticTokenModifier{},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
+					End:      hcl.Pos{Line: 1, Column: 9, Byte: 8},
+				},
+			},
+			{
+				Type:      lang.SemanticTokenType(1000),
+				Modifiers: []lang.SemanticTokenModifier{},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 2, Column: 3, Byte: 20},
+					End:      hcl.Pos{Line: 2, Column: 7, Byte: 24},
+				},
+			},
+			{
+				Type:      lang.TokenAttrName,
+				Modifiers: []lang.SemanticTokenModifier{},
+				Range: hcl.Range{
+					Filename: "main.tf",
+					Start:    hcl.Pos{Line: 3, Column: 3, Byte: 36},
+					End:      hcl.Pos{Line: 3, Column: 10, Byte: 43},
+				},
+			},
+		},
+		ClientCaps: protocol.SemanticTokensClientCapabilities{
+			TokenTypes:     serverTokenTypes.AsStrings(),
+			TokenModifiers: serverTokenModifiers.AsStrings(),
+		},
+	}
+	data := te.Encode()
+	expectedData := []uint32{
+		2, 2, 7, 2, 0,
+	}
+
+	if diff := cmp.Diff(expectedData, data); diff != "" {
+		t.Fatalf("unexpected encoded data.\nexpected: %#v\ngiven:    %#v",
+			expectedData, data)
+	}
+}
+
 func TestTokenEncoder_multiLineTokens(t *testing.T) {
 	bytes := []byte(`myblock "mytype" {
   str_attr = "something"
