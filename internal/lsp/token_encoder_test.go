@@ -82,6 +82,7 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 
 func TestTokenEncoder_unknownTokenType(t *testing.T) {
 	bytes := []byte(`variable "test" {
+  type = string
   default = "foo"
 }
 `)
@@ -89,7 +90,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 		Lines: source.MakeSourceLines("test.tf", bytes),
 		Tokens: []lang.SemanticToken{
 			{
-				Type:      lang.TokenBlockType,
+				Type:      lang.SemanticTokenType(999),
 				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "main.tf",
@@ -98,12 +99,12 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 				},
 			},
 			{
-				Type:      lang.SemanticTokenType(999),
+				Type:      lang.SemanticTokenType(1000),
 				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "main.tf",
-					Start:    hcl.Pos{Line: 1, Column: 10, Byte: 9},
-					End:      hcl.Pos{Line: 1, Column: 16, Byte: 15},
+					Start:    hcl.Pos{Line: 2, Column: 3, Byte: 20},
+					End:      hcl.Pos{Line: 2, Column: 7, Byte: 24},
 				},
 			},
 			{
@@ -111,8 +112,8 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "main.tf",
-					Start:    hcl.Pos{Line: 2, Column: 3, Byte: 20},
-					End:      hcl.Pos{Line: 2, Column: 10, Byte: 27},
+					Start:    hcl.Pos{Line: 3, Column: 3, Byte: 36},
+					End:      hcl.Pos{Line: 3, Column: 10, Byte: 43},
 				},
 			},
 		},
@@ -123,8 +124,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 8, 0, 0,
-		1, 2, 7, 2, 0,
+		2, 2, 7, 2, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
