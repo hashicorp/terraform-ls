@@ -1,6 +1,10 @@
 package state
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/hashicorp/terraform-ls/internal/job"
+)
 
 type AlreadyExistsError struct {
 	Idx string
@@ -38,4 +42,26 @@ func IsModuleNotFound(err error) bool {
 	}
 	_, ok := err.(*ModuleNotFoundError)
 	return ok
+}
+
+type jobAlreadyRunning struct {
+	ID job.ID
+}
+
+func (e jobAlreadyRunning) Error() string {
+	if e.ID != "" {
+		return fmt.Sprintf("job %q is already running", e.ID)
+	}
+	return "job is already running"
+}
+
+type jobNotFound struct {
+	ID job.ID
+}
+
+func (e jobNotFound) Error() string {
+	if e.ID != "" {
+		return fmt.Sprintf("job %q not found", e.ID)
+	}
+	return "job not found"
 }
