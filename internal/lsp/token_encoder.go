@@ -55,6 +55,10 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 		tokenType = TokenTypeVariable
 	case lang.TokenTraversalStep:
 		tokenType = TokenTypeVariable
+	case lang.TokenTypeCapsule:
+		tokenType = TokenTypeFunction
+	case lang.TokenTypePrimitive:
+		tokenType = TokenTypeKeyword
 
 	default:
 		return []uint32{}
