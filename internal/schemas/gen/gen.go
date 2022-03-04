@@ -246,6 +246,7 @@ func listProviders(tier string) ([]provider, error) {
 
 var ignore = map[string]bool{
 	"a10networks/vthunder":    true,
+	"harness-io/harness":      true,
 	"HewlettPackard/oneview":  true,
 	"HewlettPackard/hpegl":    true,
 	"jradtilbrook/buildkite":  true,
