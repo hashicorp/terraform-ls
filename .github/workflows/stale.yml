@@ -1,4 +1,9 @@
 name: "Stale issues and pull requests"
+
+permissions:
+  issues: write
+  pull-requests: write
+
 on:
   schedule:
   - cron: "10 3 * * *"
@@ -9,7 +14,6 @@ jobs:
     steps:
     - uses: actions/stale@v3
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
         days-before-stale: '-1'
         days-before-close: '90'
         only-labels: 'waiting-response'
