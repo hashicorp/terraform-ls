@@ -6,7 +6,7 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 permissions:
-  contents: write
+  contents: write # for uploading release artifacts
   issues: write # for closing milestone via goreleaser
   packages: read # for downloading signore docker image
 
