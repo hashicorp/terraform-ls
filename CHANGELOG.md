@@ -6,6 +6,7 @@ ENHANCEMENTS:
  - Automatically refresh semantic tokens for more reliable highlighting ([#630](https://github.com/hashicorp/terraform-ls/pull/630))
  - Enhance semantic highlighting of block labels ([#802](https://github.com/hashicorp/terraform-ls/pull/802))
  - Enable completion, hover, go-to-definition/reference etc. for Terraform Registry modules ([#808](https://github.com/hashicorp/terraform-ls/pull/808))
+ - Report dependent semantic highlighting modifiers as `defaultLibrary` (instead of `modification`) ([#817](https://github.com/hashicorp/terraform-ls/pull/817))
 
 BUG FIXES:
 
