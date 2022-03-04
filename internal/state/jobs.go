@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -207,10 +208,20 @@ func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job
 
 	err = js.markJobAsRunning(sJob)
 	if err != nil {
+		// Although we hold a write db-wide lock when marking job as running
+		// we may still end up passing the same job from the above read-only
+		// transaction, which does *not* hold a db-wide lock.
+		//
+		// Instead of adding more sync primitives here we simply retry.
+		if errors.Is(err, jobAlreadyRunning{ID: sJob.ID}) || errors.Is(err, jobNotFound{ID: sJob.ID}) {
+			js.logger.Printf("retrying next job: %s", err)
+			return js.awaitNextJob(ctx, openDir)
+		}
+
 		return "", job.Job{}, err
 	}
 
-	js.logger.Printf("JOBS: Dispatching next job: %q for %q", sJob.Type, sJob.Dir)
+	js.logger.Printf("JOBS: Dispatching next job %q: %q for %q", sJob.ID, sJob.Type, sJob.Dir)
 	return sJob.ID, sJob.Job, nil
 }
 
@@ -292,6 +303,10 @@ func (js *JobStore) markJobAsRunning(sJob *ScheduledJob) error {
 	sj, err := copyJob(txn, sJob.ID)
 	if err != nil {
 		return err
+	}
+
+	if sj.State == StateRunning {
+		return jobAlreadyRunning{ID: sJob.ID}
 	}
 
 	_, err = txn.DeleteAll(js.tableName, "id", sJob.ID)
@@ -458,5 +473,5 @@ func copyJob(txn *memdb.Txn, id job.ID) (*ScheduledJob, error) {
 		sj := obj.(*ScheduledJob)
 		return sj.Copy(), nil
 	}
-	return nil, fmt.Errorf("%q: job not found", id)
+	return nil, jobNotFound{ID: id}
 }
