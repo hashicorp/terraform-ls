@@ -113,7 +113,7 @@ var (
 	}
 	serverTokenModifiers = TokenModifiers{
 		TokenModifierDeprecated,
-		TokenModifierModification,
+		TokenModifierDefaultLibrary,
 	}
 )
 
