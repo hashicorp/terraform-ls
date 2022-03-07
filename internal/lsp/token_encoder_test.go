@@ -67,11 +67,11 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 7, 0, 0,
-		0, 8, 8, 7, 0,
-		1, 2, 8, 2, 0,
-		1, 2, 8, 2, 0,
-		1, 2, 9, 2, 0,
+		0, 0, 7, 7, 0,
+		0, 8, 8, 0, 0,
+		1, 2, 8, 5, 0,
+		1, 2, 8, 5, 0,
+		1, 2, 9, 5, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -124,7 +124,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		2, 2, 7, 2, 0,
+		2, 2, 7, 5, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -161,9 +161,9 @@ func TestTokenEncoder_multiLineTokens(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		1, 2, 24, 2, 0,
-		1, 0, 15, 2, 0,
-		1, 0, 11, 2, 0,
+		1, 2, 24, 5, 0,
+		1, 0, 15, 5, 0,
+		1, 0, 11, 5, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -214,9 +214,9 @@ func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 8, 0, 0,
-		0, 9, 21, 7, 2,
-		0, 22, 20, 7, 0,
+		0, 0, 8, 7, 0,
+		0, 9, 21, 0, 1,
+		0, 22, 20, 0, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -295,11 +295,11 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 7, 0, 0,
-		0, 8, 8, 7, 1,
-		1, 2, 8, 2, 1,
-		1, 2, 8, 2, 2,
-		1, 2, 9, 2, 3,
+		0, 0, 7, 7, 0,
+		0, 8, 8, 0, 2,
+		1, 2, 8, 5, 2,
+		1, 2, 8, 5, 1,
+		1, 2, 9, 5, 3,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -378,10 +378,10 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 7, 0, 0,
-		1, 2, 8, 1, 1,
-		1, 2, 8, 1, 0,
-		1, 2, 9, 1, 1,
+		0, 0, 7, 1, 0,
+		1, 2, 8, 0, 1,
+		1, 2, 8, 0, 0,
+		1, 2, 9, 0, 1,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {

@@ -296,8 +296,8 @@ github.com/hashicorp/hc-install v0.3.1/go.mod h1:3LCdWcCDS1gaHC9mhHCGbkYfoY6vdsK
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/hashicorp/hcl-lang v0.0.0-20211118124824-da3a292c5d7a/go.mod h1:0W3+VP07azoS+fCX5hWk1KxwHnqf1s9J7oBg2cFXm1c=
-github.com/hashicorp/hcl-lang v0.0.0-20211123142056-191cd51dec5b h1:UircH3n8tUnq881dS1EV/m+ZcIKjZq9jzl0M65PAdWU=
-github.com/hashicorp/hcl-lang v0.0.0-20211123142056-191cd51dec5b/go.mod h1:0W3+VP07azoS+fCX5hWk1KxwHnqf1s9J7oBg2cFXm1c=
+github.com/hashicorp/hcl-lang v0.0.0-20220304112739-b2b314ea7c44 h1:R+ZKsdqgXle9KO2pLE6AwXg6IStjfM8wgQY4u0qPtx0=
+github.com/hashicorp/hcl-lang v0.0.0-20220304112739-b2b314ea7c44/go.mod h1:vyszbX6YNHCKIaVUhbh3LIZljxwYOtgWCIkhT5zKfjc=
 github.com/hashicorp/hcl/v2 v2.10.1/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=
 github.com/hashicorp/hcl/v2 v2.11.1 h1:yTyWcXcm9XB0TEkyU/JCRU6rYy4K+mgLtzn2wlrJbcc=
 github.com/hashicorp/hcl/v2 v2.11.1/go.mod h1:FwWsfWEjyV/CMj8s/gqAuiviY72rJ1/oayI9WftqcKg=

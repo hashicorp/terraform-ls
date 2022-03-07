@@ -102,18 +102,19 @@ const (
 // to be registered by VS Code by default, see https://git.io/JIeuV
 var (
 	serverTokenTypes = TokenTypes{
-		TokenTypeType,
-		TokenTypeString,
-		TokenTypeProperty,
+		TokenTypeEnumMember,
+		TokenTypeFunction,
 		TokenTypeKeyword,
 		TokenTypeNumber,
 		TokenTypeParameter,
+		TokenTypeProperty,
+		TokenTypeString,
+		TokenTypeType,
 		TokenTypeVariable,
-		TokenTypeEnumMember,
 	}
 	serverTokenModifiers = TokenModifiers{
-		TokenModifierDeprecated,
 		TokenModifierDefaultLibrary,
+		TokenModifierDeprecated,
 	}
 )
 
