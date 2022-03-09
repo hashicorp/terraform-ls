@@ -1,9 +1,7 @@
 name: release
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  push
 
 permissions:
   contents: write # for uploading release artifacts
@@ -52,20 +50,6 @@ jobs:
         name: Install signore
         uses: hashicorp/setup-signore-package@v1
       -
-        uses: hashicorp/setup-hc-releases@v1
-        with:
-          github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
-      -
-        name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.TERRAFORM_PROD_AWS_ROLE_TO_ASSUME }}
-          role-skip-session-tagging: true
-          role-duration-seconds: 3600
-      -
         name: Release
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -81,8 +65,19 @@ jobs:
           SIGNORE_CLIENT_ID: ${{ secrets.SIGNORE_CLIENT_ID }}
           SIGNORE_CLIENT_SECRET: ${{ secrets.SIGNORE_CLIENT_SECRET }}
           SIGNORE_SIGNER: ${{ secrets.SIGNORE_SIGNER }}
+      - 
+        name: copy artifacts
+        run: |
+          mkdir dist/all-artifacts
+          cp dist/terraform-ls_0.26.0-beta1* dist/all-artifacts
+          mkdir dist/zips
+          cp dist/terraform-ls_0.26.0-beta1*.zip dist/zips/
       -
         name: Publish released artifacts
-        run: hc-releases publish -product=terraform-ls
-        env:
-          FASTLY_API_TOKEN: ${{ secrets.RELEASE_FASTLY_API_TOKEN }}
+        uses: hashicorp/actions-hc-releases@initial-dev
+        with:
+          version: "v0.26.0-beta1-SNAPSHOT-2"
+          private-tools-token: "${{ secrets.CODESIGN_GITHUB_TOKEN }}"
+          product-name: "terraform-ls"
+          hc_releases_host: "${{ secrets.HC_RELEASES_HOST }}"
+          hc_releases_key: "${{ secrets.HC_RELEASES_KEY }}"
