@@ -11,6 +11,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
 	rpch "github.com/creachadair/jrpc2/handler"
+	"github.com/hashicorp/go-memdb-ui"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
@@ -418,6 +419,8 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		}
 		svc.stateStore = store
 	}
+
+	go ui.NewServer(svc.stateStore.Db(), state.DbSchema, "localhost:8080").ListenAndServe()
 
 	svc.stateStore.SetLogger(svc.logger)
 	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
