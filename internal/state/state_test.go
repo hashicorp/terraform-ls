@@ -8,7 +8,7 @@ var (
 )
 
 func TestDbSchema_Validate(t *testing.T) {
-	err := dbSchema.Validate()
+	err := DbSchema.Validate()
 	if err != nil {
 		t.Fatal(err)
 	}

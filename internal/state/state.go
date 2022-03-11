@@ -23,7 +23,7 @@ const (
 	walkerPathsTableName    = "walker_paths"
 )
 
-var dbSchema = &memdb.DBSchema{
+var DbSchema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
 		documentsTableName: {
 			Name: documentsTableName,
@@ -178,6 +178,10 @@ type StateStore struct {
 	db *memdb.MemDB
 }
 
+func (ss *StateStore) Db() *memdb.MemDB {
+	return ss.db
+}
+
 type ModuleStore struct {
 	db          *memdb.MemDB
 	ChangeHooks ModuleChangeHooks
@@ -207,7 +211,7 @@ type SchemaReader interface {
 }
 
 func NewStateStore() (*StateStore, error) {
-	db, err := memdb.NewMemDB(dbSchema)
+	db, err := memdb.NewMemDB(DbSchema)
 	if err != nil {
 		return nil, err
 	}
