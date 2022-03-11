@@ -1231,6 +1231,172 @@ output "test" {
 		}`)
 }
 
+func TestVarReferenceCompletion_withValidData(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	variableDecls := `variable "aaa" {}
+variable "bbb" {}
+variable "ccc" {}
+`
+	f, err := os.Create(filepath.Join(tmpDir.Path(), "variables.tf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.WriteString(variableDecls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		}}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "output \"test\" {\n  value = var.\n}\n",
+			"uri": "%s/outputs.tf"
+		}
+	}`, tmpDir.URI)})
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/outputs.tf"
+			},
+			"position": {
+				"character": 14,
+				"line": 1
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"isIncomplete": false,
+				"items": [
+					{
+						"label": "var.aaa",
+						"labelDetails": {},
+						"kind": 6,
+						"detail": "dynamic",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 10
+								},
+								"end": {
+									"line": 1,
+									"character": 14
+								}
+							},
+							"newText": "var.aaa"
+						}
+					},
+					{
+						"label": "var.bbb",
+						"labelDetails": {},
+						"kind": 6,
+						"detail": "dynamic",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 10
+								},
+								"end": {
+									"line": 1,
+									"character": 14
+								}
+							},
+							"newText": "var.bbb"
+						}
+					},
+					{
+						"label": "var.ccc",
+						"labelDetails": {},
+						"kind": 6,
+						"detail": "dynamic",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 10
+								},
+								"end": {
+									"line": 1,
+									"character": 14
+								}
+							},
+							"newText": "var.ccc"
+						}
+					}
+				]
+			}
+		}`)
+}
+
 func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor {
 	ctx := context.Background()
 	installDir := filepath.Join(t.TempDir(), "hcinstall")
