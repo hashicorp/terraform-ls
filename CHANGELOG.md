@@ -14,6 +14,7 @@ BUG FIXES:
  - Address race conditions typically surfaced as "out of range" errors, lack of completion/hover/etc. data or data associated with wrong position within the document ([#782](https://github.com/hashicorp/terraform-ls/pull/782))
  - Fix broken validate on save ([#799](https://github.com/hashicorp/terraform-ls/pull/799))
  - Fix encoding of unknown semantic token types ([#815](https://github.com/hashicorp/terraform-ls/pull/815))
+ - Fix missing references for some blocks in a separate config file ([#829](https://github.com/hashicorp/terraform-ls/pull/829))
 
 INTERNAL:
 
