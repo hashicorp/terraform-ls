@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/terraform-ls/internal/lsp/semtok"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
@@ -31,60 +32,13 @@ func (te *TokenEncoder) Encode() []uint32 {
 func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	token := te.Tokens[i]
 
-	var tokenType TokenType
-	modifiers := make([]TokenModifier, 0)
-
-	switch token.Type {
-	case lang.TokenBlockType:
-		tokenType = TokenTypeType
-	case lang.TokenBlockLabel:
-		tokenType = TokenTypeEnumMember
-	case lang.TokenAttrName:
-		tokenType = TokenTypeProperty
-	case lang.TokenBool:
-		tokenType = TokenTypeKeyword
-	case lang.TokenNumber:
-		tokenType = TokenTypeNumber
-	case lang.TokenString:
-		tokenType = TokenTypeString
-	case lang.TokenObjectKey:
-		tokenType = TokenTypeParameter
-	case lang.TokenMapKey:
-		tokenType = TokenTypeParameter
-	case lang.TokenKeyword:
-		tokenType = TokenTypeVariable
-	case lang.TokenTraversalStep:
-		tokenType = TokenTypeVariable
-	case lang.TokenTypeCapsule:
-		tokenType = TokenTypeFunction
-	case lang.TokenTypePrimitive:
-		tokenType = TokenTypeKeyword
-
-	default:
+	tokenType, ok := te.resolveTokenType(token)
+	if !ok {
 		return []uint32{}
 	}
-
-	if !te.tokenTypeSupported(tokenType) {
-		return []uint32{}
-	}
-
 	tokenTypeIdx := TokenTypesLegend(te.ClientCaps.TokenTypes).Index(tokenType)
 
-	for _, m := range token.Modifiers {
-		switch m {
-		case lang.TokenModifierDependent:
-			if !te.tokenModifierSupported(TokenModifierDefaultLibrary) {
-				continue
-			}
-			modifiers = append(modifiers, TokenModifierDefaultLibrary)
-		case lang.TokenModifierDeprecated:
-			if !te.tokenModifierSupported(TokenModifierDeprecated) {
-				continue
-			}
-			modifiers = append(modifiers, TokenModifierDeprecated)
-		}
-	}
-
+	modifiers := te.resolveTokenModifiers(token.Modifiers)
 	modifierBitMask := TokenModifiersLegend(te.ClientCaps.TokenModifiers).BitMask(modifiers)
 
 	data := make([]uint32, 0)
@@ -153,10 +107,95 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	return data
 }
 
-func (te *TokenEncoder) tokenTypeSupported(tokenType TokenType) bool {
-	return sliceContains(te.ClientCaps.TokenTypes, string(tokenType))
+func (te *TokenEncoder) resolveTokenType(token lang.SemanticToken) (semtok.TokenType, bool) {
+	switch token.Type {
+	case lang.TokenBlockType:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenBlockType), semtok.TokenTypeType)
+	case lang.TokenBlockLabel:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenBlockLabel), semtok.TokenTypeEnumMember)
+	case lang.TokenAttrName:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenAttrName), semtok.TokenTypeProperty)
+	case lang.TokenBool:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenBool), semtok.TokenTypeKeyword)
+	case lang.TokenNumber:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenNumber), semtok.TokenTypeNumber)
+	case lang.TokenString:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenString), semtok.TokenTypeString)
+	case lang.TokenObjectKey:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenObjectKey), semtok.TokenTypeParameter)
+	case lang.TokenMapKey:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenMapKey), semtok.TokenTypeParameter)
+	case lang.TokenKeyword:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenKeyword), semtok.TokenTypeVariable)
+	case lang.TokenTraversalStep:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenTraversalStep), semtok.TokenTypeVariable)
+	case lang.TokenTypeCapsule:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenTypeCapsule), semtok.TokenTypeFunction)
+	case lang.TokenTypePrimitive:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenTypePrimitive), semtok.TokenTypeKeyword)
+	}
+
+	return "", false
 }
 
-func (te *TokenEncoder) tokenModifierSupported(tokenModifier TokenModifier) bool {
-	return sliceContains(te.ClientCaps.TokenModifiers, string(tokenModifier))
+func (te *TokenEncoder) resolveTokenModifiers(tokModifiers []lang.SemanticTokenModifier) semtok.TokenModifiers {
+	modifiers := make(semtok.TokenModifiers, 0)
+
+	for _, modifier := range tokModifiers {
+		if modifier == lang.TokenModifierDependent {
+			if te.tokenModifierSupported(string(lang.TokenModifierDependent)) {
+				modifiers = append(modifiers, semtok.TokenModifier(lang.TokenModifierDependent))
+				continue
+			}
+			if te.tokenModifierSupported(string(semtok.TokenModifierDefaultLibrary)) {
+				modifiers = append(modifiers, semtok.TokenModifierDefaultLibrary)
+				continue
+			}
+			continue
+		}
+
+		if te.tokenModifierSupported(string(modifier)) {
+			modifiers = append(modifiers, semtok.TokenModifier(modifier))
+		}
+	}
+
+	return modifiers
+}
+
+func (te *TokenEncoder) firstSupportedTokenType(tokenTypes ...semtok.TokenType) (semtok.TokenType, bool) {
+	for _, tokenType := range tokenTypes {
+		if te.tokenTypeSupported(string(tokenType)) {
+			return tokenType, true
+		}
+	}
+	return "", false
+}
+
+func (te *TokenEncoder) tokenTypeSupported(tokenType string) bool {
+	return sliceContains(te.ClientCaps.TokenTypes, tokenType)
+}
+
+func (te *TokenEncoder) tokenModifierSupported(tokenModifier string) bool {
+	return sliceContains(te.ClientCaps.TokenModifiers, tokenModifier)
+}
+
+func sliceContains(slice []string, value string) bool {
+	for _, val := range slice {
+		if val == value {
+			return true
+		}
+	}
+	return false
 }
