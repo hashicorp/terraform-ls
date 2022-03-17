@@ -16,6 +16,10 @@ Clients specifically should **not** send `*.tf.json`, `*.tfvars.json` nor
 Packer HCL config nor any other HCL config files as the server is not
 equipped to handle these file types.
 
+## Syntax Highlighting
+
+Read more about how we recommend Terraform files to be highlighted in [syntax-highlighting.md](./syntax-highlighting.md).
+
 ### Internal parser
 
 The server expects clients to use standard text synchronization LSP methods
