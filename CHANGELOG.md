@@ -1,4 +1,4 @@
-## 0.26.0 (unreleased)
+## 0.26.0 (17 March 2022)
 
 ENHANCEMENTS:
 
