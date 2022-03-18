@@ -29,6 +29,7 @@ func init() {
 	for _, tokType := range lang.SupportedSemanticTokenTypes {
 		serverTokenTypes = append(serverTokenTypes, semtok.TokenType(tokType))
 	}
+	serverTokenModifiers = append(serverTokenModifiers, semtok.TokenModifier(lang.TokenModifierDependent))
 	for _, tokModifier := range tfschema.SemanticTokenModifiers {
 		serverTokenModifiers = append(serverTokenModifiers, semtok.TokenModifier(tokModifier))
 	}
