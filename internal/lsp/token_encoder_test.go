@@ -67,11 +67,11 @@ func TestTokenEncoder_singleLineTokens(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 7, 7, 0,
-		0, 8, 8, 0, 0,
-		1, 2, 8, 5, 0,
-		1, 2, 8, 5, 0,
-		1, 2, 9, 5, 0,
+		0, 0, 7, 10, 0,
+		0, 8, 8, 11, 0,
+		1, 2, 8, 9, 0,
+		1, 2, 8, 9, 0,
+		1, 2, 9, 9, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -90,7 +90,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 		Lines: source.MakeSourceLines("test.tf", bytes),
 		Tokens: []lang.SemanticToken{
 			{
-				Type:      lang.SemanticTokenType(999),
+				Type:      lang.SemanticTokenType("unknown"),
 				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "main.tf",
@@ -99,7 +99,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 				},
 			},
 			{
-				Type:      lang.SemanticTokenType(1000),
+				Type:      lang.SemanticTokenType("another-unknown"),
 				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "main.tf",
@@ -124,7 +124,7 @@ func TestTokenEncoder_unknownTokenType(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		2, 2, 7, 5, 0,
+		2, 2, 7, 9, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -161,9 +161,9 @@ func TestTokenEncoder_multiLineTokens(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		1, 2, 24, 5, 0,
-		1, 0, 15, 5, 0,
-		1, 0, 11, 5, 0,
+		1, 2, 24, 9, 0,
+		1, 0, 15, 9, 0,
+		1, 0, 11, 9, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -214,9 +214,9 @@ func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 8, 7, 0,
-		0, 9, 21, 0, 1,
-		0, 22, 20, 0, 0,
+		0, 0, 8, 10, 0,
+		0, 9, 21, 11, 2,
+		0, 22, 20, 11, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -243,10 +243,8 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 				},
 			},
 			{
-				Type: lang.TokenBlockLabel,
-				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
-				},
+				Type:      lang.TokenBlockLabel,
+				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "test.tf",
 					Start:    hcl.Pos{Line: 1, Column: 9, Byte: 8},
@@ -254,10 +252,8 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 				},
 			},
 			{
-				Type: lang.TokenAttrName,
-				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
-				},
+				Type:      lang.TokenAttrName,
+				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "test.tf",
 					Start:    hcl.Pos{Line: 2, Column: 3, Byte: 21},
@@ -278,7 +274,6 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 			{
 				Type: lang.TokenAttrName,
 				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
 					lang.TokenModifierDependent,
 				},
 				Range: hcl.Range{
@@ -295,11 +290,11 @@ func TestTokenEncoder_tokenModifiers(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		0, 0, 7, 7, 0,
-		0, 8, 8, 0, 2,
-		1, 2, 8, 5, 2,
-		1, 2, 8, 5, 1,
-		1, 2, 9, 5, 3,
+		0, 0, 7, 10, 0,
+		0, 8, 8, 11, 0,
+		1, 2, 8, 9, 0,
+		1, 2, 8, 9, 2,
+		1, 2, 9, 9, 2,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
@@ -326,10 +321,8 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 				},
 			},
 			{
-				Type: lang.TokenBlockLabel,
-				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
-				},
+				Type:      lang.TokenBlockLabel,
+				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "test.tf",
 					Start:    hcl.Pos{Line: 1, Column: 9, Byte: 8},
@@ -337,10 +330,8 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 				},
 			},
 			{
-				Type: lang.TokenAttrName,
-				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
-				},
+				Type:      lang.TokenAttrName,
+				Modifiers: []lang.SemanticTokenModifier{},
 				Range: hcl.Range{
 					Filename: "test.tf",
 					Start:    hcl.Pos{Line: 2, Column: 3, Byte: 21},
@@ -361,7 +352,6 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 			{
 				Type: lang.TokenAttrName,
 				Modifiers: []lang.SemanticTokenModifier{
-					lang.TokenModifierDeprecated,
 					lang.TokenModifierDependent,
 				},
 				Range: hcl.Range{
@@ -372,16 +362,16 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 			},
 		},
 		ClientCaps: protocol.SemanticTokensClientCapabilities{
-			TokenTypes:     []string{"type", "property"},
-			TokenModifiers: []string{"deprecated"},
+			TokenTypes:     []string{"hcl-blockType", "hcl-attrName"},
+			TokenModifiers: []string{},
 		},
 	}
 	data := te.Encode()
 	expectedData := []uint32{
 		0, 0, 7, 1, 0,
-		1, 2, 8, 0, 1,
 		1, 2, 8, 0, 0,
-		1, 2, 9, 0, 1,
+		1, 2, 8, 0, 0,
+		1, 2, 9, 0, 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
