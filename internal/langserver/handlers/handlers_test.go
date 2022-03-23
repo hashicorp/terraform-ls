@@ -80,7 +80,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 	}`, string(jsonArray))
 }
 
-func waitForWalkerPath(t *testing.T, ss *state.StateStore, wc *module.WalkerCollector, dir document.DirHandle) {
+func waitForWalkerPath(t testOrBench, ss *state.StateStore, wc *module.WalkerCollector, dir document.DirHandle) {
 	ctx := context.Background()
 	err := ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
 	if err != nil {
@@ -94,6 +94,11 @@ func waitForWalkerPath(t *testing.T, ss *state.StateStore, wc *module.WalkerColl
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+type testOrBench interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
 }
 
 func TestInitalizeAndShutdown(t *testing.T) {
