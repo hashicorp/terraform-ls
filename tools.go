@@ -3,4 +3,7 @@
 
 package main
 
-import _ "github.com/mh-cbon/go-fmt-fail"
+import (
+	_ "github.com/mh-cbon/go-fmt-fail"
+	_ "go.bobheadxi.dev/gobenchdata"
+)
