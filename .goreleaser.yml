@@ -110,20 +110,18 @@ brews:
       system "#{bin}/terraform-ls --version"
 
 publishers:
-  - name: "hc-releases"
+  - name: upload
     checksum: true
     signature: true
     env:
-      - AWS_DEFAULT_REGION={{ .Env.AWS_DEFAULT_REGION }}
-      - AWS_REGION={{ .Env.AWS_REGION }}
-      - AWS_ACCESS_KEY_ID={{ .Env.AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.AWS_SECRET_ACCESS_KEY }}
-      - AWS_SESSION_TOKEN={{ .Env.AWS_SESSION_TOKEN }}
-    cmd: hc-releases upload-file {{ abs .ArtifactPath }}
-
 milestones:
   - name_template: "{{ .Tag }}"
     close: true
+      - HC_RELEASES_HOST={{ .Env.HC_RELEASES_HOST_STAGING }}
+      - HC_RELEASES_KEY={{ .Env.HC_RELEASES_KEY_STAGING }}
+    dir: "{{ dir .ArtifactPath }}"
+    cmd: |
+      hc-releases upload -file={{ .ArtifactName }} -product={{ .ProjectName }} -version={{ .Version }}
 
 release:
   prerelease: auto
