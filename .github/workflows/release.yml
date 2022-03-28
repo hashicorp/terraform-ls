@@ -52,7 +52,7 @@ jobs:
         name: Install signore
         uses: hashicorp/setup-signore-package@v1
       -
-        uses: hashicorp/setup-hc-releases@v1
+        uses: hashicorp/setup-hc-releases@v2
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
