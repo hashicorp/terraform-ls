@@ -76,7 +76,7 @@ jobs:
           SIGNORE_SIGNER: ${{ secrets.SIGNORE_SIGNER }}
       -
         name: Create Release metadata
-        uses: hashicorp/actions-hc-releases-create-metadata@main
+        uses: hashicorp/actions-hc-releases-create-metadata@v1
         with:
           private-tools-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
           product-name: "terraform-ls"
@@ -85,7 +85,7 @@ jobs:
           hc-releases-key: ${{ secrets.HC_RELEASES_KEY_STAGING }}
       -
         name: Promote
-        uses: hashicorp/actions-hc-releases-promote@main
+        uses: hashicorp/actions-hc-releases-promote@v1
         with:
           product-name: "terraform-ls"
           version: ${{ github.ref_name }}
