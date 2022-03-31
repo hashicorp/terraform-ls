@@ -117,7 +117,7 @@ publishers:
       - HC_RELEASES_HOST={{ .Env.HC_RELEASES_HOST }}
       - HC_RELEASES_KEY={{ .Env.HC_RELEASES_KEY }}
     cmd: |
-      hc-releases upload -product {{ .ProjectName }} -version {{ .Version }} -file={{ .ArtifactPath }} -header=x-terraform-protocol-version=5 -header=x-terraform-protocol-versions=5.0
+      hc-releases upload -product {{ .ProjectName }} -version {{ .Version }} -file={{ .ArtifactPath }}
 
 milestones:
   - name_template: "{{ .Tag }}"
