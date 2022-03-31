@@ -114,14 +114,14 @@ publishers:
     checksum: true
     signature: true
     env:
+      - HC_RELEASES_HOST={{ .Env.HC_RELEASES_HOST }}
+      - HC_RELEASES_KEY={{ .Env.HC_RELEASES_KEY }}
+    cmd: |
+      hc-releases upload -product {{ .ProjectName }} -version {{ .Version }} -file={{ .ArtifactPath }} -header=x-terraform-protocol-version=5 -header=x-terraform-protocol-versions=5.0
+
 milestones:
   - name_template: "{{ .Tag }}"
     close: true
-      - HC_RELEASES_HOST={{ .Env.HC_RELEASES_HOST_STAGING }}
-      - HC_RELEASES_KEY={{ .Env.HC_RELEASES_KEY_STAGING }}
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: |
-      hc-releases upload -file={{ .ArtifactName }} -product={{ .ProjectName }} -version={{ .Version }}
 
 release:
   prerelease: auto

@@ -53,7 +53,7 @@ jobs:
         uses: hashicorp/setup-signore-package@v1
       -
         name: Setup hc-releases
-        uses: hashicorp/actions-setup-hc-releases@v1
+        uses: hashicorp/actions-setup-hc-releases@v2
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
@@ -63,8 +63,8 @@ jobs:
           version: latest
           args: release
         env:
-          HC_RELEASES_HOST_STAGING: ${{ secrets.HC_RELEASES_HOST_STAGING }}
-          HC_RELEASES_KEY_STAGING: ${{ secrets.HC_RELEASES_KEY_STAGING }}
+          HC_RELEASES_HOST: ${{ secrets.HC_RELEASES_HOST_STAGING }}
+          HC_RELEASES_KEY: ${{ secrets.HC_RELEASES_KEY_STAGING }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
