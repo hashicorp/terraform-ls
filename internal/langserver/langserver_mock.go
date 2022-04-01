@@ -162,6 +162,19 @@ func (lsm *langServerMock) CallAndExpectError(t *testing.T, cr *CallRequest, exp
 		t.Fatalf("expected error: %s", expectErr.Error())
 	}
 
+	if expErr, ok := expectErr.(*jrpc2.Error); ok {
+		givenErr, ok := err.(*jrpc2.Error)
+		if !ok {
+			t.Fatalf("%q error doesn't match.\nexpected: %#v\ngiven: %#v\n",
+				cr.Method, expectErr, err)
+		}
+		if expErr.Code != givenErr.Code || expErr.Message != givenErr.Message {
+			t.Fatalf("%q error doesn't match.\nexpected: %#v\ngiven: %#v\n",
+				cr.Method, expectErr, err)
+		}
+		return
+	}
+
 	if !errors.Is(expectErr, err) {
 		t.Fatalf("%q error doesn't match.\nexpected: %#v\ngiven: %#v\n",
 			cr.Method, expectErr, err)
