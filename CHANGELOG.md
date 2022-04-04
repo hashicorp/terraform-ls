@@ -1,5 +1,9 @@
 ## 0.27.0 (Unreleased)
 
+NOTES / BREAKING CHANGES:
+
+ - langserver/handlers/command: Remove `rootmodules` command ([#846](https://github.com/hashicorp/terraform-ls/pull/846))
+
 ENHANCEMENTS:
 
  - Provide (opt-in) custom semantic tokens & modifiers ([#833](https://github.com/hashicorp/terraform-ls/pull/833))
