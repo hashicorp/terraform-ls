@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
@@ -16,7 +17,7 @@ func cmdHandlers(svc *service) cmd.Handlers {
 		StateStore: svc.stateStore,
 	}
 	return cmd.Handlers{
-		cmd.Name("rootmodules"):        cmdHandler.ModulesHandler,
+		cmd.Name("rootmodules"):        removedHandler("use module.callers instead"),
 		cmd.Name("module.callers"):     cmdHandler.ModuleCallersHandler,
 		cmd.Name("terraform.init"):     cmdHandler.TerraformInitHandler,
 		cmd.Name("terraform.validate"): cmdHandler.TerraformValidateHandler,
@@ -45,4 +46,10 @@ func (svc *service) WorkspaceExecuteCommand(ctx context.Context, params lsp.Exec
 	}
 
 	return handler(ctx, cmd.ParseCommandArgs(params.Arguments))
+}
+
+func removedHandler(errorMessage string) cmd.Handler {
+	return func(context.Context, cmd.CommandArgs) (interface{}, error) {
+		return nil, jrpc2.Errorf(code.MethodNotFound, "REMOVED: %s", errorMessage)
+	}
 }
