@@ -184,5 +184,3 @@ installed version.
   }
 }
 ```
-
-### `rootmodules` (DEPRECATED, use `module.callers` instead)
