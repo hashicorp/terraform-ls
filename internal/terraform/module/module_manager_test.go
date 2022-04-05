@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -227,10 +228,28 @@ func TestWalker_complexModules(t *testing.T) {
 			ss.SetLogger(testLogger())
 			s.Start(ctx)
 
-			w := SyncWalker(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))
+			pa := state.NewPathAwaiter(ss.WalkerPaths, false)
+			w := NewWalker(fs, pa, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))
+			w.Collector = NewWalkerCollector()
 			w.SetLogger(testLogger())
-			w.EnqueuePath(tc.root)
+			dir := document.DirHandleFromPath(tc.root)
+			err = ss.WalkerPaths.EnqueueDir(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			err = w.StartWalking(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ss.JobStore.WaitForJobs(ctx, w.Collector.JobIds()...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = w.Collector.ErrorOrNil()
 			if err != nil {
 				t.Fatal(err)
 			}
