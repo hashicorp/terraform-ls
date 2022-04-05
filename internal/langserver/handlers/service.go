@@ -42,13 +42,14 @@ type service struct {
 	closedDirIndexer *scheduler.Scheduler
 	openDirIndexer   *scheduler.Scheduler
 
+	closedDirWalker *module.Walker
+	openDirWalker   *module.Walker
+
 	fs            *filesystem.Filesystem
 	modStore      *state.ModuleStore
 	schemaStore   *state.ProviderSchemaStore
 	watcher       module.Watcher
-	walker        *module.Walker
 	newWatcher    module.WatcherFactory
-	newWalker     module.WalkerFactory
 	tfDiscoFunc   discovery.DiscoveryFunc
 	tfExecFactory exec.ExecutorFactory
 	tfExecOpts    *exec.ExecutorOpts
@@ -58,6 +59,7 @@ type service struct {
 	server        session.Server
 	diagsNotifier *diagnostics.Notifier
 
+	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
 }
 
@@ -73,7 +75,6 @@ func NewSession(srvCtx context.Context) session.Session {
 		sessCtx:       sessCtx,
 		stopSession:   stopSession,
 		newWatcher:    module.NewWatcher,
-		newWalker:     module.NewWalker,
 		tfDiscoFunc:   d.LookPath,
 		tfExecFactory: exec.NewExecutor,
 		telemetry:     &telemetry.NoopSender{},
@@ -280,7 +281,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 
 			return handle(ctx, req, svc.DidChangeWorkspaceFolders)
@@ -300,7 +300,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithModuleWalker(ctx, svc.walker)
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
@@ -463,8 +462,15 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		return err
 	}
 
-	svc.walker = svc.newWalker(svc.fs, svc.stateStore.DocumentStore, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
-	svc.walker.SetLogger(svc.logger)
+	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
+	svc.closedDirWalker = module.NewWalker(svc.fs, closedPa, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+	svc.closedDirWalker.Collector = svc.walkerCollector
+	svc.closedDirWalker.SetLogger(svc.logger)
+
+	opendPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, true)
+	svc.openDirWalker = module.NewWalker(svc.fs, opendPa, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+	svc.closedDirWalker.Collector = svc.walkerCollector
+	svc.openDirWalker.SetLogger(svc.logger)
 
 	ww, err := svc.newWatcher(svc.fs, svc.modStore, svc.stateStore.ProviderSchemas, svc.stateStore.JobStore, svc.tfExecFactory)
 	if err != nil {
@@ -500,10 +506,15 @@ func (svc *service) Finish(_ jrpc2.Assigner, status jrpc2.ServerStatus) {
 }
 
 func (svc *service) shutdown() {
-	if svc.walker != nil {
-		svc.logger.Printf("stopping walker for session ...")
-		svc.walker.Stop()
-		svc.logger.Printf("walker stopped")
+	if svc.closedDirWalker != nil {
+		svc.logger.Printf("stopping closedDirWalker for session ...")
+		svc.closedDirWalker.Stop()
+		svc.logger.Printf("closedDirWalker stopped")
+	}
+	if svc.openDirWalker != nil {
+		svc.logger.Printf("stopping openDirWalker for session ...")
+		svc.openDirWalker.Stop()
+		svc.logger.Printf("openDirWalker stopped")
 	}
 
 	if svc.watcher != nil {

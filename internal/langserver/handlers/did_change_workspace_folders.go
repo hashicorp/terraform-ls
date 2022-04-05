@@ -8,7 +8,6 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.DidChangeWorkspaceFoldersParams) error {
@@ -17,13 +16,10 @@ func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.Di
 		return err
 	}
 
-	walker, err := lsctx.ModuleWalker(ctx)
-	if err != nil {
-		return err
-	}
-
 	for _, removed := range params.Event.Removed {
-		modPath, err := uri.PathFromURI(removed.URI)
+		modHandle := document.DirHandleFromURI(removed.URI)
+
+		err := svc.stateStore.WalkerPaths.DequeueDir(modHandle)
 		if err != nil {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 				Type: lsp.Warning,
@@ -32,34 +28,34 @@ func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.Di
 			})
 			continue
 		}
-		walker.RemovePathFromQueue(modPath)
 
-		err = watcher.RemoveModule(modPath)
+		err = watcher.RemoveModule(modHandle.Path())
 		if err != nil {
 			svc.logger.Printf("failed to remove module from watcher: %s", err)
 			continue
 		}
 
-		modHandle := document.DirHandleFromPath(modPath)
 		err = svc.stateStore.JobStore.DequeueJobsForDir(modHandle)
 		if err != nil {
 			svc.logger.Printf("failed to dequeue jobs for module: %s", err)
 			continue
 		}
 
-		callers, err := svc.modStore.CallersOfModule(modPath)
+		callers, err := svc.modStore.CallersOfModule(modHandle.Path())
 		if err != nil {
 			svc.logger.Printf("failed to remove module from watcher: %s", err)
 			continue
 		}
 		if len(callers) == 0 {
-			err = svc.modStore.Remove(modPath)
+			err = svc.modStore.Remove(modHandle.Path())
 			svc.logger.Printf("failed to remove module: %s", err)
 		}
 	}
 
 	for _, added := range params.Event.Added {
-		modPath, err := uri.PathFromURI(added.URI)
+		modHandle := document.DirHandleFromURI(added.URI)
+
+		err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
 		if err != nil {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 				Type: lsp.Warning,
@@ -68,13 +64,12 @@ func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.Di
 			})
 			continue
 		}
-		err = watcher.AddModule(modPath)
+
+		err = watcher.AddModule(modHandle.Path())
 		if err != nil {
 			svc.logger.Printf("failed to add module to watcher: %s", err)
 			continue
 		}
-
-		walker.EnqueuePath(modPath)
 	}
 
 	return nil

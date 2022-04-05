@@ -198,13 +198,16 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		excludeModulePaths = append(excludeModulePaths, modPath)
 	}
 
-	svc.walker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
-	svc.walker.SetExcludeModulePaths(excludeModulePaths)
-	svc.walker.EnqueuePath(root.Path())
+	err = svc.stateStore.WalkerPaths.EnqueueDir(root)
+	if err != nil {
+		return serverCaps, err
+	}
 
 	if len(params.WorkspaceFolders) > 0 {
 		for _, folderPath := range params.WorkspaceFolders {
-			modPath, err := uri.PathFromURI(folderPath.URI)
+			modPath := document.DirHandleFromURI(folderPath.URI)
+
+			err := svc.stateStore.WalkerPaths.EnqueueDir(modPath)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type: lsp.Warning,
@@ -213,17 +216,24 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 				})
 				continue
 			}
-
-			svc.walker.EnqueuePath(modPath)
 		}
 	}
 
-	// Walker runs asynchronously so we're intentionally *not*
+	svc.closedDirWalker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
+	svc.closedDirWalker.SetExcludeModulePaths(excludeModulePaths)
+	svc.openDirWalker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
+	svc.openDirWalker.SetExcludeModulePaths(excludeModulePaths)
+
+	// Walkers run asynchronously so we're intentionally *not*
 	// passing the request context here
 	walkerCtx := context.Background()
-	err = svc.walker.StartWalking(walkerCtx)
+	err = svc.closedDirWalker.StartWalking(walkerCtx)
 	if err != nil {
-		return serverCaps, err
+		return serverCaps, fmt.Errorf("failed to start closedDirWalker: %w", err)
+	}
+	err = svc.openDirWalker.StartWalking(walkerCtx)
+	if err != nil {
+		return serverCaps, fmt.Errorf("failed to start openDirWalker: %w", err)
 	}
 
 	// Static user-provided paths take precedence over dynamic discovery

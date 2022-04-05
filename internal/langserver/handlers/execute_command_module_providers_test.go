@@ -6,10 +6,12 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
@@ -100,13 +102,16 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 		t.Fatal(err)
 	}
 
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				modDir: validTfMockCalls(),
 			},
 		},
-		StateStore: s,
+		StateStore:      s,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -118,6 +123,7 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 		"rootUri": %q,
 		"processId": 12345
 	}`, modUri)})
+	waitForWalkerPath(t, s, wc, document.DirHandleFromURI(modUri))
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

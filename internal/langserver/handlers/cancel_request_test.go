@@ -11,10 +11,18 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 func TestLangServer_cancelRequest(t *testing.T) {
 	tmpDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		AdditionalHandlers: map[string]handler.Func{
@@ -43,6 +51,8 @@ func TestLangServer_cancelRequest(t *testing.T) {
 				return nil, ctx.Err()
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -54,6 +64,7 @@ func TestLangServer_cancelRequest(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,7 +13,9 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -75,6 +78,22 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 			}
 		}
 	}`, string(jsonArray))
+}
+
+func waitForWalkerPath(t *testing.T, ss *state.StateStore, wc *module.WalkerCollector, dir document.DirHandle) {
+	ctx := context.Background()
+	err := ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.JobStore.WaitForJobs(ctx, wc.JobIds()...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = wc.ErrorOrNil()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestInitalizeAndShutdown(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -38,6 +39,7 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -45,7 +47,8 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
 				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
-		StateStore: ss,
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -57,6 +60,7 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

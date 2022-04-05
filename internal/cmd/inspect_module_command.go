@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -92,16 +93,35 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
 
+	dir := document.DirHandleFromPath(rootPath)
+
 	ctx := context.Background()
 
-	walker := module.SyncWalker(fs, ss.DocumentStore, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewExecutor)
+	pa := state.NewPathAwaiter(ss.WalkerPaths, false)
+	walker := module.NewWalker(fs, pa, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewExecutor)
+	walker.Collector = module.NewWalkerCollector()
 	walker.SetLogger(c.logger)
+	err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
+	if err != nil {
+		return err
+	}
+	err = ss.JobStore.WaitForJobs(ctx, walker.Collector.JobIds()...)
+	if err != nil {
+		return err
+	}
+	err = walker.Collector.ErrorOrNil()
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := ictx.WithSignalCancel(context.Background(),
 		c.logger, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	walker.EnqueuePath(rootPath)
+	err = ss.WalkerPaths.EnqueueDir(dir)
+	if err != nil {
+		return err
+	}
 	err = walker.StartWalking(ctx)
 	if err != nil {
 		return err
