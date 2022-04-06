@@ -36,6 +36,7 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modRead
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		ProviderReferences:   mod.Meta.ProviderReferences,
 		Variables:            mod.Meta.Variables,
+		Filenames:            mod.Meta.Filenames,
 	}
 
 	return sm.SchemaForModule(meta)

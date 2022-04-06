@@ -22,12 +22,14 @@ type ModuleMetadata struct {
 	ProviderRequirements tfmod.ProviderRequirements
 	Variables            map[string]tfmod.Variable
 	Outputs              map[string]tfmod.Output
+	Filenames            []string
 }
 
 func (mm ModuleMetadata) Copy() ModuleMetadata {
 	newMm := ModuleMetadata{
 		// version.Constraints is practically immutable once parsed
 		CoreRequirements: mm.CoreRequirements,
+		Filenames:        mm.Filenames,
 	}
 
 	if mm.Backend != nil {
@@ -336,6 +338,7 @@ func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
 		CoreRequirements:     mod.Meta.CoreRequirements,
 		Variables:            mod.Meta.Variables,
 		Outputs:              mod.Meta.Outputs,
+		Filenames:            mod.Meta.Filenames,
 	}, nil
 }
 
@@ -700,6 +703,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 		ProviderRequirements: meta.ProviderRequirements,
 		Variables:            meta.Variables,
 		Outputs:              meta.Outputs,
+		Filenames:            meta.Filenames,
 	}
 	mod.MetaErr = mErr
 
