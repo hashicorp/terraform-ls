@@ -3,6 +3,7 @@
 NOTES / BREAKING CHANGES:
 
  - langserver/handlers/command: Remove `rootmodules` command ([#846](https://github.com/hashicorp/terraform-ls/pull/846))
+ - cmd: Remove `completion` CLI command ([#852](https://github.com/hashicorp/terraform-ls/pull/852))
 
 ENHANCEMENTS:
 
