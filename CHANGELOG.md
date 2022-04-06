@@ -8,6 +8,10 @@ ENHANCEMENTS:
 
  - Provide (opt-in) custom semantic tokens & modifiers ([#833](https://github.com/hashicorp/terraform-ls/pull/833))
 
+BUG FIXES:
+
+ - Avoid hanging when workspace contains >50 folders ([#839](https://github.com/hashicorp/terraform-ls/pull/839))
+
 ## 0.26.0 (17 March 2022)
 
 ENHANCEMENTS:
