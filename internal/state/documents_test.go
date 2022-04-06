@@ -187,6 +187,48 @@ func TestDocumentStore_ListDocumentsInDir(t *testing.T) {
 	}
 }
 
+func TestDocumentStore_ListDocumentsInDir_parentDir(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.DocumentStore.TimeProvider = testTimeProvider
+
+	testHandle1 := document.HandleFromURI("file:///dir/test1.tf")
+	err = s.DocumentStore.OpenDocument(testHandle1, "terraform", 0, []byte("foobar"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testHandle2 := document.HandleFromURI("file:///dir/sub/test2.tf")
+	err = s.DocumentStore.OpenDocument(testHandle2, "terraform", 0, []byte("foobar"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirHandle := document.DirHandleFromURI("file:///dir")
+	docs, err := s.DocumentStore.ListDocumentsInDir(dirHandle)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDocs := []*document.Document{
+		{
+			Dir:        dirHandle,
+			Filename:   "test1.tf",
+			ModTime:    testTimeProvider(),
+			LanguageID: "terraform",
+			Version:    0,
+			Text:       []byte("foobar"),
+			Lines:      source.MakeSourceLines("test1.tf", []byte("foobar")),
+		},
+	}
+	if diff := cmp.Diff(expectedDocs, docs); diff != "" {
+		t.Fatalf("unexpected docs: %s", diff)
+	}
+}
+
 func TestDocumentStore_IsDocumentOpen(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {
@@ -250,7 +292,30 @@ func TestDocumentStore_HasOpenDocuments(t *testing.T) {
 	if hasOpenDocs {
 		t.Fatal("expected to find no open documents")
 	}
+}
 
+func TestDocumentStore_HasOpenDocuments_parentDir(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.DocumentStore.TimeProvider = testTimeProvider
+
+	testHandle := document.HandleFromURI("file:///dir/sub/test2.tf")
+	err = s.DocumentStore.OpenDocument(testHandle, "terraform", 0, []byte("foobar"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirHandle := document.DirHandleFromURI("file:///dir")
+	hasOpenDocs, err := s.DocumentStore.HasOpenDocuments(dirHandle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasOpenDocs {
+		t.Fatal("expected to find no open documents")
+	}
 }
 
 func testTimeProvider() time.Time {
