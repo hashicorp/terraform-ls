@@ -8,6 +8,7 @@ NOTES / BREAKING CHANGES:
 ENHANCEMENTS:
 
  - Provide (opt-in) custom semantic tokens & modifiers ([#833](https://github.com/hashicorp/terraform-ls/pull/833))
+ - Enable 'go to module source' for local modules (via [#849](https://github.com/hashicorp/terraform-ls/pull/849))
 
 BUG FIXES:
 
