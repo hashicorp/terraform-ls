@@ -38,6 +38,10 @@ var dbSchema = &memdb.DBSchema{
 						},
 					},
 				},
+				"dir": {
+					Name:    "dir",
+					Indexer: &DirHandleFieldIndexer{Field: "Dir"},
+				},
 			},
 		},
 		jobsTableName: {

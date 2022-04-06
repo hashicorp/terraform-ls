@@ -148,7 +148,7 @@ func (s *DocumentStore) CloseDocument(dh document.Handle) error {
 
 func (s *DocumentStore) ListDocumentsInDir(dirHandle document.DirHandle) ([]*document.Document, error) {
 	txn := s.db.Txn(false)
-	it, err := txn.Get(s.tableName, "id_prefix", dirHandle)
+	it, err := txn.Get(s.tableName, "dir", dirHandle)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (s *DocumentStore) IsDocumentOpen(dh document.Handle) (bool, error) {
 func (s *DocumentStore) HasOpenDocuments(dirHandle document.DirHandle) (bool, error) {
 	txn := s.db.Txn(false)
 
-	obj, err := txn.First(s.tableName, "id_prefix", dirHandle)
+	obj, err := txn.First(s.tableName, "dir", dirHandle)
 	if err != nil {
 		return false, err
 	}

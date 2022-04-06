@@ -335,7 +335,7 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 		return fmt.Errorf("failed to copy a job: %w", err)
 	}
 
-	js.logger.Printf("JOBS: Finishing job %q: %q for %q (err = %#v, deferredJobs: %q)",
+	js.logger.Printf("JOBS: Finishing job %q: %q for %q (err = %s, deferredJobs: %q)",
 		sj.ID, sj.Type, sj.Dir, jobErr, deferredJobIds)
 
 	_, err = txn.DeleteAll(js.tableName, "id", id)
