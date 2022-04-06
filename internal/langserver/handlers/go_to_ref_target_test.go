@@ -12,11 +12,18 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestDefinition_basic(t *testing.T) {
 	tmpDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -44,6 +51,8 @@ func TestDefinition_basic(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -55,6 +64,7 @@ func TestDefinition_basic(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -114,6 +124,12 @@ func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -151,6 +167,8 @@ func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -168,6 +186,7 @@ func TestDefinition_withLinkToDefLessBlock(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -257,6 +276,7 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -295,6 +315,8 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -312,6 +334,7 @@ func TestDefinition_withLinkToDefBlock(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -336,12 +359,6 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
-
-	jobIds, err := ss.JobStore.ListQueuedJobs()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("queued jobs: %q", jobIds)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
@@ -401,12 +418,20 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 	}
 	modHandle := document.DirHandleFromPath(modPath)
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				modPath: validTfMockCalls(),
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -418,6 +443,7 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, modHandle.URI)})
+	waitForWalkerPath(t, ss, wc, modHandle)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -473,6 +499,12 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 func TestDeclaration_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -499,6 +531,8 @@ func TestDeclaration_basic(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -510,6 +544,7 @@ func TestDeclaration_basic(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -569,6 +604,12 @@ func TestDeclaration_withLinkSupport(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -606,6 +647,8 @@ func TestDeclaration_withLinkSupport(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -623,6 +666,7 @@ func TestDeclaration_withLinkSupport(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

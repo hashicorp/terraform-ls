@@ -20,6 +20,7 @@ const (
 	moduleIdsTableName      = "module_ids"
 	providerSchemaTableName = "provider_schema"
 	providerIdsTableName    = "provider_ids"
+	walkerPathsTableName    = "walker_paths"
 )
 
 var dbSchema = &memdb.DBSchema{
@@ -141,6 +142,25 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		walkerPathsTableName: {
+			Name: walkerPathsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &DirHandleFieldIndexer{Field: "Dir"},
+				},
+				"is_dir_open_state": {
+					Name: "is_dir_open_state",
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&memdb.BoolFieldIndex{Field: "IsDirOpen"},
+							&memdb.UintFieldIndex{Field: "State"},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 
@@ -149,6 +169,7 @@ type StateStore struct {
 	JobStore        *JobStore
 	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
+	WalkerPaths     *WalkerPathStore
 
 	db *memdb.MemDB
 }
@@ -213,6 +234,13 @@ func NewStateStore() (*StateStore, error) {
 			tableName: providerSchemaTableName,
 			logger:    defaultLogger,
 		},
+		WalkerPaths: &WalkerPathStore{
+			db:              db,
+			tableName:       walkerPathsTableName,
+			logger:          defaultLogger,
+			nextOpenDirMu:   &sync.Mutex{},
+			nextClosedDirMu: &sync.Mutex{},
+		},
 	}, nil
 }
 
@@ -221,6 +249,7 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.JobStore.logger = logger
 	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
+	s.WalkerPaths.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)

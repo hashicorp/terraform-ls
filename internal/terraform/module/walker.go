@@ -1,16 +1,14 @@
 package module
 
 import (
-	"container/heap"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -40,6 +38,7 @@ type pathToWatch struct{}
 type Walker struct {
 	fs ReadOnlyFS
 
+	pathStore     PathStore
 	modStore      *state.ModuleStore
 	schemaStore   *state.ProviderSchemaStore
 	jobStore      job.JobStore
@@ -47,39 +46,29 @@ type Walker struct {
 
 	watcher Watcher
 	logger  *log.Logger
-	sync    bool
 
-	queue    *walkerQueue
-	queueMu  *sync.Mutex
-	pushChan chan struct{}
+	Collector *WalkerCollector
 
-	walking    bool
-	walkingMu  *sync.RWMutex
 	cancelFunc context.CancelFunc
-	doneCh     <-chan struct{}
 
 	excludeModulePaths   map[string]bool
 	ignoreDirectoryNames map[string]bool
 }
 
-// queueCap represents channel buffer size
-// which when reached causes EnqueuePath to block
-// until a path is consumed
-const queueCap = 50
+type PathStore interface {
+	AwaitNextDir(ctx context.Context) (document.DirHandle, error)
+	RemoveDir(dir document.DirHandle) error
+}
 
-func NewWalker(fs ReadOnlyFS, ds DocumentStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) *Walker {
+func NewWalker(fs ReadOnlyFS, ps PathStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) *Walker {
 	return &Walker{
+		pathStore:            ps,
 		fs:                   fs,
 		modStore:             ms,
 		jobStore:             js,
 		schemaStore:          pss,
 		tfExecFactory:        tfExec,
 		logger:               discardLogger,
-		walkingMu:            &sync.RWMutex{},
-		queue:                newWalkerQueue(ds),
-		queueMu:              &sync.Mutex{},
-		pushChan:             make(chan struct{}, queueCap),
-		doneCh:               make(chan struct{}, 0),
 		ignoreDirectoryNames: skipDirNames,
 	}
 }
@@ -100,6 +89,9 @@ func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
 }
 
 func (w *Walker) SetIgnoreDirectoryNames(ignoreDirectoryNames []string) {
+	if w.cancelFunc != nil {
+		panic("cannot set ignorelist after walking started")
+	}
 	for _, path := range ignoreDirectoryNames {
 		w.ignoreDirectoryNames[path] = true
 	}
@@ -109,127 +101,60 @@ func (w *Walker) Stop() {
 	if w.cancelFunc != nil {
 		w.cancelFunc()
 	}
-
-	if w.IsWalking() {
-		w.logger.Println("stopping walker")
-		w.setWalking(false)
-	}
-}
-
-func (w *Walker) setWalking(isWalking bool) {
-	w.walkingMu.Lock()
-	defer w.walkingMu.Unlock()
-	w.walking = isWalking
-}
-
-func (w *Walker) EnqueuePath(path string) {
-	w.queueMu.Lock()
-	defer w.queueMu.Unlock()
-	heap.Push(w.queue, path)
-
-	w.triggerConsumption()
-}
-
-func (w *Walker) triggerConsumption() {
-	w.pushChan <- struct{}{}
-}
-
-func (w *Walker) RemovePathFromQueue(path string) {
-	w.queueMu.Lock()
-	defer w.queueMu.Unlock()
-	w.queue.RemoveFromQueue(path)
 }
 
 func (w *Walker) StartWalking(ctx context.Context) error {
-	if w.IsWalking() {
-		return fmt.Errorf("walker is already running")
-	}
-
 	ctx, cancelFunc := context.WithCancel(ctx)
 	w.cancelFunc = cancelFunc
-	w.doneCh = ctx.Done()
-	w.setWalking(true)
 
-	if w.sync {
-		var errs *multierror.Error
-
-		jobIds := make(job.IDs, 0)
+	go func() {
 		for {
-			w.queueMu.Lock()
-			if w.queue.Len() == 0 {
-				w.queueMu.Unlock()
-				break
-			}
-			nextPath := heap.Pop(w.queue)
-			w.queueMu.Unlock()
-
-			path := nextPath.(string)
-			w.logger.Printf("synchronously walking through %s", path)
-			ids, err := w.walk(ctx, path)
+			nextDir, err := w.pathStore.AwaitNextDir(ctx)
 			if err != nil {
-				multierror.Append(errs, err)
-			}
-			jobIds = append(jobIds, ids...)
-		}
-
-		w.logger.Printf("waiting for %d jobs before stopping walker", len(jobIds))
-		err := w.jobStore.WaitForJobs(ctx, jobIds...)
-		if err != nil {
-			return err
-		}
-		w.logger.Println("waiting done, synchronous walking finished")
-
-		w.Stop()
-		return errs.ErrorOrNil()
-	}
-
-	var nextPathToWalk = make(chan string)
-
-	go func(w *Walker) {
-		for {
-			w.queueMu.Lock()
-			if w.queue.Len() == 0 {
-				w.queueMu.Unlock()
-				select {
-				case <-w.pushChan:
-					// block to avoid infinite loop
-					continue
-				case <-w.doneCh:
+				if errors.Is(err, context.Canceled) {
 					return
 				}
-			}
-			nextPath := heap.Pop(w.queue)
-			w.queueMu.Unlock()
-			path := nextPath.(string)
-			nextPathToWalk <- path
-		}
-	}(w)
-
-	go func(w *Walker, pathsChan chan string) {
-		for {
-			select {
-			case <-w.doneCh:
+				w.logger.Printf("walker: awaiting next dir failed: %s", err)
+				w.collectError(err)
 				return
-			case path := <-pathsChan:
-				w.logger.Printf("asynchronously walking through %s", path)
-				_, err := w.walk(ctx, path)
-				if err != nil {
-					w.logger.Printf("async walking through %s failed: %s", path, err)
-					return
-				}
-				w.logger.Printf("async walking through %s finished", path)
+			}
+
+			err = w.walk(ctx, nextDir)
+			if err != nil {
+				w.logger.Printf("walker: walking through %q failed: %s", nextDir, err)
+				w.collectError(err)
+				continue
+			}
+
+			err = w.pathStore.RemoveDir(nextDir)
+			if err != nil {
+				w.logger.Printf("walker: removing dir %q from queue failed: %s", nextDir, err)
+				w.collectError(err)
+				continue
+			}
+			w.logger.Printf("walker: walking through %q finished", nextDir)
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
 			}
 		}
-	}(w, nextPathToWalk)
+	}()
 
 	return nil
 }
 
-func (w *Walker) IsWalking() bool {
-	w.walkingMu.RLock()
-	defer w.walkingMu.RUnlock()
+func (w *Walker) collectError(err error) {
+	if w.Collector != nil {
+		w.Collector.CollectError(err)
+	}
+}
 
-	return w.walking
+func (w *Walker) collectJobId(jobId job.ID) {
+	if w.Collector != nil {
+		w.Collector.CollectJobId(jobId)
+	}
 }
 
 func (w *Walker) isSkippableDir(dirName string) bool {
@@ -237,14 +162,14 @@ func (w *Walker) isSkippableDir(dirName string) bool {
 	return ok
 }
 
-func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err error) {
+func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 	// We ignore the passed FS and instead read straight from OS FS
 	// because that would require reimplementing filepath.Walk and
 	// the data directory should never be on the virtual filesystem anyway
-	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(dir.Path(), func(path string, info os.FileInfo, err error) error {
 		select {
-		case <-w.doneCh:
-			w.logger.Printf("cancelling walk of %s...", rootPath)
+		case <-ctx.Done():
+			w.logger.Printf("cancelling walk of %s...", dir)
 			return fmt.Errorf("walk cancelled")
 		default:
 		}
@@ -271,6 +196,9 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 		if info.Name() == datadir.DataDirName {
 			w.logger.Printf("found module %s", dir)
 
+			// TODO: decouple into its own function and pass as WalkFunc to NewWalker
+			// this could reduce the amount of args in NewWalker
+
 			_, err := w.modStore.ModuleByPath(dir)
 			if err != nil {
 				if state.IsModuleNotFound(err) {
@@ -295,7 +223,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			if err != nil {
 				return err
 			}
-			jobIds = append(jobIds, id)
+			w.collectJobId(id)
 
 			id, err = w.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
@@ -321,7 +249,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			if err != nil {
 				return err
 			}
-			jobIds = append(jobIds, id)
+			w.collectJobId(id)
 
 			id, err = w.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
@@ -334,7 +262,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			if err != nil {
 				return err
 			}
-			jobIds = append(jobIds, id)
+			w.collectJobId(id)
 
 			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
 			w.logger.Printf("parsed datadir: %#v", dataDir)
@@ -351,7 +279,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 				if err != nil {
 					return err
 				}
-				jobIds = append(jobIds, id)
+				w.collectJobId(id)
 			}
 
 			if dataDir.ModuleManifestPath != "" {
@@ -386,7 +314,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			if err != nil {
 				return err
 			}
-			jobIds = append(jobIds, id)
+			w.collectJobId(id)
 
 			id, err = w.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
@@ -398,7 +326,7 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 			if err != nil {
 				return err
 			}
-			jobIds = append(jobIds, id)
+			w.collectJobId(id)
 
 			if w.watcher != nil {
 				w.watcher.AddModule(dir)
@@ -414,6 +342,6 @@ func (w *Walker) walk(ctx context.Context, rootPath string) (jobIds job.IDs, err
 
 		return nil
 	})
-	w.logger.Printf("walking of %s finished", rootPath)
-	return
+	w.logger.Printf("walking of %s finished", dir)
+	return err
 }

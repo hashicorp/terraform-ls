@@ -9,7 +9,9 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -40,6 +42,12 @@ func TestHover_withValidData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -78,6 +86,8 @@ func TestHover_withValidData(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -88,7 +98,8 @@ func TestHover_withValidData(t *testing.T) {
 		"capabilities": {},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -140,6 +151,12 @@ func TestVarsHover_withValidData(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -176,7 +193,10 @@ func TestVarsHover_withValidData(t *testing.T) {
 					},
 				},
 			},
-		}}))
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -187,6 +207,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 		"rootUri": %q,
 		"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",

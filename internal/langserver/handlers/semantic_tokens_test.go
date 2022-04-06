@@ -8,7 +8,9 @@ import (
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -21,6 +23,12 @@ func TestSemanticTokensFull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -58,7 +66,10 @@ func TestSemanticTokensFull(t *testing.T) {
 					},
 				},
 			},
-		}}))
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -86,7 +97,8 @@ func TestSemanticTokensFull(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -100,7 +112,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -108,7 +120,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI)}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -129,6 +141,12 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -166,7 +184,10 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 					},
 				},
 			},
-		}}))
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -196,7 +217,8 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -210,7 +232,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"text": "provider \"test\" {\n\n}\n",
 			"uri": "%s/main.tf"
 		}
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -218,7 +240,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, TempDir(t).URI)}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 3,
 			"result": {
@@ -239,6 +261,12 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -276,7 +304,10 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 					},
 				},
 			},
-		}}))
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -303,7 +334,8 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 		},
 		"rootUri": %q,
 		"processId": 12345
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -335,7 +367,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/terraform.tfvars"
 			}
-		}`, TempDir(t).URI)}, `{
+		}`, tmpDir.URI)}, `{
 			"jsonrpc": "2.0",
 			"id": 4,
 			"result": {

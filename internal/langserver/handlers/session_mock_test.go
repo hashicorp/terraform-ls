@@ -20,6 +20,7 @@ type MockSessionInput struct {
 	TerraformCalls     *exec.TerraformMockCalls
 	AdditionalHandlers map[string]handler.Func
 	StateStore         *state.StateStore
+	WalkerCollector    *module.WalkerCollector
 }
 
 type mockSession struct {
@@ -36,8 +37,10 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 
 	var handlers map[string]handler.Func
 	var stateStore *state.StateStore
+	var walkerCollector *module.WalkerCollector
 	if ms.mockInput != nil {
 		stateStore = ms.mockInput.StateStore
+		walkerCollector = ms.mockInput.WalkerCollector
 		handlers = ms.mockInput.AdditionalHandlers
 	}
 
@@ -56,11 +59,11 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		sessCtx:            sessCtx,
 		stopSession:        ms.stop,
 		newWatcher:         module.MockWatcher(),
-		newWalker:          module.SyncWalker,
 		tfDiscoFunc:        d.LookPath,
 		tfExecFactory:      exec.NewMockExecutor(tfCalls),
 		additionalHandlers: handlers,
 		stateStore:         stateStore,
+		walkerCollector:    walkerCollector,
 	}
 
 	return svc

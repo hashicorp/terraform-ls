@@ -8,18 +8,29 @@ import (
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestInitialize_twice(t *testing.T) {
 	tmpDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): validTfMockCalls(),
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -30,18 +41,26 @@ func TestInitialize_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "initialize",
 		ReqParams: fmt.Sprintf(`{
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, TempDir(t).URI)}, code.SystemError.Err())
+	}`, tmpDir.URI)}, code.SystemError.Err())
 }
 
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	tmpDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
@@ -60,6 +79,8 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 				},
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -70,7 +91,8 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	    "capabilities": {},
 	    "processId": 12345,
 	    "rootUri": %q
-	}`, TempDir(t).URI)})
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 }
 
 func TestInitialize_withInvalidRootURI(t *testing.T) {
@@ -96,12 +118,21 @@ func TestInitialize_withInvalidRootURI(t *testing.T) {
 
 func TestInitialize_multipleFolders(t *testing.T) {
 	rootDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				rootDir.Path(): validTfMockCalls(),
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -119,6 +150,7 @@ func TestInitialize_multipleFolders(t *testing.T) {
 	    	}
 	    ]
 	}`, rootDir.URI, rootDir.URI)})
+	waitForWalkerPath(t, ss, wc, rootDir)
 }
 
 func TestInitialize_ignoreDirectoryNames(t *testing.T) {
@@ -128,6 +160,12 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 
 	InitPluginCache(t, pluginDir)
 	InitPluginCache(t, emptyDir)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -144,7 +182,10 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 					},
 				},
 			},
-		}}))
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -158,4 +199,5 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 				"ignoreDirectoryNames": [%q]
 			}
 	}`, tmpDir.URI, "ignore")})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 }

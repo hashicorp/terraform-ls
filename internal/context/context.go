@@ -23,7 +23,6 @@ var (
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
 	ctxWatcher              = &contextKey{"watcher"}
-	ctxModuleWalker         = &contextKey{"module walker"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
 	ctxDiagsNotifier        = &contextKey{"diagnostics notifier"}
@@ -117,18 +116,6 @@ func CommandPrefix(ctx context.Context) (string, bool) {
 		return "", false
 	}
 	return *commandPrefix, true
-}
-
-func WithModuleWalker(ctx context.Context, w *module.Walker) context.Context {
-	return context.WithValue(ctx, ctxModuleWalker, w)
-}
-
-func ModuleWalker(ctx context.Context) (*module.Walker, error) {
-	w, ok := ctx.Value(ctxModuleWalker).(*module.Walker)
-	if !ok {
-		return nil, missingContextErr(ctxModuleWalker)
-	}
-	return w, nil
 }
 
 func WithDiagnosticsNotifier(ctx context.Context, diags *diagnostics.Notifier) context.Context {

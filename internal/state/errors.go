@@ -3,6 +3,7 @@ package state
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 )
 
@@ -64,4 +65,26 @@ func (e jobNotFound) Error() string {
 		return fmt.Sprintf("job %q not found", e.ID)
 	}
 	return "job not found"
+}
+
+type walkerPathNotFound struct {
+	Dir document.DirHandle
+}
+
+func (e walkerPathNotFound) Error() string {
+	if e.Dir.URI != "" {
+		return fmt.Sprintf("dir %q not found", e.Dir)
+	}
+	return "dir not found"
+}
+
+type pathAlreadyWalking struct {
+	Dir document.DirHandle
+}
+
+func (e pathAlreadyWalking) Error() string {
+	if e.Dir.URI != "" {
+		return fmt.Sprintf("dir %q is already being walked", e.Dir)
+	}
+	return "dir is already being walked"
 }
