@@ -17,6 +17,5 @@ jobs:
         with:
           body: |
             This functionality has been released in [${{ github.event.milestone.title }} of the language server](https://github.com/${{ github.repository }}/blob/${{ github.event.milestone.title }}/CHANGELOG.md).
-            If you use the official Terraform VS Code extension, it will prompt you to upgrade to this version automatically upon next launch or within the next 24 hours.
 
             For further feature requests or bug reports with this functionality, please create a [new GitHub issue](https://github.com/${{ github.repository }}/issues/new/choose) following the template. Thank you!
