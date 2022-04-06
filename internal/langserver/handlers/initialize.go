@@ -17,7 +17,7 @@ import (
 )
 
 func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.InitializeResult, error) {
-	serverCaps := buildInitializeResult(ctx)
+	serverCaps := initializeResult(ctx)
 
 	out, err := settings.DecodeOptions(params.InitializationOptions)
 	if err != nil {
@@ -29,7 +29,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		return serverCaps, err
 	}
 
-	properties := getProperties(out)
+	properties := mapProperties(out)
 	properties["lsVersion"] = serverCaps.ServerInfo.Version
 
 	clientCaps := params.Capabilities
@@ -109,17 +109,19 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	if params.RootURI == "" {
 		svc.singleFileMode = true
 		properties["root_uri"] = "file"
-		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
-			Type:    lsp.Warning,
-			Message: "Some capabilities may be reduced when editing a single file, but you can still open text files and edit them. We recommend opening a directory for full functionality.",
-		})
+		if properties["options.ignoreSingleFileWarning"] == false {
+			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				Type:    lsp.Warning,
+				Message: "Some capabilities may be reduced when editing a single file, but you can still open text files and edit them. We recommend opening a directory for full functionality.",
+			})
+		}
 	} else {
 		if !uri.IsURIValid(string(params.RootURI)) {
 			properties["root_uri"] = "invalid"
 			return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
 		}
 
-		err := svc.setWalker(ctx, params, cfgOpts)
+		err := svc.setupWalker(ctx, params, cfgOpts)
 		if err != nil {
 			return serverCaps, err
 		}
@@ -153,9 +155,10 @@ func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, ctx c
 	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
 }
 
-func getProperties(out *settings.DecodedOptions) map[string]interface{} {
+func mapProperties(out *settings.DecodedOptions) map[string]interface{} {
 	properties := map[string]interface{}{
 		"experimentalCapabilities.referenceCountCodeLens": false,
+		"options.ignoreSingleFileWarning":                 false,
 		"options.rootModulePaths":                         false,
 		"options.excludeModulePaths":                      false,
 		"options.commandPrefix":                           false,
@@ -169,11 +172,13 @@ func getProperties(out *settings.DecodedOptions) map[string]interface{} {
 	}
 
 	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
+	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
 	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
 	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
+	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
 	properties["options.terraformExecPath"] = len(out.Options.TerraformExecPath) > 0
 	properties["options.terraformExecTimeout"] = out.Options.TerraformExecTimeout
 	properties["options.terraformLogFilePath"] = len(out.Options.TerraformLogFilePath) > 0
@@ -181,7 +186,7 @@ func getProperties(out *settings.DecodedOptions) map[string]interface{} {
 	return properties
 }
 
-func buildInitializeResult(ctx context.Context) lsp.InitializeResult {
+func initializeResult(ctx context.Context) lsp.InitializeResult {
 	serverCaps := lsp.InitializeResult{
 		Capabilities: lsp.ServerCapabilities{
 			TextDocumentSync: lsp.TextDocumentSyncOptions{
@@ -222,7 +227,7 @@ func buildInitializeResult(ctx context.Context) lsp.InitializeResult {
 	return serverCaps
 }
 
-func (svc *service) setWalker(ctx context.Context, params lsp.InitializeParams, options *settings.Options) error {
+func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams, options *settings.Options) error {
 	root := document.DirHandleFromURI(string(params.RootURI))
 
 	err := lsctx.SetRootDirectory(ctx, root.Path())
