@@ -70,6 +70,10 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		return err
 	}
 
+	if svc.singleFileMode {
+		svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+	}
+
 	if !watcher.IsModuleWatched(mod.Path) {
 		err := watcher.AddModule(mod.Path)
 		if err != nil {
