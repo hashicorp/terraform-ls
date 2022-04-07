@@ -9,11 +9,16 @@ ENHANCEMENTS:
 
  - Provide (opt-in) custom semantic tokens & modifiers ([#833](https://github.com/hashicorp/terraform-ls/pull/833))
  - Enable 'go to module source' for local modules (via [#849](https://github.com/hashicorp/terraform-ls/pull/849))
+ - Enable opening a single Terraform file ([#843](https://github.com/hashicorp/terraform-ls/pull/843))
 
 BUG FIXES:
 
  - Avoid hanging when workspace contains >50 folders ([#839](https://github.com/hashicorp/terraform-ls/pull/839))
  - Make loading of parent directory after lower level directories work ([#851](https://github.com/hashicorp/terraform-ls/pull/851))
+
+INTERNAL:
+
+ - Add job scheduler benchmarks & document [expectations around performance](https://github.com/hashicorp/terraform-ls/blob/v0.27.0/docs/benchmarks.md) ([#840](https://github.com/hashicorp/terraform-ls/pull/840))
 
 ## 0.26.0 (17 March 2022)
 
