@@ -271,19 +271,6 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 	svc.openDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
 	svc.openDirWalker.SetExcludeModulePaths(excludeModulePaths)
 
-	// Walkers run asynchronously so we're intentionally *not*
-	// passing the request context here
-	// Static user-provided paths take precedence over dynamic discovery
-	// walkerCtx := context.Background()
-	// err = svc.closedDirWalker.StartWalking(walkerCtx)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to start closedDirWalker: %w", err)
-	// }
-	// err = svc.openDirWalker.StartWalking(walkerCtx)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to start openDirWalker: %w", err)
-	// }
-
 	if len(options.ModulePaths) > 0 {
 		svc.logger.Printf("Attempting to add %d static module paths", len(options.ModulePaths))
 		for _, rawPath := range options.ModulePaths {
