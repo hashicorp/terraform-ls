@@ -245,15 +245,16 @@ func listProviders(tier string) ([]provider, error) {
 }
 
 var ignore = map[string]bool{
-	"a10networks/vthunder":    true,
-	"harness-io/harness":      true,
-	"HewlettPackard/oneview":  true,
-	"HewlettPackard/hpegl":    true,
-	"jradtilbrook/buildkite":  true,
-	"kvrhdn/honeycombio":      true,
-	"ThalesGroup/ciphertrust": true,
-	"nullstone-io/ns":         true,
-	"zededa/zedcloud":         true,
+	"a10networks/vthunder":         true,
+	"delphix-integrations/delphix": true,
+	"harness-io/harness":           true,
+	"HewlettPackard/oneview":       true,
+	"HewlettPackard/hpegl":         true,
+	"jradtilbrook/buildkite":       true,
+	"kvrhdn/honeycombio":           true,
+	"ThalesGroup/ciphertrust":      true,
+	"nullstone-io/ns":              true,
+	"zededa/zedcloud":              true,
 }
 
 func filter(providers []provider) (filtered []provider) {
