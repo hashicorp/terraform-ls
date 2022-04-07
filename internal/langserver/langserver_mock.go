@@ -18,6 +18,11 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 )
 
+type T interface {
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+}
+
 type langServerMock struct {
 	srv    *langServer
 	logger *log.Logger
@@ -36,7 +41,7 @@ type langServerMock struct {
 	clientStdout io.WriteCloser
 }
 
-func NewLangServerMock(t *testing.T, sf session.SessionFactory) *langServerMock {
+func NewLangServerMock(t T, sf session.SessionFactory) *langServerMock {
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
@@ -79,7 +84,7 @@ func (lsm *langServerMock) StopFuncCalled() bool {
 // except that this one doesn't wait
 //
 // TODO: Explore whether we could leverage jrpc2's server.Local
-func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
+func (lsm *langServerMock) Start(t T) context.CancelFunc {
 	lsm.logger.Println("Starting mock server ...")
 
 	srv, err := lsm.srv.startServer(lsm.srvStdin, lsm.srvStdout)
@@ -103,7 +108,7 @@ func (lsm *langServerMock) Start(t *testing.T) context.CancelFunc {
 	return lsm.Stop
 }
 
-func (lsm *langServerMock) CloseClientStdout(t *testing.T) {
+func (lsm *langServerMock) CloseClientStdout(t T) {
 	err := lsm.clientStdout.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +120,7 @@ type CallRequest struct {
 	ReqParams string
 }
 
-func (lsm *langServerMock) Call(t *testing.T, cr *CallRequest) *rawResponse {
+func (lsm *langServerMock) Call(t T, cr *CallRequest) *rawResponse {
 	rsp, err := lsm.client.Call(context.Background(), cr.Method, json.RawMessage(cr.ReqParams))
 	if err != nil {
 		t.Fatal(err)
