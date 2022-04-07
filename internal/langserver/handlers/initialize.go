@@ -112,7 +112,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		if properties["options.ignoreSingleFileWarning"] == false {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 				Type:    lsp.Warning,
-				Message: "Some capabilities may be reduced when editing a single file, but you can still open text files and edit them. We recommend opening a directory for full functionality.",
+				Message: "Some capabilities may be reduced when editing a single file. We recommend opening a directory for full functionality. Use 'ignoreSingleFileWarning' to suppress this warning.",
 			})
 		}
 	} else {
