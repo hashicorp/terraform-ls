@@ -29,7 +29,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		return serverCaps, err
 	}
 
-	properties := mapProperties(out)
+	properties := getTelemetryProperties(out)
 	properties["lsVersion"] = serverCaps.ServerInfo.Version
 
 	clientCaps := params.Capabilities
@@ -155,7 +155,7 @@ func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, ctx c
 	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
 }
 
-func mapProperties(out *settings.DecodedOptions) map[string]interface{} {
+func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{} {
 	properties := map[string]interface{}{
 		"experimentalCapabilities.referenceCountCodeLens": false,
 		"options.ignoreSingleFileWarning":                 false,
