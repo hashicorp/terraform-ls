@@ -71,7 +71,10 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	if svc.singleFileMode {
-		svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+		err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !watcher.IsModuleWatched(mod.Path) {
