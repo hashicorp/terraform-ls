@@ -80,6 +80,10 @@ The following list of directories will always be ignored:
 - `terraform.tfstate.d`
 - `.terragrunt-cache`
 
+## `ignoreSingleFileWarning` (`bool`)
+
+This setting controls whether terraform-ls sends a warning about opening up a single Terraform file instead of a Terraform folder. Setting this to `true` will prevent the message being sent. The default value is `false`.
+
 ## `experimentalFeatures` (object)
 
 This object contains inner settings used to opt into experimental features not yet ready to be on by default.

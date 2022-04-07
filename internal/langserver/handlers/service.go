@@ -61,6 +61,8 @@ type service struct {
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
+
+	singleFileMode bool
 }
 
 var discardLogs = log.New(ioutil.Discard, "", 0)

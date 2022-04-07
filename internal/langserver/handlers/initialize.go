@@ -17,89 +17,27 @@ import (
 )
 
 func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams) (lsp.InitializeResult, error) {
-	serverCaps := lsp.InitializeResult{
-		Capabilities: lsp.ServerCapabilities{
-			TextDocumentSync: lsp.TextDocumentSyncOptions{
-				OpenClose: true,
-				Change:    lsp.Incremental,
-			},
-			CompletionProvider: lsp.CompletionOptions{
-				ResolveProvider:   false,
-				TriggerCharacters: []string{".", "["},
-			},
-			CodeActionProvider: lsp.CodeActionOptions{
-				CodeActionKinds: ilsp.SupportedCodeActions.AsSlice(),
-				ResolveProvider: false,
-			},
-			DeclarationProvider:        lsp.DeclarationOptions{},
-			DefinitionProvider:         true,
-			CodeLensProvider:           lsp.CodeLensOptions{},
-			ReferencesProvider:         true,
-			HoverProvider:              true,
-			DocumentFormattingProvider: true,
-			DocumentSymbolProvider:     true,
-			WorkspaceSymbolProvider:    true,
-			Workspace: lsp.Workspace5Gn{
-				WorkspaceFolders: lsp.WorkspaceFolders4Gn{
-					Supported:           true,
-					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
-				},
-			},
-		},
+	serverCaps := initializeResult(ctx)
+
+	out, err := settings.DecodeOptions(params.InitializationOptions)
+	if err != nil {
+		return serverCaps, err
 	}
 
-	serverCaps.ServerInfo.Name = "terraform-ls"
-	version, ok := lsctx.LanguageServerVersion(ctx)
-	if ok {
-		serverCaps.ServerInfo.Version = version
+	err = out.Options.Validate()
+	if err != nil {
+		return serverCaps, err
 	}
+
+	properties := getTelemetryProperties(out)
+	properties["lsVersion"] = serverCaps.ServerInfo.Version
 
 	clientCaps := params.Capabilities
-
-	properties := map[string]interface{}{
-		"experimentalCapabilities.referenceCountCodeLens": false,
-		"options.rootModulePaths":                         false,
-		"options.excludeModulePaths":                      false,
-		"options.commandPrefix":                           false,
-		"options.ignoreDirectoryNames":                    false,
-		"options.experimentalFeatures.validateOnSave":     false,
-		"options.terraformExecPath":                       false,
-		"options.terraformExecTimeout":                    "",
-		"options.terraformLogFilePath":                    false,
-		"root_uri":                                        "dir",
-		"lsVersion":                                       serverCaps.ServerInfo.Version,
-	}
-
 	expClientCaps := lsp.ExperimentalClientCapabilities(clientCaps.Experimental)
 
 	svc.server = jrpc2.ServerFromContext(ctx)
 
-	if tv, ok := expClientCaps.TelemetryVersion(); ok {
-		svc.logger.Printf("enabling telemetry (version: %d)", tv)
-		err := svc.setupTelemetry(tv, svc.server)
-		if err != nil {
-			svc.logger.Printf("failed to setup telemetry: %s", err)
-		}
-		svc.logger.Printf("telemetry enabled (version: %d)", tv)
-	}
-	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
-
-	if params.RootURI == "" {
-		properties["root_uri"] = "file"
-		return serverCaps, fmt.Errorf("Editing a single file is not yet supported." +
-			" Please open a directory.")
-	}
-	if !uri.IsURIValid(string(params.RootURI)) {
-		properties["root_uri"] = "invalid"
-		return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
-	}
-
-	root := document.DirHandleFromURI(string(params.RootURI))
-
-	err := lsctx.SetRootDirectory(ctx, root.Path())
-	if err != nil {
-		return serverCaps, err
-	}
+	setupTelemetry(expClientCaps, svc, ctx, properties)
 
 	if params.ClientInfo.Name != "" {
 		err = ilsp.SetClientName(ctx, params.ClientInfo.Name)
@@ -108,7 +46,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	}
 
-	if _, ok = expClientCaps.ShowReferencesCommandId(); ok {
+	if _, ok := expClientCaps.ShowReferencesCommandId(); ok {
 		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
 			ReferenceCountCodeLens: true,
 		}
@@ -116,26 +54,6 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	}
 
 	err = ilsp.SetClientCapabilities(ctx, &clientCaps)
-	if err != nil {
-		return serverCaps, err
-	}
-
-	out, err := settings.DecodeOptions(params.InitializationOptions)
-	if err != nil {
-		return serverCaps, err
-	}
-
-	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
-	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
-	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
-	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
-	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
-	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
-	properties["options.terraformExecPath"] = len(out.Options.TerraformExecPath) > 0
-	properties["options.terraformExecTimeout"] = out.Options.TerraformExecTimeout
-	properties["options.terraformLogFilePath"] = len(out.Options.TerraformLogFilePath) > 0
-
-	err = out.Options.Validate()
 	if err != nil {
 		return serverCaps, err
 	}
@@ -188,8 +106,137 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		})
 	}
 
+	if params.RootURI == "" {
+		svc.singleFileMode = true
+		properties["root_uri"] = "file"
+		if properties["options.ignoreSingleFileWarning"] == false {
+			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				Type:    lsp.Warning,
+				Message: "Some capabilities may be reduced when editing a single file. We recommend opening a directory for full functionality. Use 'ignoreSingleFileWarning' to suppress this warning.",
+			})
+		}
+	} else {
+		if !uri.IsURIValid(string(params.RootURI)) {
+			properties["root_uri"] = "invalid"
+			return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
+		}
+
+		err := svc.setupWalker(ctx, params, cfgOpts)
+		if err != nil {
+			return serverCaps, err
+		}
+	}
+
+	// Walkers run asynchronously so we're intentionally *not*
+	// passing the request context here
+	// Static user-provided paths take precedence over dynamic discovery
+	walkerCtx := context.Background()
+	err = svc.closedDirWalker.StartWalking(walkerCtx)
+	if err != nil {
+		return serverCaps, fmt.Errorf("failed to start closedDirWalker: %w", err)
+	}
+	err = svc.openDirWalker.StartWalking(walkerCtx)
+	if err != nil {
+		return serverCaps, fmt.Errorf("failed to start openDirWalker: %w", err)
+	}
+
+	return serverCaps, err
+}
+
+func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, ctx context.Context, properties map[string]interface{}) {
+	if tv, ok := expClientCaps.TelemetryVersion(); ok {
+		svc.logger.Printf("enabling telemetry (version: %d)", tv)
+		err := svc.setupTelemetry(tv, svc.server)
+		if err != nil {
+			svc.logger.Printf("failed to setup telemetry: %s", err)
+		}
+		svc.logger.Printf("telemetry enabled (version: %d)", tv)
+	}
+	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
+}
+
+func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{} {
+	properties := map[string]interface{}{
+		"experimentalCapabilities.referenceCountCodeLens": false,
+		"options.ignoreSingleFileWarning":                 false,
+		"options.rootModulePaths":                         false,
+		"options.excludeModulePaths":                      false,
+		"options.commandPrefix":                           false,
+		"options.ignoreDirectoryNames":                    false,
+		"options.experimentalFeatures.validateOnSave":     false,
+		"options.terraformExecPath":                       false,
+		"options.terraformExecTimeout":                    "",
+		"options.terraformLogFilePath":                    false,
+		"root_uri":                                        "dir",
+		"lsVersion":                                       "",
+	}
+
+	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
+	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
+	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
+	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
+	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
+	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
+	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
+	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
+	properties["options.terraformExecPath"] = len(out.Options.TerraformExecPath) > 0
+	properties["options.terraformExecTimeout"] = out.Options.TerraformExecTimeout
+	properties["options.terraformLogFilePath"] = len(out.Options.TerraformLogFilePath) > 0
+
+	return properties
+}
+
+func initializeResult(ctx context.Context) lsp.InitializeResult {
+	serverCaps := lsp.InitializeResult{
+		Capabilities: lsp.ServerCapabilities{
+			TextDocumentSync: lsp.TextDocumentSyncOptions{
+				OpenClose: true,
+				Change:    lsp.Incremental,
+			},
+			CompletionProvider: lsp.CompletionOptions{
+				ResolveProvider:   false,
+				TriggerCharacters: []string{".", "["},
+			},
+			CodeActionProvider: lsp.CodeActionOptions{
+				CodeActionKinds: ilsp.SupportedCodeActions.AsSlice(),
+				ResolveProvider: false,
+			},
+			DeclarationProvider:        lsp.DeclarationOptions{},
+			DefinitionProvider:         true,
+			CodeLensProvider:           lsp.CodeLensOptions{},
+			ReferencesProvider:         true,
+			HoverProvider:              true,
+			DocumentFormattingProvider: true,
+			DocumentSymbolProvider:     true,
+			WorkspaceSymbolProvider:    true,
+			Workspace: lsp.Workspace5Gn{
+				WorkspaceFolders: lsp.WorkspaceFolders4Gn{
+					Supported:           true,
+					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
+				},
+			},
+		},
+	}
+
+	serverCaps.ServerInfo.Name = "terraform-ls"
+	version, ok := lsctx.LanguageServerVersion(ctx)
+	if ok {
+		serverCaps.ServerInfo.Version = version
+	}
+
+	return serverCaps
+}
+
+func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams, options *settings.Options) error {
+	root := document.DirHandleFromURI(string(params.RootURI))
+
+	err := lsctx.SetRootDirectory(ctx, root.Path())
+	if err != nil {
+		return err
+	}
+
 	var excludeModulePaths []string
-	for _, rawPath := range cfgOpts.ExcludeModulePaths {
+	for _, rawPath := range options.ExcludeModulePaths {
 		modPath, err := resolvePath(root.Path(), rawPath)
 		if err != nil {
 			svc.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
@@ -200,7 +247,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	err = svc.stateStore.WalkerPaths.EnqueueDir(root)
 	if err != nil {
-		return serverCaps, err
+		return err
 	}
 
 	if len(params.WorkspaceFolders) > 0 {
@@ -219,27 +266,14 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	}
 
-	svc.closedDirWalker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
+	svc.closedDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
 	svc.closedDirWalker.SetExcludeModulePaths(excludeModulePaths)
-	svc.openDirWalker.SetIgnoreDirectoryNames(cfgOpts.IgnoreDirectoryNames)
+	svc.openDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
 	svc.openDirWalker.SetExcludeModulePaths(excludeModulePaths)
 
-	// Walkers run asynchronously so we're intentionally *not*
-	// passing the request context here
-	walkerCtx := context.Background()
-	err = svc.closedDirWalker.StartWalking(walkerCtx)
-	if err != nil {
-		return serverCaps, fmt.Errorf("failed to start closedDirWalker: %w", err)
-	}
-	err = svc.openDirWalker.StartWalking(walkerCtx)
-	if err != nil {
-		return serverCaps, fmt.Errorf("failed to start openDirWalker: %w", err)
-	}
-
-	// Static user-provided paths take precedence over dynamic discovery
-	if len(cfgOpts.ModulePaths) > 0 {
-		svc.logger.Printf("Attempting to add %d static module paths", len(cfgOpts.ModulePaths))
-		for _, rawPath := range cfgOpts.ModulePaths {
+	if len(options.ModulePaths) > 0 {
+		svc.logger.Printf("Attempting to add %d static module paths", len(options.ModulePaths))
+		for _, rawPath := range options.ModulePaths {
 			modPath, err := resolvePath(root.Path(), rawPath)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
@@ -251,14 +285,14 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 			err = svc.watcher.AddModule(modPath)
 			if err != nil {
-				return serverCaps, err
+				return err
 			}
 		}
 
-		return serverCaps, nil
+		return nil
 	}
 
-	return serverCaps, nil
+	return nil
 }
 
 func resolvePath(rootDir, rawPath string) (string, error) {

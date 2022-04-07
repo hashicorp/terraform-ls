@@ -25,6 +25,8 @@ type Options struct {
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
 
+	IgnoreSingleFileWarning bool `mapstructure:"ignoreSingleFileWarning"`
+
 	TerraformExecPath    string `mapstructure:"terraformExecPath"`
 	TerraformExecTimeout string `mapstructure:"terraformExecTimeout"`
 	TerraformLogFilePath string `mapstructure:"terraformLogFilePath"`
