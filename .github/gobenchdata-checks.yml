@@ -61,7 +61,7 @@ checks:
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1430
-    max: 2470
+    max: 2700
 - package: ./internal/langserver/handlers
   name: google-gke
   benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
