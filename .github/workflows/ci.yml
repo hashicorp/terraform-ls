@@ -30,7 +30,7 @@ jobs:
           echo "::set-output name=content::$content"
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         env:
           GOPROXY: https://proxy.golang.org/
         with:
@@ -80,7 +80,7 @@ jobs:
           echo "::set-output name=content::$content"
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
