@@ -40,7 +40,7 @@ checks:
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1570
-    max: 2500
+    max: 2900
 - package: ./internal/langserver/handlers
   name: aws-vpc
   benchmarks: [BenchmarkInitializeFolder_basic/aws-vpc]
@@ -61,7 +61,7 @@ checks:
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1430
-    max: 2470
+    max: 2700
 - package: ./internal/langserver/handlers
   name: google-gke
   benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
