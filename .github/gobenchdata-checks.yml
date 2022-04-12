@@ -74,7 +74,7 @@ checks:
   benchmarks: [BenchmarkInitializeFolder_basic/k8s-metrics-server]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
-    min: 1060
+    min: 1000
     max: 2800
 - package: ./internal/langserver/handlers
   name: k8s-dashboard
