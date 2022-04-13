@@ -18,7 +18,7 @@ func Test_parseModuleRecords(t *testing.T) {
 			records: []datadir.ModuleRecord{
 				{
 					Key:        "ec2_instances",
-					SourceAddr: "terraform-aws-modules/ec2-instance/aws",
+					SourceAddr: "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
 					VersionStr: "2.12.0",
 					Dir:        ".terraform\\modules\\ec2_instances",
 				},
@@ -30,7 +30,7 @@ func Test_parseModuleRecords(t *testing.T) {
 				},
 				{
 					Key:        "eks",
-					SourceAddr: "terraform-aws-modules/eks/aws",
+					SourceAddr: "registry.terraform.io/terraform-aws-modules/eks/aws",
 					VersionStr: "17.20.0",
 					Dir:        ".terraform\\modules\\eks",
 				},
@@ -44,7 +44,7 @@ func Test_parseModuleRecords(t *testing.T) {
 			want: []moduleCall{
 				{
 					Name:             "ec2_instances",
-					SourceAddr:       "terraform-aws-modules/ec2-instance/aws",
+					SourceAddr:       "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
 					Version:          "2.12.0",
 					SourceType:       "tfregistry",
 					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/2.12.0",
@@ -52,7 +52,7 @@ func Test_parseModuleRecords(t *testing.T) {
 				},
 				{
 					Name:       "eks",
-					SourceAddr: "terraform-aws-modules/eks/aws",
+					SourceAddr: "registry.terraform.io/terraform-aws-modules/eks/aws",
 					Version:    "17.20.0",
 					SourceType: "tfregistry",
 					DocsLink:   "https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/17.20.0",
