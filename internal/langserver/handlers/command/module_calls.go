@@ -129,5 +129,6 @@ func getModuleDocumentationLink(record datadir.ModuleRecord) string {
 		return ""
 	}
 
-	return fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, record.SourceAddr, record.VersionStr)
+	shortName := strings.TrimPrefix(record.SourceAddr, "registry.terraform.io/")
+	return fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
 }
