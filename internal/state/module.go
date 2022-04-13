@@ -318,6 +318,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
 				result = append(result, tfmod.ModuleCall{
 					LocalName:  record.Key,
 					SourceAddr: record.SourceAddr,
+					Version:    record.VersionStr,
 					Path:       filepath.Join(modPath, record.Dir),
 				})
 			}
