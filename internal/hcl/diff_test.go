@@ -179,6 +179,43 @@ ccc`,
 			},
 		},
 		{
+			name: "insertion to existing line",
+			beforeCfg: `resource "aws_lambda_function" "f" {
+    environment {
+        variables = {
+            a = "b"
+        }
+    }
+}
+`,
+			afterCfg: `resource "aws_lambda_function" "f" {
+  environment {
+    variables = {
+      a = "b"
+    }
+  }
+}
+`,
+			expectedChanges: document.Changes{
+				&fileChange{
+					newText: "  environment {\n    variables = {\n      a = \"b\"\n",
+					rng: &hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 37},
+						End:      hcl.Pos{Line: 6, Column: 1, Byte: 107},
+					},
+				},
+				&fileChange{
+					newText: "  }\n",
+					rng: &hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{Line: 7, Column: 1, Byte: 113},
+						End:      hcl.Pos{Line: 7, Column: 1, Byte: 113},
+					},
+				},
+			},
+		},
+		{
 			"empty to newline",
 			``,
 			`
