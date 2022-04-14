@@ -248,6 +248,7 @@ var ignore = map[string]bool{
 	"a10networks/vthunder":         true,
 	"delphix-integrations/delphix": true,
 	"harness-io/harness":           true,
+	"harness/harness-platform":     true,
 	"HewlettPackard/oneview":       true,
 	"HewlettPackard/hpegl":         true,
 	"jradtilbrook/buildkite":       true,
