@@ -62,12 +62,14 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) document.C
 
 	for _, group := range m.GetGroupedOpCodes(context) {
 		for _, c := range group {
-			beforeStart, beforeEnd := c.I1, c.I2
-			afterStart, afterEnd := c.J1, c.J2
-
 			if c.Tag == OpEqual {
 				continue
 			}
+
+			// lines to pick from the original document (to delete/replace/insert to)
+			beforeStart, beforeEnd := c.I1, c.I2
+			// lines to pick from the new document (to replace ^ with)
+			afterStart, afterEnd := c.J1, c.J2
 
 			if c.Tag == OpReplace {
 				var rng *hcl.Range
@@ -121,6 +123,10 @@ func diffLines(filename string, beforeLines, afterLines source.Lines) document.C
 				if beforeStart == beforeEnd {
 					line := beforeLines[beforeStart]
 					insertRng = line.Range.Ptr()
+
+					// We're inserting to the beginning of the line
+					// which we represent as 0-length range in HCL
+					insertRng.End = insertRng.Start
 				} else {
 					for i, line := range beforeLines[beforeStart:beforeEnd] {
 						if i == 0 {
