@@ -15,6 +15,7 @@ BUG FIXES:
 
  - Avoid hanging when workspace contains >50 folders ([#839](https://github.com/hashicorp/terraform-ls/pull/839))
  - Make loading of parent directory after lower level directories work ([#851](https://github.com/hashicorp/terraform-ls/pull/851))
+ - Fix corrupted diffs in formatting responses ([#876](https://github.com/hashicorp/terraform-ls/pull/876))
 
 INTERNAL:
 
