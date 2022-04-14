@@ -30,7 +30,7 @@ func Test_parseModuleRecords(t *testing.T) {
 				},
 				{
 					Key:        "eks",
-					SourceAddr: "registry.terraform.io/terraform-aws-modules/eks/aws",
+					SourceAddr: "terraform-aws-modules/eks/aws",
 					VersionStr: "17.20.0",
 					Dir:        ".terraform\\modules\\eks",
 				},
@@ -52,7 +52,7 @@ func Test_parseModuleRecords(t *testing.T) {
 				},
 				{
 					Name:       "eks",
-					SourceAddr: "registry.terraform.io/terraform-aws-modules/eks/aws",
+					SourceAddr: "terraform-aws-modules/eks/aws",
 					Version:    "17.20.0",
 					SourceType: "tfregistry",
 					DocsLink:   "https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/17.20.0",
