@@ -87,3 +87,42 @@ func Test_parseModuleRecords(t *testing.T) {
 		})
 	}
 }
+
+// With the release of Terraform 1.1.0 module source addresses are now stored normalized
+func Test_parseModuleRecords_v1_1(t *testing.T) {
+	tests := []struct {
+		name    string
+		records []datadir.ModuleRecord
+		want    []moduleCall
+	}{
+		{
+			name: "detects terraform module types",
+			records: []datadir.ModuleRecord{
+				{
+					Key:        "ec2_instances",
+					SourceAddr: "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
+					VersionStr: "2.12.0",
+					Dir:        ".terraform\\modules\\ec2_instances",
+				},
+			},
+			want: []moduleCall{
+				{
+					Name:             "ec2_instances",
+					SourceAddr:       "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
+					Version:          "2.12.0",
+					SourceType:       "tfregistry",
+					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/2.12.0",
+					DependentModules: []moduleCall{},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseModuleRecords(tt.records)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatalf("module mismatch: %s", diff)
+			}
+		})
+	}
+}

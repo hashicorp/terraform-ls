@@ -34,7 +34,9 @@ func (r *ModuleRecord) GetModuleType() ModuleType {
 	// the authorative source: hashicorp/terraform/internal/addrs/module_source.go.
 	// However this works enough for now to identify module types for display in vscode-terraform.
 	// Example: terraform-aws-modules/ec2-instance/aws
-	if _, err := tfregistry.ParseRawProviderSourceString(r.SourceAddr); err == nil {
+	_, err := tfregistry.ParseRawProviderSourceString(r.SourceAddr)
+	// Example: registry.terraform.io/terraform-aws-modules/vpc/aws
+	if err == nil || strings.HasPrefix(r.SourceAddr, "registry.terraform.io/") {
 		return TFREGISTRY
 	}
 
