@@ -1,4 +1,4 @@
-## 0.27.0 (Unreleased)
+## 0.27.0 (14 April 2022)
 
 NOTES / BREAKING CHANGES:
 
