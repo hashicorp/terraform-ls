@@ -4,7 +4,7 @@ checks:
   benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-no-provider]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
-    min: 29
+    min: 25
     max: 55
 - package: ./internal/langserver/handlers
   name: local-single-submodule-no-provider
