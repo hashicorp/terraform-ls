@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform-schema v0.0.0-20220406123003-d31af6231814
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
-	github.com/mitchellh/cli v1.1.2
+	github.com/mitchellh/cli v1.1.3
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pmezard/go-difflib v1.0.0
