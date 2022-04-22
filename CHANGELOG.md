@@ -1,3 +1,8 @@
+## 0.28.0 (Unreleased)
+
+INTERNAL:
+ - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
+
 ## 0.27.0 (14 April 2022)
 
 NOTES / BREAKING CHANGES:
