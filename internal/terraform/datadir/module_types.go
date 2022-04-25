@@ -3,7 +3,7 @@ package datadir
 import (
 	"strings"
 
-	tfregistry "github.com/hashicorp/terraform-registry-address"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
 )
 
 type ModuleType string
@@ -27,16 +27,10 @@ var moduleSourceLocalPrefixes = []string{
 // from. It currently supports detecting Terraform Registry modules, GitHub modules, Git modules, and
 // local file paths
 func (r *ModuleRecord) GetModuleType() ModuleType {
-	// TODO: It is technically incorrect to use the package hashicorp/terraform-registry-address
-	// here as it is written to parse Terraform provider addresses and may not work correctly on
-	// Terraform module addresses. The proper approach is to create a new parsing library that is
-	// dedicated to parsing these kinds of addresses correctly, by re-using the logic defined in
-	// the authorative source: hashicorp/terraform/internal/addrs/module_source.go.
-	// However this works enough for now to identify module types for display in vscode-terraform.
 	// Example: terraform-aws-modules/ec2-instance/aws
-	_, err := tfregistry.ParseRawProviderSourceString(r.SourceAddr)
 	// Example: registry.terraform.io/terraform-aws-modules/vpc/aws
-	if err == nil || strings.HasPrefix(r.SourceAddr, "registry.terraform.io/") {
+	moduleSourceRegistry, err := tfaddr.ParseRawModuleSourceRegistry(r.SourceAddr)
+	if err == nil && moduleSourceRegistry.PackageAddr.Host == "registry.terraform.io" {
 		return TFREGISTRY
 	}
 
