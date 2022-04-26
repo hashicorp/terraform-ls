@@ -1,7 +1,11 @@
 ## 0.28.0 (Unreleased)
 
+ENHANCEMENTS:
+ - Link to documentation from module source for registry modules (via [#874](https://github.com/hashicorp/terraform-ls/pull/874))
+
 INTERNAL:
  - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
+ - Use `terraform-registry-address` for parsing module sources ([#891](https://github.com/hashicorp/terraform-ls/pull/891))
 
 ## 0.27.0 (14 April 2022)
 
