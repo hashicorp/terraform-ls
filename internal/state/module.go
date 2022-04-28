@@ -23,6 +23,7 @@ type ModuleMetadata struct {
 	Variables            map[string]tfmod.Variable
 	Outputs              map[string]tfmod.Output
 	Filenames            []string
+	ModuleCalls          map[string]tfmod.ModuleCall
 }
 
 func (mm ModuleMetadata) Copy() ModuleMetadata {
@@ -65,6 +66,13 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 		newMm.Outputs = make(map[string]tfmod.Output, len(mm.Outputs))
 		for name, output := range mm.Outputs {
 			newMm.Outputs[name] = output
+		}
+	}
+
+	if mm.ModuleCalls != nil {
+		newMm.ModuleCalls = make(map[string]tfmod.ModuleCall, len(mm.ModuleCalls))
+		for name, moduleCall := range mm.ModuleCalls {
+			newMm.ModuleCalls[name] = moduleCall
 		}
 	}
 
@@ -340,6 +348,7 @@ func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
 		Variables:            mod.Meta.Variables,
 		Outputs:              mod.Meta.Outputs,
 		Filenames:            mod.Meta.Filenames,
+		ModuleCalls:          mod.Meta.ModuleCalls,
 	}, nil
 }
 
@@ -705,6 +714,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 		Variables:            meta.Variables,
 		Outputs:              meta.Outputs,
 		Filenames:            meta.Filenames,
+		ModuleCalls:          meta.ModuleCalls,
 	}
 	mod.MetaErr = mErr
 
