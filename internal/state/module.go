@@ -318,6 +318,9 @@ func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
 	result := make([]tfmod.ModuleCall, 0)
 	modList, err := s.List()
 	for _, mod := range modList {
+		// Try to generate moduleCalls from manifest first
+		// This will only work if the module has been installed
+		// With a local installation it's possible to resolve the `Path` field
 		if mod.ModManifest != nil {
 			for _, record := range mod.ModManifest.Records {
 				if record.IsRoot() {
@@ -328,6 +331,19 @@ func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
 					SourceAddr: record.SourceAddr,
 					Version:    record.VersionStr,
 					Path:       filepath.Join(modPath, record.Dir),
+				})
+			}
+		}
+	}
+	// If there are no installed modules, we can source a list of module calls
+	// from earlydecoder, but miss the `Path`
+	if len(result) == 0 {
+		for _, mod := range modList {
+			for _, moduleCall := range mod.Meta.ModuleCalls {
+				result = append(result, tfmod.ModuleCall{
+					LocalName:  moduleCall.LocalName,
+					SourceAddr: moduleCall.SourceAddr,
+					Version:    moduleCall.Version,
 				})
 			}
 		}
