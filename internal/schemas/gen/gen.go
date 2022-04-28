@@ -253,6 +253,7 @@ var ignore = map[string]bool{
 	"HewlettPackard/hpegl":         true,
 	"jradtilbrook/buildkite":       true,
 	"kvrhdn/honeycombio":           true,
+	"logicmonitor/logicmonitor":    true,
 	"ThalesGroup/ciphertrust":      true,
 	"nullstone-io/ns":              true,
 	"zededa/zedcloud":              true,
