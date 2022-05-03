@@ -153,6 +153,15 @@ func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) stat
 	}
 }
 
+func refreshModuleProviders(ctx context.Context, clientRequester session.ClientCaller, logger *log.Logger, commandId string) state.ModuleChangeHook {
+	return func(oldMod, newMod *state.Module) {
+		_, err := clientRequester.Callback(ctx, commandId, nil)
+		if err != nil {
+			logger.Printf("Error refreshing %s: %s", newMod.Path, err)
+		}
+	}
+}
+
 func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) state.ModuleChangeHook {
 	return func(oldMod, newMod *state.Module) {
 		oldOrigins, oldTargets := 0, 0

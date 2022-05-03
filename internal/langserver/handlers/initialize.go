@@ -52,6 +52,12 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 		properties["experimentalCapabilities.referenceCountCodeLens"] = true
 	}
+	if _, ok := expClientCaps.RefreshModuleProvidersCommandId(); ok {
+		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
+			RefreshModuleProviders: true,
+		}
+		properties["experimentalCapabilities.refreshModuleProviders"] = true
+	}
 
 	err = ilsp.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {

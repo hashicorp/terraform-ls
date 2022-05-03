@@ -2,6 +2,7 @@
 
 ENHANCEMENTS:
  - Link to documentation from module source for registry modules (via [#874](https://github.com/hashicorp/terraform-ls/pull/874))
+ - Automatically refresh Terraform Providers View when providers change in open document ([#902](https://github.com/hashicorp/terraform-ls/pull/902))
 
 INTERNAL:
  - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
