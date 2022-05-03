@@ -59,7 +59,7 @@ jobs:
             ${DATA_PATH} \
             ${DATA_PATH} \
             --checks.config ${CHECKS_CONFIG_PATH} \
-            2> $RESULTS_PATH # eval returns result JSON to stderr for some reason
+            --json ${RESULTS_PATH}
 
           cat $RESULTS_PATH | jq -e '.Status == "pass"'
       -
