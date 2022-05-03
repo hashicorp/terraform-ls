@@ -67,9 +67,9 @@ jobs:
         id: report
         if: ${{ failure() && !cancelled() }}
         run: |
+          BENCHDATA="go run go.bobheadxi.dev/gobenchdata"
           RESULTS_PATH="${{ runner.temp }}/benchdata-results.json"
-          FAILURES=`cat ${RESULTS_PATH} | jq '.Checks[] | select(.Status == "fail")'`
-          echo $FAILURES
+          gobenchdata checks report $RESULTS_PATH
       -
         name: Upload benchmark data as artifact
         if: ${{ always() && !cancelled() }}
