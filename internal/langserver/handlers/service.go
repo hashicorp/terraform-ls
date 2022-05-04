@@ -444,12 +444,12 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshModuleProvidersCommandId(); ok {
 			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				refreshModuleProviders(svc.sessCtx, svc.server, svc.logger, commandId))
+				callClientCommand(svc.sessCtx, svc.server, svc.logger, commandId))
 		}
 
 		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshModuleCallsCommandId(); ok {
 			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				refreshModuleProviders(svc.sessCtx, svc.server, svc.logger, commandId))
+				callClientCommand(svc.sessCtx, svc.server, svc.logger, commandId))
 		}
 
 		if cc.Workspace.SemanticTokens.RefreshSupport {
