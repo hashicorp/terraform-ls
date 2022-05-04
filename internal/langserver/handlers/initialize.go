@@ -56,9 +56,9 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		expServerCaps.RefreshModuleProviders = true
 		properties["experimentalCapabilities.refreshModuleProviders"] = true
 	}
-	if _, ok := expClientCaps.RefreshModuleProvidersCommandId(); ok {
+	if _, ok := expClientCaps.RefreshModuleCallsCommandId(); ok {
 		expServerCaps.RefreshModuleCalls = true
-		properties["experimentalCapabilities.refreshModuleProviders"] = true
+		properties["experimentalCapabilities.refreshModuleCalls"] = true
 	}
 
 	serverCaps.Capabilities.Experimental = expServerCaps
