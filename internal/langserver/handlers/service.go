@@ -447,6 +447,11 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 				refreshModuleProviders(svc.sessCtx, svc.server, svc.logger, commandId))
 		}
 
+		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshModuleCallsCommandId(); ok {
+			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
+				refreshModuleProviders(svc.sessCtx, svc.server, svc.logger, commandId))
+		}
+
 		if cc.Workspace.SemanticTokens.RefreshSupport {
 			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
 				refreshSemanticTokens(ctx, svc.srvCtx, svc.logger))
