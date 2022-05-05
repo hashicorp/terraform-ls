@@ -29,7 +29,7 @@ func (cc ExpClientCapabilities) RefreshModuleProvidersCommandId() (string, bool)
 		return "", false
 	}
 
-	cmdId, ok := cc["refereshModuleProvidersCommandId"].(string)
+	cmdId, ok := cc["refreshModuleProvidersCommandId"].(string)
 	return cmdId, ok
 }
 
@@ -38,7 +38,7 @@ func (cc ExpClientCapabilities) RefreshModuleCallsCommandId() (string, bool) {
 		return "", false
 	}
 
-	cmdId, ok := cc["refereshModuleCallsCommandId"].(string)
+	cmdId, ok := cc["refreshModuleCallsCommandId"].(string)
 	return cmdId, ok
 }
 
