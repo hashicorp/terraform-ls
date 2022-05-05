@@ -365,7 +365,9 @@ func decodeCalledModulesFunc(fs ReadOnlyFS, modStore *state.ModuleStore, schemaR
 			return
 		}
 
-		for _, mc := range moduleCalls {
+		// TODO: walk through declared modules too - maybe deduplicated?
+
+		for _, mc := range moduleCalls.Installed {
 			fi, err := os.Stat(mc.Path)
 			if err != nil || !fi.IsDir() {
 				continue

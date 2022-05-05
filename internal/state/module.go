@@ -23,7 +23,7 @@ type ModuleMetadata struct {
 	Variables            map[string]tfmod.Variable
 	Outputs              map[string]tfmod.Output
 	Filenames            []string
-	ModuleCalls          map[string]tfmod.ModuleCall
+	ModuleCalls          map[string]tfmod.DeclaredModuleCall
 }
 
 func (mm ModuleMetadata) Copy() ModuleMetadata {
@@ -70,7 +70,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	}
 
 	if mm.ModuleCalls != nil {
-		newMm.ModuleCalls = make(map[string]tfmod.ModuleCall, len(mm.ModuleCalls))
+		newMm.ModuleCalls = make(map[string]tfmod.DeclaredModuleCall, len(mm.ModuleCalls))
 		for name, moduleCall := range mm.ModuleCalls {
 			newMm.ModuleCalls[name] = moduleCall
 		}
@@ -314,41 +314,40 @@ func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
 	return mod, nil
 }
 
-func (s *ModuleStore) ModuleCalls(modPath string) ([]tfmod.ModuleCall, error) {
-	result := make([]tfmod.ModuleCall, 0)
-	modList, err := s.List()
-	for _, mod := range modList {
-		// Try to generate moduleCalls from manifest first
-		// This will only work if the module has been installed
-		// With a local installation it's possible to resolve the `Path` field
-		if mod.ModManifest != nil {
-			for _, record := range mod.ModManifest.Records {
-				if record.IsRoot() {
-					continue
-				}
-				result = append(result, tfmod.ModuleCall{
-					LocalName:  record.Key,
-					SourceAddr: record.SourceAddr,
-					Version:    record.VersionStr,
-					Path:       filepath.Join(modPath, record.Dir),
-				})
+func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
+	mod, err := s.ModuleByPath(modPath)
+	if err != nil {
+		return tfmod.ModuleCalls{}, err
+	}
+
+	modCalls := tfmod.ModuleCalls{
+		Installed: make(map[string]tfmod.InstalledModuleCall),
+		Declared:  make(map[string]tfmod.DeclaredModuleCall),
+	}
+
+	if mod.ModManifest != nil {
+		for _, record := range mod.ModManifest.Records {
+			if record.IsRoot() {
+				continue
+			}
+			modCalls.Installed[record.Key] = tfmod.InstalledModuleCall{
+				LocalName:  record.Key,
+				SourceAddr: record.SourceAddr,
+				Version:    record.Version,
+				Path:       filepath.Join(modPath, record.Dir),
 			}
 		}
 	}
-	// If there are no installed modules, we can source a list of module calls
-	// from earlydecoder, but miss the `Path`
-	if len(result) == 0 {
-		for _, mod := range modList {
-			for _, moduleCall := range mod.Meta.ModuleCalls {
-				result = append(result, tfmod.ModuleCall{
-					LocalName:  moduleCall.LocalName,
-					SourceAddr: moduleCall.SourceAddr,
-					Version:    moduleCall.Version,
-				})
-			}
+
+	for _, mc := range mod.Meta.ModuleCalls {
+		modCalls.Declared[mc.LocalName] = tfmod.DeclaredModuleCall{
+			LocalName:  mc.LocalName,
+			SourceAddr: mc.SourceAddr,
+			Version:    mc.Version,
 		}
 	}
-	return result, err
+
+	return modCalls, err
 }
 
 func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
