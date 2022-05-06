@@ -553,8 +553,8 @@ github.com/zclconf/go-cty v1.10.0 h1:mp9ZXQeIcN8kAwuqorjH+Q+njbJKjLrvB2yIh4q7U+0
 github.com/zclconf/go-cty v1.10.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b h1:FosyBZYxY34Wul7O/MSKey3txpPYyCqVO5ZyceuQJEI=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b/go.mod h1:ZRKQfBXbGkpdV6QMzT3rU1kSTAnfu1dO8dPKjYprgj8=
-go.bobheadxi.dev/gobenchdata v1.0.4 h1:fWvjB/VSy/fZ9ldhk0AiK0b4KN501eWuQ7KqTkM2Vsk=
-go.bobheadxi.dev/gobenchdata v1.0.4/go.mod h1:NwLMnYvxAtLOZpUKgV0YwXEre7169Nyq25xZ7RM1FC4=
+go.bobheadxi.dev/gobenchdata v1.1.0 h1:BYVdhPqTXNzmBz3TFCRSNvRSwe9oInQXQesSMNqvqJ4=
+go.bobheadxi.dev/gobenchdata v1.1.0/go.mod h1:Ct2dsJQoOZdbAoy+UTdDoLo5vDcWkDsow+dN+Bj134U=
 go.etcd.io/etcd/api/v3 v3.5.1/go.mod h1:cbVKeC6lCfl7j/8jBhAK6aIYO9XOjdptoxU/nLQcPvs=
 go.etcd.io/etcd/client/pkg/v3 v3.5.1/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v2 v2.305.1/go.mod h1:pMEacxZW7o8pg4CrFE7pquyCJJzZvkvdD2RibOCCCGs=
