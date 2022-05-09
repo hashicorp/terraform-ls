@@ -14,7 +14,7 @@ import (
 type ModuleReader interface {
 	ModuleByPath(modPath string) (*state.Module, error)
 	List() ([]*state.Module, error)
-	ModuleCalls(modPath string) ([]tfmod.ModuleCall, error)
+	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	ModuleMeta(modPath string) (*tfmod.Meta, error)
 }
 

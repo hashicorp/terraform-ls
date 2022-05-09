@@ -192,7 +192,7 @@ type ModuleReader interface {
 }
 
 type ModuleCallReader interface {
-	ModuleCalls(modPath string) ([]tfmod.ModuleCall, error)
+	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	ModuleMeta(modPath string) (*tfmod.Meta, error)
 }
 
