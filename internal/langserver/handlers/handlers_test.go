@@ -71,6 +71,11 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 						"supported": true,
 						"changeNotifications": "workspace/didChangeWorkspaceFolders"
 					}
+				},
+				"experimental": {
+					"referenceCountCodeLens": false,
+					"refreshModuleProviders": false,
+					"refreshModuleCalls": false
 				}
 			},
 			"serverInfo": {

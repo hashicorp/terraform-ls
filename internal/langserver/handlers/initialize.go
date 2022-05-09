@@ -46,18 +46,22 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	}
 
+	expServerCaps := lsp.ExperimentalServerCapabilities{}
+
 	if _, ok := expClientCaps.ShowReferencesCommandId(); ok {
-		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
-			ReferenceCountCodeLens: true,
-		}
+		expServerCaps.ReferenceCountCodeLens = true
 		properties["experimentalCapabilities.referenceCountCodeLens"] = true
 	}
 	if _, ok := expClientCaps.RefreshModuleProvidersCommandId(); ok {
-		serverCaps.Capabilities.Experimental = lsp.ExperimentalServerCapabilities{
-			RefreshModuleProviders: true,
-		}
+		expServerCaps.RefreshModuleProviders = true
 		properties["experimentalCapabilities.refreshModuleProviders"] = true
 	}
+	if _, ok := expClientCaps.RefreshModuleCallsCommandId(); ok {
+		expServerCaps.RefreshModuleCalls = true
+		properties["experimentalCapabilities.refreshModuleCalls"] = true
+	}
+
+	serverCaps.Capabilities.Experimental = expServerCaps
 
 	err = ilsp.SetClientCapabilities(ctx, &clientCaps)
 	if err != nil {

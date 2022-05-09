@@ -153,11 +153,18 @@ func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) stat
 	}
 }
 
-func refreshModuleProviders(ctx context.Context, clientRequester session.ClientCaller, logger *log.Logger, commandId string) state.ModuleChangeHook {
+func callClientCommand(ctx context.Context, clientRequester session.ClientCaller, logger *log.Logger, commandId string) state.ModuleChangeHook {
 	return func(oldMod, newMod *state.Module) {
+		var modPath string
+		if oldMod != nil {
+			modPath = oldMod.Path
+		} else {
+			modPath = newMod.Path
+		}
+
 		_, err := clientRequester.Callback(ctx, commandId, nil)
 		if err != nil {
-			logger.Printf("Error refreshing %s: %s", newMod.Path, err)
+			logger.Printf("Error calling %s for %s: %s", commandId, modPath, err)
 		}
 	}
 }

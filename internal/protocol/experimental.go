@@ -3,6 +3,7 @@ package protocol
 type ExperimentalServerCapabilities struct {
 	ReferenceCountCodeLens bool `json:"referenceCountCodeLens"`
 	RefreshModuleProviders bool `json:"refreshModuleProviders"`
+	RefreshModuleCalls     bool `json:"refreshModuleCalls"`
 }
 
 type ExpClientCapabilities map[string]interface{}
@@ -28,7 +29,16 @@ func (cc ExpClientCapabilities) RefreshModuleProvidersCommandId() (string, bool)
 		return "", false
 	}
 
-	cmdId, ok := cc["refereshModuleProvidersCommandId"].(string)
+	cmdId, ok := cc["refreshModuleProvidersCommandId"].(string)
+	return cmdId, ok
+}
+
+func (cc ExpClientCapabilities) RefreshModuleCallsCommandId() (string, bool) {
+	if cc == nil {
+		return "", false
+	}
+
+	cmdId, ok := cc["refreshModuleCallsCommandId"].(string)
 	return cmdId, ok
 }
 
