@@ -1,0 +1,64 @@
+{
+	"Checks": {
+		"aws-consul": {
+			"Status": "fail",
+			"Diffs": [
+				{
+					"Status": "fail",
+					"Package": "github.com/hashicorp/terraform-ls/internal/langserver/handlers",
+					"Benchmark": "BenchmarkInitializeFolder_basic/aws-consul-2",
+					"Value": 2128.919215
+				}
+			],
+			"Thresholds": {
+				"Min": 1360,
+				"Max": 2100
+			}
+		},
+		"aws-eks": {
+			"Status": "fail",
+			"Diffs": [
+				{
+					"Status": "fail",
+					"Package": "github.com/hashicorp/terraform-ls/internal/langserver/handlers",
+					"Benchmark": "BenchmarkInitializeFolder_basic/aws-eks-2",
+					"Value": 3130.552208
+				}
+			],
+			"Thresholds": {
+				"Min": 1570,
+				"Max": 3000
+			}
+		},
+		"aws-vpc": {
+			"Status": "fail",
+			"Diffs": [
+				{
+					"Status": "fail",
+					"Package": "github.com/hashicorp/terraform-ls/internal/langserver/handlers",
+					"Benchmark": "BenchmarkInitializeFolder_basic/aws-vpc-2",
+					"Value": 2211.930272
+				}
+			],
+			"Thresholds": {
+				"Min": 1400,
+				"Max": 2050
+			}
+		},
+		"local-single-module-aws": {
+			"Status": "fail",
+			"Diffs": [
+				{
+					"Status": "fail",
+					"Package": "github.com/hashicorp/terraform-ls/internal/langserver/handlers",
+					"Benchmark": "BenchmarkInitializeFolder_basic/local-single-module-aws-2",
+					"Value": 1985.022098
+				}
+			],
+			"Thresholds": {
+				"Min": 1240,
+				"Max": 1950
+			}
+		}
+	}
+}
