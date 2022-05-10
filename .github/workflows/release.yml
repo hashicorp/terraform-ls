@@ -52,19 +52,10 @@ jobs:
         name: Install signore
         uses: hashicorp/setup-signore-package@v1
       -
-        uses: hashicorp/setup-hc-releases@v1
+        name: Setup hc-releases
+        uses: hashicorp/actions-setup-hc-releases@v2
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
-      -
-        name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          role-to-assume: ${{ secrets.TERRAFORM_PROD_AWS_ROLE_TO_ASSUME }}
-          role-skip-session-tagging: true
-          role-duration-seconds: 3600
       -
         name: Release
         uses: goreleaser/goreleaser-action@v2
@@ -72,6 +63,8 @@ jobs:
           version: latest
           args: release
         env:
+          HC_RELEASES_HOST: ${{ secrets.HC_RELEASES_HOST_STAGING }}
+          HC_RELEASES_KEY: ${{ secrets.HC_RELEASES_KEY_STAGING }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
@@ -82,7 +75,20 @@ jobs:
           SIGNORE_CLIENT_SECRET: ${{ secrets.SIGNORE_CLIENT_SECRET }}
           SIGNORE_SIGNER: ${{ secrets.SIGNORE_SIGNER }}
       -
-        name: Publish released artifacts
-        run: hc-releases publish -product=terraform-ls
-        env:
-          FASTLY_API_TOKEN: ${{ secrets.RELEASE_FASTLY_API_TOKEN }}
+        name: Create Release metadata
+        uses: hashicorp/actions-hc-releases-create-metadata@v1
+        with:
+          private-tools-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
+          product-name: "terraform-ls"
+          version: ${{ github.ref_name }}
+          hc-releases-host: ${{ secrets.HC_RELEASES_HOST_STAGING}}
+          hc-releases-key: ${{ secrets.HC_RELEASES_KEY_STAGING }}
+      -
+        name: Promote
+        uses: hashicorp/actions-hc-releases-promote@v1
+        with:
+          product-name: "terraform-ls"
+          version: ${{ github.ref_name }}
+          hc-releases-host: ${{ secrets.HC_RELEASES_HOST_PROD }}
+          hc-releases-key: ${{ secrets.HC_RELEASES_KEY_PROD }}
+          hc-releases-source_env_key: ${{ secrets.HC_RELEASES_KEY_STAGING }}

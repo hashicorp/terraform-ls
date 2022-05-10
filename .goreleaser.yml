@@ -114,12 +114,10 @@ publishers:
     checksum: true
     signature: true
     env:
-      - AWS_DEFAULT_REGION={{ .Env.AWS_DEFAULT_REGION }}
-      - AWS_REGION={{ .Env.AWS_REGION }}
-      - AWS_ACCESS_KEY_ID={{ .Env.AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ .Env.AWS_SECRET_ACCESS_KEY }}
-      - AWS_SESSION_TOKEN={{ .Env.AWS_SESSION_TOKEN }}
-    cmd: hc-releases upload-file {{ abs .ArtifactPath }}
+      - HC_RELEASES_HOST={{ .Env.HC_RELEASES_HOST }}
+      - HC_RELEASES_KEY={{ .Env.HC_RELEASES_KEY }}
+    cmd: |
+      hc-releases upload -product {{ .ProjectName }} -version {{ .Version }} -file={{ .ArtifactPath }}
 
 milestones:
   - name_template: "{{ .Tag }}"
