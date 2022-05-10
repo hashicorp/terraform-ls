@@ -110,7 +110,7 @@ brews:
       system "#{bin}/terraform-ls --version"
 
 publishers:
-  - name: upload
+  - name: "hc-releases"
     checksum: true
     signature: true
     env:
