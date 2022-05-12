@@ -15,18 +15,15 @@ func PreloadSchemasToStore(pss *state.ProviderSchemaStore) error {
 	for rawAddr, pJsonSchema := range pOut.Schemas {
 		pv := vOut.Providers[rawAddr]
 
-		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
+		pAddr, err := tfaddr.ParseProviderSource(rawAddr)
 		if err != nil {
 			// skip unparsable address
 			continue
 		}
 		// Given that we use Terraform >0.12 for the generation
 		// this should never happen
-		if pAddr.IsLegacy() {
-			iAddr, err := tfaddr.ParseAndInferProviderSourceString(rawAddr)
-			if err == nil {
-				pAddr = iAddr
-			}
+		if pAddr.IsLegacy() || !pAddr.HasKnownNamespace() {
+			pAddr.Hostname = "hashicorp"
 		}
 
 		pSchema := tfschema.ProviderSchemaFromJson(pJsonSchema, pAddr)

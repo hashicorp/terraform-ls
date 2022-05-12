@@ -238,7 +238,7 @@ type ModuleReader interface {
 type ModuleCallReader interface {
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
-	RegistryModuleMeta(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*registry.ModuleData, error)
+	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
 }
 
 type ProviderSchemaStore struct {

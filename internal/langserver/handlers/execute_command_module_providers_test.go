@@ -79,12 +79,12 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 		Path:             modDir,
 		CoreRequirements: testConstraint(t, "~> 0.15"),
 		ProviderRequirements: map[tfaddr.Provider]version.Constraints{
-			tfaddr.NewDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
-			tfaddr.NewDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
+			newDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
+			newDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
 		},
 		ProviderReferences: map[tfmod.ProviderRef]tfaddr.Provider{
-			{LocalName: "aws"}:    tfaddr.NewDefaultProvider("aws"),
-			{LocalName: "google"}: tfaddr.NewDefaultProvider("google"),
+			{LocalName: "aws"}:    newDefaultProvider("aws"),
+			{LocalName: "google"}: newDefaultProvider("google"),
 		},
 	}
 
@@ -94,8 +94,8 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 	}
 
 	pVersions := map[tfaddr.Provider]*version.Version{
-		tfaddr.NewDefaultProvider("aws"):    version.Must(version.NewVersion("1.2.3")),
-		tfaddr.NewDefaultProvider("google"): version.Must(version.NewVersion("2.5.5")),
+		newDefaultProvider("aws"):    version.Must(version.NewVersion("1.2.3")),
+		newDefaultProvider("google"): version.Must(version.NewVersion("2.5.5")),
 	}
 	err = s.Modules.UpdateInstalledProviders(modDir, pVersions)
 	if err != nil {
@@ -157,6 +157,10 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 			}
 		}
 	}`)
+}
+
+func newDefaultProvider(name string) tfaddr.Provider {
+	return tfaddr.NewProvider(tfaddr.DefaultProviderRegistryHost, "hashicorp", name)
 }
 
 func testConstraint(t *testing.T, v string) version.Constraints {

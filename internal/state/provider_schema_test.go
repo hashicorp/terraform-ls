@@ -20,7 +20,7 @@ func TestStateStore_AddPreloadedSchema_duplicate(t *testing.T) {
 	}
 
 	addr := tfaddr.Provider{
-		Hostname:  tfaddr.DefaultRegistryHost,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
 		Namespace: "hashicorp",
 		Type:      "aws",
 	}
@@ -58,7 +58,7 @@ func TestStateStore_IncompleteSchema_legacyLookup(t *testing.T) {
 	}
 
 	addr := tfaddr.Provider{
-		Hostname:  tfaddr.DefaultRegistryHost,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
 		Namespace: "hashicorp",
 		Type:      "aws",
 	}
@@ -76,7 +76,7 @@ func TestStateStore_IncompleteSchema_legacyLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = s.ProviderSchemas.ProviderSchema(modPath, tfaddr.NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
+	_, err = s.ProviderSchemas.ProviderSchema(modPath, NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
 	if err == nil {
 		t.Fatal("expected error when requesting incomplete schema")
 	}
@@ -92,7 +92,7 @@ func TestStateStore_IncompleteSchema_legacyLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ps, err := s.ProviderSchemas.ProviderSchema(modPath, tfaddr.NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
+	ps, err := s.ProviderSchemas.ProviderSchema(modPath, NewLegacyProvider("aws"), testConstraint(t, ">= 1.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestStateStore_AddLocalSchema_duplicate(t *testing.T) {
 
 	modPath := t.TempDir()
 	addr := tfaddr.Provider{
-		Hostname:  tfaddr.DefaultRegistryHost,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
 		Namespace: "hashicorp",
 		Type:      "aws",
 	}
@@ -159,7 +159,7 @@ func TestStateStore_AddLocalSchema_duplicateWithVersion(t *testing.T) {
 	}
 
 	addr := tfaddr.Provider{
-		Hostname:  tfaddr.DefaultRegistryHost,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
 		Namespace: "hashicorp",
 		Type:      "aws",
 	}
@@ -273,7 +273,7 @@ func TestStateStore_AddLocalSchema_versionFirst(t *testing.T) {
 	}
 
 	addr := tfaddr.Provider{
-		Hostname:  tfaddr.DefaultRegistryHost,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
 		Namespace: "hashicorp",
 		Type:      "aws",
 	}
@@ -346,7 +346,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 	schemas := []*ProviderSchema{
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "blah",
 			},
@@ -360,7 +360,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws",
 			},
@@ -374,7 +374,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws",
 			},
@@ -390,7 +390,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws",
 			},
@@ -404,7 +404,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws",
 			},
@@ -423,7 +423,7 @@ func TestStateStore_ProviderSchema_localHasPriority(t *testing.T) {
 	}
 
 	ps, err := s.ProviderSchemas.ProviderSchema(modPath,
-		tfaddr.MustParseRawProviderSourceString("hashicorp/aws"),
+		tfaddr.NewProvider(tfaddr.DefaultProviderRegistryHost, "hashicorp", "aws"),
 		testConstraint(t, "1.0.0"),
 	)
 	if err != nil {
@@ -454,7 +454,7 @@ func TestStateStore_ProviderSchema_legacyAddress_exactMatch(t *testing.T) {
 
 	schemas := []*ProviderSchema{
 		{
-			tfaddr.NewLegacyProvider("aws"),
+			NewLegacyProvider("aws"),
 			testVersion(t, "2.0.0"),
 			LocalSchemaSource{ModulePath: modPath},
 			&tfschema.ProviderSchema{
@@ -464,7 +464,7 @@ func TestStateStore_ProviderSchema_legacyAddress_exactMatch(t *testing.T) {
 			},
 		},
 		{
-			tfaddr.NewDefaultProvider("aws"),
+			NewDefaultProvider("aws"),
 			testVersion(t, "2.5.0"),
 			PreloadedSchemaSource{},
 			&tfschema.ProviderSchema{
@@ -480,7 +480,7 @@ func TestStateStore_ProviderSchema_legacyAddress_exactMatch(t *testing.T) {
 	}
 
 	ps, err := s.ProviderSchemas.ProviderSchema(modPath,
-		tfaddr.NewLegacyProvider("aws"),
+		NewLegacyProvider("aws"),
 		testConstraint(t, "2.0.0"),
 	)
 	if err != nil {
@@ -522,7 +522,7 @@ func TestStateStore_ProviderSchema_legacyAddress_looseMatch(t *testing.T) {
 
 	schemas := []*ProviderSchema{
 		{
-			tfaddr.NewDefaultProvider("aws"),
+			NewDefaultProvider("aws"),
 			testVersion(t, "2.5.0"),
 			PreloadedSchemaSource{},
 			&tfschema.ProviderSchema{
@@ -532,7 +532,7 @@ func TestStateStore_ProviderSchema_legacyAddress_looseMatch(t *testing.T) {
 			},
 		},
 		{
-			tfaddr.NewProvider(tfaddr.DefaultRegistryHost, "grafana", "grafana"),
+			tfaddr.NewProvider(tfaddr.DefaultProviderRegistryHost, "grafana", "grafana"),
 			testVersion(t, "1.0.0"),
 			PreloadedSchemaSource{},
 			&tfschema.ProviderSchema{
@@ -548,7 +548,7 @@ func TestStateStore_ProviderSchema_legacyAddress_looseMatch(t *testing.T) {
 	}
 
 	ps, err := s.ProviderSchemas.ProviderSchema(modPath,
-		tfaddr.NewLegacyProvider("grafana"),
+		NewLegacyProvider("grafana"),
 		testConstraint(t, "1.0.0"),
 	)
 	if err != nil {
@@ -579,7 +579,7 @@ func TestStateStore_ProviderSchema_terraformProvider(t *testing.T) {
 
 	schemas := []*ProviderSchema{
 		{
-			tfaddr.NewBuiltInProvider("terraform"),
+			NewBuiltInProvider("terraform"),
 			testVersion(t, "1.0.0"),
 			PreloadedSchemaSource{},
 			&tfschema.ProviderSchema{
@@ -595,7 +595,7 @@ func TestStateStore_ProviderSchema_terraformProvider(t *testing.T) {
 	}
 
 	ps, err := s.ProviderSchemas.ProviderSchema(modPath,
-		tfaddr.NewLegacyProvider("terraform"),
+		NewLegacyProvider("terraform"),
 		testConstraint(t, "1.0.0"),
 	)
 	if err != nil {
@@ -612,7 +612,7 @@ func TestStateStore_ProviderSchema_terraformProvider(t *testing.T) {
 	}
 
 	ps, err = s.ProviderSchemas.ProviderSchema(modPath,
-		tfaddr.NewDefaultProvider("terraform"),
+		NewDefaultProvider("terraform"),
 		testConstraint(t, "1.0.0"),
 	)
 	if err != nil {
@@ -654,7 +654,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 	localSchemas := []*ProviderSchema{
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "blah",
 			},
@@ -668,7 +668,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -682,7 +682,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -696,7 +696,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -723,7 +723,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 	expectedSchemas := []*ProviderSchema{
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -746,7 +746,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -769,7 +769,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws-local",
 			},
@@ -792,7 +792,7 @@ func TestStateStore_ListSchemas(t *testing.T) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "blah",
 			},
@@ -829,7 +829,7 @@ func BenchmarkProviderSchema(b *testing.B) {
 	schemas := []*ProviderSchema{
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "blah",
 			},
@@ -843,7 +843,7 @@ func BenchmarkProviderSchema(b *testing.B) {
 		},
 		{
 			tfaddr.Provider{
-				Hostname:  tfaddr.DefaultRegistryHost,
+				Hostname:  tfaddr.DefaultProviderRegistryHost,
 				Namespace: "hashicorp",
 				Type:      "aws",
 			},
@@ -866,7 +866,7 @@ func BenchmarkProviderSchema(b *testing.B) {
 		},
 	}
 	for n := 0; n < b.N; n++ {
-		foundPs, err := s.ProviderSchemas.ProviderSchema("/test", tfaddr.NewDefaultProvider("aws"), testConstraint(b, "0.9.0"))
+		foundPs, err := s.ProviderSchemas.ProviderSchema("/test", NewDefaultProvider("aws"), testConstraint(b, "0.9.0"))
 		if err != nil {
 			b.Fatal(err)
 		}

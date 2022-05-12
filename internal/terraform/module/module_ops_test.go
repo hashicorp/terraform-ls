@@ -70,7 +70,7 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	// Verify that 2nd module is still cached even if
 	// obtaining data for the other one errored out
 
-	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	// Verify that 2nd module is still cached even if
 	// obtaining data for the other one timed out
 
-	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -29,7 +29,7 @@ func NewClient() Client {
 	}
 }
 
-func (c Client) GetModuleData(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*ModuleResponse, error) {
+func (c Client) GetModuleData(addr tfaddr.Module, cons version.Constraints) (*ModuleResponse, error) {
 	var response ModuleResponse
 
 	v, err := c.GetMatchingModuleVersion(addr, cons)
@@ -41,9 +41,9 @@ func (c Client) GetModuleData(addr tfaddr.ModuleSourceRegistry, cons version.Con
 	client.Timeout = defaultTimeout
 
 	url := fmt.Sprintf("%s/v1/modules/%s/%s/%s/%s", c.BaseURL,
-		addr.PackageAddr.Namespace,
-		addr.PackageAddr.Name,
-		addr.PackageAddr.TargetSystem,
+		addr.Package.Namespace,
+		addr.Package.Name,
+		addr.Package.TargetSystem,
 		v.String())
 	resp, err := client.Get(url)
 	if err != nil {
@@ -67,11 +67,11 @@ func (c Client) GetModuleData(addr tfaddr.ModuleSourceRegistry, cons version.Con
 	return &response, nil
 }
 
-func (c Client) GetMatchingModuleVersion(addr tfaddr.ModuleSourceRegistry, con version.Constraints) (*version.Version, error) {
+func (c Client) GetMatchingModuleVersion(addr tfaddr.Module, con version.Constraints) (*version.Version, error) {
 	url := fmt.Sprintf("%s/v1/modules/%s/%s/%s/versions", c.BaseURL,
-		addr.PackageAddr.Namespace,
-		addr.PackageAddr.Name,
-		addr.PackageAddr.TargetSystem)
+		addr.Package.Namespace,
+		addr.Package.Name,
+		addr.Package.TargetSystem)
 
 	client := cleanhttp.DefaultClient()
 	client.Timeout = defaultTimeout

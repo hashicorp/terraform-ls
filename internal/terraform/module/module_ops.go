@@ -92,7 +92,7 @@ func providerVersions(pv map[string]*version.Version) map[tfaddr.Provider]*versi
 	m := make(map[tfaddr.Provider]*version.Version, 0)
 
 	for rawAddr, v := range pv {
-		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
+		pAddr, err := tfaddr.ParseProviderSource(rawAddr)
 		if err != nil {
 			// skip unparsable address
 			continue
@@ -133,7 +133,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	installedProviders := make(map[tfaddr.Provider]*version.Version, 0)
 
 	for rawAddr, pJsonSchema := range ps.Schemas {
-		pAddr, err := tfaddr.ParseRawProviderSourceString(rawAddr)
+		pAddr, err := tfaddr.ParseProviderSource(rawAddr)
 		if err != nil {
 			// skip unparsable address
 			continue
@@ -365,7 +365,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 	var errs *multierror.Error
 
 	for _, declaredModule := range calls.Declared {
-		sourceAddr, ok := declaredModule.SourceAddr.(tfaddr.ModuleSourceRegistry)
+		sourceAddr, ok := declaredModule.SourceAddr.(tfaddr.Module)
 		if !ok {
 			// skip any modules which do not come from the Registry
 			continue

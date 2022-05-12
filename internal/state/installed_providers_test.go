@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-version"
-	tfaddr "github.com/hashicorp/terraform-registry-address"
 )
 
 func TestInstalledProviders(t *testing.T) {
@@ -20,48 +19,48 @@ func TestInstalledProviders(t *testing.T) {
 		},
 		{
 			InstalledProviders{
-				tfaddr.NewBuiltInProvider("terraform"): version.Must(version.NewVersion("1.0")),
+				NewBuiltInProvider("terraform"): version.Must(version.NewVersion("1.0")),
 			},
 			InstalledProviders{
-				tfaddr.NewBuiltInProvider("terraform"): version.Must(version.NewVersion("1.0")),
+				NewBuiltInProvider("terraform"): version.Must(version.NewVersion("1.0")),
 			},
 			true,
 		},
 		{
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
 			},
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
-			},
-			false,
-		},
-		{
-			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
-			},
-			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.1")),
+				NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
 			},
 			false,
 		},
 		{
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
-				tfaddr.NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
 			},
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.1")),
 			},
 			false,
 		},
 		{
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
 			},
 			InstalledProviders{
-				tfaddr.NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
-				tfaddr.NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+			},
+			false,
+		},
+		{
+			InstalledProviders{
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+			},
+			InstalledProviders{
+				NewDefaultProvider("foo"): version.Must(version.NewVersion("1.0")),
+				NewDefaultProvider("bar"): version.Must(version.NewVersion("1.0")),
 			},
 			false,
 		},

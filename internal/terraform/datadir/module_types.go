@@ -29,8 +29,8 @@ var moduleSourceLocalPrefixes = []string{
 func (r *ModuleRecord) GetModuleType() ModuleType {
 	// Example: terraform-aws-modules/ec2-instance/aws
 	// Example: registry.terraform.io/terraform-aws-modules/vpc/aws
-	moduleSourceRegistry, err := tfaddr.ParseRawModuleSourceRegistry(r.SourceAddr)
-	if err == nil && moduleSourceRegistry.PackageAddr.Host == "registry.terraform.io" {
+	moduleSourceRegistry, err := tfaddr.ParseModuleSource(r.SourceAddr)
+	if err == nil && moduleSourceRegistry.Package.Host == "registry.terraform.io" {
 		return TFREGISTRY
 	}
 

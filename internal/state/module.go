@@ -370,7 +370,7 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 	}, nil
 }
 
-func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*registry.ModuleData, error) {
+func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
 	txn := s.db.Txn(false)
 
 	it, err := txn.Get(registryModuleTableName, "source_addr", addr)
