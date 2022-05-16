@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
@@ -37,7 +37,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			}
 
 			// 2nd we try again assuming it is a file
-			parentDir := path.Dir(rawPath)
+			parentDir := filepath.Dir(rawPath)
 			_, err = svc.modStore.ModuleByPath(parentDir)
 			if err != nil {
 				svc.logger.Printf("error finding module (%q deleted): %s", parentDir, err)
