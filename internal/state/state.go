@@ -14,14 +14,15 @@ import (
 )
 
 const (
-	documentsTableName      = "documents"
-	jobsTableName           = "jobs"
-	moduleTableName         = "module"
-	moduleIdsTableName      = "module_ids"
-	moduleChangesTableName  = "module_changes"
-	providerSchemaTableName = "provider_schema"
-	providerIdsTableName    = "provider_ids"
-	walkerPathsTableName    = "walker_paths"
+	documentsTableName                    = "documents"
+	jobsTableName                         = "jobs"
+	moduleTableName                       = "module"
+	moduleIdsTableName                    = "module_ids"
+	moduleChangesTableName                = "module_changes"
+	providerSchemaTableName               = "provider_schema"
+	providerIdsTableName                  = "provider_ids"
+	walkerPathsTableName                  = "walker_paths"
+	registryModuleMetaDataSchemaTableName = "registeryModule_schema"
 )
 
 var dbSchema = &memdb.DBSchema{
@@ -127,6 +128,22 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		registryModuleMetaDataSchemaTableName: {
+			Name: registryModuleMetaDataSchemaTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:   "id",
+					Unique: true,
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&StringerFieldIndexer{Field: "Source"},
+							&VersionFieldIndexer{Field: "Version"},
+						},
+						AllowMissing: true,
+					},
+				},
+			},
+		},
 		providerIdsTableName: {
 			Name: providerIdsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -184,11 +201,12 @@ var dbSchema = &memdb.DBSchema{
 }
 
 type StateStore struct {
-	DocumentStore   *DocumentStore
-	JobStore        *JobStore
-	Modules         *ModuleStore
-	ProviderSchemas *ProviderSchemaStore
-	WalkerPaths     *WalkerPathStore
+	DocumentStore          *DocumentStore
+	JobStore               *JobStore
+	Modules                *ModuleStore
+	ProviderSchemas        *ProviderSchemaStore
+	WalkerPaths            *WalkerPathStore
+	RegistryModuleMetadataSchemas *RegistryModuleMetadataSchemaStore
 
 	db *memdb.MemDB
 }
@@ -219,6 +237,11 @@ type ModuleCallReader interface {
 }
 
 type ProviderSchemaStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+type RegistryModuleMetadataSchemaStore struct {
 	db        *memdb.MemDB
 	tableName string
 	logger    *log.Logger
@@ -260,6 +283,11 @@ func NewStateStore() (*StateStore, error) {
 			tableName: providerSchemaTableName,
 			logger:    defaultLogger,
 		},
+		RegistryModuleMetadataSchemas: &RegistryModuleMetadataSchemaStore{
+			db:        db,
+			tableName: registryModuleMetaDataSchemaTableName,
+			logger:    defaultLogger,
+		},
 		WalkerPaths: &WalkerPathStore{
 			db:              db,
 			tableName:       walkerPathsTableName,
@@ -276,6 +304,7 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
+	s.RegistryModuleMetadataSchemas.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)

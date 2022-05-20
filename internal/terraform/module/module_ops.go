@@ -2,12 +2,14 @@ package module
 
 import (
 	"context"
+
 	"fmt"
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -347,4 +349,46 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	}
 
 	return rErr
+}
+
+func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.ModuleStore, modMetaStore *state.StateStore, modPath string) error {
+	// loop over module calls
+	calls, err := modStore.ModuleCalls(modPath)
+	if err != nil {
+		return nil
+	}
+
+	for _, declaredModule := range calls.Declared {
+		// parse registry address
+		moduleSourceRegistry, err := tfaddr.ParseRawModuleSourceRegistry(declaredModule.SourceAddr)
+		if err != nil {
+			continue
+		}
+
+		// check if that address was already cached
+		// if there was an error finding in cache, so cache again
+		exists := modMetaStore.RegistryModuleMetadataSchemas.Exists(moduleSourceRegistry, declaredModule.Version)
+		if exists {
+			// entry in cache, no need to look up
+			continue
+		}
+
+		// get module data from tfregistry
+		metaData, moduleVersion := registry.GetTFRegistryInfo(moduleSourceRegistry, declaredModule)
+
+		// if not, cache it
+		// key :  sourceaddress & version
+		err = modMetaStore.RegistryModuleMetadataSchemas.Cache(
+			moduleSourceRegistry,
+			moduleVersion,
+			metaData.Root.Inputs,
+			metaData.Root.Outputs,
+		)
+		if err != nil {
+			// error caching result should not stop operations
+			continue
+		}
+	}
+
+	return nil
 }

@@ -24,4 +24,5 @@ const (
 	OpTypeDecodeReferenceTargets
 	OpTypeDecodeReferenceOrigins
 	OpTypeDecodeVarsReferences
+	OpTypeGetModuleMetadataFromRegistry
 )
