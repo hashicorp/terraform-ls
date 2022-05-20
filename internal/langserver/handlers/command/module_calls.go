@@ -57,12 +57,17 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, nil
 	}
 
-	response.ModuleCalls = parseModuleRecords(found.ModManifest.Records)
+	modCalls, err := parseModuleRecords(ctx, found.ModManifest.Records)
+	if err != nil {
+		return response, err
+	}
+
+	response.ModuleCalls = modCalls
 
 	return response, nil
 }
 
-func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
+func parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) ([]moduleCall, error) {
 	// sort all records by key so that dependent modules are found
 	// after primary modules
 	sort.SliceStable(records, func(i, j int) bool {
@@ -89,11 +94,16 @@ func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
 			subModuleName = v[1]
 		}
 
+		docsLink, err := getModuleDocumentationLink(ctx, manifest)
+		if err != nil {
+			return nil, err
+		}
+
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
 			SourceAddr:       manifest.SourceAddr,
-			DocsLink:         getModuleDocumentationLink(manifest),
+			DocsLink:         docsLink,
 			Version:          manifest.VersionStr,
 			SourceType:       manifest.GetModuleType(),
 			DependentModules: make([]moduleCall, 0),
@@ -121,14 +131,22 @@ func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
 		return list[i].Name < list[j].Name
 	})
 
-	return list
+	return list, nil
 }
 
-func getModuleDocumentationLink(record datadir.ModuleRecord) string {
+func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord) (string, error) {
 	if record.GetModuleType() != datadir.TFREGISTRY {
-		return ""
+		return "", nil
 	}
 
 	shortName := strings.TrimPrefix(record.SourceAddr, "registry.terraform.io/")
-	return fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+
+	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
+	if err != nil {
+		return "", err
+	}
+
+	return u.String(), nil
 }

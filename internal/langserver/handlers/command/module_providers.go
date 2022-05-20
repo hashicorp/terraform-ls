@@ -56,10 +56,14 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 	}
 
 	for provider, version := range mod.Meta.ProviderRequirements {
+		docsLink, err := getProviderDocumentationLink(ctx, provider)
+		if err != nil {
+			return response, err
+		}
 		response.ProviderRequirements[provider.String()] = providerRequirement{
 			DisplayName:       provider.ForDisplay(),
 			VersionConstraint: version.String(),
-			DocsLink:          getProviderDocumentationLink(provider),
+			DocsLink:          docsLink,
 		}
 	}
 
@@ -70,10 +74,17 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 	return response, nil
 }
 
-func getProviderDocumentationLink(provider tfaddr.Provider) string {
+func getProviderDocumentationLink(ctx context.Context, provider tfaddr.Provider) (string, error) {
 	if provider.IsLegacy() || provider.IsBuiltIn() || provider.Hostname != "registry.terraform.io" {
-		return ""
+		return "", nil
 	}
 
-	return fmt.Sprintf(`https://registry.terraform.io/providers/%s/latest`, provider.ForDisplay())
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/providers/%s/latest`, provider.ForDisplay())
+
+	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.providers")
+	if err != nil {
+		return "", err
+	}
+
+	return u.String(), nil
 }
