@@ -245,9 +245,10 @@ func (s *ModuleStore) Add(modPath string) error {
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(nil, mod)
-	})
+	err = s.queueModuleChange(txn, nil, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -267,10 +268,11 @@ func (s *ModuleStore) Remove(modPath string) error {
 		return nil
 	}
 
-	txn.Defer(func() {
-		oldMod := oldObj.(*Module)
-		go s.ChangeHooks.notifyModuleChange(oldMod, nil)
-	})
+	oldMod := oldObj.(*Module)
+	err = s.queueModuleChange(txn, oldMod, nil)
+	if err != nil {
+		return err
+	}
 
 	_, err = txn.DeleteAll(s.tableName, "id", modPath)
 	if err != nil {
@@ -419,9 +421,10 @@ func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provi
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -484,10 +487,10 @@ func (s *ModuleStore) UpdateModManifest(path string, manifest *datadir.ModuleMan
 		return err
 	}
 
-	txn.Defer(func() {
-		s.logger.Printf("Queuing refresh for %s", path)
-		go s.ChangeHooks.notifyModuleChange(nil, mod)
-	})
+	err = s.queueModuleChange(txn, nil, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -508,9 +511,10 @@ func (s *ModuleStore) SetTerraformVersionState(path string, state op.OpState) er
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(nil, mod)
-	})
+	err = s.queueModuleChange(txn, nil, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -555,9 +559,10 @@ func (s *ModuleStore) FinishProviderSchemaLoading(path string, psErr error) erro
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -584,18 +589,15 @@ func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Vers
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	err = updateProviderVersions(txn, modPath, pv)
 	if err != nil {
 		return err
 	}
-
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(nil, mod)
-	})
 
 	txn.Commit()
 	return nil
@@ -738,9 +740,10 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -763,9 +766,10 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -788,9 +792,10 @@ func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags ast.VarsDiags) er
 		return err
 	}
 
-	txn.Defer(func() {
-		go s.ChangeHooks.notifyModuleChange(oldMod, mod)
-	})
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil

@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
+	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -58,6 +59,7 @@ type service struct {
 	stateStore    *state.StateStore
 	server        session.Server
 	diagsNotifier *diagnostics.Notifier
+	notifier      *notifier.Notifier
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -420,9 +422,10 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	}
 
 	svc.stateStore.SetLogger(svc.logger)
-	svc.stateStore.Modules.ChangeHooks = state.ModuleChangeHooks{
-		updateDiagnostics(svc.sessCtx, svc.diagsNotifier),
-		sendModuleTelemetry(svc.sessCtx, svc.stateStore, svc.telemetry),
+
+	moduleHooks := []notifier.Hook{
+		updateDiagnostics(svc.diagsNotifier),
+		sendModuleTelemetry(svc.stateStore, svc.telemetry),
 	}
 
 	svc.closedDirIndexer = scheduler.NewScheduler(&closedDirJobStore{svc.stateStore.JobStore}, 1)
@@ -438,25 +441,25 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {
 		if _, ok = lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
-			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				refreshCodeLens(svc.sessCtx, svc.server))
+			moduleHooks = append(moduleHooks, refreshCodeLens(svc.server))
 		}
 
 		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshModuleProvidersCommandId(); ok {
-			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				callClientCommand(svc.sessCtx, svc.server, svc.logger, commandId))
+			moduleHooks = append(moduleHooks, callRefreshClientCommand(svc.server, commandId))
 		}
 
 		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshModuleCallsCommandId(); ok {
-			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				callClientCommand(svc.sessCtx, svc.server, svc.logger, commandId))
+			moduleHooks = append(moduleHooks, callRefreshClientCommand(svc.server, commandId))
 		}
 
 		if cc.Workspace.SemanticTokens.RefreshSupport {
-			svc.stateStore.Modules.ChangeHooks = append(svc.stateStore.Modules.ChangeHooks,
-				refreshSemanticTokens(ctx, svc.srvCtx, svc.logger))
+			moduleHooks = append(moduleHooks, refreshSemanticTokens(svc.server))
 		}
 	}
+
+	svc.notifier = notifier.NewNotifier(svc.stateStore.Modules, moduleHooks)
+	svc.notifier.SetLogger(svc.logger)
+	svc.notifier.Start(svc.sessCtx)
 
 	svc.modStore = svc.stateStore.Modules
 	svc.schemaStore = svc.stateStore.ProviderSchemas

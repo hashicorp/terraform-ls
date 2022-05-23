@@ -18,6 +18,7 @@ const (
 	jobsTableName           = "jobs"
 	moduleTableName         = "module"
 	moduleIdsTableName      = "module_ids"
+	moduleChangesTableName  = "module_changes"
 	providerSchemaTableName = "provider_schema"
 	providerIdsTableName    = "provider_ids"
 	walkerPathsTableName    = "walker_paths"
@@ -146,6 +147,20 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		moduleChangesTableName: {
+			Name: moduleChangesTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &DirHandleFieldIndexer{Field: "DirHandle"},
+				},
+				"time": {
+					Name:    "time",
+					Indexer: &TimeFieldIndex{Field: "FirstChangeTime"},
+				},
+			},
+		},
 		walkerPathsTableName: {
 			Name: walkerPathsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -179,10 +194,17 @@ type StateStore struct {
 }
 
 type ModuleStore struct {
-	db          *memdb.MemDB
-	ChangeHooks ModuleChangeHooks
-	tableName   string
-	logger      *log.Logger
+	db        *memdb.MemDB
+	Changes   *ModuleChangeStore
+	tableName string
+	logger    *log.Logger
+
+	// TimeProvider provides current time (for mocking time.Now in tests)
+	TimeProvider func() time.Time
+}
+
+type ModuleChangeStore struct {
+	db *memdb.MemDB
 }
 
 type ModuleReader interface {
@@ -228,10 +250,10 @@ func NewStateStore() (*StateStore, error) {
 			nextJobClosedDirMu: &sync.Mutex{},
 		},
 		Modules: &ModuleStore{
-			db:          db,
-			ChangeHooks: make(ModuleChangeHooks, 0),
-			tableName:   moduleTableName,
-			logger:      defaultLogger,
+			db:           db,
+			tableName:    moduleTableName,
+			logger:       defaultLogger,
+			TimeProvider: time.Now,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
