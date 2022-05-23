@@ -42,7 +42,7 @@ jobs:
         run: go generate ./internal/schemas
       -
         name: Snapshot build (cross-platform)
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3
         with:
           version: latest
           args: build --snapshot --skip-post-hooks
