@@ -92,3 +92,18 @@ jobs:
           hc-releases-host: ${{ secrets.HC_RELEASES_HOST_PROD }}
           hc-releases-key: ${{ secrets.HC_RELEASES_KEY_PROD }}
           hc-releases-source_env_key: ${{ secrets.HC_RELEASES_KEY_STAGING }}
+      -
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.TERRAFORM_PROD_AWS_ROLE_TO_ASSUME }}
+          role-skip-session-tagging: true
+          role-duration-seconds: 3600
+      -
+        name: Trigger Post-Publishing Actions
+        run: |
+          input=$(jq --null-input --arg product "terraform-ls" '{"product": $product}')
+          aws sns publish --topic-arn "arn:aws:sns:us-east-1:687797000797:hc-releases-updates-topic" --message "${input}"
