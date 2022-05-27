@@ -82,10 +82,8 @@ func Test_parseModuleRecords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			got, err := parseModuleRecords(ctx, tt.records)
-			if err != nil {
-				t.Fatal(err)
-			}
+			h := &CmdHandler{}
+			got := h.parseModuleRecords(ctx, tt.records)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatalf("module mismatch: %s", diff)
 			}
@@ -125,11 +123,8 @@ func Test_parseModuleRecords_v1_1(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			// TODO: utm_media? / client name?
-			got, err := parseModuleRecords(ctx, tt.records)
-			if err != nil {
-				t.Fatal(err)
-			}
+			h := &CmdHandler{}
+			got := h.parseModuleRecords(ctx, tt.records)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Fatalf("module mismatch: %s", diff)
 			}

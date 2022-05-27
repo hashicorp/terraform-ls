@@ -57,17 +57,12 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, nil
 	}
 
-	modCalls, err := parseModuleRecords(ctx, found.ModManifest.Records)
-	if err != nil {
-		return response, err
-	}
-
-	response.ModuleCalls = modCalls
+	response.ModuleCalls = h.parseModuleRecords(ctx, found.ModManifest.Records)
 
 	return response, nil
 }
 
-func parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) ([]moduleCall, error) {
+func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) []moduleCall {
 	// sort all records by key so that dependent modules are found
 	// after primary modules
 	sort.SliceStable(records, func(i, j int) bool {
@@ -96,7 +91,7 @@ func parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) ([]
 
 		docsLink, err := getModuleDocumentationLink(ctx, manifest)
 		if err != nil {
-			return nil, err
+			h.Logger.Printf("failed to get module docs link: %s", err)
 		}
 
 		// build what we know
@@ -131,7 +126,7 @@ func parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) ([]
 		return list[i].Name < list[j].Name
 	})
 
-	return list, nil
+	return list
 }
 
 func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord) (string, error) {
