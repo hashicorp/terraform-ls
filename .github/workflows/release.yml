@@ -103,7 +103,7 @@ jobs:
           role-skip-session-tagging: true
           role-duration-seconds: 3600
       -
-        name: Trigger Post-Publishing Actions
+        name: Trigger Post-Publishing Actions (e.g. Linux Packages)
         run: |
           input=$(jq --null-input --arg product "terraform-ls" '{"product": $product}')
           aws sns publish --topic-arn "arn:aws:sns:us-east-1:687797000797:hc-releases-updates-topic" --message "${input}"
