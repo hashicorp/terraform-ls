@@ -12,19 +12,20 @@ how you may configure the settings.
 
 ## Emacs
 
- - Install [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
- - Add the following to your `.emacs`:
+If you are using `use-package`, you can use something like this:
 
-```
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection '("/path/to/terraform-ls/terraform-ls" "serve"))
-                  :major-modes '(terraform-mode)
-                  :server-id 'terraform-ls))
-
-(add-hook 'terraform-mode-hook #'lsp)
+``` emacs-lisp
+(use-package lsp-mode
+  :ensure t
+  :hook ((terraform-mode . lsp-deferred)))
 ```
 
-The last line can instead be `(add-hook 'terraform-mode-hook #'lsp-deferred)` if you prefer the server to lazy load.
+The above code installs `lsp-mode` and also enables it for the
+terraform-mode.
+
+The terraform client for lsp-mode supports various features like
+semantic tokens, code lens for references etc. There is more detailed
+documentation [here](https://emacs-lsp.github.io/lsp-mode/page/lsp-terraform-ls/).
 
 ## IntelliJ IDE
 
