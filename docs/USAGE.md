@@ -12,16 +12,7 @@ how you may configure the settings.
 
 ## Emacs
 
-If you are using `use-package`, you can use something like this:
-
-``` emacs-lisp
-(use-package lsp-mode
-  :ensure t
-  :hook ((terraform-mode . lsp-deferred)))
-```
-
-The above code installs `lsp-mode` and also enables it for the
-terraform-mode.
+- Install `lsp-mode` as mentioned in the [documentation.](https://emacs-lsp.github.io/lsp-mode/page/installation/#installation)
 
 The terraform client for lsp-mode supports various features like
 semantic tokens, code lens for references etc. There is more detailed
