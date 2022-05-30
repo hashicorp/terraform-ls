@@ -33,11 +33,6 @@ func main() {
 				Version: VersionString(),
 			}, nil
 		},
-		"inspect-module": func() (cli.Command, error) {
-			return &cmd.InspectModuleCommand{
-				Ui: ui,
-			}, nil
-		},
 		"version": func() (cli.Command, error) {
 			return &cmd.VersionCommand{
 				Ui:      ui,

@@ -113,26 +113,6 @@ Path supports template syntax. This allows for separation of logs while accounti
 
 The path is interpreted as [Go template](https://golang.org/pkg/text/template/), e.g. `/tmp/terraform-ls-memprofile-{{timestamp}}.log`.
 
-## "No root module found for ... functionality may be limited"
-
-Most of the language server features depend on initialized root modules
-(i.e. folder with `*.tf` files where you ran `terraform init` successfully).
-and server's ability to discover them within the hierarchy and match them
-with files being open in the editor.
-
-This functionality should cover many hierarchies, but it may not cover yours.
-If it appears that root modules aren't being discovered or matched the way
-they should be, it can be useful to use `inspect-module` to obtain
-the discovery results and provide them to maintainers in a bug report.
-
-Point it to the same directory that you tried to open in your IDE/editor
-and wait for the output - it may take some seconds or low minutes
-depending on the complexity of your hierarchy and number of root modules in it.
-
-```
-$ terraform-ls inspect-module /path/to/dir
-```
-
 ## "Unable to retrieve schemas for ..."
 
 The process of obtaining the schema currently requires access to the state,
