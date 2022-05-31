@@ -3,51 +3,50 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"log"
 
-	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
+	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-schema/backend"
 )
 
-func sendModuleTelemetry(ctx context.Context, store *state.StateStore, telemetrySender telemetry.Sender) state.ModuleChangeHook {
-	return func(oldMod, newMod *state.Module) {
-		if newMod == nil {
-			// module is being removed
-			// TODO: Track module removal as an event
-			return
+func sendModuleTelemetry(store *state.StateStore, telemetrySender telemetry.Sender) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		if changes.IsRemoval {
+			// we ignore removed modules for now
+			return nil
 		}
 
-		properties, hasChanged := moduleTelemetryData(oldMod, newMod, store)
-		if !hasChanged {
-			// avoid sending telemetry if nothing has changed
-			return
+		mod, err := notifier.ModuleFromContext(ctx)
+		if err != nil {
+			return err
 		}
 
-		telemetrySender.SendEvent(ctx, "moduleData", properties)
+		properties, hasChanged := moduleTelemetryData(mod, changes, store)
+		if hasChanged {
+			telemetrySender.SendEvent(ctx, "moduleData", properties)
+		}
+		return nil
 	}
 }
 
-func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) (map[string]interface{}, bool) {
+func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state.StateStore) (map[string]interface{}, bool) {
 	properties := make(map[string]interface{})
-	hasChanged := false
+	hasChanged := ch.CoreRequirements || ch.Backend || ch.ProviderRequirements ||
+		ch.TerraformVersion || ch.InstalledProviders
 
-	if oldMod == nil || !oldMod.Meta.CoreRequirements.Equals(newMod.Meta.CoreRequirements) {
-		hasChanged = true
-	}
-	if len(newMod.Meta.CoreRequirements) > 0 {
-		properties["tfRequirements"] = newMod.Meta.CoreRequirements.String()
+	if !hasChanged {
+		return properties, false
 	}
 
-	if oldMod == nil || !oldMod.Meta.Backend.Equals(newMod.Meta.Backend) {
-		hasChanged = true
+	if len(mod.Meta.CoreRequirements) > 0 {
+		properties["tfRequirements"] = mod.Meta.CoreRequirements.String()
 	}
-	if newMod.Meta.Backend != nil {
-		properties["backend"] = newMod.Meta.Backend.Type
-		if data, ok := newMod.Meta.Backend.Data.(*backend.Remote); ok {
+	if mod.Meta.Backend != nil {
+		properties["backend"] = mod.Meta.Backend.Type
+		if data, ok := mod.Meta.Backend.Data.(*backend.Remote); ok {
 			hostname := data.Hostname
 
 			// anonymize any non-default hostnames
@@ -58,13 +57,9 @@ func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) 
 			properties["backend.remote.hostname"] = hostname
 		}
 	}
-
-	if oldMod == nil || !oldMod.Meta.ProviderRequirements.Equals(newMod.Meta.ProviderRequirements) {
-		hasChanged = true
-	}
-	if len(newMod.Meta.ProviderRequirements) > 0 {
+	if len(mod.Meta.ProviderRequirements) > 0 {
 		reqs := make(map[string]string, 0)
-		for pAddr, cons := range newMod.Meta.ProviderRequirements {
+		for pAddr, cons := range mod.Meta.ProviderRequirements {
 			if telemetry.IsPublicProvider(pAddr) {
 				reqs[pAddr.String()] = cons.String()
 				continue
@@ -80,20 +75,12 @@ func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) 
 		}
 		properties["providerRequirements"] = reqs
 	}
-
-	if oldMod == nil || !oldMod.TerraformVersion.Equal(newMod.TerraformVersion) {
-		hasChanged = true
+	if mod.TerraformVersion != nil {
+		properties["tfVersion"] = mod.TerraformVersion.String()
 	}
-	if newMod.TerraformVersion != nil {
-		properties["tfVersion"] = newMod.TerraformVersion.String()
-	}
-
-	if oldMod == nil || !oldMod.InstalledProviders.Equals(newMod.InstalledProviders) {
-		hasChanged = true
-	}
-	if len(newMod.InstalledProviders) > 0 {
+	if len(mod.InstalledProviders) > 0 {
 		installedProviders := make(map[string]string, 0)
-		for pAddr, pv := range newMod.InstalledProviders {
+		for pAddr, pv := range mod.InstalledProviders {
 			if telemetry.IsPublicProvider(pAddr) {
 				versionString := ""
 				if pv != nil {
@@ -118,7 +105,7 @@ func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) 
 		return nil, false
 	}
 
-	modId, err := store.GetModuleID(newMod.Path)
+	modId, err := store.GetModuleID(mod.Path)
 	if err != nil {
 		return nil, false
 	}
@@ -127,73 +114,87 @@ func moduleTelemetryData(oldMod, newMod *state.Module, store *state.StateStore) 
 	return properties, true
 }
 
-func updateDiagnostics(ctx context.Context, notifier *diagnostics.Notifier) state.ModuleChangeHook {
-	return func(oldMod, newMod *state.Module) {
-		oldDiags, newDiags := 0, 0
-		if oldMod != nil {
-			oldDiags = oldMod.ModuleDiagnostics.Count() + oldMod.VarsDiagnostics.Count()
-		}
-		if newMod != nil {
-			newDiags = newMod.ModuleDiagnostics.Count() + newMod.VarsDiagnostics.Count()
-		}
+func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		if changes.Diagnostics {
+			mod, err := notifier.ModuleFromContext(ctx)
+			if err != nil {
+				return err
+			}
 
-		if oldDiags == 0 && newDiags == 0 {
-			return
+			diags := diagnostics.NewDiagnostics()
+			diags.EmptyRootDiagnostic()
+
+			defer dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
+
+			if mod != nil {
+				diags.Append("HCL", mod.ModuleDiagnostics.AsMap())
+				diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
+			}
 		}
-
-		diags := diagnostics.NewDiagnostics()
-		diags.EmptyRootDiagnostic()
-
-		defer notifier.PublishHCLDiags(ctx, newMod.Path, diags)
-
-		if newMod != nil {
-			diags.Append("HCL", newMod.ModuleDiagnostics.AsMap())
-			diags.Append("HCL", newMod.VarsDiagnostics.AutoloadedOnly().AsMap())
-		}
+		return nil
 	}
 }
 
-func callClientCommand(ctx context.Context, clientRequester session.ClientCaller, logger *log.Logger, commandId string) state.ModuleChangeHook {
-	return func(oldMod, newMod *state.Module) {
-		var modPath string
-		if oldMod != nil {
-			modPath = oldMod.Path
-		} else {
-			modPath = newMod.Path
-		}
-
-		_, err := clientRequester.Callback(ctx, commandId, nil)
+func callRefreshClientCommand(clientRequester session.ClientCaller, commandId string) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		// TODO: avoid triggering if module calls/providers did not change
+		isOpen, err := notifier.ModuleIsOpen(ctx)
 		if err != nil {
-			logger.Printf("Error calling %s for %s: %s", commandId, modPath, err)
+			return err
 		}
+
+		if isOpen {
+			mod, err := notifier.ModuleFromContext(ctx)
+			if err != nil {
+				return err
+			}
+
+			_, err = clientRequester.Callback(ctx, commandId, nil)
+			if err != nil {
+				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path, err)
+			}
+		}
+
+		return nil
 	}
 }
 
-func refreshCodeLens(ctx context.Context, clientRequester session.ClientCaller) state.ModuleChangeHook {
-	return func(oldMod, newMod *state.Module) {
-		oldOrigins, oldTargets := 0, 0
-		if oldMod != nil {
-			oldOrigins = len(oldMod.RefOrigins)
-			oldTargets = len(oldMod.RefTargets)
+func refreshCodeLens(clientRequester session.ClientCaller) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		// TODO: avoid triggering for new targets outside of open module
+		if changes.ReferenceOrigins || changes.ReferenceTargets {
+			_, err := clientRequester.Callback(ctx, "workspace/codeLens/refresh", nil)
+			if err != nil {
+				return err
+			}
 		}
-		newOrigins, newTargets := 0, 0
-		if newMod != nil {
-			newOrigins = len(newMod.RefOrigins)
-			newTargets = len(newMod.RefTargets)
-		}
-
-		if oldOrigins != newOrigins || oldTargets != newTargets {
-			clientRequester.Callback(ctx, "workspace/codeLens/refresh", nil)
-		}
+		return nil
 	}
 }
 
-func refreshSemanticTokens(ctx context.Context, svrCtx context.Context, logger *log.Logger) state.ModuleChangeHook {
-	return func(_, newMod *state.Module) {
-		jrpcsvc := jrpc2.ServerFromContext(ctx)
-		_, err := jrpcsvc.Callback(svrCtx, "workspace/semanticTokens/refresh", nil)
+func refreshSemanticTokens(clientRequester session.ClientCaller) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		isOpen, err := notifier.ModuleIsOpen(ctx)
 		if err != nil {
-			logger.Printf("Error refreshing %s: %s", newMod.Path, err)
+			return err
 		}
+
+		localChanges := isOpen && (changes.TerraformVersion || changes.CoreRequirements ||
+			changes.InstalledProviders || changes.ProviderRequirements)
+
+		if localChanges || changes.ReferenceOrigins || changes.ReferenceTargets {
+			mod, err := notifier.ModuleFromContext(ctx)
+			if err != nil {
+				return err
+			}
+
+			_, err = clientRequester.Callback(ctx, "workspace/semanticTokens/refresh", nil)
+			if err != nil {
+				return fmt.Errorf("Error refreshing %s: %s", mod.Path, err)
+			}
+		}
+
+		return nil
 	}
 }

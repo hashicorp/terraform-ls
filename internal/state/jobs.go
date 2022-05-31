@@ -125,6 +125,26 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 	return nil
 }
 
+func jobsExistForDirHandle(txn *memdb.Txn, dir document.DirHandle) (<-chan struct{}, bool, error) {
+	wCh, runningObj, err := txn.FirstWatch(jobsTableName, "dir_state", dir, StateRunning)
+	if err != nil {
+		return nil, false, err
+	}
+	if runningObj != nil {
+		return wCh, true, nil
+	}
+
+	queuedObj, err := txn.First(jobsTableName, "dir_state", dir, StateQueued)
+	if err != nil {
+		return nil, false, err
+	}
+	if queuedObj != nil {
+		return wCh, true, nil
+	}
+
+	return nil, false, nil
+}
+
 func updateJobsDirOpenMark(txn *memdb.Txn, dirHandle document.DirHandle, isDirOpen bool) error {
 	it, err := txn.Get(jobsTableName, "dir_state", dirHandle, StateQueued)
 	if err != nil {
