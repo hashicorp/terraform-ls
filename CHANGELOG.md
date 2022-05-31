@@ -8,6 +8,7 @@ ENHANCEMENTS:
 INTERNAL:
  - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
  - Use `terraform-registry-address` for parsing module sources ([#891](https://github.com/hashicorp/terraform-ls/pull/891))
+ - Add utm parameters to docs links in `module.*` commands ([#923](https://github.com/hashicorp/terraform-ls/pull/923))
 
 ## 0.27.0 (14 April 2022)
 
