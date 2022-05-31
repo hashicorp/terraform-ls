@@ -16,6 +16,17 @@ Clients specifically should **not** send `*.tf.json`, `*.tfvars.json` nor
 Packer HCL config nor any other HCL config files as the server is not
 equipped to handle these file types.
 
+## Watched Files
+
+The server (`>= 0.28.0`) supports `workspace/didChangeWatchedFiles` notifications.
+This allows IntelliSense to remain accurate e.g. when switching branches in VCS
+or when there are any other changes made to these files outside the editor.
+
+If the client implements file watcher, it should watch for any changes
+in `**/*.tf` and `**/*.tfvars` files in the workspace.
+
+Client should **not** send changes for any other files.
+
 ## Syntax Highlighting
 
 Read more about how we recommend Terraform files to be highlighted in [syntax-highlighting.md](./syntax-highlighting.md).
