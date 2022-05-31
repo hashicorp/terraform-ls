@@ -305,6 +305,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
+			ctx = ilsp.ContextWithClientName(ctx, &clientName)
 			ctx = exec.WithExecutorOpts(ctx, svc.tfExecOpts)
 			ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
 

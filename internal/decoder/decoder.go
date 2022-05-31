@@ -11,6 +11,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
+	"github.com/hashicorp/terraform-ls/internal/utm"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
@@ -80,7 +81,8 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 
 func decoderContext(ctx context.Context) decoder.DecoderContext {
 	dCtx := decoder.DecoderContext{
-		UtmSource:     "terraform-ls",
+		UtmSource:     utm.UtmSource,
+		UtmMedium:     utm.UtmMedium(ctx),
 		UseUtmContent: true,
 	}
 
@@ -92,9 +94,5 @@ func decoderContext(ctx context.Context) decoder.DecoderContext {
 		}
 	}
 
-	clientName, ok := ilsp.ClientName(ctx)
-	if ok {
-		dCtx.UtmMedium = clientName
-	}
 	return dCtx
 }

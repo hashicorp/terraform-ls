@@ -57,12 +57,12 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, nil
 	}
 
-	response.ModuleCalls = parseModuleRecords(found.ModManifest.Records)
+	response.ModuleCalls = h.parseModuleRecords(ctx, found.ModManifest.Records)
 
 	return response, nil
 }
 
-func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
+func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) []moduleCall {
 	// sort all records by key so that dependent modules are found
 	// after primary modules
 	sort.SliceStable(records, func(i, j int) bool {
@@ -89,11 +89,16 @@ func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
 			subModuleName = v[1]
 		}
 
+		docsLink, err := getModuleDocumentationLink(ctx, manifest)
+		if err != nil {
+			h.Logger.Printf("failed to get module docs link: %s", err)
+		}
+
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
 			SourceAddr:       manifest.SourceAddr,
-			DocsLink:         getModuleDocumentationLink(manifest),
+			DocsLink:         docsLink,
 			Version:          manifest.VersionStr,
 			SourceType:       manifest.GetModuleType(),
 			DependentModules: make([]moduleCall, 0),
@@ -124,11 +129,19 @@ func parseModuleRecords(records []datadir.ModuleRecord) []moduleCall {
 	return list
 }
 
-func getModuleDocumentationLink(record datadir.ModuleRecord) string {
+func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord) (string, error) {
 	if record.GetModuleType() != datadir.TFREGISTRY {
-		return ""
+		return "", nil
 	}
 
 	shortName := strings.TrimPrefix(record.SourceAddr, "registry.terraform.io/")
-	return fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+
+	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
+	if err != nil {
+		return "", err
+	}
+
+	return u.String(), nil
 }
