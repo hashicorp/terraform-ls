@@ -11,14 +11,14 @@ checks:
   benchmarks: [BenchmarkInitializeFolder_basic/local-single-submodule-no-provider]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
-    min: 150
+    min: 140
     max: 310
 - package: ./internal/langserver/handlers
   name: local-single-module-random
   benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-random]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
-    min: 150
+    min: 140
     max: 300
 - package: ./internal/langserver/handlers
   name: local-single-module-aws
@@ -75,7 +75,7 @@ checks:
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1000
-    max: 2800
+    max: 2900
 - package: ./internal/langserver/handlers
   name: k8s-dashboard
   benchmarks: [BenchmarkInitializeFolder_basic/k8s-dashboard]
