@@ -1,11 +1,11 @@
 ## 0.28.0 (Unreleased)
 
 ENHANCEMENTS:
- - Link to documentation from module source for registry modules (via [#874](https://github.com/hashicorp/terraform-ls/pull/874))
+ - Link to documentation from module source for registry modules ([#874](https://github.com/hashicorp/terraform-ls/pull/874))
  - Provide refresh mechanism for `module.providers` when providers change ([#902](https://github.com/hashicorp/terraform-ls/pull/902))
  - Provide refresh mechanism for `module.calls` when module calls change ([#909](https://github.com/hashicorp/terraform-ls/pull/909))
  - Add support for `workspace/didChangeWatchedFiles` notifications for `*.tf` & `*.tfvars` ([#790](https://github.com/hashicorp/terraform-ls/pull/790))
- - Improve performance by reducing amount of notifications sent for any single module changes ([#925](https://github.com/hashicorp/terraform-ls/pull/925))
+ - Improve performance by reducing amount of notifications sent for any single module changes ([#931](https://github.com/hashicorp/terraform-ls/pull/931))
 
 INTERNAL:
  - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
