@@ -53,7 +53,7 @@ jobs:
         uses: hashicorp/setup-signore-package@v1
       -
         name: Setup hc-releases
-        uses: hashicorp/actions-setup-hc-releases@v2
+        uses: hashicorp/setup-hc-releases@v2
         with:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
