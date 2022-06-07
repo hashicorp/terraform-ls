@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -30,10 +29,10 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 
 	// Versions don't have to be consecutive, but they must be increasing
 	if newVersion <= doc.Version {
-		svc.stateStore.DocumentStore.CloseDocument(dh)
-		return fmt.Errorf("Old version (%d) received, current version is %d. "+
-			"Unable to update %s. This is likely a bug, please report it.",
+		svc.logger.Printf("Old document version (%d) received, current version is %d. "+
+			"Ignoring this update for %s. This is likely a client bug, please report it.",
 			newVersion, doc.Version, p.TextDocument.URI)
+		return nil
 	}
 
 	changes := ilsp.DocumentChanges(params.ContentChanges)
