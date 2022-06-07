@@ -1,4 +1,4 @@
-## 0.28.0 (Unreleased)
+## 0.28.0 (7 June 2022)
 
 ENHANCEMENTS:
  - Link to documentation from module source for registry modules ([#874](https://github.com/hashicorp/terraform-ls/pull/874))
