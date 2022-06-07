@@ -40,14 +40,14 @@ checks:
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1570
-    max: 3000
+    max: 3200
 - package: ./internal/langserver/handlers
   name: aws-vpc
   benchmarks: [BenchmarkInitializeFolder_basic/aws-vpc]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1400
-    max: 2050
+    max: 2200
 - package: ./internal/langserver/handlers
   name: google-project
   benchmarks: [BenchmarkInitializeFolder_basic/google-project]
@@ -67,19 +67,19 @@ checks:
   benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
-    min: 2040
-    max: 5000
+    min: 1800
+    max: 5100
 - package: ./internal/langserver/handlers
   name: k8s-metrics-server
   benchmarks: [BenchmarkInitializeFolder_basic/k8s-metrics-server]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1000
-    max: 2900
+    max: 3200
 - package: ./internal/langserver/handlers
   name: k8s-dashboard
   benchmarks: [BenchmarkInitializeFolder_basic/k8s-dashboard]
   diff: current.NsPerOp / 1000000 # ms
   thresholds:
     min: 1200
-    max: 3000
+    max: 3600
