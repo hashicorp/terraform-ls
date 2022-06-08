@@ -7,6 +7,9 @@ ENHANCEMENTS:
  - Add support for `workspace/didChangeWatchedFiles` notifications for `*.tf` & `*.tfvars` ([#790](https://github.com/hashicorp/terraform-ls/pull/790))
  - Improve performance by reducing amount of notifications sent for any single module changes ([#931](https://github.com/hashicorp/terraform-ls/pull/931))
 
+BUG FIXES:
+ - Ignore duplicate document versions in `textDocument/didChange` ([#940](https://github.com/hashicorp/terraform-ls/pull/940))
+
 INTERNAL:
  - build(deps): bump github.com/mitchellh/cli from 1.1.2 to 1.1.3 ([#886](https://github.com/hashicorp/terraform-ls/pull/886))
  - Use `terraform-registry-address` for parsing module sources ([#891](https://github.com/hashicorp/terraform-ls/pull/891))
