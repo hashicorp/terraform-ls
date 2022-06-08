@@ -57,7 +57,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 
 	// should be true
 	exists = s.RegistryModuleMetadataSchemas.Exists(source, c)
-		if exists != true {
+	if exists != true {
 		t.Fatal("should exist")
 	}
 }

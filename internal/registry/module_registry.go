@@ -12,13 +12,13 @@ import (
 )
 
 type TerraformRegistryModule struct {
-	ID              string    `json:"id"`
-	Owner           string    `json:"owner"`
-	Namespace       string    `json:"namespace"`
-	Name            string    `json:"name"`
-	Version         string    `json:"version"`
-	Provider        string    `json:"provider"`
-	Root            struct {
+	ID        string `json:"id"`
+	Owner     string `json:"owner"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	Version   string `json:"version"`
+	Provider  string `json:"provider"`
+	Root      struct {
 		Path                 string        `json:"path"`
 		Name                 string        `json:"name"`
 		Readme               string        `json:"readme"`
@@ -96,7 +96,6 @@ func GetTFRegistryInfo(p tfaddr.ModuleSourceRegistry, c module.DeclaredModuleCal
 
 	return response, v
 }
-
 
 func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) *version.Version {
 	url := fmt.Sprintf("https://terraform.io/v1/modules/%s/%s/%s/versions",

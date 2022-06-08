@@ -201,11 +201,11 @@ var dbSchema = &memdb.DBSchema{
 }
 
 type StateStore struct {
-	DocumentStore          *DocumentStore
-	JobStore               *JobStore
-	Modules                *ModuleStore
-	ProviderSchemas        *ProviderSchemaStore
-	WalkerPaths            *WalkerPathStore
+	DocumentStore                 *DocumentStore
+	JobStore                      *JobStore
+	Modules                       *ModuleStore
+	ProviderSchemas               *ProviderSchemaStore
+	WalkerPaths                   *WalkerPathStore
 	RegistryModuleMetadataSchemas *RegistryModuleMetadataSchemaStore
 
 	db *memdb.MemDB
