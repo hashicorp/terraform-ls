@@ -2,19 +2,85 @@
 
 ## Logging
 
-The language server produces detailed logs which are send to stderr by default.
-Most IDEs provide a way of inspecting these logs when server is launched in the standard
-stdin/stdout mode.
-
-Logs can also be redirected into file using flags of the `serve` command, e.g.
-
-```sh
-$ terraform-ls serve \
-	-log-file=/tmp/terraform-ls-{{pid}}.log \
-	-tf-log-file=/tmp/tf-exec-{{lsPid}}-{{args}}.log
-```
+The language server produces detailed logs (including every LSP request
+and response) which are send to stderr by default.
 
 It may be helpful to share these logs when reporting bugs.
+
+### stderr (default)
+
+Most clients provide a way of inspecting these logs when server is launched
+in the default "stdio" mode where stdout & stdin are used as communication
+channels for LSP. For example:
+
+[**Terraform VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform)
+
+1. `View` -> `Output`\
+   ![vscode-view-output-menu](./images/vscode-view-output-menu.png)
+2. `Output` -> `HashiCorp Terraform`\
+   ![vscode-output-pane](./images/vscode-output-pane.png)
+
+[**Sublime Text LSP-terraform**](https://github.com/sublimelsp/LSP-terraform)
+
+1. Open the command palette via `⌘/Ctrl + Shift + P`
+2. `LSP: Toggle Log Panel`\
+   ![sublime-text-cmd-palette-log](./images/sublime-text-cmd-palette-log.png)
+3. See logs in the bottom pane\
+   ![sublime-text-log-panel](./images/sublime-text-log-panel.png)
+
+### Logging to Files
+
+Server logs can also be directed to files using **`-log-file=<filepath>`**
+of the `serve` command.
+
+```sh
+$ terraform-ls serve -log-file='/tmp/terraform-ls-{{pid}}.log'
+```
+
+Clients which manage LS installation typically allow passing extra arguments.
+For example:
+
+[**Terraform VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform)
+
+1. Open the command palette via `⌘/Ctrl + Shift + P`
+2. ![vscode-open-settings-json](./images/vscode-open-settings-json.png)
+3. ![vscode-json-ls-settings](./images/vscode-json-ls-settings.png)
+
+[**Sublime Text LSP-terraform**](https://github.com/sublimelsp/LSP-terraform)
+
+1. Open the command palette via `⌘/Ctrl + Shift + P`
+2. ![sublime-text-cmd-palette-settings](./images/sublime-text-cmd-palette-settings.png)
+3. ![sublime-text-settings](./images/sublime-text-settings.png)
+
+### Terraform CLI Execution Logs
+
+Given that the server may also execute Terraform itself, it may be useful
+to collect logs from all these executions too. This is equivalent
+to setting [`TF_LOG_PATH` variable](https://www.terraform.io/internals/debugging).
+
+This can be enabled via [`terraformLogFilePath` LSP settings](./SETTINGS.md#terraformlogfilepath-string).
+
+Clients which manage LS installation typically expose this as a dedicated setting option.
+For example:
+
+[**Terraform VS Code Extension**](https://marketplace.visualstudio.com/items?itemName=HashiCorp.terraform)
+
+1. Open the command palette via `⌘/Ctrl + Shift + P`
+2. ![vscode-open-settings-json](./images/vscode-open-settings-json.png)
+3. Set `"terraform-ls.terraformLogFilePath"` to a file path, such as `/tmp/tf-exec-{{lsPid}}-{{method}}-{{timestamp}}.log`
+
+[**Sublime Text LSP-terraform**](https://github.com/sublimelsp/LSP-terraform)
+
+1. Open the command palette via `⌘/Ctrl + Shift + P`
+2. ![sublime-text-cmd-palette-settings](./images/sublime-text-cmd-palette-settings.png)
+3. Set `terraformLogFilePath` under `initializationOptions`
+```json
+{
+    "initializationOptions": {
+        "terraformLogFilePath": "/tmp/tf-exec-{{lsPid}}-{{method}}-{{timestamp}}.log"
+    }
+}
+```
 
 ### How To Share Logs
 
@@ -46,13 +112,13 @@ Log paths support template syntax. This allows for separation of logs while acco
  - multiple clients
  - multiple Terraform executions which may happen in parallel
 
-**`-log-file`** supports the following functions:
+**`-log-file`** flag supports the following functions:
 
  - `timestamp` - current timestamp (formatted as [`Time.Unix()`](https://golang.org/pkg/time/#Time.Unix), i.e. the number of seconds elapsed since January 1, 1970 UTC)
  - `pid` - process ID of the language server
  - `ppid` - parent process ID (typically editor's or editor plugin's PID)
 
- **`-tf-log-file`** supports the following functions:
+ **`terraformLogFilePath`** option supports the following functions:
 
   - `timestamp` - current timestamp (formatted as [`Time.Unix()`](https://golang.org/pkg/time/#Time.Unix), i.e. the number of seconds elapsed since January 1, 1970 UTC)
   - `lsPid` - process ID of the language server
@@ -72,6 +138,9 @@ For example you can modify the launch arguments in your editor to:
 $ terraform-ls serve \
 	-cpuprofile=/tmp/terraform-ls-cpu.prof
 ```
+
+Clients which manage LS installation typically allow passing extra arguments.
+See [Logging to Files](#logging-to-files) section above for examples.
 
 The target file will be truncated before being written into.
 
@@ -98,6 +167,9 @@ For example you can modify the launch arguments in your editor to:
 $ terraform-ls serve \
 	-memprofile=/tmp/terraform-ls-mem.prof
 ```
+
+Clients which manage LS installation typically allow passing extra arguments.
+See [Logging to Files](#logging-to-files) section above for examples.
 
 The target file will be truncated before being written into.
 
