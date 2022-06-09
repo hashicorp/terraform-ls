@@ -1,3 +1,9 @@
+## 0.28.1 (9 June 2022)
+
+Due to some release pipeline changes and multiple release attempts, `0.28.0` release was published with checksums mismatching the release artifacts.
+
+This release is therefore equivalent to `v0.28.0`, but published with the correct checksums.
+
 ## 0.28.0 (7 June 2022)
 
 ENHANCEMENTS:
