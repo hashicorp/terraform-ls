@@ -1,3 +1,9 @@
+## 0.28.2 (Unreleased)
+
+INTERNAL:
+
+ - main: allow build version metadata to be set ([#945](https://github.com/hashicorp/terraform-ls/pull/945))
+
 ## 0.28.1 (9 June 2022)
 
 Due to some release pipeline changes and multiple release attempts, `0.28.0` release was published with checksums mismatching the release artifacts.
