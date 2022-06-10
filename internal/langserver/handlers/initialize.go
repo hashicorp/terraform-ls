@@ -219,8 +219,8 @@ func initializeResult(ctx context.Context) lsp.InitializeResult {
 			DocumentFormattingProvider: true,
 			DocumentSymbolProvider:     true,
 			WorkspaceSymbolProvider:    true,
-			Workspace: lsp.Workspace5Gn{
-				WorkspaceFolders: lsp.WorkspaceFolders4Gn{
+			Workspace: lsp.Workspace6Gn{
+				WorkspaceFolders: lsp.WorkspaceFolders5Gn{
 					Supported:           true,
 					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
 				},

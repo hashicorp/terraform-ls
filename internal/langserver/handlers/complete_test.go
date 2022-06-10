@@ -139,6 +139,12 @@ func TestModuleCompletion_withValidData(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "alias",
@@ -355,6 +361,12 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "alias",
@@ -663,6 +675,12 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "test",
@@ -809,6 +827,12 @@ output "test" {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "providers",
@@ -891,6 +915,12 @@ output "test" {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "module.refname.testout",
@@ -1066,6 +1096,12 @@ output "test" {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "alpha-var",
@@ -1148,6 +1184,12 @@ output "test" {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "beta-var",
@@ -1230,6 +1272,12 @@ output "test" {
 			"id": 5,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "module.alpha",
@@ -1386,6 +1434,12 @@ variable "ccc" {}
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
 				"items": [
 					{
 						"label": "var.aaa",
