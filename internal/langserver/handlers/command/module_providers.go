@@ -6,7 +6,6 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 )
@@ -48,10 +47,6 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 
 	mod, _ := h.StateStore.Modules.ModuleByPath(modPath)
 	if mod == nil {
-		return response, nil
-	}
-
-	if mod.MetaState == op.OpStateUnknown || mod.MetaErr != nil {
 		return response, nil
 	}
 
