@@ -258,6 +258,7 @@ var ignore = map[string]bool{
 	"nullstone-io/ns":              true,
 	"zededa/zedcloud":              true,
 	"lightstep/lightstep":          true,
+	"thousandeyes/thousandeyes":    true,
 }
 
 func filter(providers []provider) (filtered []provider) {
