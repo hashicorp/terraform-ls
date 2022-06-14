@@ -1,5 +1,9 @@
 ## 0.28.2 (Unreleased)
 
+BUG FIXES:
+
+ - handlers/command: Return partially parsed metadata from `module.providers` ([#951](https://github.com/hashicorp/terraform-ls/pull/951))
+
 INTERNAL:
 
  - main: allow build version metadata to be set ([#945](https://github.com/hashicorp/terraform-ls/pull/945))
