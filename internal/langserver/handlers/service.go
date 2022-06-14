@@ -60,6 +60,7 @@ type service struct {
 	server        session.Server
 	diagsNotifier *diagnostics.Notifier
 	notifier      *notifier.Notifier
+	indexer       *module.Indexer
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -136,7 +137,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			return handle(ctx, req, Initialized)
+			ctx = ilsp.WithClientCapabilities(ctx, cc)
+
+			return handle(ctx, req, svc.Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -475,6 +478,8 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)
+
+	svc.indexer = module.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
 
 	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
 		ModuleReader: svc.modStore,

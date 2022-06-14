@@ -167,7 +167,7 @@ func (w *watcher) processEvent(ctx context.Context, event fsnotify.Event) {
 						return ParseModuleManifest(w.fs, w.modStore, mod.Path)
 					},
 					Type:  op.OpTypeParseModuleManifest.String(),
-					Defer: decodeCalledModulesFunc(w.fs, w.modStore, w.schemaStore, w, mod.Path),
+					Defer: decodeInstalledModuleCalls(w.fs, w.modStore, w.schemaStore, mod.Path),
 				})
 				if err == nil {
 					w.jobStore.WaitForJobs(ctx, id)
@@ -234,7 +234,7 @@ func (w *watcher) processEvent(ctx context.Context, event fsnotify.Event) {
 								return ParseModuleManifest(w.fs, w.modStore, mod.Path)
 							},
 							Type:  op.OpTypeParseModuleManifest.String(),
-							Defer: decodeCalledModulesFunc(w.fs, w.modStore, w.schemaStore, w, mod.Path),
+							Defer: decodeInstalledModuleCalls(w.fs, w.modStore, w.schemaStore, mod.Path),
 						})
 						if err == nil {
 							w.jobStore.WaitForJobs(ctx, id)
@@ -285,7 +285,7 @@ func (w *watcher) processEvent(ctx context.Context, event fsnotify.Event) {
 						return ParseModuleManifest(w.fs, w.modStore, mod.Path)
 					},
 					Type:  op.OpTypeParseModuleManifest.String(),
-					Defer: decodeCalledModulesFunc(w.fs, w.modStore, w.schemaStore, w, mod.Path),
+					Defer: decodeInstalledModuleCalls(w.fs, w.modStore, w.schemaStore, mod.Path),
 				})
 				if err == nil {
 					w.jobStore.WaitForJobs(ctx, id)
@@ -347,133 +347,6 @@ func (w *watcher) processEvent(ctx context.Context, event fsnotify.Event) {
 			}
 		}
 	}
-}
-
-func decodeCalledModulesFunc(fs ReadOnlyFS, modStore *state.ModuleStore, schemaReader state.SchemaReader, w Watcher, modPath string) job.DeferFunc {
-	return func(ctx context.Context, opErr error) (jobIds job.IDs) {
-		if opErr != nil {
-			return
-		}
-
-		moduleCalls, err := modStore.ModuleCalls(modPath)
-		if err != nil {
-			return
-		}
-
-		jobStore, err := job.JobStoreFromContext(ctx)
-		if err != nil {
-			return
-		}
-
-		// TODO: walk through declared modules too - maybe deduplicated?
-
-		for _, mc := range moduleCalls.Installed {
-			fi, err := os.Stat(mc.Path)
-			if err != nil || !fi.IsDir() {
-				continue
-			}
-			modStore.Add(mc.Path)
-
-			mcHandle := document.DirHandleFromPath(mc.Path)
-			// copy path for queued jobs below
-			mcPath := mc.Path
-
-			id, err := jobStore.EnqueueJob(job.Job{
-				Dir: mcHandle,
-				Func: func(ctx context.Context) error {
-					return ParseModuleConfiguration(fs, modStore, mcPath)
-				},
-				Type: op.OpTypeParseModuleConfiguration.String(),
-				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-					id, err := jobStore.EnqueueJob(job.Job{
-						Dir:  mcHandle,
-						Type: op.OpTypeLoadModuleMetadata.String(),
-						Func: func(ctx context.Context) error {
-							return LoadModuleMetadata(modStore, mcPath)
-						},
-					})
-					if err != nil {
-						return
-					}
-					ids = append(ids, id)
-
-					rIds := collectReferences(ctx, mcHandle, modStore, schemaReader)
-					ids = append(ids, rIds...)
-
-					return
-				},
-			})
-			if err != nil {
-				return
-			}
-			jobIds = append(jobIds, id)
-
-			id, err = jobStore.EnqueueJob(job.Job{
-				Dir: mcHandle,
-				Func: func(ctx context.Context) error {
-					return ParseVariables(fs, modStore, mcPath)
-				},
-				Type: op.OpTypeParseVariables.String(),
-				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-					id, err = jobStore.EnqueueJob(job.Job{
-						Dir: mcHandle,
-						Func: func(ctx context.Context) error {
-							return DecodeVarsReferences(ctx, modStore, schemaReader, mcPath)
-						},
-						Type: op.OpTypeDecodeVarsReferences.String(),
-					})
-					if err != nil {
-						return
-					}
-					ids = append(ids, id)
-					return
-				},
-			})
-			if err != nil {
-				return
-			}
-			jobIds = append(jobIds, id)
-
-			if w != nil {
-				w.AddModule(mc.Path)
-			}
-		}
-
-		return
-	}
-}
-
-func collectReferences(ctx context.Context, dirHandle document.DirHandle, modStore *state.ModuleStore, schemaReader state.SchemaReader) (ids job.IDs) {
-	jobStore, err := job.JobStoreFromContext(ctx)
-	if err != nil {
-		return
-	}
-
-	id, err := jobStore.EnqueueJob(job.Job{
-		Dir: dirHandle,
-		Func: func(ctx context.Context) error {
-			return DecodeReferenceTargets(ctx, modStore, schemaReader, dirHandle.Path())
-		},
-		Type: op.OpTypeDecodeReferenceTargets.String(),
-	})
-	if err != nil {
-		return
-	}
-	ids = append(ids, id)
-
-	id, err = jobStore.EnqueueJob(job.Job{
-		Dir: dirHandle,
-		Func: func(ctx context.Context) error {
-			return DecodeReferenceOrigins(ctx, modStore, schemaReader, dirHandle.Path())
-		},
-		Type: op.OpTypeDecodeReferenceOrigins.String(),
-	})
-	if err != nil {
-		return
-	}
-	ids = append(ids, id)
-
-	return
 }
 
 func containsPath(paths []string, path string) bool {

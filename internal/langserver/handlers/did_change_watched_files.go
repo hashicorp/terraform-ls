@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -20,6 +22,74 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 
 	for _, change := range params.Changes {
 		rawURI := string(change.URI)
+
+		// This is necessary because clients may not send delete notifications
+		// for individual nested files when the parent directory is deleted.
+		// VS Code / vscode-languageclient behaves this way.
+		if modUri, ok := datadir.ModuleUriFromDataDir(rawURI); ok {
+			modHandle := document.DirHandleFromURI(modUri)
+			if change.Type == protocol.Deleted {
+				// This is unlikely to happen unless the user manually removed files
+				// See https://github.com/hashicorp/terraform/issues/30005
+				err := svc.modStore.UpdateModManifest(modHandle.Path(), nil, nil)
+				if err != nil {
+					svc.logger.Printf("failed to remove module manifest for %q: %s", modHandle, err)
+				}
+			}
+			continue
+		}
+
+		if modUri, ok := datadir.ModuleUriFromPluginLockFile(rawURI); ok {
+			if change.Type == protocol.Deleted {
+				// This is unlikely to happen unless the user manually removed files
+				// See https://github.com/hashicorp/terraform/issues/30005
+				// Cached provider schema could be removed here but it may be useful
+				// in other modules, so we trade some memory for better UX here.
+				continue
+			}
+
+			modHandle := document.DirHandleFromURI(modUri)
+			err := svc.indexModuleIfNotExists(ctx, modHandle)
+			if err != nil {
+				svc.logger.Printf("failed to index module %q: %s", modHandle, err)
+				continue
+			}
+
+			jobIds, err := svc.indexer.PluginLockChanged(ctx, modHandle)
+			if err != nil {
+				svc.logger.Printf("error refreshing plugins for %q: %s", rawURI, err)
+				continue
+			}
+			ids = append(ids, jobIds...)
+			continue
+		}
+
+		if modUri, ok := datadir.ModuleUriFromModuleLockFile(rawURI); ok {
+			modHandle := document.DirHandleFromURI(modUri)
+			if change.Type == protocol.Deleted {
+				// This is unlikely to happen unless the user manually removed files
+				// See https://github.com/hashicorp/terraform/issues/30005
+				err := svc.modStore.UpdateModManifest(modHandle.Path(), nil, nil)
+				if err != nil {
+					svc.logger.Printf("failed to remove module manifest for %q: %s", modHandle, err)
+				}
+				continue
+			}
+
+			err := svc.indexModuleIfNotExists(ctx, modHandle)
+			if err != nil {
+				svc.logger.Printf("failed to index module %q: %s", modHandle, err)
+				continue
+			}
+
+			jobIds, err := svc.indexer.ModuleManifestChanged(ctx, modHandle)
+			if err != nil {
+				svc.logger.Printf("error refreshing plugins for %q: %s", modHandle, err)
+				continue
+			}
+			ids = append(ids, jobIds...)
+			continue
+		}
 
 		rawPath, err := uri.PathFromURI(rawURI)
 		if err != nil {
@@ -134,6 +204,25 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
+	return nil
+}
+
+func (svc *service) indexModuleIfNotExists(ctx context.Context, modHandle document.DirHandle) error {
+	_, err := svc.modStore.ModuleByPath(modHandle.Path())
+	if err != nil {
+		if state.IsModuleNotFound(err) {
+			err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+			if err != nil {
+				return fmt.Errorf("failed to walk module %q: %w", modHandle, err)
+			}
+			err = svc.stateStore.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{modHandle})
+			if err != nil {
+				return fmt.Errorf("failed to wait for module walk %q: %w", modHandle, err)
+			}
+		} else {
+			return fmt.Errorf("failed to find module %q: %w", modHandle, err)
+		}
+	}
 	return nil
 }
 
