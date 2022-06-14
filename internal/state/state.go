@@ -234,6 +234,7 @@ type ModuleReader interface {
 type ModuleCallReader interface {
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	ModuleMeta(modPath string) (*tfmod.Meta, error)
+	DeclaredModuleMeta(modPath tfmod.DeclaredModuleCall) (*tfmod.RegistryModuleMetadataSchema, error)
 }
 
 type ProviderSchemaStore struct {

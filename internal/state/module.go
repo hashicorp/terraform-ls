@@ -369,6 +369,23 @@ func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
 	}, nil
 }
 
+func (s *ModuleStore) DeclaredModuleMeta(module tfmod.DeclaredModuleCall) (*tfmod.RegistryModuleMetadataSchema, error) {
+	txn := s.db.Txn(false)
+
+	obj, err := txn.First(registryModuleMetaDataSchemaTableName, "id", module.SourceAddr, module.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	if obj == nil {
+		return nil, &ModuleNotFoundError{
+			Path: module.SourceAddr.ForDisplay(),
+		}
+	}
+
+	return obj.(*tfmod.RegistryModuleMetadataSchema), nil
+}
+
 func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
 	obj, err := txn.First(moduleTableName, "id", path)
 	if err != nil {

@@ -16,6 +16,7 @@ type ModuleReader interface {
 	List() ([]*state.Module, error)
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	ModuleMeta(modPath string) (*tfmod.Meta, error)
+	DeclaredModuleMeta(modPath tfmod.DeclaredModuleCall) (*tfmod.RegistryModuleMetadataSchema, error)
 }
 
 type PathReader struct {

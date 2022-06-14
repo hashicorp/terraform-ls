@@ -359,27 +359,21 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 	}
 
 	for _, declaredModule := range calls.Declared {
-		// parse registry address
-		moduleSourceRegistry, err := tfaddr.ParseRawModuleSourceRegistry(declaredModule.SourceAddr)
-		if err != nil {
-			continue
-		}
-
 		// check if that address was already cached
 		// if there was an error finding in cache, so cache again
-		exists := modMetaStore.RegistryModuleMetadataSchemas.Exists(moduleSourceRegistry, declaredModule.Version)
+		exists := modMetaStore.RegistryModuleMetadataSchemas.Exists(declaredModule.SourceAddr, declaredModule.Version)
 		if exists {
 			// entry in cache, no need to look up
 			continue
 		}
 
 		// get module data from tfregistry
-		metaData, moduleVersion := registry.GetTFRegistryInfo(moduleSourceRegistry, declaredModule)
+		metaData, moduleVersion := registry.GetTFRegistryInfo(declaredModule.SourceAddr, declaredModule)
 
 		// if not, cache it
 		// key :  sourceaddress & version
 		err = modMetaStore.RegistryModuleMetadataSchemas.Cache(
-			moduleSourceRegistry,
+			declaredModule.SourceAddr,
 			moduleVersion,
 			metaData.Root.Inputs,
 			metaData.Root.Outputs,

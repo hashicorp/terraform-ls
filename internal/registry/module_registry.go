@@ -113,22 +113,19 @@ func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) *version
 		return nil
 	}
 
-	var foundVersions []*version.Version
+
+	var foundVersions version.Collection
 	var found *version.Version
 	for _, v := range things.Modules {
 		for _, t := range v.Versions {
-
 			g, _ := version.NewVersion(t.Version)
 			foundVersions = append(foundVersions, g)
 		}
 	}
 
-	sort.Slice(foundVersions, func(i, j int) bool {
-		return foundVersions[i].GreaterThan(foundVersions[j])
-	})
+	sort.Sort(foundVersions)
 
 	for _, fv := range foundVersions {
-
 		if con.Check(fv) {
 			found = fv
 			break

@@ -36,3 +36,5 @@ require (
 	go.bobheadxi.dev/gobenchdata v1.2.1
 	golang.org/x/tools v0.1.11
 )
+
+replace github.com/hashicorp/terraform-schema => ../terraform-schema
