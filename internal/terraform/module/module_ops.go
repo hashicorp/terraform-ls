@@ -19,6 +19,8 @@ import (
 	"github.com/hashicorp/terraform-schema/earlydecoder"
 	"github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/json"
 )
 
 type DeferFunc func(opError error)
@@ -376,9 +378,32 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 			return err
 		}
 
-		// TODO: convert inputs & outputs
 		inputs := make([]module.RegistryInput, len(metaData.Root.Inputs))
+		for i, input := range metaData.Root.Inputs {
+			inputs[i] = module.RegistryInput{
+				Name:        input.Name,
+				Description: input.Description,
+				Required:    input.Required,
+				Type:        cty.DynamicPseudoType,
+			}
+
+			typ, err := json.UnmarshalType([]byte(fmt.Sprintf("%q", input.Type)))
+			if err == nil {
+				log.Printf("unmarshaling raw type SUCCESS: %q", typ.FriendlyName())
+				inputs[i].Type = typ
+			} else {
+				log.Printf("unmarshaling raw type FAILURE: %s", err)
+			}
+
+			// TODO: Type & Default
+		}
 		outputs := make([]module.RegistryOutput, len(metaData.Root.Outputs))
+		for i, output := range metaData.Root.Outputs {
+			outputs[i] = module.RegistryOutput{
+				Name:        output.Name,
+				Description: output.Description,
+			}
+		}
 
 		modVersion, err := version.NewVersion(metaData.Version)
 		if err != nil {
