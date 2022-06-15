@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/terraform-ls/internal/registry"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/module"
 )
 
 type RegistryModuleMetadataSchema struct {
 	Source  tfaddr.ModuleSourceRegistry
 	Version *version.Version
-	Inputs  []registry.Input
-	Outputs []registry.Output
+	Inputs  []module.RegistryInput
+	Outputs []module.RegistryOutput
 }
 
 func (s *RegistryModuleMetadataSchemaStore) Exists(sourceAddr tfaddr.ModuleSourceRegistry, constraint version.Constraints) bool {
@@ -35,8 +35,8 @@ func (s *RegistryModuleMetadataSchemaStore) Exists(sourceAddr tfaddr.ModuleSourc
 func (s *RegistryModuleMetadataSchemaStore) Cache(
 	sourceAddr tfaddr.ModuleSourceRegistry,
 	modVer *version.Version,
-	inputs []registry.Input,
-	outputs []registry.Output,
+	inputs []module.RegistryInput,
+	outputs []module.RegistryOutput,
 ) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()

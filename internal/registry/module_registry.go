@@ -12,31 +12,33 @@ import (
 )
 
 type TerraformRegistryModule struct {
-	ID        string `json:"id"`
-	Owner     string `json:"owner"`
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	Version   string `json:"version"`
-	Provider  string `json:"provider"`
-	Root      struct {
-		Path                 string        `json:"path"`
-		Name                 string        `json:"name"`
-		Readme               string        `json:"readme"`
-		Empty                bool          `json:"empty"`
-		Inputs               []Input       `json:"inputs"`
-		Outputs              []Output      `json:"outputs"`
-		Dependencies         []interface{} `json:"dependencies"`
-		ProviderDependencies []struct {
-			Name      string `json:"name"`
-			Namespace string `json:"namespace"`
-			Source    string `json:"source"`
-			Version   string `json:"version"`
-		} `json:"provider_dependencies"`
-		Resources []struct {
-			Name string `json:"name"`
-			Type string `json:"type"`
-		} `json:"resources"`
-	} `json:"root"`
+	ID        string     `json:"id"`
+	Owner     string     `json:"owner"`
+	Namespace string     `json:"namespace"`
+	Name      string     `json:"name"`
+	Version   string     `json:"version"`
+	Provider  string     `json:"provider"`
+	Root      ModuleRoot `json:"root"`
+}
+
+type ModuleRoot struct {
+	Path                 string        `json:"path"`
+	Name                 string        `json:"name"`
+	Readme               string        `json:"readme"`
+	Empty                bool          `json:"empty"`
+	Inputs               []Input       `json:"inputs"`
+	Outputs              []Output      `json:"outputs"`
+	Dependencies         []interface{} `json:"dependencies"`
+	ProviderDependencies []struct {
+		Name      string `json:"name"`
+		Namespace string `json:"namespace"`
+		Source    string `json:"source"`
+		Version   string `json:"version"`
+	} `json:"provider_dependencies"`
+	Resources []struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+	} `json:"resources"`
 }
 
 type TerraformRegistryModuleVersions struct {
@@ -74,45 +76,47 @@ type Output struct {
 	Description string `json:"description"`
 }
 
-func GetTFRegistryInfo(p tfaddr.ModuleSourceRegistry, c module.DeclaredModuleCall) (TerraformRegistryModule, *version.Version) {
+func GetTFRegistryInfo(p tfaddr.ModuleSourceRegistry, c module.DeclaredModuleCall) (*TerraformRegistryModule, error) {
 	var response TerraformRegistryModule
 
 	// modify this to first call https://github.com/hashicorp/terraform-registry/blob/main/docs/api/v1/modules.md#list-module-versions
 	// to find version that matches constraint up above
 	// then pull info
-	v := GetVersion(p, c.Version)
+	v, err := GetVersion(p, c.Version)
+	if err != nil {
+		return nil, err
+	}
 
 	// get info on specific module
 	url := fmt.Sprintf("https://registry.terraform.io/v1/modules/%s/%s", p.ForDisplay(), v.String())
 	resp, err := http.Get(url)
 	if err != nil {
-		return response, v
+		return nil, err
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		return response, v
+		return nil, err
 	}
 
-	return response, v
+	return &response, nil
 }
 
-func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) *version.Version {
+func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) (*version.Version, error) {
 	url := fmt.Sprintf("https://terraform.io/v1/modules/%s/%s/%s/versions",
 		p.PackageAddr.Namespace, p.PackageAddr.Name, p.PackageAddr.TargetSystem,
 	)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	var things TerraformRegistryModuleVersions
 	err = json.NewDecoder(resp.Body).Decode(&things)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-
 
 	var foundVersions version.Collection
 	var found *version.Version
@@ -132,5 +136,5 @@ func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) *version
 		}
 	}
 
-	return found
+	return found, nil
 }

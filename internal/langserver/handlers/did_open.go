@@ -162,7 +162,8 @@ func (svc *service) decodeModule(ctx context.Context, modHandle document.DirHand
 			id, err = svc.stateStore.JobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
-					return module.GetModuleMetadataFromTFRegistry(svc.srvCtx, svc.modStore, svc.stateStore, modHandle.Path())
+					return module.GetModuleMetadataFromTFRegistry(svc.srvCtx,
+						svc.modStore, svc.stateStore.RegistryModuleMetadataSchemas, modHandle.Path())
 				},
 				Type: op.OpTypeGetModuleMetadataFromRegistry.String(),
 			})

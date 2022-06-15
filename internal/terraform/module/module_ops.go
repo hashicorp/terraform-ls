@@ -351,32 +351,44 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
-func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.ModuleStore, modMetaStore *state.StateStore, modPath string) error {
+func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.ModuleStore, registryStore *state.RegistryModuleMetadataSchemaStore, modPath string) error {
 	// loop over module calls
 	calls, err := modStore.ModuleCalls(modPath)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	for _, declaredModule := range calls.Declared {
 		// check if that address was already cached
 		// if there was an error finding in cache, so cache again
-		exists := modMetaStore.RegistryModuleMetadataSchemas.Exists(declaredModule.SourceAddr, declaredModule.Version)
+		exists := registryStore.Exists(declaredModule.SourceAddr, declaredModule.Version)
 		if exists {
 			// entry in cache, no need to look up
 			continue
 		}
 
 		// get module data from tfregistry
-		metaData, moduleVersion := registry.GetTFRegistryInfo(declaredModule.SourceAddr, declaredModule)
+		metaData, err := registry.GetTFRegistryInfo(declaredModule.SourceAddr, declaredModule)
+		if err != nil {
+			return err
+		}
+
+		// TODO: convert inputs & outputs
+		inputs := make([]module.RegistryInput, len(metaData.Root.Inputs))
+		outputs := make([]module.RegistryOutput, len(metaData.Root.Outputs))
+
+		modVersion, err := version.NewVersion(metaData.Version)
+		if err != nil {
+			return err
+		}
 
 		// if not, cache it
 		// key :  sourceaddress & version
-		err = modMetaStore.RegistryModuleMetadataSchemas.Cache(
+		err = registryStore.Cache(
 			declaredModule.SourceAddr,
-			moduleVersion,
-			metaData.Root.Inputs,
-			metaData.Root.Outputs,
+			modVersion,
+			inputs,
+			outputs,
 		)
 		if err != nil {
 			// error caching result should not stop operations
