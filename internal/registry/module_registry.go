@@ -12,13 +12,13 @@ import (
 )
 
 type TerraformRegistryModule struct {
-	Version   string     `json:"version"`
-	Root      ModuleRoot `json:"root"`
+	Version string     `json:"version"`
+	Root    ModuleRoot `json:"root"`
 }
 
 type ModuleRoot struct {
-	Inputs               []Input       `json:"inputs"`
-	Outputs              []Output      `json:"outputs"`
+	Inputs  []Input  `json:"inputs"`
+	Outputs []Output `json:"outputs"`
 }
 
 type TerraformRegistryModuleVersions struct {

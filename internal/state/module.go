@@ -383,7 +383,7 @@ func (s *ModuleStore) DeclaredModuleMeta(module tfmod.DeclaredModuleCall) (*tfmo
 		if module.Version.Check(mod.Version) {
 			return &tfmod.RegistryModuleMetadataSchema{
 				Version: mod.Version,
-				Inputs: mod.Inputs,
+				Inputs:  mod.Inputs,
 				Outputs: mod.Outputs,
 			}, nil
 		}
