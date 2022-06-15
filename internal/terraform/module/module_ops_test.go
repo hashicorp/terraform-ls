@@ -75,7 +75,7 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedMeta := module.RegistryModuleMetadataSchema{
+	expectedMeta := &module.RegistryModuleMetadataSchema{
 		Version: version.Must(version.NewVersion("0.0.8")),
 		Inputs: []module.RegistryInput{
 			{
@@ -145,7 +145,7 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 
 	log.Printf("Expected: %#v", expectedMeta.Inputs[0].Type)
 	log.Printf("Actual: %#v", meta.Inputs[0].Type)
-	if diff := cmp.Diff(expectedMeta, *meta, ctydebug.CmpOptions); diff != "" {
+	if diff := cmp.Diff(expectedMeta, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}
 }
