@@ -142,7 +142,10 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(expectedMeta, meta, ctydebug.CmpOptions); diff != "" {
+
+	log.Printf("Expected: %#v", expectedMeta.Inputs[0].Type)
+	log.Printf("Actual: %#v", meta.Inputs[0].Type)
+	if diff := cmp.Diff(expectedMeta, *meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}
 }
