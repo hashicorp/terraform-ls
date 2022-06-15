@@ -33,12 +33,6 @@ func (svc *service) indexNewModule(ctx context.Context, modURI string) {
 		})
 		return
 	}
-
-	err = svc.watcher.AddModule(modHandle.Path())
-	if err != nil {
-		svc.logger.Printf("failed to add module to watcher: %s", err)
-		return
-	}
 }
 
 func (svc *service) removeIndexedModule(ctx context.Context, modURI string) {
@@ -51,12 +45,6 @@ func (svc *service) removeIndexedModule(ctx context.Context, modURI string) {
 			Message: fmt.Sprintf("Ignoring removed folder %s: %s."+
 				" This is most likely bug, please report it.", modURI, err),
 		})
-		return
-	}
-
-	err = svc.watcher.RemoveModule(modHandle.Path())
-	if err != nil {
-		svc.logger.Printf("failed to remove module from watcher: %s", err)
 		return
 	}
 

@@ -281,27 +281,6 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 	svc.openDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
 	svc.openDirWalker.SetExcludeModulePaths(excludeModulePaths)
 
-	if len(options.ModulePaths) > 0 {
-		svc.logger.Printf("Attempting to add %d static module paths", len(options.ModulePaths))
-		for _, rawPath := range options.ModulePaths {
-			modPath, err := resolvePath(root.Path(), rawPath)
-			if err != nil {
-				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
-					Type:    lsp.Warning,
-					Message: fmt.Sprintf("Ignoring module path %s: %s", rawPath, err),
-				})
-				continue
-			}
-
-			err = svc.watcher.AddModule(modPath)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
 	return nil
 }
 

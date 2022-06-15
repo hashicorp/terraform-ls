@@ -58,7 +58,6 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		srvCtx:             srvCtx,
 		sessCtx:            sessCtx,
 		stopSession:        ms.stop,
-		newWatcher:         module.MockWatcher(),
 		tfDiscoFunc:        d.LookPath,
 		tfExecFactory:      exec.NewMockExecutor(tfCalls),
 		additionalHandlers: handlers,
