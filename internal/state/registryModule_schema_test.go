@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/module"
+	"github.com/zclconf/go-cty-debug/ctydebug"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -104,10 +105,10 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 
 	expectedMeta := &module.RegistryModuleMetadataSchema{
 		Version: v,
-		Inputs:  []module.RegistryInput{},
-		Outputs: []module.RegistryOutput{},
+		Inputs:  inputs,
+		Outputs: outputs,
 	}
-	if diff := cmp.Diff(expectedMeta, meta); diff != "" {
+	if diff := cmp.Diff(expectedMeta, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("mismatch chached metadata: %s", diff)
 	}
 }

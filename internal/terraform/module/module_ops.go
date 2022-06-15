@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"log"
 
 	"fmt"
 
@@ -357,8 +358,10 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 	if err != nil {
 		return err
 	}
+	log.Printf("Found : %v", len(calls.Declared))
 
 	for _, declaredModule := range calls.Declared {
+		log.Printf("Module: %v", declaredModule)
 		// check if that address was already cached
 		// if there was an error finding in cache, so cache again
 		exists := registryStore.Exists(declaredModule.SourceAddr, declaredModule.Version)
@@ -392,7 +395,7 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 		)
 		if err != nil {
 			// error caching result should not stop operations
-			continue
+			return err
 		}
 	}
 
