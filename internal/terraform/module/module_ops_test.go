@@ -2,7 +2,6 @@ package module
 
 import (
 	"context"
-	"log"
 	"path/filepath"
 	"testing"
 
@@ -29,7 +28,6 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 	}
 	modPath := filepath.Join(testData, "uninitialized-external-module")
 
-	log.Printf("Examining %v", modPath)
 	err = ss.Modules.Add(modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -45,10 +43,6 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	mod, _ := ss.Modules.ModuleByPath(modPath)
-	log.Printf("Stored: %v", mod.Path)
-	log.Printf("Stored Meta: %#v", mod.Meta)
 
 	err = GetModuleMetadataFromTFRegistry(ctx, ss.Modules, ss.RegistryModuleMetadataSchemas, modPath)
 	if err != nil {
@@ -143,8 +137,6 @@ func TestGetModuleMetadataFromTFRegistry(t *testing.T) {
 		},
 	}
 
-	log.Printf("Expected: %#v", expectedMeta.Inputs[0].Type)
-	log.Printf("Actual: %#v", meta.Inputs[0].Type)
 	if diff := cmp.Diff(expectedMeta, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}

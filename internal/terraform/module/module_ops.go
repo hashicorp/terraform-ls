@@ -2,7 +2,6 @@ package module
 
 import (
 	"context"
-	"log"
 
 	"fmt"
 
@@ -360,10 +359,8 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 	if err != nil {
 		return err
 	}
-	log.Printf("Found : %v", len(calls.Declared))
 
 	for _, declaredModule := range calls.Declared {
-		log.Printf("Module: %v", declaredModule)
 		// check if that address was already cached
 		// if there was an error finding in cache, so cache again
 		exists := registryStore.Exists(declaredModule.SourceAddr, declaredModule.Version)
@@ -389,10 +386,7 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 
 			typ, err := json.UnmarshalType([]byte(fmt.Sprintf("%q", input.Type)))
 			if err == nil {
-				log.Printf("unmarshaling raw type SUCCESS: %q", typ.FriendlyName())
 				inputs[i].Type = typ
-			} else {
-				log.Printf("unmarshaling raw type FAILURE: %s", err)
 			}
 
 			// TODO: Type & Default

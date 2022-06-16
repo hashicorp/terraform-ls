@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -59,17 +60,18 @@ type Output struct {
 func GetTFRegistryInfo(p tfaddr.ModuleSourceRegistry, c module.DeclaredModuleCall) (*TerraformRegistryModule, error) {
 	var response TerraformRegistryModule
 
-	// modify this to first call https://github.com/hashicorp/terraform-registry/blob/main/docs/api/v1/modules.md#list-module-versions
-	// to find version that matches constraint up above
-	// then pull info
 	v, err := GetVersion(p, c.Version)
 	if err != nil {
 		return nil, err
 	}
 
-	// get info on specific module
+
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
 	url := fmt.Sprintf("https://registry.terraform.io/v1/modules/%s/%s", p.ForDisplay(), v.String())
-	resp, err := http.Get(url)
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,12 @@ func GetVersion(p tfaddr.ModuleSourceRegistry, con version.Constraints) (*versio
 		p.PackageAddr.Namespace, p.PackageAddr.Name, p.PackageAddr.TargetSystem,
 	)
 
-	resp, err := http.Get(url)
+
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
