@@ -7,6 +7,7 @@ BUG FIXES:
 INTERNAL:
 
  - main: allow build version metadata to be set ([#945](https://github.com/hashicorp/terraform-ls/pull/945))
+ - deps: bump LSP structs to match gopls 0.8.4 ([#947](https://github.com/hashicorp/terraform-ls/pull/947))
 
 ## 0.28.1 (9 June 2022)
 
