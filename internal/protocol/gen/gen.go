@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	goplsRef = "gopls/v0.7.0"
+	goplsRef = "gopls/v0.8.4"
 	urlFmt   = "https://raw.githubusercontent.com/golang/tools" +
 		"/%s/internal/lsp/protocol/tsprotocol.go"
 )

@@ -68,8 +68,8 @@ func (svc *service) textDocumentCodeAction(ctx context.Context, params lsp.CodeA
 				Title: "Format Document",
 				Kind:  action,
 				Edit: lsp.WorkspaceEdit{
-					Changes: map[string][]lsp.TextEdit{
-						string(dh.FullURI()): edits,
+					Changes: map[lsp.DocumentURI][]lsp.TextEdit{
+						lsp.DocumentURI(dh.FullURI()): edits,
 					},
 				},
 			})
