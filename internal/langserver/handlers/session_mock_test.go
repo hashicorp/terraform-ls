@@ -4,12 +4,15 @@ import (
 	"context"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"sync"
 	"testing"
 
 	"github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -21,10 +24,12 @@ type MockSessionInput struct {
 	AdditionalHandlers map[string]handler.Func
 	StateStore         *state.StateStore
 	WalkerCollector    *module.WalkerCollector
+	RegistryServer     *httptest.Server
 }
 
 type mockSession struct {
-	mockInput *MockSessionInput
+	mockInput      *MockSessionInput
+	registryServer *httptest.Server
 
 	stopFunc     func()
 	stopCalled   bool
@@ -42,6 +47,7 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		stateStore = ms.mockInput.StateStore
 		walkerCollector = ms.mockInput.WalkerCollector
 		handlers = ms.mockInput.AdditionalHandlers
+		ms.registryServer = ms.mockInput.RegistryServer
 	}
 
 	var tfCalls *exec.TerraformMockCalls
@@ -53,6 +59,14 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		Path: "tf-mock",
 	}
 
+	regClient := registry.NewClient()
+	if ms.registryServer == nil {
+		ms.registryServer = defaultRegistryServer()
+	}
+	ms.registryServer.Start()
+
+	regClient.BaseURL = ms.registryServer.URL
+
 	svc := &service{
 		logger:             testLogger(),
 		srvCtx:             srvCtx,
@@ -63,9 +77,16 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		additionalHandlers: handlers,
 		stateStore:         stateStore,
 		walkerCollector:    walkerCollector,
+		registryClient:     regClient,
 	}
 
 	return svc
+}
+
+func defaultRegistryServer() *httptest.Server {
+	return httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "unexpected Registry API request", 500)
+	}))
 }
 
 func testLogger() *log.Logger {
@@ -77,6 +98,8 @@ func testLogger() *log.Logger {
 }
 
 func (ms *mockSession) stop() {
+	ms.registryServer.Close()
+
 	ms.stopCalledMu.Lock()
 	defer ms.stopCalledMu.Unlock()
 

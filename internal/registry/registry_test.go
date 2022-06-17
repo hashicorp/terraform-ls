@@ -1,31 +1,45 @@
 package registry
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
 )
 
-func TestGetTFRegistryInfo(t *testing.T) {
+func TestGetModuleData(t *testing.T) {
 	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	modCall := module.DeclaredModuleCall{
-		LocalName:  "refname",
-		SourceAddr: addr,
-		Version:    version.MustConstraints(version.NewConstraint("0.0.8")),
-	}
+	cons := version.MustConstraints(version.NewConstraint("0.0.8"))
 
-	data, err := GetTFRegistryInfo(addr, modCall)
+	client := NewClient()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
+			w.Write([]byte(moduleVersionsMockResponse))
+			return
+		}
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/0.0.8" {
+			w.Write([]byte(moduleDataMockResponse))
+			return
+		}
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+	client.BaseURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	data, err := client.GetModuleData(addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedData := &TerraformRegistryModule{
+	expectedData := &ModuleResponse{
 		Version: "0.0.8",
 		Root: ModuleRoot{
 			Inputs: []Input{
@@ -105,13 +119,25 @@ func TestGetTFRegistryInfo(t *testing.T) {
 	}
 }
 
-func TestGetVersion(t *testing.T) {
+func TestGetMatchingModuleVersion(t *testing.T) {
 	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
 	cons := version.MustConstraints(version.NewConstraint("0.0.8"))
-	v, err := GetVersion(addr, cons)
+	client := NewClient()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
+			w.Write([]byte(moduleVersionsMockResponse))
+			return
+		}
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+	client.BaseURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	v, err := client.GetMatchingModuleVersion(addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,6 +9,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.2.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.3
@@ -19,7 +20,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.16.1
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20220422093245-eb7bcc2ff473
-	github.com/hashicorp/terraform-schema v0.0.0-20220509053855-1e3acbcfd531
+	github.com/hashicorp/terraform-schema v0.0.0-20220617100727-e714862a03ff
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.4

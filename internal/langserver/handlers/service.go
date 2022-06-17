@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -49,7 +50,7 @@ type service struct {
 	fs               *filesystem.Filesystem
 	modStore         *state.ModuleStore
 	schemaStore      *state.ProviderSchemaStore
-	regMetadataStore *state.RegistryModuleMetadataSchemaStore
+	regMetadataStore *state.RegistryModuleStore
 	tfDiscoFunc      discovery.DiscoveryFunc
 	tfExecFactory    exec.ExecutorFactory
 	tfExecOpts       *exec.ExecutorOpts
@@ -60,6 +61,7 @@ type service struct {
 	diagsNotifier    *diagnostics.Notifier
 	notifier         *notifier.Notifier
 	indexer          *module.Indexer
+	registryClient   registry.Client
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -74,13 +76,14 @@ func NewSession(srvCtx context.Context) session.Session {
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
-		logger:        discardLogs,
-		srvCtx:        srvCtx,
-		sessCtx:       sessCtx,
-		stopSession:   stopSession,
-		tfDiscoFunc:   d.LookPath,
-		tfExecFactory: exec.NewExecutor,
-		telemetry:     &telemetry.NoopSender{},
+		logger:         discardLogs,
+		srvCtx:         srvCtx,
+		sessCtx:        sessCtx,
+		stopSession:    stopSession,
+		tfDiscoFunc:    d.LookPath,
+		tfExecFactory:  exec.NewExecutor,
+		telemetry:      &telemetry.NoopSender{},
+		registryClient: registry.NewClient(),
 	}
 }
 

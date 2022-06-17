@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
+	"github.com/hashicorp/terraform-schema/registry"
 	"github.com/zclconf/go-cty-debug/ctydebug"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -24,7 +24,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 
 	v := version.Must(version.NewVersion("3.10.0"))
 	c := version.MustConstraints(version.NewConstraint(">= 3.0"))
-	inputs := []module.RegistryInput{
+	inputs := []registry.Input{
 		{
 			Name:        "foo",
 			Type:        cty.String,
@@ -33,7 +33,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 			Required:    false,
 		},
 	}
-	outputs := []module.RegistryOutput{
+	outputs := []registry.Output{
 		{
 			Name:        "wakka",
 			Description: "fozzy",
@@ -41,19 +41,25 @@ func TestStateStore_cache_metadata(t *testing.T) {
 	}
 
 	// should be false
-	exists := s.RegistryModuleMetadataSchemas.Exists(source, c)
+	exists, err := s.RegistryModules.Exists(source, c)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if exists == true {
 		t.Fatal("should not exist")
 	}
 
 	// store a dummy data
-	err = s.RegistryModuleMetadataSchemas.Cache(source, v, inputs, outputs)
+	err = s.RegistryModules.Cache(source, v, inputs, outputs)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// should be true
-	exists = s.RegistryModuleMetadataSchemas.Exists(source, c)
+	exists, err = s.RegistryModules.Exists(source, c)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if exists != true {
 		t.Fatal("should exist")
 	}
@@ -71,7 +77,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 	}
 
 	v := version.Must(version.NewVersion("3.10.0"))
-	inputs := []module.RegistryInput{
+	inputs := []registry.Input{
 		{
 			Name:        "foo",
 			Type:        cty.String,
@@ -80,7 +86,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 			Required:    false,
 		},
 	}
-	outputs := []module.RegistryOutput{
+	outputs := []registry.Output{
 		{
 			Name:        "wakka",
 			Description: "fozzy",
@@ -88,22 +94,18 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 	}
 
 	// store some dummy data
-	err = ss.RegistryModuleMetadataSchemas.Cache(source, v, inputs, outputs)
+	err = ss.RegistryModules.Cache(source, v, inputs, outputs)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	modCall := module.DeclaredModuleCall{
-		LocalName:  "refname",
-		SourceAddr: source,
-		Version:    version.MustConstraints(version.NewConstraint(">= 3.0")),
-	}
-	meta, err := ss.Modules.DeclaredModuleMeta(modCall)
+	cons := version.MustConstraints(version.NewConstraint(">= 3.0"))
+	meta, err := ss.Modules.RegistryModuleMeta(source, cons)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedMeta := &module.RegistryModuleMetadataSchema{
+	expectedMeta := &registry.ModuleData{
 		Version: v,
 		Inputs:  inputs,
 		Outputs: outputs,

@@ -2,9 +2,10 @@ package module
 
 import (
 	"context"
-
+	"errors"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/decoder"
@@ -17,6 +18,7 @@ import (
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/earlydecoder"
 	"github.com/hashicorp/terraform-schema/module"
+	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/json"
@@ -353,47 +355,75 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
-func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.ModuleStore, registryStore *state.RegistryModuleMetadataSchemaStore, modPath string) error {
+func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
 	// loop over module calls
 	calls, err := modStore.ModuleCalls(modPath)
 	if err != nil {
 		return err
 	}
 
+	var errs *multierror.Error
+
 	for _, declaredModule := range calls.Declared {
+		sourceAddr, ok := declaredModule.SourceAddr.(tfaddr.ModuleSourceRegistry)
+		if !ok {
+			// skip any modules which do not come from the Registry
+			continue
+		}
+
 		// check if that address was already cached
 		// if there was an error finding in cache, so cache again
-		exists := registryStore.Exists(declaredModule.SourceAddr, declaredModule.Version)
+		exists, err := modRegStore.Exists(sourceAddr, declaredModule.Version)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			continue
+		}
 		if exists {
 			// entry in cache, no need to look up
 			continue
 		}
 
-		// get module data from tfregistry
-		metaData, err := registry.GetTFRegistryInfo(declaredModule.SourceAddr, declaredModule)
+		// get module data from Terraform Registry
+		metaData, err := regClient.GetModuleData(sourceAddr, declaredModule.Version)
 		if err != nil {
-			return err
+			errs = multierror.Append(errs, err)
+			continue
 		}
 
-		inputs := make([]module.RegistryInput, len(metaData.Root.Inputs))
+		inputs := make([]tfregistry.Input, len(metaData.Root.Inputs))
 		for i, input := range metaData.Root.Inputs {
-			inputs[i] = module.RegistryInput{
+			inputs[i] = tfregistry.Input{
 				Name:        input.Name,
 				Description: input.Description,
 				Required:    input.Required,
-				Type:        cty.DynamicPseudoType,
 			}
 
-			typ, err := json.UnmarshalType([]byte(fmt.Sprintf("%q", input.Type)))
-			if err == nil {
-				inputs[i].Type = typ
+			inputType := cty.DynamicPseudoType
+			if input.Type != "" {
+				// Registry API unfortunately doesn't marshal types using
+				// cty marshalers, making it lossy, so we just try to decode
+				// on best-effort basis.
+				rawType := []byte(fmt.Sprintf("%q", input.Type))
+				typ, err := json.UnmarshalType(rawType)
+				if err == nil {
+					inputType = typ
+				}
 			}
+			inputs[i].Type = inputType
 
-			// TODO: Type & Default
+			if input.Default != "" {
+				// Registry API unfortunately doesn't marshal values using
+				// cty marshalers, making it lossy, so we just try to decode
+				// on best-effort basis.
+				val, err := json.Unmarshal([]byte(input.Default), inputType)
+				if err == nil {
+					inputs[i].Default = val
+				}
+			}
 		}
-		outputs := make([]module.RegistryOutput, len(metaData.Root.Outputs))
+		outputs := make([]tfregistry.Output, len(metaData.Root.Outputs))
 		for i, output := range metaData.Root.Outputs {
-			outputs[i] = module.RegistryOutput{
+			outputs[i] = tfregistry.Output{
 				Name:        output.Name,
 				Description: output.Description,
 			}
@@ -401,22 +431,24 @@ func GetModuleMetadataFromTFRegistry(ctx context.Context, modStore *state.Module
 
 		modVersion, err := version.NewVersion(metaData.Version)
 		if err != nil {
-			return err
+			errs = multierror.Append(errs, err)
+			continue
 		}
 
 		// if not, cache it
-		// key :  sourceaddress & version
-		err = registryStore.Cache(
-			declaredModule.SourceAddr,
-			modVersion,
-			inputs,
-			outputs,
-		)
+		err = modRegStore.Cache(sourceAddr, modVersion, inputs, outputs)
 		if err != nil {
-			// error caching result should not stop operations
-			return err
+			// A different job which ran in parallel for a different module block
+			// with the same source may have already cached the same module.
+			existsError := &state.AlreadyExistsError{}
+			if errors.As(err, &existsError) {
+				continue
+			}
+
+			errs = multierror.Append(errs, err)
+			continue
 		}
 	}
 
-	return nil
+	return errs.ErrorOrNil()
 }
