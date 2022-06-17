@@ -14,6 +14,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -350,4 +351,24 @@ func testLogger() *log.Logger {
 	}
 
 	return log.New(ioutil.Discard, "", 0)
+}
+
+type closedJobStore struct {
+	js *state.JobStore
+}
+
+func (js *closedJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
+	return js.js.EnqueueJob(newJob)
+}
+
+func (js *closedJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
+	return js.js.AwaitNextJob(ctx, false)
+}
+
+func (js *closedJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
+	return js.js.FinishJob(id, jobErr, deferredJobIds...)
+}
+
+func (js *closedJobStore) WaitForJobs(ctx context.Context, jobIds ...job.ID) error {
+	return js.js.WaitForJobs(ctx, jobIds...)
 }

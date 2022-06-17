@@ -49,8 +49,6 @@ type service struct {
 	fs            *filesystem.Filesystem
 	modStore      *state.ModuleStore
 	schemaStore   *state.ProviderSchemaStore
-	watcher       module.Watcher
-	newWatcher    module.WatcherFactory
 	tfDiscoFunc   discovery.DiscoveryFunc
 	tfExecFactory exec.ExecutorFactory
 	tfExecOpts    *exec.ExecutorOpts
@@ -60,6 +58,7 @@ type service struct {
 	server        session.Server
 	diagsNotifier *diagnostics.Notifier
 	notifier      *notifier.Notifier
+	indexer       *module.Indexer
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -78,7 +77,6 @@ func NewSession(srvCtx context.Context) session.Session {
 		srvCtx:        srvCtx,
 		sessCtx:       sessCtx,
 		stopSession:   stopSession,
-		newWatcher:    module.NewWatcher,
 		tfDiscoFunc:   d.LookPath,
 		tfExecFactory: exec.NewExecutor,
 		telemetry:     &telemetry.NoopSender{},
@@ -136,7 +134,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			return handle(ctx, req, Initialized)
+			ctx = ilsp.WithClientCapabilities(ctx, cc)
+
+			return handle(ctx, req, svc.Initialized)
 		},
 		"textDocument/didChange": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
@@ -150,7 +150,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
-			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			return handle(ctx, req, svc.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -285,8 +284,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 				return nil, err
 			}
 
-			ctx = lsctx.WithWatcher(ctx, svc.watcher)
-
 			return handle(ctx, req, svc.DidChangeWorkspaceFolders)
 		},
 		"workspace/didChangeWatchedFiles": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -312,7 +309,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
-			ctx = lsctx.WithWatcher(ctx, svc.watcher)
 			ctx = lsctx.WithRootDirectory(ctx, &rootDir)
 			ctx = lsctx.WithDiagnosticsNotifier(ctx, svc.diagsNotifier)
 			ctx = ilsp.ContextWithClientName(ctx, &clientName)
@@ -476,6 +472,8 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)
 
+	svc.indexer = module.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+
 	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
 		ModuleReader: svc.modStore,
 		SchemaReader: svc.schemaStore,
@@ -495,17 +493,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.openDirWalker = module.NewWalker(svc.fs, opendPa, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
 	svc.closedDirWalker.Collector = svc.walkerCollector
 	svc.openDirWalker.SetLogger(svc.logger)
-
-	ww, err := svc.newWatcher(svc.fs, svc.modStore, svc.stateStore.ProviderSchemas, svc.stateStore.JobStore, svc.tfExecFactory)
-	if err != nil {
-		return err
-	}
-	svc.watcher = ww
-	svc.watcher.SetLogger(svc.logger)
-	err = svc.watcher.Start(ctx)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -539,16 +526,6 @@ func (svc *service) shutdown() {
 		svc.logger.Printf("stopping openDirWalker for session ...")
 		svc.openDirWalker.Stop()
 		svc.logger.Printf("openDirWalker stopped")
-	}
-
-	if svc.watcher != nil {
-		svc.logger.Println("stopping watcher for session ...")
-		err := svc.watcher.Stop()
-		if err != nil {
-			svc.logger.Println("unable to stop watcher for session:", err)
-		} else {
-			svc.logger.Println("watcher stopped")
-		}
 	}
 
 	if svc.closedDirIndexer != nil {

@@ -129,7 +129,6 @@ func BenchmarkInitializeFolder_basic(b *testing.B) {
 						srvCtx:          ctx,
 						sessCtx:         sessCtx,
 						stopSession:     stopSession,
-						newWatcher:      module.MockWatcher(),
 						tfDiscoFunc:     d.LookPath,
 						tfExecFactory:   exec.NewExecutor,
 						walkerCollector: wc,

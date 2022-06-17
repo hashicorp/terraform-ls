@@ -291,7 +291,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 						return ParseModuleManifest(w.fs, w.modStore, dir)
 					},
 					Type:  op.OpTypeParseModuleManifest.String(),
-					Defer: decodeCalledModulesFunc(w.fs, w.modStore, w.schemaStore, w.watcher, dir),
+					Defer: decodeInstalledModuleCalls(w.fs, w.modStore, w.schemaStore, dir),
 				})
 				if err != nil {
 					return err

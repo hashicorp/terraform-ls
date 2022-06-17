@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 )
 
 type contextKey struct {
@@ -22,7 +21,6 @@ var (
 	ctxTfExecPath           = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
 	ctxTfExecTimeout        = &contextKey{"terraform execution timeout"}
-	ctxWatcher              = &contextKey{"watcher"}
 	ctxRootDir              = &contextKey{"root directory"}
 	ctxCommandPrefix        = &contextKey{"command prefix"}
 	ctxDiagsNotifier        = &contextKey{"diagnostics notifier"}
@@ -51,18 +49,6 @@ func WithTerraformExecTimeout(ctx context.Context, timeout time.Duration) contex
 func TerraformExecTimeout(ctx context.Context) (time.Duration, bool) {
 	path, ok := ctx.Value(ctxTfExecTimeout).(time.Duration)
 	return path, ok
-}
-
-func WithWatcher(ctx context.Context, w module.Watcher) context.Context {
-	return context.WithValue(ctx, ctxWatcher, w)
-}
-
-func Watcher(ctx context.Context) (module.Watcher, error) {
-	w, ok := ctx.Value(ctxWatcher).(module.Watcher)
-	if !ok {
-		return nil, missingContextErr(ctxWatcher)
-	}
-	return w, nil
 }
 
 func WithTerraformExecPath(ctx context.Context, path string) context.Context {

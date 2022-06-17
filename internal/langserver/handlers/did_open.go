@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -65,20 +64,8 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		jobIds = append(jobIds, jobId)
 	}
 
-	watcher, err := lsctx.Watcher(ctx)
-	if err != nil {
-		return err
-	}
-
 	if svc.singleFileMode {
 		err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
-		if err != nil {
-			return err
-		}
-	}
-
-	if !watcher.IsModuleWatched(mod.Path) {
-		err := watcher.AddModule(mod.Path)
 		if err != nil {
 			return err
 		}

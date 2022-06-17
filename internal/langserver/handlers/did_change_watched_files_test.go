@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,12 +9,18 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	install "github.com/hashicorp/hc-install"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
+	"github.com/hashicorp/hc-install/src"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -685,5 +692,237 @@ func TestLangServer_DidChangeWatchedFiles_delete_dir(t *testing.T) {
 	_, err = ss.Modules.ModuleByPath(tmpDir.Path())
 	if err == nil {
 		t.Fatalf("expected module at %q to be gone", tmpDir.Path())
+	}
+}
+
+func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	originalTestDir := filepath.Join(testData, "uninitialized-single-submodule")
+	testDir := t.TempDir()
+	// Copy test configuration so the test can run in isolation
+	err = copy.Copy(originalTestDir, testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testHandle := document.DirHandleFromPath(testDir)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				testHandle.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 2,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 2,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 2,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&tfjson.ProviderSchemas{
+								FormatVersion: "0.1",
+								Schemas: map[string]*tfjson.ProviderSchema{
+									"test": {
+										ConfigSchema: &tfjson.Schema{},
+									},
+								},
+							},
+							nil,
+						},
+					},
+				},
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+	    "processId": 12345
+	}`, testHandle.URI)})
+	waitForWalkerPath(t, ss, wc, testHandle)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+
+	addr := tfaddr.MustParseRawProviderSourceString("-/test")
+	vc := version.MustConstraints(version.NewConstraint(">= 1.0"))
+
+	_, err = ss.ProviderSchemas.ProviderSchema(testHandle.Path(), addr, vc)
+	if err == nil {
+		t.Fatal("expected -/test schema to be missing")
+	}
+
+	// Install Terraform
+	tfVersion := version.Must(version.NewVersion("1.1.7"))
+	i := install.NewInstaller()
+	ctx := context.Background()
+	execPath, err := i.Install(ctx, []src.Installable{
+		&releases.ExactVersion{
+			Product: product.Terraform,
+			Version: tfVersion,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Install submodule
+	tf, err := exec.NewExecutor(testHandle.Path(), execPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tf.Init(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "workspace/didChangeWatchedFiles",
+		ReqParams: fmt.Sprintf(`{
+    "changes": [
+        {
+            "uri": "%s/.terraform.lock.hcl",
+            "type": 1
+        }
+    ]
+}`, testHandle.URI)})
+
+	_, err = ss.ProviderSchemas.ProviderSchema(testHandle.Path(), addr, vc)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	originalTestDir := filepath.Join(testData, "uninitialized-single-submodule")
+	testDir := t.TempDir()
+	// Copy test configuration so the test can run in isolation
+	err = copy.Copy(originalTestDir, testDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testHandle := document.DirHandleFromPath(testDir)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := module.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				testHandle.Path(): validTfMockCalls(),
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+	    "capabilities": {},
+	    "rootUri": %q,
+	    "processId": 12345
+	}`, testHandle.URI)})
+	waitForWalkerPath(t, ss, wc, testHandle)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+
+	submodulePath := filepath.Join(testDir, "application")
+	_, err = ss.Modules.ModuleByPath(submodulePath)
+	if err == nil || !state.IsModuleNotFound(err) {
+		t.Fatalf("expected submodule not to be found: %s", err)
+	}
+
+	// Install Terraform
+	tfVersion := version.Must(version.NewVersion("1.1.7"))
+	i := install.NewInstaller()
+	ctx := context.Background()
+	execPath, err := i.Install(ctx, []src.Installable{
+		&releases.ExactVersion{
+			Product: product.Terraform,
+			Version: tfVersion,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Install submodule
+	tf, err := exec.NewExecutor(testHandle.Path(), execPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = tf.Get(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "workspace/didChangeWatchedFiles",
+		ReqParams: fmt.Sprintf(`{
+    "changes": [
+        {
+            "uri": "%s/.terraform/modules/modules.json",
+            "type": 1
+        }
+    ]
+}`, testHandle.URI)})
+
+	mod, err := ss.Modules.ModuleByPath(submodulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(mod.Meta.Variables) != 3 {
+		t.Fatalf("expected exactly 3 variables, %d given", len(mod.Meta.Variables))
 	}
 }
