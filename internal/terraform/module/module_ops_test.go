@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -259,69 +260,69 @@ var expectedModuleData = &tfregistry.ModuleData{
 			Name:        "autoscale",
 			Type:        cty.String,
 			Default:     cty.StringVal("true"),
-			Description: "Enable autoscaling of elasticsearch",
+			Description: lang.Markdown("Enable autoscaling of elasticsearch"),
 			Required:    false,
 		},
 		{
 			Name:        "ec_stack_version",
 			Type:        cty.String,
 			Default:     cty.StringVal(""),
-			Description: "Version of Elastic Cloud stack to deploy",
+			Description: lang.Markdown("Version of Elastic Cloud stack to deploy"),
 			Required:    false,
 		},
 		{
 			Name:        "name",
 			Type:        cty.String,
 			Default:     cty.StringVal("ecproject"),
-			Description: "Name of resources",
+			Description: lang.Markdown("Name of resources"),
 			Required:    false,
 		},
 		{
 			Name:        "traffic_filter_sourceip",
 			Type:        cty.String,
 			Default:     cty.StringVal(""),
-			Description: "traffic filter source IP",
+			Description: lang.Markdown("traffic filter source IP"),
 			Required:    false,
 		},
 		{
 			Name:        "ec_region",
 			Type:        cty.String,
 			Default:     cty.StringVal("gcp-us-west1"),
-			Description: "cloud provider region",
+			Description: lang.Markdown("cloud provider region"),
 			Required:    false,
 		},
 		{
 			Name:        "deployment_templateid",
 			Type:        cty.String,
 			Default:     cty.StringVal("gcp-io-optimized"),
-			Description: "ID of Elastic Cloud deployment type",
+			Description: lang.Markdown("ID of Elastic Cloud deployment type"),
 			Required:    false,
 		},
 	},
 	Outputs: []tfregistry.Output{
 		{
 			Name:        "elasticsearch_password",
-			Description: "elasticsearch password",
+			Description: lang.Markdown("elasticsearch password"),
 		},
 		{
 			Name:        "deployment_id",
-			Description: "Elastic Cloud deployment ID",
+			Description: lang.Markdown("Elastic Cloud deployment ID"),
 		},
 		{
 			Name:        "elasticsearch_version",
-			Description: "Stack version deployed",
+			Description: lang.Markdown("Stack version deployed"),
 		},
 		{
 			Name:        "elasticsearch_cloud_id",
-			Description: "Elastic Cloud project deployment ID",
+			Description: lang.Markdown("Elastic Cloud project deployment ID"),
 		},
 		{
 			Name:        "elasticsearch_https_endpoint",
-			Description: "elasticsearch https endpoint",
+			Description: lang.Markdown("elasticsearch https endpoint"),
 		},
 		{
 			Name:        "elasticsearch_username",
-			Description: "elasticsearch username",
+			Description: lang.Markdown("elasticsearch username"),
 		},
 	},
 }

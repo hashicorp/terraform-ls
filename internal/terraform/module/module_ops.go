@@ -394,7 +394,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 		for i, input := range metaData.Root.Inputs {
 			inputs[i] = tfregistry.Input{
 				Name:        input.Name,
-				Description: input.Description,
+				Description: lang.Markdown(input.Description),
 				Required:    input.Required,
 			}
 
@@ -425,7 +425,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 		for i, output := range metaData.Root.Outputs {
 			outputs[i] = tfregistry.Output{
 				Name:        output.Name,
-				Description: output.Description,
+				Description: lang.Markdown(output.Description),
 			}
 		}
 

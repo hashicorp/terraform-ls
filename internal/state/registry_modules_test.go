@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/lang"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/registry"
 	"github.com/zclconf/go-cty-debug/ctydebug"
@@ -28,7 +29,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 		{
 			Name:        "foo",
 			Type:        cty.String,
-			Description: "baz",
+			Description: lang.Markdown("baz"),
 			Default:     cty.StringVal("woot"),
 			Required:    false,
 		},
@@ -36,7 +37,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 	outputs := []registry.Output{
 		{
 			Name:        "wakka",
-			Description: "fozzy",
+			Description: lang.Markdown("fozzy"),
 		},
 	}
 
@@ -81,7 +82,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 		{
 			Name:        "foo",
 			Type:        cty.String,
-			Description: "baz",
+			Description: lang.Markdown("baz"),
 			Default:     cty.StringVal("woot"),
 			Required:    false,
 		},
@@ -89,7 +90,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 	outputs := []registry.Output{
 		{
 			Name:        "wakka",
-			Description: "fozzy",
+			Description: lang.Markdown("fozzy"),
 		},
 	}
 
