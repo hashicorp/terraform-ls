@@ -3,6 +3,7 @@
 ENHANCEMENTS:
 
  - Replace internal watcher (used for watching changes in installed plugins and modules) with LSP dynamic capability registration & `workspace/didChangeWatchedFiles`. This should leave to improved performance in most cases. ([#953](https://github.com/hashicorp/terraform-ls/pull/953))
+ - Provide completion, hover and docs links for uninitialized Registry modules ([#924](https://github.com/hashicorp/terraform-ls/pull/924))
 
 BUG FIXES:
 
