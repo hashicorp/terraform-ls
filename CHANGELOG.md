@@ -1,4 +1,8 @@
-## 0.28.2 (Unreleased)
+## 0.29.0 (Unreleased)
+
+ENHANCEMENTS:
+
+ - Replace internal watcher (used for watching changes in installed plugins and modules) with LSP dynamic capability registration & `workspace/didChangeWatchedFiles` ([#953](https://github.com/hashicorp/terraform-ls/pull/953))
 
 BUG FIXES:
 
