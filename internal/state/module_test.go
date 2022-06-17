@@ -20,6 +20,8 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+var _ ModuleCallReader = &ModuleStore{}
+
 func TestModuleStore_Add_duplicate(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {

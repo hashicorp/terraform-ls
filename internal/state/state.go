@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
+	"github.com/hashicorp/terraform-schema/registry"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
@@ -22,6 +23,7 @@ const (
 	providerSchemaTableName = "provider_schema"
 	providerIdsTableName    = "provider_ids"
 	walkerPathsTableName    = "walker_paths"
+	registryModuleTableName = "registry_module"
 )
 
 var dbSchema = &memdb.DBSchema{
@@ -127,6 +129,25 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		registryModuleTableName: {
+			Name: registryModuleTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:   "id",
+					Unique: true,
+					Indexer: &memdb.CompoundIndex{
+						Indexes: []memdb.Indexer{
+							&StringerFieldIndexer{Field: "Source"},
+							&VersionFieldIndexer{Field: "Version"},
+						},
+					},
+				},
+				"source_addr": {
+					Name:    "source_addr",
+					Indexer: &StringerFieldIndexer{Field: "Source"},
+				},
+			},
+		},
 		providerIdsTableName: {
 			Name: providerIdsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -189,6 +210,7 @@ type StateStore struct {
 	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
 	WalkerPaths     *WalkerPathStore
+	RegistryModules *RegistryModuleStore
 
 	db *memdb.MemDB
 }
@@ -215,10 +237,16 @@ type ModuleReader interface {
 
 type ModuleCallReader interface {
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
-	ModuleMeta(modPath string) (*tfmod.Meta, error)
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
+	RegistryModuleMeta(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*registry.ModuleData, error)
 }
 
 type ProviderSchemaStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+type RegistryModuleStore struct {
 	db        *memdb.MemDB
 	tableName string
 	logger    *log.Logger
@@ -260,6 +288,11 @@ func NewStateStore() (*StateStore, error) {
 			tableName: providerSchemaTableName,
 			logger:    defaultLogger,
 		},
+		RegistryModules: &RegistryModuleStore{
+			db:        db,
+			tableName: registryModuleTableName,
+			logger:    defaultLogger,
+		},
 		WalkerPaths: &WalkerPathStore{
 			db:              db,
 			tableName:       walkerPathsTableName,
@@ -276,6 +309,7 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
+	s.RegistryModules.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)

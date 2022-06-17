@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
+	"github.com/hashicorp/terraform-schema/registry"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
@@ -352,7 +353,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 	return modCalls, err
 }
 
-func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
+func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
 		return nil, err
@@ -369,6 +370,31 @@ func (s *ModuleStore) ModuleMeta(modPath string) (*tfmod.Meta, error) {
 	}, nil
 }
 
+func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*registry.ModuleData, error) {
+	txn := s.db.Txn(false)
+
+	it, err := txn.Get(registryModuleTableName, "source_addr", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	for item := it.Next(); item != nil; item = it.Next() {
+		mod := item.(*RegistryModuleData)
+
+		if cons.Check(mod.Version) {
+			return &registry.ModuleData{
+				Version: mod.Version,
+				Inputs:  mod.Inputs,
+				Outputs: mod.Outputs,
+			}, nil
+		}
+	}
+
+	return nil, &ModuleNotFoundError{
+		Source: addr.String(),
+	}
+}
+
 func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
 	obj, err := txn.First(moduleTableName, "id", path)
 	if err != nil {
@@ -376,7 +402,7 @@ func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
 	}
 	if obj == nil {
 		return nil, &ModuleNotFoundError{
-			Path: path,
+			Source: path,
 		}
 	}
 	return obj.(*Module), nil

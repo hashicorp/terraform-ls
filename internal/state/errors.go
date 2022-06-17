@@ -25,13 +25,13 @@ func (e *NoSchemaError) Error() string {
 }
 
 type ModuleNotFoundError struct {
-	Path string
+	Source string
 }
 
 func (e *ModuleNotFoundError) Error() string {
 	msg := "module not found"
-	if e.Path != "" {
-		return fmt.Sprintf("%s: %s", e.Path, msg)
+	if e.Source != "" {
+		return fmt.Sprintf("%s: %s", e.Source, msg)
 	}
 
 	return msg

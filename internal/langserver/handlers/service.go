@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -46,19 +47,21 @@ type service struct {
 	closedDirWalker *module.Walker
 	openDirWalker   *module.Walker
 
-	fs            *filesystem.Filesystem
-	modStore      *state.ModuleStore
-	schemaStore   *state.ProviderSchemaStore
-	tfDiscoFunc   discovery.DiscoveryFunc
-	tfExecFactory exec.ExecutorFactory
-	tfExecOpts    *exec.ExecutorOpts
-	telemetry     telemetry.Sender
-	decoder       *decoder.Decoder
-	stateStore    *state.StateStore
-	server        session.Server
-	diagsNotifier *diagnostics.Notifier
-	notifier      *notifier.Notifier
-	indexer       *module.Indexer
+	fs               *filesystem.Filesystem
+	modStore         *state.ModuleStore
+	schemaStore      *state.ProviderSchemaStore
+	regMetadataStore *state.RegistryModuleStore
+	tfDiscoFunc      discovery.DiscoveryFunc
+	tfExecFactory    exec.ExecutorFactory
+	tfExecOpts       *exec.ExecutorOpts
+	telemetry        telemetry.Sender
+	decoder          *decoder.Decoder
+	stateStore       *state.StateStore
+	server           session.Server
+	diagsNotifier    *diagnostics.Notifier
+	notifier         *notifier.Notifier
+	indexer          *module.Indexer
+	registryClient   registry.Client
 
 	walkerCollector    *module.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -73,13 +76,14 @@ func NewSession(srvCtx context.Context) session.Session {
 
 	sessCtx, stopSession := context.WithCancel(srvCtx)
 	return &service{
-		logger:        discardLogs,
-		srvCtx:        srvCtx,
-		sessCtx:       sessCtx,
-		stopSession:   stopSession,
-		tfDiscoFunc:   d.LookPath,
-		tfExecFactory: exec.NewExecutor,
-		telemetry:     &telemetry.NoopSender{},
+		logger:         discardLogs,
+		srvCtx:         srvCtx,
+		sessCtx:        sessCtx,
+		stopSession:    stopSession,
+		tfDiscoFunc:    d.LookPath,
+		tfExecFactory:  exec.NewExecutor,
+		telemetry:      &telemetry.NoopSender{},
+		registryClient: registry.NewClient(),
 	}
 }
 

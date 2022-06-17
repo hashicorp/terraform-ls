@@ -4,18 +4,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
+	"github.com/hashicorp/terraform-schema/registry"
 )
 
 type ModuleReader interface {
 	ModuleByPath(modPath string) (*state.Module, error)
 	List() ([]*state.Module, error)
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
-	ModuleMeta(modPath string) (*tfmod.Meta, error)
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
+	RegistryModuleMeta(addr tfaddr.ModuleSourceRegistry, cons version.Constraints) (*registry.ModuleData, error)
 }
 
 type PathReader struct {
