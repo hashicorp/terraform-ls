@@ -1,6 +1,6 @@
 package module
 
-// moduleVersionsMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ex/versions
+// moduleVersionsMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/versions
 var moduleVersionsMockResponse = `{
   "modules": [
     {
