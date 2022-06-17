@@ -6,7 +6,6 @@ require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.41.0
-	github.com/fsnotify/fsnotify v1.5.4
 	github.com/google/go-cmp v0.5.8
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -20,13 +19,13 @@ require (
 	github.com/hashicorp/terraform-exec v0.16.1
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20220422093245-eb7bcc2ff473
-	github.com/hashicorp/terraform-schema v0.0.0-20220617144435-8968b2157978
+	github.com/hashicorp/terraform-schema v0.0.0-20220617163605-9aece33a9bbb
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/otiai10/copy v1.7.0 // indirect
+	github.com/otiai10/copy v1.7.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546
