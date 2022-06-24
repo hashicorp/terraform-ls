@@ -16,9 +16,11 @@ func NewVarsFilename(name string) (VarsFilename, bool) {
 }
 
 func IsVarsFilename(name string) bool {
-	return (strings.HasSuffix(name, ".tfvars") ||
-		strings.HasSuffix(name, ".tfvars.json")) &&
-		!isIgnoredFile(name)
+	// even files which are normally ignored/hidden,
+	// such as .foo.tfvars (with leading .) are accepted here
+	// see https://github.com/hashicorp/terraform/blob/77e6b62/internal/command/meta.go#L734-L738
+	return strings.HasSuffix(name, ".tfvars") ||
+		strings.HasSuffix(name, ".tfvars.json")
 }
 
 func (vf VarsFilename) String() string {
