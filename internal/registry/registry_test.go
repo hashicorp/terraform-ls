@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetModuleData(t *testing.T) {
-	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestGetModuleData(t *testing.T) {
 }
 
 func TestGetMatchingModuleVersion(t *testing.T) {
-	addr, err := tfaddr.ParseRawModuleSourceRegistry("puppetlabs/deployment/ec")
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}

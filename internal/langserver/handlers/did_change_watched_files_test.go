@@ -780,7 +780,7 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 		ReqParams: "{}",
 	})
 
-	addr := tfaddr.MustParseRawProviderSourceString("-/test")
+	addr := tfaddr.MustParseProviderSource("-/test")
 	vc := version.MustConstraints(version.NewConstraint(">= 1.0"))
 
 	_, err = ss.ProviderSchemas.ProviderSchema(testHandle.Path(), addr, vc)

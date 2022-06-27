@@ -18,7 +18,7 @@ func TestStateStore_cache_metadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	source, err := tfaddr.ParseRawModuleSourceRegistry("terraform-aws-modules/eks/aws")
+	source, err := tfaddr.ParseModuleSource("terraform-aws-modules/eks/aws")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	source, err := tfaddr.ParseRawModuleSourceRegistry("terraform-aws-modules/eks/aws")
+	source, err := tfaddr.ParseModuleSource("terraform-aws-modules/eks/aws")
 	if err != nil {
 		t.Fatal(err)
 	}

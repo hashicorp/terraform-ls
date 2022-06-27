@@ -37,10 +37,10 @@ func (t *Telemetry) SendEvent(ctx context.Context, name string, properties map[s
 }
 
 func IsPublicProvider(addr tfaddr.Provider) bool {
-	if addr.Hostname == tfaddr.DefaultRegistryHost {
+	if addr.Hostname == tfaddr.DefaultProviderRegistryHost {
 		return true
 	}
-	if addr.IsDefault() || addr.IsLegacy() || addr.IsBuiltIn() {
+	if addr.IsLegacy() || addr.IsBuiltIn() {
 		return true
 	}
 	return false

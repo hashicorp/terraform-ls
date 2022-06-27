@@ -9,13 +9,13 @@ import (
 )
 
 type RegistryModuleData struct {
-	Source  tfaddr.ModuleSourceRegistry
+	Source  tfaddr.Module
 	Version *version.Version
 	Inputs  []registry.Input
 	Outputs []registry.Output
 }
 
-func (s *RegistryModuleStore) Exists(sourceAddr tfaddr.ModuleSourceRegistry, constraint version.Constraints) (bool, error) {
+func (s *RegistryModuleStore) Exists(sourceAddr tfaddr.Module, constraint version.Constraints) (bool, error) {
 	txn := s.db.Txn(false)
 
 	iter, err := txn.Get(s.tableName, "source_addr", sourceAddr)
@@ -33,7 +33,7 @@ func (s *RegistryModuleStore) Exists(sourceAddr tfaddr.ModuleSourceRegistry, con
 	return false, nil
 }
 
-func (s *RegistryModuleStore) Cache(sourceAddr tfaddr.ModuleSourceRegistry, modVer *version.Version,
+func (s *RegistryModuleStore) Cache(sourceAddr tfaddr.Module, modVer *version.Version,
 	inputs []registry.Input, outputs []registry.Output) error {
 
 	txn := s.db.Txn(true)

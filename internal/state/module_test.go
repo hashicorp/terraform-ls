@@ -241,12 +241,12 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 		Path:             tmpDir,
 		CoreRequirements: testConstraint(t, "~> 0.15"),
 		ProviderRequirements: map[tfaddr.Provider]version.Constraints{
-			tfaddr.NewDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
-			tfaddr.NewDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
+			NewDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
+			NewDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
 		},
 		ProviderReferences: map[tfmod.ProviderRef]tfaddr.Provider{
-			{LocalName: "aws"}:    tfaddr.NewDefaultProvider("aws"),
-			{LocalName: "google"}: tfaddr.NewDefaultProvider("google"),
+			{LocalName: "aws"}:    NewDefaultProvider("aws"),
+			{LocalName: "google"}: NewDefaultProvider("google"),
 		},
 	}
 
@@ -270,12 +270,12 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 		Meta: ModuleMetadata{
 			CoreRequirements: testConstraint(t, "~> 0.15"),
 			ProviderRequirements: map[tfaddr.Provider]version.Constraints{
-				tfaddr.NewDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
-				tfaddr.NewDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
+				NewDefaultProvider("aws"):    testConstraint(t, "1.2.3"),
+				NewDefaultProvider("google"): testConstraint(t, ">= 2.0.0"),
 			},
 			ProviderReferences: map[tfmod.ProviderRef]tfaddr.Provider{
-				{LocalName: "aws"}:    tfaddr.NewDefaultProvider("aws"),
-				{LocalName: "google"}: tfaddr.NewDefaultProvider("google"),
+				{LocalName: "aws"}:    NewDefaultProvider("aws"),
+				{LocalName: "google"}: NewDefaultProvider("google"),
 			},
 		},
 		MetaState: operation.OpStateLoaded,

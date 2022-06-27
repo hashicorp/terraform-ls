@@ -214,14 +214,14 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 		}
 	}
 
-	if len(schemas) == 0 && addr.Equals(tfaddr.NewDefaultProvider("terraform")) {
+	if len(schemas) == 0 && addr.Equals(NewDefaultProvider("terraform")) {
 		// assume that hashicorp/terraform is just the builtin provider
-		return s.ProviderSchema(modPath, tfaddr.NewBuiltInProvider("terraform"), vc)
+		return s.ProviderSchema(modPath, NewBuiltInProvider("terraform"), vc)
 	}
 
 	if len(schemas) == 0 && addr.IsLegacy() {
 		if addr.Type == "terraform" {
-			return s.ProviderSchema(modPath, tfaddr.NewBuiltInProvider("terraform"), vc)
+			return s.ProviderSchema(modPath, NewBuiltInProvider("terraform"), vc)
 		}
 
 		// Schema may be missing e.g. because Terraform 0.12
@@ -274,6 +274,30 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 }
 
 type ModuleLookupFunc func(string) (*Module, error)
+
+func NewDefaultProvider(name string) tfaddr.Provider {
+	return tfaddr.Provider{
+		Type:      tfaddr.MustParseProviderPart(name),
+		Namespace: "hashicorp",
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
+	}
+}
+
+func NewBuiltInProvider(name string) tfaddr.Provider {
+	return tfaddr.Provider{
+		Type:      tfaddr.MustParseProviderPart(name),
+		Namespace: tfaddr.BuiltInProviderNamespace,
+		Hostname:  tfaddr.BuiltInProviderHost,
+	}
+}
+
+func NewLegacyProvider(name string) tfaddr.Provider {
+	return tfaddr.Provider{
+		Type:      tfaddr.MustParseProviderPart(name),
+		Namespace: tfaddr.LegacyProviderNamespace,
+		Hostname:  tfaddr.DefaultProviderRegistryHost,
+	}
+}
 
 type sortableSchemas struct {
 	schemas         []*ProviderSchema
