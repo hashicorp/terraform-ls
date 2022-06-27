@@ -7,14 +7,31 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.DidChangeWorkspaceFoldersParams) error {
 	for _, removed := range params.Event.Removed {
+		if !uri.IsURIValid(removed.URI) {
+			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				Type: lsp.Warning,
+				Message: fmt.Sprintf("Ignoring workspace folder (unsupport or invalid URI) %s."+
+					" This is most likely bug, please report it.", removed.URI),
+			})
+			continue
+		}
 		svc.removeIndexedModule(ctx, removed.URI)
 	}
 
 	for _, added := range params.Event.Added {
+		if !uri.IsURIValid(added.URI) {
+			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				Type: lsp.Warning,
+				Message: fmt.Sprintf("Ignoring workspace folder (unsupport or invalid URI) %s."+
+					" This is most likely bug, please report it.", added.URI),
+			})
+			continue
+		}
 		svc.indexNewModule(ctx, added.URI)
 	}
 

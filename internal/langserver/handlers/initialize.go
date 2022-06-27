@@ -38,6 +38,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	svc.server = jrpc2.ServerFromContext(ctx)
 
 	setupTelemetry(expClientCaps, svc, ctx, properties)
+	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
 
 	if params.ClientInfo.Name != "" {
 		err = ilsp.SetClientName(ctx, params.ClientInfo.Name)
@@ -126,9 +127,11 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 			})
 		}
 	} else {
-		if !uri.IsURIValid(string(params.RootURI)) {
+		rootURI := string(params.RootURI)
+		if !uri.IsURIValid(rootURI) {
 			properties["root_uri"] = "invalid"
-			return serverCaps, fmt.Errorf("URI %q is not valid", params.RootURI)
+			return serverCaps, fmt.Errorf("Unsupported or invalid URI: %q "+
+				"This is most likely bug, please report it.", rootURI)
 		}
 
 		err := svc.setupWalker(ctx, params, cfgOpts)
@@ -162,7 +165,6 @@ func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, ctx c
 		}
 		svc.logger.Printf("telemetry enabled (version: %d)", tv)
 	}
-	defer svc.telemetry.SendEvent(ctx, "initialize", properties)
 }
 
 func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{} {
@@ -238,7 +240,8 @@ func initializeResult(ctx context.Context) lsp.InitializeResult {
 }
 
 func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams, options *settings.Options) error {
-	root := document.DirHandleFromURI(string(params.RootURI))
+	rootURI := string(params.RootURI)
+	root := document.DirHandleFromURI(rootURI)
 
 	err := lsctx.SetRootDirectory(ctx, root.Path())
 	if err != nil {
@@ -261,15 +264,24 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 	}
 
 	if len(params.WorkspaceFolders) > 0 {
-		for _, folderPath := range params.WorkspaceFolders {
-			modPath := document.DirHandleFromURI(folderPath.URI)
+		for _, folder := range params.WorkspaceFolders {
+			if !uri.IsURIValid(folder.URI) {
+				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+					Type: lsp.Warning,
+					Message: fmt.Sprintf("Ignoring workspace folder (unsupport or invalid URI) %s."+
+						" This is most likely bug, please report it.", folder.URI),
+				})
+				continue
+			}
+
+			modPath := document.DirHandleFromURI(folder.URI)
 
 			err := svc.stateStore.WalkerPaths.EnqueueDir(modPath)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type: lsp.Warning,
 					Message: fmt.Sprintf("Ignoring workspace folder %s: %s."+
-						" This is most likely bug, please report it.", folderPath.URI, err),
+						" This is most likely bug, please report it.", folder.URI, err),
 				})
 				continue
 			}
