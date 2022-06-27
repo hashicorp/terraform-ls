@@ -1,85 +1,85 @@
 checks:
-- package: ./internal/langserver/handlers
-  name: local-single-module-no-provider
-  benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-no-provider]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 25
-    max: 55
-- package: ./internal/langserver/handlers
-  name: local-single-submodule-no-provider
-  benchmarks: [BenchmarkInitializeFolder_basic/local-single-submodule-no-provider]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 140
-    max: 310
-- package: ./internal/langserver/handlers
-  name: local-single-module-random
-  benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-random]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 140
-    max: 300
-- package: ./internal/langserver/handlers
-  name: local-single-module-aws
-  benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-aws]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1240
-    max: 1950
-- package: ./internal/langserver/handlers
-  name: aws-consul
-  benchmarks: [BenchmarkInitializeFolder_basic/aws-consul]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1360
-    max: 2100
-- package: ./internal/langserver/handlers
-  name: aws-eks
-  benchmarks: [BenchmarkInitializeFolder_basic/aws-eks]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1570
-    max: 3200
-- package: ./internal/langserver/handlers
-  name: aws-vpc
-  benchmarks: [BenchmarkInitializeFolder_basic/aws-vpc]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1400
-    max: 2200
-- package: ./internal/langserver/handlers
-  name: google-project
-  benchmarks: [BenchmarkInitializeFolder_basic/google-project]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1570
-    max: 2450
-- package: ./internal/langserver/handlers
-  name: google-network
-  benchmarks: [BenchmarkInitializeFolder_basic/google-network]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1430
-    max: 2700
-- package: ./internal/langserver/handlers
-  name: google-gke
-  benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1800
-    max: 5100
-- package: ./internal/langserver/handlers
-  name: k8s-metrics-server
-  benchmarks: [BenchmarkInitializeFolder_basic/k8s-metrics-server]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1000
-    max: 3200
-- package: ./internal/langserver/handlers
-  name: k8s-dashboard
-  benchmarks: [BenchmarkInitializeFolder_basic/k8s-dashboard]
-  diff: current.NsPerOp / 1000000 # ms
-  thresholds:
-    min: 1200
-    max: 3600
+  - package: ./internal/langserver/handlers
+    name: local-single-module-no-provider
+    benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-no-provider]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 25
+      max: 55
+  - package: ./internal/langserver/handlers
+    name: local-single-submodule-no-provider
+    benchmarks: [BenchmarkInitializeFolder_basic/local-single-submodule-no-provider]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 140
+      max: 310
+  - package: ./internal/langserver/handlers
+    name: local-single-module-random
+    benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-random]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 140
+      max: 300
+  - package: ./internal/langserver/handlers
+    name: local-single-module-aws
+    benchmarks: [BenchmarkInitializeFolder_basic/local-single-module-aws]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1240
+      max: 1950
+  - package: ./internal/langserver/handlers
+    name: aws-consul
+    benchmarks: [BenchmarkInitializeFolder_basic/aws-consul]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1360
+      max: 2100
+  - package: ./internal/langserver/handlers
+    name: aws-eks
+    benchmarks: [BenchmarkInitializeFolder_basic/aws-eks]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1570
+      max: 3200
+  - package: ./internal/langserver/handlers
+    name: aws-vpc
+    benchmarks: [BenchmarkInitializeFolder_basic/aws-vpc]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1400
+      max: 2200
+  - package: ./internal/langserver/handlers
+    name: google-project
+    benchmarks: [BenchmarkInitializeFolder_basic/google-project]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1570
+      max: 2450
+  - package: ./internal/langserver/handlers
+    name: google-network
+    benchmarks: [BenchmarkInitializeFolder_basic/google-network]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1430
+      max: 2700
+  - package: ./internal/langserver/handlers
+    name: google-gke
+    benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1500
+      max: 5100
+  - package: ./internal/langserver/handlers
+    name: k8s-metrics-server
+    benchmarks: [BenchmarkInitializeFolder_basic/k8s-metrics-server]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1000
+      max: 3200
+  - package: ./internal/langserver/handlers
+    name: k8s-dashboard
+    benchmarks: [BenchmarkInitializeFolder_basic/k8s-dashboard]
+    diff: current.NsPerOp / 1000000 # ms
+    thresholds:
+      min: 1200
+      max: 3600
