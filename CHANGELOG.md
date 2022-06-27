@@ -13,6 +13,7 @@ BUG FIXES:
 INTERNAL:
 
  - main: allow build version metadata to be set ([#945](https://github.com/hashicorp/terraform-ls/pull/945))
+ - deps: switch to the new minimal `terraform-registry-address` API ([#949](https://github.com/hashicorp/terraform-ls/pull/949))
  - deps: bump LSP structs to match gopls 0.8.4 ([#947](https://github.com/hashicorp/terraform-ls/pull/947))
  - deps: bump github.com/hashicorp/terraform-exec from 0.16.1 to 0.17.0 ([#963](https://github.com/hashicorp/terraform-ls/pull/963))
 
