@@ -8,6 +8,7 @@ ENHANCEMENTS:
 BUG FIXES:
 
  - handlers/command: Return partially parsed metadata from `module.providers` ([#951](https://github.com/hashicorp/terraform-ls/pull/951))
+ - fix: Avoid ignoring hidden `*.tfvars` files ([#968](https://github.com/hashicorp/terraform-ls/pull/968))
 
 INTERNAL:
 
