@@ -18,8 +18,8 @@ type JobStore struct {
 	tableName string
 	logger    *log.Logger
 
-	nextJobOpenDirMu   *sync.Mutex
-	nextJobClosedDirMu *sync.Mutex
+	nextJobHighPrioMu *sync.Mutex
+	nextJobLowPrioMu  *sync.Mutex
 
 	lastJobId uint64
 }
@@ -190,26 +190,30 @@ func (js *JobStore) jobExists(j job.Job, state State) (job.ID, bool, error) {
 	return "", false, nil
 }
 
-func (js *JobStore) AwaitNextJob(ctx context.Context, openDir bool) (job.ID, job.Job, error) {
+func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
 	// Locking is needed if same query is executed in multiple threads,
 	// i.e. this method is called at the same time from different threads, at
 	// which point txn.FirstWatch would return the same job to more than
 	// one thread and we would then end up executing it more than once.
-	if openDir {
-		js.nextJobOpenDirMu.Lock()
-		defer js.nextJobOpenDirMu.Unlock()
-	} else {
-		js.nextJobClosedDirMu.Lock()
-		defer js.nextJobClosedDirMu.Unlock()
+	switch priority {
+	case job.HighPriority:
+		js.nextJobHighPrioMu.Lock()
+		defer js.nextJobHighPrioMu.Unlock()
+	case job.LowPriority:
+		js.nextJobLowPrioMu.Lock()
+		defer js.nextJobLowPrioMu.Unlock()
+	default:
+		// This should never happen
+		return "", job.Job{}, fmt.Errorf("unexpected priority: %#v", priority)
 	}
 
-	return js.awaitNextJob(ctx, openDir)
+	return js.awaitNextJob(ctx, priority)
 }
 
-func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job.Job, error) {
+func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
 	txn := js.db.Txn(false)
 
-	wCh, obj, err := txn.FirstWatch(js.tableName, "is_dir_open_state", openDir, StateQueued)
+	wCh, obj, err := txn.FirstWatch(js.tableName, "priority_state", priority, StateQueued)
 	if err != nil {
 		return "", job.Job{}, err
 	}
@@ -221,7 +225,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job
 			return "", job.Job{}, ctx.Err()
 		}
 
-		return js.awaitNextJob(ctx, openDir)
+		return js.awaitNextJob(ctx, priority)
 	}
 
 	sJob := obj.(*ScheduledJob)
@@ -235,7 +239,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, openDir bool) (job.ID, job
 		// Instead of adding more sync primitives here we simply retry.
 		if errors.Is(err, jobAlreadyRunning{ID: sJob.ID}) || errors.Is(err, jobNotFound{ID: sJob.ID}) {
 			js.logger.Printf("retrying next job: %s", err)
-			return js.awaitNextJob(ctx, openDir)
+			return js.awaitNextJob(ctx, priority)
 		}
 
 		return "", job.Job{}, err

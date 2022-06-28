@@ -362,7 +362,7 @@ func (js *closedJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 }
 
 func (js *closedJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, false)
+	return js.js.AwaitNextJob(ctx, job.LowPriority)
 }
 
 func (js *closedJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {

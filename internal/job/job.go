@@ -19,6 +19,10 @@ type Job struct {
 	// which is used for deduplication of queued jobs along with Dir.
 	Type string
 
+	// Priority represents priority with which the job should be scheduled.
+	// This overrides the priority implied from whether the dir is open.
+	Priority JobPriority
+
 	// Defer is a function to execute after Func is executed
 	// and before the job is marked as done (StateDone).
 	// This can be used to schedule jobs dependent on the main job.
@@ -32,9 +36,17 @@ type DeferFunc func(ctx context.Context, jobErr error) IDs
 
 func (job Job) Copy() Job {
 	return Job{
-		Func:  job.Func,
-		Dir:   job.Dir,
-		Type:  job.Type,
-		Defer: job.Defer,
+		Func:     job.Func,
+		Dir:      job.Dir,
+		Type:     job.Type,
+		Priority: job.Priority,
+		Defer:    job.Defer,
 	}
 }
+
+type JobPriority int
+
+const (
+	LowPriority  JobPriority = -1
+	HighPriority JobPriority = 1
+)

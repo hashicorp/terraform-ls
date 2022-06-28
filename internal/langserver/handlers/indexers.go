@@ -16,7 +16,7 @@ func (js *closedDirJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 }
 
 func (js *closedDirJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, false)
+	return js.js.AwaitNextJob(ctx, job.LowPriority)
 }
 
 func (js *closedDirJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
@@ -36,7 +36,7 @@ func (js *openDirJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 }
 
 func (js *openDirJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, true)
+	return js.js.AwaitNextJob(ctx, job.HighPriority)
 }
 
 func (js *openDirJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
