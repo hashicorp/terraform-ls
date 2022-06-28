@@ -81,5 +81,5 @@ checks:
     benchmarks: [BenchmarkInitializeFolder_basic/k8s-dashboard]
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
-      min: 1200
+      min: 1100
       max: 3600
