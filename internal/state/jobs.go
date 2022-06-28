@@ -79,17 +79,20 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 
 	newJobID := job.ID(fmt.Sprintf("%d", atomic.AddUint64(&js.lastJobId, 1)))
 
-	err = txn.Insert(js.tableName, &ScheduledJob{
+	sJob := &ScheduledJob{
 		ID:        newJobID,
 		Job:       newJob,
 		IsDirOpen: isDirOpen(txn, newJob.Dir),
 		State:     StateQueued,
-	})
+	}
+
+	err = txn.Insert(js.tableName, sJob)
 	if err != nil {
 		return "", err
 	}
 
-	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q", newJobID, newJob.Type, newJob.Dir)
+	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t)",
+		sJob.ID, sJob.Type, sJob.Dir, sJob.IsDirOpen)
 
 	txn.Commit()
 
@@ -204,7 +207,7 @@ func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) 
 		defer js.nextJobLowPrioMu.Unlock()
 	default:
 		// This should never happen
-		return "", job.Job{}, fmt.Errorf("unexpected priority: %#v", priority)
+		panic(fmt.Sprintf("unexpected priority: %#v", priority))
 	}
 
 	return js.awaitNextJob(ctx, priority)
@@ -245,12 +248,13 @@ func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) 
 		return "", job.Job{}, err
 	}
 
-	js.logger.Printf("JOBS: Dispatching next job %q: %q for %q", sJob.ID, sJob.Type, sJob.Dir)
+	js.logger.Printf("JOBS: Dispatching next job %q (scheduler prio: %d, job prio: %d, isDirOpen: %t): %q for %q",
+		sJob.ID, priority, sJob.Priority, sJob.IsDirOpen, sJob.Type, sJob.Dir)
 	return sJob.ID, sJob.Job, nil
 }
 
 func isDirOpen(txn *memdb.Txn, dirHandle document.DirHandle) bool {
-	docObj, err := txn.First(documentsTableName, "id", dirHandle)
+	docObj, err := txn.First(documentsTableName, "dir", dirHandle)
 	if err != nil {
 		return false
 	}

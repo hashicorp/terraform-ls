@@ -63,6 +63,52 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 	}
 }
 
+func TestJobStore_EnqueueJob_openDir(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirHandle := document.DirHandleFromPath("/test-1")
+
+	err = ss.DocumentStore.OpenDocument(document.Handle{Dir: dirHandle, Filename: "test.tf"}, "test", 0, []byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:  dirHandle,
+		Type: "test-type",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// verify that job for open dir comes is treated as high priority
+	ctx := context.Background()
+	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
+	t.Cleanup(cancelFunc)
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id {
+		t.Fatalf("expected next job ID %q, given: %q", id, nextId)
+	}
+
+	if j.Dir != dirHandle {
+		t.Fatalf("expected next job dir %q, given: %q", dirHandle, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+}
+
 func BenchmarkJobStore_EnqueueJob_basic(b *testing.B) {
 	ss, err := NewStateStore()
 	if err != nil {
