@@ -1,21 +1,10 @@
 package module
 
 import (
-	"context"
 	"io/fs"
-	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 )
-
-type Watcher interface {
-	Start(context.Context) error
-	Stop() error
-	SetLogger(*log.Logger)
-	AddModule(string) error
-	RemoveModule(string) error
-	IsModuleWatched(string) bool
-}
 
 type ReadOnlyFS interface {
 	fs.FS

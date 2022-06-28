@@ -44,8 +44,7 @@ type Walker struct {
 	jobStore      job.JobStore
 	tfExecFactory exec.ExecutorFactory
 
-	watcher Watcher
-	logger  *log.Logger
+	logger *log.Logger
 
 	Collector *WalkerCollector
 
@@ -75,10 +74,6 @@ func NewWalker(fs ReadOnlyFS, ps PathStore, ms *state.ModuleStore, pss *state.Pr
 
 func (w *Walker) SetLogger(logger *log.Logger) {
 	w.logger = logger
-}
-
-func (w *Walker) SetWatcher(watcher Watcher) {
-	w.watcher = watcher
 }
 
 func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
@@ -327,10 +322,6 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 				return err
 			}
 			w.collectJobId(id)
-
-			if w.watcher != nil {
-				w.watcher.AddModule(dir)
-			}
 
 			return nil
 		}
