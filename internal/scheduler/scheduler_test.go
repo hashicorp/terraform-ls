@@ -27,7 +27,7 @@ func TestScheduler_closedOnly(t *testing.T) {
 
 	ctx := context.Background()
 
-	s := NewScheduler(&closedDirJobs{js: ss.JobStore}, 2)
+	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
 	s.SetLogger(testLogger())
 	s.Start(ctx)
 	t.Cleanup(func() {
@@ -151,14 +151,14 @@ func TestScheduler_closedAndOpen(t *testing.T) {
 		t.Cleanup(cancelFunc)
 	}
 
-	cs := NewScheduler(&closedDirJobs{js: ss.JobStore}, 1)
+	cs := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	cs.SetLogger(testLogger())
 	cs.Start(ctx)
 	t.Cleanup(func() {
 		cs.Stop()
 	})
 
-	os := NewScheduler(&openDirJobs{js: ss.JobStore}, 1)
+	os := NewScheduler(ss.JobStore, 1, job.HighPriority)
 	os.SetLogger(testLogger())
 	os.Start(ctx)
 	t.Cleanup(func() {
@@ -197,7 +197,7 @@ func BenchmarkScheduler_EnqueueAndWaitForJob_closedOnly(b *testing.B) {
 	tmpDir := b.TempDir()
 	ctx := context.Background()
 
-	s := NewScheduler(&closedDirJobs{js: ss.JobStore}, 1)
+	s := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	s.Start(ctx)
 	b.Cleanup(func() {
 		s.Stop()
@@ -238,7 +238,7 @@ func TestScheduler_defer(t *testing.T) {
 
 	ctx := context.Background()
 
-	s := NewScheduler(&closedDirJobs{js: ss.JobStore}, 2)
+	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
 	s.SetLogger(testLogger())
 	s.Start(ctx)
 	t.Cleanup(func() {
@@ -325,44 +325,4 @@ func testLogger() *log.Logger {
 	}
 
 	return log.New(ioutil.Discard, "", 0)
-}
-
-type closedDirJobs struct {
-	js *state.JobStore
-}
-
-func (js *closedDirJobs) EnqueueJob(newJob job.Job) (job.ID, error) {
-	return js.js.EnqueueJob(newJob)
-}
-
-func (js *closedDirJobs) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, false)
-}
-
-func (js *closedDirJobs) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
-	return js.js.FinishJob(id, jobErr, deferredJobIds...)
-}
-
-func (js *closedDirJobs) WaitForJobs(ctx context.Context, jobIds ...job.ID) error {
-	return js.js.WaitForJobs(ctx, jobIds...)
-}
-
-type openDirJobs struct {
-	js *state.JobStore
-}
-
-func (js *openDirJobs) EnqueueJob(newJob job.Job) (job.ID, error) {
-	return js.js.EnqueueJob(newJob)
-}
-
-func (js *openDirJobs) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, true)
-}
-
-func (js *openDirJobs) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
-	return js.js.FinishJob(id, jobErr, deferredJobIds...)
-}
-
-func (js *openDirJobs) WaitForJobs(ctx context.Context, jobIds ...job.ID) error {
-	return js.js.WaitForJobs(ctx, jobIds...)
 }

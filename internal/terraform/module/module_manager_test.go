@@ -225,7 +225,7 @@ func TestWalker_complexModules(t *testing.T) {
 				ExecPath: "tf-mock",
 			})
 
-			s := scheduler.NewScheduler(&closedJobStore{ss.JobStore}, 1)
+			s := scheduler.NewScheduler(ss.JobStore, 1, job.LowPriority)
 			ss.SetLogger(testLogger())
 			s.Start(ctx)
 
@@ -351,24 +351,4 @@ func testLogger() *log.Logger {
 	}
 
 	return log.New(ioutil.Discard, "", 0)
-}
-
-type closedJobStore struct {
-	js *state.JobStore
-}
-
-func (js *closedJobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
-	return js.js.EnqueueJob(newJob)
-}
-
-func (js *closedJobStore) AwaitNextJob(ctx context.Context) (job.ID, job.Job, error) {
-	return js.js.AwaitNextJob(ctx, false)
-}
-
-func (js *closedJobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error {
-	return js.js.FinishJob(id, jobErr, deferredJobIds...)
-}
-
-func (js *closedJobStore) WaitForJobs(ctx context.Context, jobIds ...job.ID) error {
-	return js.js.WaitForJobs(ctx, jobIds...)
 }

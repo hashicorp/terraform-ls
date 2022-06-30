@@ -63,6 +63,52 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 	}
 }
 
+func TestJobStore_EnqueueJob_openDir(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dirHandle := document.DirHandleFromPath("/test-1")
+
+	err = ss.DocumentStore.OpenDocument(document.Handle{Dir: dirHandle, Filename: "test.tf"}, "test", 0, []byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:  dirHandle,
+		Type: "test-type",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// verify that job for open dir comes is treated as high priority
+	ctx := context.Background()
+	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
+	t.Cleanup(cancelFunc)
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id {
+		t.Fatalf("expected next job ID %q, given: %q", id, nextId)
+	}
+
+	if j.Dir != dirHandle {
+		t.Fatalf("expected next job dir %q, given: %q", dirHandle, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+}
+
 func BenchmarkJobStore_EnqueueJob_basic(b *testing.B) {
 	ss, err := NewStateStore()
 	if err != nil {
@@ -237,7 +283,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	nextId, job, err := ss.JobStore.AwaitNextJob(ctx, false)
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,17 +292,17 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 		t.Fatalf("expected next job ID %q, given: %q", id1, nextId)
 	}
 
-	if job.Dir != firstDir {
-		t.Fatalf("expected next job dir %q, given: %q", firstDir, job.Dir)
+	if j.Dir != firstDir {
+		t.Fatalf("expected next job dir %q, given: %q", firstDir, j.Dir)
 	}
 
-	if job.Type != "test-type" {
-		t.Fatalf("expected next job dir %q, given: %q", "test-type", job.Type)
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, job, err = ss.JobStore.AwaitNextJob(ctx, false)
+	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -300,7 +346,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	nextId, job, err := ss.JobStore.AwaitNextJob(ctx, true)
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,21 +355,197 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 		t.Fatalf("expected next job ID %q, given: %q", id2, nextId)
 	}
 
-	if job.Dir != secondDir {
-		t.Fatalf("expected next job dir %q, given: %q", secondDir, job.Dir)
+	if j.Dir != secondDir {
+		t.Fatalf("expected next job dir %q, given: %q", secondDir, j.Dir)
 	}
 
-	if job.Type != "test-type" {
-		t.Fatalf("expected next job dir %q, given: %q", "test-type", job.Type)
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, job, err = ss.JobStore.AwaitNextJob(ctx, true)
+	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
 		}
+	}
+}
+
+func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	firstDir := document.DirHandleFromPath("/test-1")
+	id1, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:      firstDir,
+		Type:     "test-type",
+		Priority: job.HighPriority,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secondDir := document.DirHandleFromPath("/test-2")
+	id2, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:  secondDir,
+		Type: "test-type",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ss.DocumentStore.OpenDocument(document.Handle{Dir: secondDir, Filename: "test.tf"}, "test", 0, []byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id1 {
+		t.Fatalf("expected next job ID %q, given: %q", id1, nextId)
+	}
+
+	if j.Dir != firstDir {
+		t.Fatalf("expected next job dir %q, given: %q", firstDir, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+
+	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id2 {
+		t.Fatalf("expected next job ID %q, given: %q", id2, nextId)
+	}
+
+	if j.Dir != secondDir {
+		t.Fatalf("expected next job dir %q, given: %q", secondDir, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+
+	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
+	t.Cleanup(cancelFunc)
+	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("%#v", err)
+		}
+	}
+}
+
+func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	firstDir := document.DirHandleFromPath("/test-1")
+	id1, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:  firstDir,
+		Type: "test-type",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secondDir := document.DirHandleFromPath("/test-2")
+	id2, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:      secondDir,
+		Type:     "test-type",
+		Priority: job.LowPriority,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ss.DocumentStore.OpenDocument(document.Handle{Dir: secondDir, Filename: "test.tf"}, "test", 0, []byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	baseCtx := context.Background()
+
+	ctx, cancelFunc := context.WithTimeout(baseCtx, 250*time.Millisecond)
+	t.Cleanup(cancelFunc)
+	_, _, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("%#v", err)
+		}
+	} else {
+		t.Fatal("expected error")
+	}
+
+	nextId, j, err := ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id1 {
+		t.Fatalf("expected next job ID %q, given: %q", id1, nextId)
+	}
+
+	if j.Dir != firstDir {
+		t.Fatalf("expected next job dir %q, given: %q", firstDir, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+
+	nextId, j, err = ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if nextId != id2 {
+		t.Fatalf("expected next job ID %q, given: %q", id2, nextId)
+	}
+
+	if j.Dir != secondDir {
+		t.Fatalf("expected next job dir %q, given: %q", secondDir, j.Dir)
+	}
+
+	if j.Type != "test-type" {
+		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
+	}
+
+	ctx, cancelFunc = context.WithTimeout(baseCtx, 250*time.Millisecond)
+	t.Cleanup(cancelFunc)
+	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	if err != nil {
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("%#v", err)
+		}
+	} else {
+		t.Fatal("expected error")
 	}
 }
 

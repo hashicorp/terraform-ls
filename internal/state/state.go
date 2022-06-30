@@ -55,11 +55,14 @@ var dbSchema = &memdb.DBSchema{
 					Unique:  true,
 					Indexer: &StringerFieldIndexer{Field: "ID"},
 				},
-				"is_dir_open_state": {
-					Name: "is_dir_open_state",
+				"priority_state": {
+					Name: "priority_state",
 					Indexer: &memdb.CompoundIndex{
 						Indexes: []memdb.Indexer{
-							&memdb.BoolFieldIndex{Field: "IsDirOpen"},
+							&JobPriorityIndex{
+								PriorityIntField:   "Priority",
+								IsDirOpenBoolField: "IsDirOpen",
+							},
 							&memdb.UintFieldIndex{Field: "State"},
 						},
 					},
@@ -271,11 +274,11 @@ func NewStateStore() (*StateStore, error) {
 			TimeProvider: time.Now,
 		},
 		JobStore: &JobStore{
-			db:                 db,
-			tableName:          jobsTableName,
-			logger:             defaultLogger,
-			nextJobOpenDirMu:   &sync.Mutex{},
-			nextJobClosedDirMu: &sync.Mutex{},
+			db:                db,
+			tableName:         jobsTableName,
+			logger:            defaultLogger,
+			nextJobHighPrioMu: &sync.Mutex{},
+			nextJobLowPrioMu:  &sync.Mutex{},
 		},
 		Modules: &ModuleStore{
 			db:           db,

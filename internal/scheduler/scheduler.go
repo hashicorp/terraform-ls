@@ -13,22 +13,24 @@ type Scheduler struct {
 	logger      *log.Logger
 	jobStorage  JobStorage
 	parallelism int
+	priority    job.JobPriority
 	stopFunc    context.CancelFunc
 }
 
 type JobStorage interface {
 	job.JobStore
-	AwaitNextJob(ctx context.Context) (job.ID, job.Job, error)
+	AwaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error)
 	FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error
 }
 
-func NewScheduler(jobStorage JobStorage, parallelism int) *Scheduler {
+func NewScheduler(jobStorage JobStorage, parallelism int, priority job.JobPriority) *Scheduler {
 	discardLogger := log.New(ioutil.Discard, "", 0)
 
 	return &Scheduler{
 		logger:      discardLogger,
 		jobStorage:  jobStorage,
 		parallelism: parallelism,
+		priority:    priority,
 		stopFunc:    func() {},
 	}
 }
@@ -54,7 +56,7 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) eval(ctx context.Context) {
 	for {
-		id, nextJob, err := s.jobStorage.AwaitNextJob(ctx)
+		id, nextJob, err := s.jobStorage.AwaitNextJob(ctx, s.priority)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return

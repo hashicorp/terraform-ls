@@ -17,6 +17,7 @@ import (
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
@@ -41,8 +42,8 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
-	closedDirIndexer *scheduler.Scheduler
-	openDirIndexer   *scheduler.Scheduler
+	lowPrioIndexer  *scheduler.Scheduler
+	highPrioIndexer *scheduler.Scheduler
 
 	closedDirWalker *module.Walker
 	openDirWalker   *module.Walker
@@ -437,15 +438,15 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		sendModuleTelemetry(svc.stateStore, svc.telemetry),
 	}
 
-	svc.closedDirIndexer = scheduler.NewScheduler(&closedDirJobStore{svc.stateStore.JobStore}, 1)
-	svc.closedDirIndexer.SetLogger(svc.logger)
-	svc.closedDirIndexer.Start(svc.sessCtx)
-	svc.logger.Printf("running closed dir scheduler")
+	svc.lowPrioIndexer = scheduler.NewScheduler(svc.stateStore.JobStore, 1, job.LowPriority)
+	svc.lowPrioIndexer.SetLogger(svc.logger)
+	svc.lowPrioIndexer.Start(svc.sessCtx)
+	svc.logger.Printf("started low priority scheduler")
 
-	svc.openDirIndexer = scheduler.NewScheduler(&openDirJobStore{svc.stateStore.JobStore}, 1)
-	svc.openDirIndexer.SetLogger(svc.logger)
-	svc.openDirIndexer.Start(svc.sessCtx)
-	svc.logger.Printf("running open dir scheduler")
+	svc.highPrioIndexer = scheduler.NewScheduler(svc.stateStore.JobStore, 1, job.HighPriority)
+	svc.highPrioIndexer.SetLogger(svc.logger)
+	svc.highPrioIndexer.Start(svc.sessCtx)
+	svc.logger.Printf("started high priority scheduler")
 
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {
@@ -532,11 +533,11 @@ func (svc *service) shutdown() {
 		svc.logger.Printf("openDirWalker stopped")
 	}
 
-	if svc.closedDirIndexer != nil {
-		svc.closedDirIndexer.Stop()
+	if svc.lowPrioIndexer != nil {
+		svc.lowPrioIndexer.Stop()
 	}
-	if svc.openDirIndexer != nil {
-		svc.openDirIndexer.Stop()
+	if svc.highPrioIndexer != nil {
+		svc.highPrioIndexer.Stop()
 	}
 }
 
