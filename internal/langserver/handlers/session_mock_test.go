@@ -16,14 +16,14 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 )
 
 type MockSessionInput struct {
 	TerraformCalls     *exec.TerraformMockCalls
 	AdditionalHandlers map[string]handler.Func
 	StateStore         *state.StateStore
-	WalkerCollector    *module.WalkerCollector
+	WalkerCollector    *walker.WalkerCollector
 	RegistryServer     *httptest.Server
 }
 
@@ -42,7 +42,7 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 
 	var handlers map[string]handler.Func
 	var stateStore *state.StateStore
-	var walkerCollector *module.WalkerCollector
+	var walkerCollector *walker.WalkerCollector
 	if ms.mockInput != nil {
 		stateStore = ms.mockInput.StateStore
 		walkerCollector = ms.mockInput.WalkerCollector

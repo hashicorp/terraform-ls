@@ -133,7 +133,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			// if the parent directory exists, we just need to
 			// reparse the module after a file was deleted from it
 			dirHandle := document.DirHandleFromPath(parentDir)
-			jobIds, err := svc.parseAndDecodeModule(dirHandle)
+			jobIds, err := svc.indexer.DocumentChanged(dirHandle)
 			if err != nil {
 				svc.logger.Printf("error parsing module (%q deleted): %s", rawURI, err)
 				continue
@@ -158,7 +158,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 				continue
 			}
 
-			jobIds, err := svc.parseAndDecodeModule(ph.DirHandle)
+			jobIds, err := svc.indexer.DocumentChanged(ph.DirHandle)
 			if err != nil {
 				svc.logger.Printf("error parsing module (%q changed): %s", rawURI, err)
 				continue
@@ -188,7 +188,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 					continue
 				}
 			} else {
-				jobIds, err := svc.parseAndDecodeModule(ph.DirHandle)
+				jobIds, err := svc.indexer.DocumentChanged(ph.DirHandle)
 				if err != nil {
 					svc.logger.Printf("error parsing module (%q created): %s", rawURI, err)
 					continue

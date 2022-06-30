@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -85,7 +85,7 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 	}`, string(jsonArray))
 }
 
-func waitForWalkerPath(t testOrBench, ss *state.StateStore, wc *module.WalkerCollector, dir document.DirHandle) {
+func waitForWalkerPath(t testOrBench, ss *state.StateStore, wc *walker.WalkerCollector, dir document.DirHandle) {
 	ctx := context.Background()
 	err := ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
 	if err != nil {

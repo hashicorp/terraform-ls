@@ -16,11 +16,13 @@ import (
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/indexer"
 	"github.com/hashicorp/terraform-ls/internal/logging"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/mitchellh/cli"
 )
 
@@ -97,19 +99,22 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	ctx := context.Background()
 
+	indexer := indexer.NewIndexer(fs, ss.Modules, ss.ProviderSchemas, ss.RegistryModules, ss.JobStore,
+		exec.NewExecutor, registry.NewClient())
+
 	pa := state.NewPathAwaiter(ss.WalkerPaths, false)
-	walker := module.NewWalker(fs, pa, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewExecutor)
-	walker.Collector = module.NewWalkerCollector()
-	walker.SetLogger(c.logger)
+	w := walker.NewWalker(pa, ss.Modules, indexer.WalkedModule)
+	w.Collector = walker.NewWalkerCollector()
+	w.SetLogger(c.logger)
 	err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
 	if err != nil {
 		return err
 	}
-	err = ss.JobStore.WaitForJobs(ctx, walker.Collector.JobIds()...)
+	err = ss.JobStore.WaitForJobs(ctx, w.Collector.JobIds()...)
 	if err != nil {
 		return err
 	}
-	err = walker.Collector.ErrorOrNil()
+	err = w.Collector.ErrorOrNil()
 	if err != nil {
 		return err
 	}
@@ -122,7 +127,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 	if err != nil {
 		return err
 	}
-	err = walker.StartWalking(ctx)
+	err = w.StartWalking(ctx)
 	if err != nil {
 		return err
 	}

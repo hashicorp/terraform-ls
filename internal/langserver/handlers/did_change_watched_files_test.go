@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/mock"
@@ -42,7 +42,7 @@ func TestLangServer_DidChangeWatchedFiles_change_file(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -151,7 +151,7 @@ func TestLangServer_DidChangeWatchedFiles_create_file(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -296,7 +296,7 @@ func TestLangServer_DidChangeWatchedFiles_delete_file(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -398,7 +398,7 @@ func TestLangServer_DidChangeWatchedFiles_change_dir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -507,7 +507,7 @@ func TestLangServer_DidChangeWatchedFiles_create_dir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -616,7 +616,7 @@ func TestLangServer_DidChangeWatchedFiles_delete_dir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -715,7 +715,7 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -849,7 +849,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{

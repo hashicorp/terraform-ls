@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -94,7 +94,7 @@ func TestCodeLens_referenceCount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -231,7 +231,7 @@ func TestCodeLens_referenceCount_crossModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{

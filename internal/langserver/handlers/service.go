@@ -17,6 +17,7 @@ import (
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/indexer"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
@@ -31,7 +32,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 )
 
 type service struct {
@@ -45,8 +46,8 @@ type service struct {
 	lowPrioIndexer  *scheduler.Scheduler
 	highPrioIndexer *scheduler.Scheduler
 
-	closedDirWalker *module.Walker
-	openDirWalker   *module.Walker
+	closedDirWalker *walker.Walker
+	openDirWalker   *walker.Walker
 
 	fs               *filesystem.Filesystem
 	modStore         *state.ModuleStore
@@ -61,10 +62,10 @@ type service struct {
 	server           session.Server
 	diagsNotifier    *diagnostics.Notifier
 	notifier         *notifier.Notifier
-	indexer          *module.Indexer
+	indexer          *indexer.Indexer
 	registryClient   registry.Client
 
-	walkerCollector    *module.WalkerCollector
+	walkerCollector    *walker.WalkerCollector
 	additionalHandlers map[string]rpch.Func
 
 	singleFileMode bool
@@ -477,7 +478,9 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)
 
-	svc.indexer = module.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+	svc.indexer = indexer.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.RegistryModules,
+		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
+	svc.indexer.SetLogger(svc.logger)
 
 	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
 		ModuleReader: svc.modStore,
@@ -490,12 +493,12 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	}
 
 	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
-	svc.closedDirWalker = module.NewWalker(svc.fs, closedPa, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+	svc.closedDirWalker = walker.NewWalker(closedPa, svc.modStore, svc.indexer.WalkedModule)
 	svc.closedDirWalker.Collector = svc.walkerCollector
 	svc.closedDirWalker.SetLogger(svc.logger)
 
 	opendPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, true)
-	svc.openDirWalker = module.NewWalker(svc.fs, opendPa, svc.modStore, svc.schemaStore, svc.stateStore.JobStore, svc.tfExecFactory)
+	svc.openDirWalker = walker.NewWalker(opendPa, svc.modStore, svc.indexer.WalkedModule)
 	svc.closedDirWalker.Collector = svc.walkerCollector
 	svc.openDirWalker.SetLogger(svc.logger)
 

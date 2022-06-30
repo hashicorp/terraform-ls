@@ -12,7 +12,7 @@ import (
 	"github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 )
 
 func TestLangServer_cancelRequest(t *testing.T) {
@@ -22,7 +22,7 @@ func TestLangServer_cancelRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		AdditionalHandlers: map[string]handler.Func{

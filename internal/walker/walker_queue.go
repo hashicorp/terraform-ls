@@ -1,4 +1,4 @@
-package module
+package walker
 
 import (
 	"container/heap"

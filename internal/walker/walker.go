@@ -1,4 +1,4 @@
-package module
+package walker
 
 import (
 	"context"
@@ -13,8 +13,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 var (
@@ -36,15 +34,11 @@ var (
 type pathToWatch struct{}
 
 type Walker struct {
-	fs ReadOnlyFS
+	pathStore PathStore
+	modStore  ModuleStore
 
-	pathStore     PathStore
-	modStore      *state.ModuleStore
-	schemaStore   *state.ProviderSchemaStore
-	jobStore      job.JobStore
-	tfExecFactory exec.ExecutorFactory
-
-	logger *log.Logger
+	logger   *log.Logger
+	walkFunc WalkFunc
 
 	Collector *WalkerCollector
 
@@ -54,19 +48,23 @@ type Walker struct {
 	ignoreDirectoryNames map[string]bool
 }
 
+type WalkFunc func(ctx context.Context, modHandle document.DirHandle) (job.IDs, error)
+
 type PathStore interface {
 	AwaitNextDir(ctx context.Context) (document.DirHandle, error)
 	RemoveDir(dir document.DirHandle) error
 }
 
-func NewWalker(fs ReadOnlyFS, ps PathStore, ms *state.ModuleStore, pss *state.ProviderSchemaStore, js job.JobStore, tfExec exec.ExecutorFactory) *Walker {
+type ModuleStore interface {
+	Exists(dir string) (bool, error)
+	Add(dir string) error
+}
+
+func NewWalker(pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
 	return &Walker{
-		pathStore:            ps,
-		fs:                   fs,
-		modStore:             ms,
-		jobStore:             js,
-		schemaStore:          pss,
-		tfExecFactory:        tfExec,
+		pathStore:            pathStore,
+		modStore:             modStore,
+		walkFunc:             walkFunc,
 		logger:               discardLogger,
 		ignoreDirectoryNames: skipDirNames,
 	}
@@ -146,9 +144,11 @@ func (w *Walker) collectError(err error) {
 	}
 }
 
-func (w *Walker) collectJobId(jobId job.ID) {
+func (w *Walker) collectJobIds(jobIds job.IDs) {
 	if w.Collector != nil {
-		w.Collector.CollectJobId(jobId)
+		for _, id := range jobIds {
+			w.Collector.CollectJobId(id)
+		}
 	}
 }
 
@@ -191,10 +191,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 		if info.Name() == datadir.DataDirName {
 			w.logger.Printf("found module %s", dir)
 
-			// TODO: decouple into its own function and pass as WalkFunc to NewWalker
-			// this could reduce the amount of args in NewWalker
-
-			_, err := w.modStore.ModuleByPath(dir)
+			_, err := w.modStore.Exists(dir)
 			if err != nil {
 				if state.IsModuleNotFound(err) {
 					err := w.modStore.Add(dir)
@@ -207,121 +204,11 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			}
 
 			modHandle := document.DirHandleFromPath(dir)
-
-			id, err := w.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return ParseModuleConfiguration(w.fs, w.modStore, dir)
-				},
-				Type: op.OpTypeParseModuleConfiguration.String(),
-			})
+			ids, err := w.walkFunc(ctx, modHandle)
 			if err != nil {
-				return err
+				w.collectError(err)
 			}
-			w.collectJobId(id)
-
-			id, err = w.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return ParseVariables(w.fs, w.modStore, dir)
-				},
-				Type: op.OpTypeParseVariables.String(),
-				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-					id, err := w.jobStore.EnqueueJob(job.Job{
-						Dir: modHandle,
-						Func: func(ctx context.Context) error {
-							return DecodeVarsReferences(ctx, w.modStore, w.schemaStore, dir)
-						},
-						Type: op.OpTypeDecodeVarsReferences.String(),
-					})
-					if err != nil {
-						return
-					}
-					ids = append(ids, id)
-					return
-				},
-			})
-			if err != nil {
-				return err
-			}
-			w.collectJobId(id)
-
-			id, err = w.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					ctx = exec.WithExecutorFactory(ctx, w.tfExecFactory)
-					return GetTerraformVersion(ctx, w.modStore, dir)
-				},
-				Type: op.OpTypeGetTerraformVersion.String(),
-			})
-			if err != nil {
-				return err
-			}
-			w.collectJobId(id)
-
-			dataDir := datadir.WalkDataDirOfModule(w.fs, dir)
-			w.logger.Printf("parsed datadir: %#v", dataDir)
-
-			if dataDir.PluginLockFilePath != "" {
-				id, err := w.jobStore.EnqueueJob(job.Job{
-					Dir: modHandle,
-					Func: func(ctx context.Context) error {
-						ctx = exec.WithExecutorFactory(ctx, w.tfExecFactory)
-						return ObtainSchema(ctx, w.modStore, w.schemaStore, dir)
-					},
-					Type: op.OpTypeObtainSchema.String(),
-				})
-				if err != nil {
-					return err
-				}
-				w.collectJobId(id)
-			}
-
-			if dataDir.ModuleManifestPath != "" {
-				// References are collected *after* manifest parsing
-				// so that we reflect any references to submodules.
-				id, err := w.jobStore.EnqueueJob(job.Job{
-					Dir: modHandle,
-					Func: func(ctx context.Context) error {
-						return ParseModuleManifest(w.fs, w.modStore, dir)
-					},
-					Type:  op.OpTypeParseModuleManifest.String(),
-					Defer: decodeInstalledModuleCalls(w.fs, w.modStore, w.schemaStore, dir),
-				})
-				if err != nil {
-					return err
-				}
-
-				// Here we wait for all module calls to be processed to
-				// reflect any metadata required to collect reference origins.
-				// This assumes scheduler is running to consume the jobs
-				// by the time we reach this point.
-				w.jobStore.WaitForJobs(ctx, id)
-			}
-
-			id, err = w.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return DecodeReferenceTargets(ctx, w.modStore, w.schemaStore, dir)
-				},
-				Type: op.OpTypeDecodeReferenceTargets.String(),
-			})
-			if err != nil {
-				return err
-			}
-			w.collectJobId(id)
-
-			id, err = w.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return DecodeReferenceOrigins(ctx, w.modStore, w.schemaStore, dir)
-				},
-				Type: op.OpTypeDecodeReferenceOrigins.String(),
-			})
-			if err != nil {
-				return err
-			}
-			w.collectJobId(id)
+			w.collectJobIds(ids)
 
 			return nil
 		}

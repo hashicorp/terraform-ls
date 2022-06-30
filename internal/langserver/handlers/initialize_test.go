@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -21,7 +21,7 @@ func TestInitialize_twice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -59,7 +59,7 @@ func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -123,7 +123,7 @@ func TestInitialize_multipleFolders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
@@ -165,7 +165,7 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
