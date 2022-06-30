@@ -14,6 +14,7 @@ BUG FIXES:
 
 INTERNAL:
 
+ - job: introduce explicit priority for jobs ([#977](https://github.com/hashicorp/terraform-ls/pull/977))
  - main: allow build version metadata to be set ([#945](https://github.com/hashicorp/terraform-ls/pull/945))
  - deps: switch to the new minimal `terraform-registry-address` API ([#949](https://github.com/hashicorp/terraform-ls/pull/949))
  - deps: bump LSP structs to match gopls 0.8.4 ([#947](https://github.com/hashicorp/terraform-ls/pull/947))
