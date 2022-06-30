@@ -16,18 +16,18 @@ func (mf ModFilename) IsJSON() bool {
 	return strings.HasSuffix(string(mf), ".json")
 }
 
-func IsModuleFilename(name string) bool {
-	if isIgnoredFile(name) {
-		// See https://github.com/hashicorp/terraform/blob/d35bc05/internal/configs/parser_config_dir.go#L107
-		return false
-	}
+func (mf ModFilename) IsIgnored() bool {
+	return isIgnoredFile(string(mf))
+}
 
+func IsModuleFilename(name string) bool {
 	return strings.HasSuffix(name, ".tf") ||
 		strings.HasSuffix(name, ".tf.json")
 }
 
 // isIgnoredFile returns true if the given filename (which must not have a
 // directory path ahead of it) should be ignored as e.g. an editor swap file.
+// See https://github.com/hashicorp/terraform/blob/d35bc05/internal/configs/parser_config_dir.go#L107
 func isIgnoredFile(name string) bool {
 	return strings.HasPrefix(name, ".") || // Unix-like hidden files
 		strings.HasSuffix(name, "~") || // vim
@@ -60,6 +60,16 @@ func ModDiagsFromMap(m map[string]hcl.Diagnostics) ModDiags {
 		mf[ModFilename(name)] = file
 	}
 	return mf
+}
+
+func (md ModDiags) AutoloadedOnly() ModDiags {
+	diags := make(ModDiags)
+	for name, f := range md {
+		if !name.IsIgnored() {
+			diags[name] = f
+		}
+	}
+	return diags
 }
 
 func (md ModDiags) AsMap() map[string]hcl.Diagnostics {

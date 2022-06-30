@@ -37,10 +37,12 @@ func TestParseModuleFiles(t *testing.T) {
 		{
 			"valid-mod-files-with-extra-items",
 			map[string]struct{}{
-				"main.tf": {},
+				".hidden.tf": {},
+				"main.tf":    {},
 			},
 			map[string]hcl.Diagnostics{
-				"main.tf": nil,
+				".hidden.tf": nil,
+				"main.tf":    nil,
 			},
 		},
 		{

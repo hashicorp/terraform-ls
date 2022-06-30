@@ -69,16 +69,6 @@ func (vd VarsDiags) AutoloadedOnly() VarsDiags {
 	return diags
 }
 
-func (vd VarsDiags) ForFile(name VarsFilename) VarsDiags {
-	diags := make(VarsDiags)
-	for fName, f := range vd {
-		if fName == name {
-			diags[fName] = f
-		}
-	}
-	return diags
-}
-
 func (vd VarsDiags) AsMap() map[string]hcl.Diagnostics {
 	m := make(map[string]hcl.Diagnostics, len(vd))
 	for name, diags := range vd {
