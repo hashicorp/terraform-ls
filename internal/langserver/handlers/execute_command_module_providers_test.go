@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/stretchr/testify/mock"
@@ -102,7 +102,7 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 		t.Fatal(err)
 	}
 
-	wc := module.NewWalkerCollector()
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{

@@ -1,8 +1,6 @@
-package module
+package indexer
 
-import (
-	"io/fs"
-)
+import "io/fs"
 
 type ReadOnlyFS interface {
 	fs.FS

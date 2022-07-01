@@ -60,7 +60,7 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
 	modHandle := document.DirHandleFromPath(mod.Path)
-	jobIds, err := svc.parseAndDecodeModule(modHandle)
+	jobIds, err := svc.indexer.DocumentChanged(modHandle)
 	if err != nil {
 		return err
 	}
@@ -88,113 +88,4 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
-}
-
-func (svc *service) parseAndDecodeModule(modHandle document.DirHandle) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-
-	id, err := svc.stateStore.JobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(svc.fs, svc.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeParseModuleConfiguration.String(),
-		Defer: func(ctx context.Context, jobErr error) job.IDs {
-			ids, err := svc.decodeModule(ctx, modHandle)
-			if err != nil {
-				svc.logger.Printf("error: %s", err)
-			}
-			return ids
-		},
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	id, err = svc.stateStore.JobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.ParseVariables(svc.fs, svc.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeParseVariables.String(),
-		Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-			id, err := svc.stateStore.JobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return module.DecodeVarsReferences(ctx, svc.modStore, svc.schemaStore, modHandle.Path())
-				},
-				Type: op.OpTypeDecodeVarsReferences.String(),
-			})
-			if err != nil {
-				return
-			}
-			ids = append(ids, id)
-			return
-		},
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	return ids, nil
-}
-
-func (svc *service) decodeModule(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-
-	id, err := svc.stateStore.JobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.LoadModuleMetadata(svc.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeLoadModuleMetadata.String(),
-		Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-			id, err := svc.stateStore.JobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return module.DecodeReferenceTargets(ctx, svc.modStore, svc.schemaStore, modHandle.Path())
-				},
-				Type: op.OpTypeDecodeReferenceTargets.String(),
-			})
-			if err != nil {
-				return
-			}
-			ids = append(ids, id)
-
-			id, err = svc.stateStore.JobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return module.DecodeReferenceOrigins(ctx, svc.modStore, svc.schemaStore, modHandle.Path())
-				},
-				Type: op.OpTypeDecodeReferenceOrigins.String(),
-			})
-			if err != nil {
-				return
-			}
-			ids = append(ids, id)
-
-			_, err = svc.stateStore.JobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return module.GetModuleDataFromRegistry(svc.srvCtx, svc.registryClient,
-						svc.modStore, svc.stateStore.RegistryModules, modHandle.Path())
-				},
-				Priority: job.LowPriority,
-				Type:     op.OpTypeGetModuleDataFromRegistry.String(),
-			})
-			if err != nil {
-				return
-			}
-
-			return
-		},
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	return ids, nil
 }

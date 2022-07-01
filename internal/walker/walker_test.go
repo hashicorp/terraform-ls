@@ -1,4 +1,4 @@
-package module
+package walker
 
 import (
 	"context"
@@ -14,7 +14,9 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/indexer"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -230,7 +232,9 @@ func TestWalker_complexModules(t *testing.T) {
 			s.Start(ctx)
 
 			pa := state.NewPathAwaiter(ss.WalkerPaths, false)
-			w := NewWalker(fs, pa, ss.Modules, ss.ProviderSchemas, ss.JobStore, exec.NewMockExecutor(tfCalls))
+			indexer := indexer.NewIndexer(fs, ss.Modules, ss.ProviderSchemas, ss.RegistryModules, ss.JobStore,
+				exec.NewMockExecutor(tfCalls), registry.NewClient())
+			w := NewWalker(pa, ss.Modules, indexer.WalkedModule)
 			w.Collector = NewWalkerCollector()
 			w.SetLogger(testLogger())
 			dir := document.DirHandleFromPath(tc.root)

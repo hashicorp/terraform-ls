@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 )
 
 func BenchmarkInitializeFolder_basic(b *testing.B) {
@@ -118,7 +118,7 @@ func BenchmarkInitializeFolder_basic(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				wc := module.NewWalkerCollector()
+				wc := walker.NewWalkerCollector()
 
 				b.StartTimer()
 				ls := langserver.NewLangServerMock(b, func(ctx context.Context) session.Session {

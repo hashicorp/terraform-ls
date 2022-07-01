@@ -317,6 +317,21 @@ func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
 	return mod, nil
 }
 
+func (s *ModuleStore) Exists(path string) (bool, error) {
+	txn := s.db.Txn(false)
+
+	_, err := moduleByPath(txn, path)
+	if err != nil {
+		if IsModuleNotFound(err) {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {

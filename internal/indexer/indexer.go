@@ -1,94 +1,55 @@
-package module
+package indexer
 
 import (
 	"context"
+	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
 type Indexer struct {
-	fs            ReadOnlyFS
-	modStore      *state.ModuleStore
-	schemaStore   *state.ProviderSchemaStore
-	jobStore      job.JobStore
-	tfExecFactory exec.ExecutorFactory
+	logger           *log.Logger
+	fs               ReadOnlyFS
+	modStore         *state.ModuleStore
+	schemaStore      *state.ProviderSchemaStore
+	registryModStore *state.RegistryModuleStore
+	jobStore         job.JobStore
+	tfExecFactory    exec.ExecutorFactory
+	registryClient   registry.Client
 }
 
 func NewIndexer(fs ReadOnlyFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore,
-	jobStore job.JobStore, tfExec exec.ExecutorFactory) *Indexer {
+	registryModStore *state.RegistryModuleStore, jobStore job.JobStore,
+	tfExec exec.ExecutorFactory, registryClient registry.Client) *Indexer {
+
+	discardLogger := log.New(ioutil.Discard, "", 0)
+
 	return &Indexer{
-		fs:            fs,
-		modStore:      modStore,
-		schemaStore:   schemaStore,
-		jobStore:      jobStore,
-		tfExecFactory: tfExec,
+		fs:               fs,
+		modStore:         modStore,
+		schemaStore:      schemaStore,
+		registryModStore: registryModStore,
+		jobStore:         jobStore,
+		tfExecFactory:    tfExec,
+		registryClient:   registryClient,
+		logger:           discardLogger,
 	}
 }
 
-func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-
-	id, err := idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
-		},
-		Type:  op.OpTypeParseModuleManifest.String(),
-		Defer: decodeInstalledModuleCalls(idx.fs, idx.modStore, idx.schemaStore, modHandle.Path()),
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	return ids, nil
+func (idx *Indexer) SetLogger(logger *log.Logger) {
+	idx.logger = logger
 }
 
-func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-
-	id, err := idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			eo, ok := exec.ExecutorOptsFromContext(ctx)
-			if ok {
-				ctx = exec.WithExecutorOpts(ctx, eo)
-			}
-
-			return ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type: op.OpTypeObtainSchema.String(),
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	id, err = idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			eo, ok := exec.ExecutorOptsFromContext(ctx)
-			if ok {
-				ctx = exec.WithExecutorOpts(ctx, eo)
-			}
-
-			return GetTerraformVersion(ctx, idx.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeGetTerraformVersion.String(),
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	return ids, nil
+type Collector interface {
+	CollectJobId(jobId job.ID)
 }
 
 func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) job.DeferFunc {
@@ -121,7 +82,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 			id, err := jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return ParseModuleConfiguration(fs, modStore, mcPath)
+					return module.ParseModuleConfiguration(fs, modStore, mcPath)
 				},
 				Type: op.OpTypeParseModuleConfiguration.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
@@ -129,7 +90,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 						Dir:  mcHandle,
 						Type: op.OpTypeLoadModuleMetadata.String(),
 						Func: func(ctx context.Context) error {
-							return LoadModuleMetadata(modStore, mcPath)
+							return module.LoadModuleMetadata(modStore, mcPath)
 						},
 					})
 					if err != nil {
@@ -151,14 +112,14 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 			id, err = jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return ParseVariables(fs, modStore, mcPath)
+					return module.ParseVariables(fs, modStore, mcPath)
 				},
 				Type: op.OpTypeParseVariables.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
 					id, err = jobStore.EnqueueJob(job.Job{
 						Dir: mcHandle,
 						Func: func(ctx context.Context) error {
-							return DecodeVarsReferences(ctx, modStore, schemaReader, mcPath)
+							return module.DecodeVarsReferences(ctx, modStore, schemaReader, mcPath)
 						},
 						Type: op.OpTypeDecodeVarsReferences.String(),
 					})
@@ -188,7 +149,7 @@ func collectReferences(ctx context.Context, dirHandle document.DirHandle, modSto
 	id, err := jobStore.EnqueueJob(job.Job{
 		Dir: dirHandle,
 		Func: func(ctx context.Context) error {
-			return DecodeReferenceTargets(ctx, modStore, schemaReader, dirHandle.Path())
+			return module.DecodeReferenceTargets(ctx, modStore, schemaReader, dirHandle.Path())
 		},
 		Type: op.OpTypeDecodeReferenceTargets.String(),
 	})
@@ -200,7 +161,7 @@ func collectReferences(ctx context.Context, dirHandle document.DirHandle, modSto
 	id, err = jobStore.EnqueueJob(job.Job{
 		Dir: dirHandle,
 		Func: func(ctx context.Context) error {
-			return DecodeReferenceOrigins(ctx, modStore, schemaReader, dirHandle.Path())
+			return module.DecodeReferenceOrigins(ctx, modStore, schemaReader, dirHandle.Path())
 		},
 		Type: op.OpTypeDecodeReferenceOrigins.String(),
 	})
