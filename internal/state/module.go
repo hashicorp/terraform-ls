@@ -322,6 +322,10 @@ func (s *ModuleStore) Exists(path string) (bool, error) {
 
 	_, err := moduleByPath(txn, path)
 	if err != nil {
+		if IsModuleNotFound(err) {
+			return false, nil
+		}
+
 		return false, err
 	}
 

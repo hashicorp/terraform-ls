@@ -11,7 +11,6 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
-	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 )
 
@@ -191,14 +190,13 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 		if info.Name() == datadir.DataDirName {
 			w.logger.Printf("found module %s", dir)
 
-			_, err := w.modStore.Exists(dir)
+			exists, err := w.modStore.Exists(dir)
 			if err != nil {
-				if state.IsModuleNotFound(err) {
-					err := w.modStore.Add(dir)
-					if err != nil {
-						return err
-					}
-				} else {
+				return err
+			}
+			if !exists {
+				err := w.modStore.Add(dir)
+				if err != nil {
 					return err
 				}
 			}
