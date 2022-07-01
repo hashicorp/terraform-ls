@@ -344,8 +344,8 @@ github.com/hashicorp/terraform-json v0.14.0 h1:sh9iZ1Y8IFJLx+xQiKHGud6/TSUCM0N8e
 github.com/hashicorp/terraform-json v0.14.0/go.mod h1:5A9HIWPkk4e5aeeXIBbkcOvaZbIYnAIkEyqP2pNSckM=
 github.com/hashicorp/terraform-registry-address v0.0.0-20220623143253-7d51757b572c h1:D8aRO6+mTqHfLsK/BC3j5OAoogv1WLRWzY1AaTo3rBg=
 github.com/hashicorp/terraform-registry-address v0.0.0-20220623143253-7d51757b572c/go.mod h1:Wn3Na71knbXc1G8Lh+yu/dQWWJeFQEpDeJMtWMtlmNI=
-github.com/hashicorp/terraform-schema v0.0.0-20220627173216-dbeca9813054 h1:r+44Mn0GM19W6tIh9MRNoju0saM+QzksrHf9owbfrtI=
-github.com/hashicorp/terraform-schema v0.0.0-20220627173216-dbeca9813054/go.mod h1:d1/gzOC/dLDNRI0lmhRPEtZoQl/9eaRjDGSb/GnliPo=
+github.com/hashicorp/terraform-schema v0.0.0-20220630150034-e05b3dd5db1d h1:xqSnkGQIzastFxbk0asDC3pcbvpaPbfF7IVsm1h3pUM=
+github.com/hashicorp/terraform-schema v0.0.0-20220630150034-e05b3dd5db1d/go.mod h1:GL+zHwXHrTc/MfKnQP8K2Z4hmaTck85ndiIbvZueMng=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734/go.mod h1:kNDNcF7sN4DocDLBkQYz73HGKwN1ANB1blq4lIYLYvg=
 github.com/huandu/xstrings v1.3.1/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
