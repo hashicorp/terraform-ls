@@ -1,6 +1,3 @@
-module "gorilla-app" {
-  source           = "./application"
-  environment_name = "prod"
-  app_prefix       = "protect-gorillas"
-  instances        = 5
+module "azure-hcp-consul" {
+  source = "github.com/hashicorp/terraform-azurerm-hcp-consul?ref=v0.2.4"
 }

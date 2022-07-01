@@ -103,7 +103,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		exec.NewExecutor, registry.NewClient())
 
 	pa := state.NewPathAwaiter(ss.WalkerPaths, false)
-	w := walker.NewWalker(pa, ss.Modules, indexer.WalkedModule)
+	w := walker.NewWalker(fs, pa, ss.Modules, indexer.WalkedModule)
 	w.Collector = walker.NewWalkerCollector()
 	w.SetLogger(c.logger)
 	err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})

@@ -49,7 +49,6 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) job
 				Type: op.OpTypeParseModuleConfiguration.String(),
 				Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 					ids := make(job.IDs, 0)
-					var errs *multierror.Error
 
 					id, err := idx.jobStore.EnqueueJob(job.Job{
 						Dir:  mcHandle,
@@ -57,21 +56,17 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) job
 						Func: func(ctx context.Context) error {
 							return module.LoadModuleMetadata(idx.modStore, mcPath)
 						},
+						Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+							return idx.collectReferences(ctx, mcHandle)
+						},
 					})
 					if err != nil {
-						errs = multierror.Append(errs, err)
+						return ids, err
 					} else {
 						ids = append(ids, id)
 					}
 
-					rIds, err := idx.collectReferences(ctx, mcHandle)
-					if err != nil {
-						errs = multierror.Append(errs, err)
-					} else {
-						ids = append(ids, rIds...)
-					}
-
-					return ids, errs.ErrorOrNil()
+					return ids, nil
 				},
 			})
 			if err != nil {

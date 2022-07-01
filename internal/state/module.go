@@ -73,7 +73,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	if mm.ModuleCalls != nil {
 		newMm.ModuleCalls = make(map[string]tfmod.DeclaredModuleCall, len(mm.ModuleCalls))
 		for name, moduleCall := range mm.ModuleCalls {
-			newMm.ModuleCalls[name] = moduleCall
+			newMm.ModuleCalls[name] = moduleCall.Copy()
 		}
 	}
 
@@ -362,6 +362,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 			LocalName:  mc.LocalName,
 			SourceAddr: mc.SourceAddr,
 			Version:    mc.Version,
+			InputNames: mc.InputNames,
 		}
 	}
 

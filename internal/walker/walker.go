@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
-	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
 var (
@@ -33,6 +33,7 @@ var (
 type pathToWatch struct{}
 
 type Walker struct {
+	fs        fs.ReadDirFS
 	pathStore PathStore
 	modStore  ModuleStore
 
@@ -59,8 +60,9 @@ type ModuleStore interface {
 	Add(dir string) error
 }
 
-func NewWalker(pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
+func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
 	return &Walker{
+		fs:                   fs,
 		pathStore:            pathStore,
 		modStore:             modStore,
 		walkFunc:             walkFunc,
@@ -157,10 +159,21 @@ func (w *Walker) isSkippableDir(dirName string) bool {
 }
 
 func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
-	// We ignore the passed FS and instead read straight from OS FS
-	// because that would require reimplementing filepath.Walk and
-	// the data directory should never be on the virtual filesystem anyway
-	err := filepath.Walk(dir.Path(), func(path string, info os.FileInfo, err error) error {
+	if _, ok := w.excludeModulePaths[dir.Path()]; ok {
+		w.logger.Printf("skipping walk due to dir being excluded: %s", dir.Path())
+		return nil
+	}
+
+	dirEntries, err := fs.ReadDir(w.fs, dir.Path())
+	if err != nil {
+		w.logger.Printf("reading directory failed: %s: %s", dir.Path(), err)
+		// fs.ReadDir (or at least the os.ReadDir implementation) returns
+		// the entries it was able to read before the error, along with the error.
+	}
+
+	dirIndexed := false
+
+	for _, dirEntry := range dirEntries {
 		select {
 		case <-ctx.Done():
 			w.logger.Printf("cancelling walk of %s...", dir)
@@ -168,56 +181,43 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 		default:
 		}
 
-		if err != nil {
-			w.logger.Printf("unable to access %s: %s", path, err.Error())
-			return nil
+		if w.isSkippableDir(dirEntry.Name()) {
+			w.logger.Printf("skipping ignored dir name: %s", dirEntry.Name())
+			continue
 		}
 
-		dir, err := filepath.Abs(filepath.Dir(path))
-		if err != nil {
-			return err
-		}
-
-		if w.isSkippableDir(info.Name()) {
-			w.logger.Printf("skipping %s", path)
-			return filepath.SkipDir
-		}
-
-		if _, ok := w.excludeModulePaths[dir]; ok {
-			return filepath.SkipDir
-		}
-
-		if info.Name() == datadir.DataDirName {
+		if !dirIndexed && ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+			dirIndexed = true
 			w.logger.Printf("found module %s", dir)
 
-			exists, err := w.modStore.Exists(dir)
+			exists, err := w.modStore.Exists(dir.Path())
 			if err != nil {
 				return err
 			}
 			if !exists {
-				err := w.modStore.Add(dir)
+				err := w.modStore.Add(dir.Path())
 				if err != nil {
 					return err
 				}
 			}
 
-			modHandle := document.DirHandleFromPath(dir)
-			ids, err := w.walkFunc(ctx, modHandle)
+			ids, err := w.walkFunc(ctx, dir)
 			if err != nil {
 				w.collectError(err)
 			}
 			w.collectJobIds(ids)
-
-			return nil
+			continue
 		}
 
-		if !info.IsDir() {
-			// All files are skipped, we only care about dirs
-			return nil
+		if dirEntry.IsDir() {
+			path := filepath.Join(dir.Path(), dirEntry.Name())
+			dirHandle := document.DirHandleFromPath(path)
+			err = w.walk(ctx, dirHandle)
+			if err != nil {
+				return err
+			}
 		}
-
-		return nil
-	})
+	}
 	w.logger.Printf("walking of %s finished", dir)
 	return err
 }

@@ -23,6 +23,53 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestWalker_basic(t *testing.T) {
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	pa := state.NewPathAwaiter(ss.WalkerPaths, false)
+
+	walkFunc := func(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
+		return job.IDs{}, nil
+	}
+
+	w := NewWalker(fs, pa, ss.Modules, walkFunc)
+	w.Collector = NewWalkerCollector()
+	w.SetLogger(testLogger())
+
+	root, err := filepath.Abs(filepath.Join("testdata", "uninitialized-root"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := document.DirHandleFromPath(root)
+
+	err = ss.WalkerPaths.EnqueueDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	err = w.StartWalking(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.JobStore.WaitForJobs(ctx, w.Collector.JobIds()...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = w.Collector.ErrorOrNil()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWalker_complexModules(t *testing.T) {
 	testData, err := filepath.Abs("testdata")
 	if err != nil {
@@ -42,13 +89,63 @@ func TestWalker_complexModules(t *testing.T) {
 			[]string{
 				filepath.Join(testData, "single-root-ext-modules-only"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "codelabs", "simple"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "ilb_routing"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "multi_vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "secondary_ranges"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "simple_project"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "submodule_firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "examples", "submodule_svpc_access"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "fabric-net-firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "fabric-net-svpc-access"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "network-peering"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "routes-beta"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "subnets-beta"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "all_examples"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "ilb_routing"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "multi_vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "secondary_ranges"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc1", "terraform-google-network-2.3.0", "test", "setup"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "codelabs", "simple"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "ilb_routing"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "multi_vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "secondary_ranges"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "simple_project"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "submodule_firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "examples", "submodule_svpc_access"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "fabric-net-firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "fabric-net-svpc-access"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "network-peering"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "routes-beta"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "subnets-beta"),
 				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "all_examples"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "ilb_routing"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "multi_vpc"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "secondary_ranges"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_firewall"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-ext-modules-only", ".terraform", "modules", "vpc2", "terraform-google-network-2.3.0", "test", "setup"),
 			},
 			[]string{
 				filepath.Join(testData, "single-root-ext-modules-only"),
@@ -61,15 +158,66 @@ func TestWalker_complexModules(t *testing.T) {
 			[]string{
 				filepath.Join(testData, "single-root-local-and-ext-modules"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "codelabs", "simple"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "ilb_routing"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "multi_vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "secondary_ranges"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "simple_project"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "submodule_firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "examples", "submodule_svpc_access"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "fabric-net-firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "fabric-net-svpc-access"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "network-peering"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "routes-beta"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "subnets-beta"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "all_examples"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "ilb_routing"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "multi_vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "secondary_ranges"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "five", "terraform-google-network-2.3.0", "test", "setup"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "codelabs", "simple"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "ilb_routing"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "multi_vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "secondary_ranges"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "simple_project"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "submodule_firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "examples", "submodule_svpc_access"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "fabric-net-firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "fabric-net-svpc-access"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "network-peering"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "routes-beta"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "subnets"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "subnets-beta"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "modules", "vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "all_examples"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "delete_default_gateway_routes"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "ilb_routing"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "multi_vpc"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "secondary_ranges"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "simple_project_with_regional_network"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_firewall"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "fixtures", "submodule_network_peering"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", ".terraform", "modules", "four", "terraform-google-network-2.3.0", "test", "setup"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", "alpha"),
 				filepath.Join(testData, "single-root-local-and-ext-modules", "beta"),
+				filepath.Join(testData, "single-root-local-and-ext-modules", "charlie"),
 			},
 			[]string{
 				filepath.Join(testData, "single-root-local-and-ext-modules"),
@@ -83,6 +231,7 @@ func TestWalker_complexModules(t *testing.T) {
 				filepath.Join(testData, "single-root-local-modules-only"),
 				filepath.Join(testData, "single-root-local-modules-only", "alpha"),
 				filepath.Join(testData, "single-root-local-modules-only", "beta"),
+				filepath.Join(testData, "single-root-local-modules-only", "charlie"),
 			},
 			[]string{
 				filepath.Join(testData, "single-root-local-modules-only"),
@@ -117,6 +266,7 @@ func TestWalker_complexModules(t *testing.T) {
 			[]string{
 				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root"),
 				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "alpha"),
+				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "beta"),
 				filepath.Join(testData, "nested-single-root-local-modules-down", "tf-root", "charlie"),
 			},
 			[]string{
@@ -177,12 +327,15 @@ func TestWalker_complexModules(t *testing.T) {
 			[]string{
 				filepath.Join(testData, "multi-root-local-modules-down", "first-root"),
 				filepath.Join(testData, "multi-root-local-modules-down", "first-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "first-root", "beta"),
 				filepath.Join(testData, "multi-root-local-modules-down", "first-root", "charlie"),
 				filepath.Join(testData, "multi-root-local-modules-down", "second-root"),
 				filepath.Join(testData, "multi-root-local-modules-down", "second-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "second-root", "beta"),
 				filepath.Join(testData, "multi-root-local-modules-down", "second-root", "charlie"),
 				filepath.Join(testData, "multi-root-local-modules-down", "third-root"),
 				filepath.Join(testData, "multi-root-local-modules-down", "third-root", "alpha"),
+				filepath.Join(testData, "multi-root-local-modules-down", "third-root", "beta"),
 				filepath.Join(testData, "multi-root-local-modules-down", "third-root", "charlie"),
 			},
 			[]string{
@@ -234,7 +387,7 @@ func TestWalker_complexModules(t *testing.T) {
 			pa := state.NewPathAwaiter(ss.WalkerPaths, false)
 			indexer := indexer.NewIndexer(fs, ss.Modules, ss.ProviderSchemas, ss.RegistryModules, ss.JobStore,
 				exec.NewMockExecutor(tfCalls), registry.NewClient())
-			w := NewWalker(pa, ss.Modules, indexer.WalkedModule)
+			w := NewWalker(fs, pa, ss.Modules, indexer.WalkedModule)
 			w.Collector = NewWalkerCollector()
 			w.SetLogger(testLogger())
 			dir := document.DirHandleFromPath(tc.root)
@@ -308,8 +461,8 @@ func localProviderSchemaPaths(t *testing.T, it *state.ProviderSchemaIterator) []
 func validTfMockCalls(repeatability int) []*mock.Call {
 	return []*mock.Call{
 		{
-			Method:        "Version",
-			Repeatability: repeatability,
+			Method: "Version",
+			// Repeatability: repeatability,
 			Arguments: []interface{}{
 				mock.AnythingOfType("*context.valueCtx"),
 			},
@@ -320,15 +473,15 @@ func validTfMockCalls(repeatability int) []*mock.Call {
 			},
 		},
 		{
-			Method:        "GetExecPath",
-			Repeatability: repeatability,
+			Method: "GetExecPath",
+			// Repeatability: repeatability,
 			ReturnArguments: []interface{}{
 				"",
 			},
 		},
 		{
-			Method:        "ProviderSchemas",
-			Repeatability: repeatability,
+			Method: "ProviderSchemas",
+			// Repeatability: repeatability,
 			Arguments: []interface{}{
 				mock.AnythingOfType("*context.valueCtx"),
 			},

@@ -41,7 +41,7 @@ func TestModuleCompletion_withoutInitialization(t *testing.T) {
 		}`, TempDir(t).URI)}, session.SessionNotInitialized.Err())
 }
 
-func TestModuleCompletion_withValidData(t *testing.T) {
+func TestModuleCompletion_withValidData_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
 

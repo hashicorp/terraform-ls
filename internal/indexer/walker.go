@@ -16,17 +16,40 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	ids := make(job.IDs, 0)
 	var errs *multierror.Error
 
+	// blockingJobIds tracks job IDs which need to finish
+	// prior to collecting references
+	blockingJobIds := make(job.IDs, 0)
+
 	id, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			ids := make(job.IDs, 0)
+
+			id, err := idx.jobStore.EnqueueJob(job.Job{
+				Dir:  modHandle,
+				Type: op.OpTypeLoadModuleMetadata.String(),
+				Func: func(ctx context.Context) error {
+					return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+				},
+			})
+			if err != nil {
+				return ids, err
+			} else {
+				ids = append(ids, id)
+			}
+
+			return ids, nil
+		},
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)
 	} else {
 		ids = append(ids, id)
+		blockingJobIds = append(blockingJobIds, id)
 	}
 
 	id, err = idx.jobStore.EnqueueJob(job.Job{
@@ -70,6 +93,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		errs = multierror.Append(errs, err)
 	} else {
 		ids = append(ids, id)
+		blockingJobIds = append(blockingJobIds, id)
 	}
 
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
@@ -88,6 +112,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			errs = multierror.Append(errs, err)
 		} else {
 			ids = append(ids, id)
+			blockingJobIds = append(blockingJobIds, id)
 		}
 	}
 
@@ -106,13 +131,17 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			errs = multierror.Append(errs, err)
 		} else {
 			ids = append(ids, id)
+			blockingJobIds = append(blockingJobIds, id)
 		}
+	}
 
-		// Here we wait for all module calls to be processed to
-		// reflect any metadata required to collect reference origins.
-		// This assumes scheduler is running to consume the jobs
-		// by the time we reach this point.
-		idx.jobStore.WaitForJobs(ctx, id)
+	// Here we wait for all dependent jobs to be processed to
+	// reflect any data required to collect reference origins.
+	// This assumes scheduler is running to consume the jobs
+	// by the time we reach this point.
+	err = idx.jobStore.WaitForJobs(ctx, blockingJobIds...)
+	if err != nil {
+		return ids, err
 	}
 
 	rIds, err := idx.collectReferences(ctx, modHandle)
