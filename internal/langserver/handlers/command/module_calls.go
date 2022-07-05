@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 const moduleCallsVersion = 0
@@ -25,7 +26,7 @@ type moduleCall struct {
 	Version          string             `json:"version,omitempty"`
 	SourceType       datadir.ModuleType `json:"source_type,omitempty"`
 	DocsLink         string             `json:"docs_link,omitempty"`
-	DependentModules []moduleCall       `json:"dependent_modules"`
+	DependentModules []moduleCall       `json:"dependent_modules"` // will always be an empty list, we keep this for compatibility
 }
 
 func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -48,48 +49,26 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, err
 	}
 
-	found, _ := h.StateStore.Modules.ModuleByPath(modPath)
-	if found == nil {
-		return response, nil
+	moduleCalls, err := h.StateStore.Modules.ModuleCalls(modPath)
+	if err != nil {
+		return response, err
 	}
 
-	if found.ModManifest == nil {
-		return response, nil
-	}
-
-	response.ModuleCalls = h.parseModuleRecords(ctx, found.ModManifest.Records)
+	response.ModuleCalls = h.parseModuleRecords(ctx, moduleCalls)
 
 	return response, nil
 }
 
-func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) []moduleCall {
-	// sort all records by key so that dependent modules are found
-	// after primary modules
-	sort.SliceStable(records, func(i, j int) bool {
-		return records[i].Key < records[j].Key
-	})
-
+func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.ModuleCalls) []moduleCall {
 	modules := make(map[string]moduleCall)
-	for _, manifest := range records {
-		if manifest.IsRoot() {
-			// this is the current directory, which is technically a module
-			// skipping as it's not relevant in the activity bar (yet?)
+	for _, manifest := range moduleCalls.Declared {
+		if manifest.SourceAddr == nil {
+			// We skip all modules without a source address
 			continue
 		}
 
-		moduleName := manifest.Key
-		subModuleName := ""
-
-		// determine if this module is nested in another module
-		// in the current workspace by finding a period in the moduleName
-		// is it better to look at SourceAddr and compare?
-		if strings.Contains(manifest.Key, ".") {
-			v := strings.Split(manifest.Key, ".")
-			moduleName = v[0]
-			subModuleName = v[1]
-		}
-
-		docsLink, err := getModuleDocumentationLink(ctx, manifest)
+		moduleName := manifest.LocalName
+		docsLink, err := getModuleDocumentationLink(ctx, manifest.SourceAddr.String(), manifest.Version.String())
 		if err != nil {
 			h.Logger.Printf("failed to get module docs link: %s", err)
 		}
@@ -97,23 +76,14 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.M
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
-			SourceAddr:       manifest.SourceAddr,
+			SourceAddr:       manifest.SourceAddr.String(),
 			DocsLink:         docsLink,
-			Version:          manifest.VersionStr,
-			SourceType:       manifest.GetModuleType(),
+			Version:          manifest.Version.String(),
+			SourceType:       datadir.GetModuleType(manifest.SourceAddr.String()),
 			DependentModules: make([]moduleCall, 0),
 		}
 
-		m, present := modules[moduleName]
-		if present {
-			// this module is located inside another so append
-			moduleInfo.Name = subModuleName
-			m.DependentModules = append(m.DependentModules, moduleInfo)
-			modules[moduleName] = m
-		} else {
-			// this is the first we've seen module
-			modules[moduleName] = moduleInfo
-		}
+		modules[moduleName] = moduleInfo
 	}
 
 	// don't need the map anymore, return a list of modules found
@@ -129,14 +99,14 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.M
 	return list
 }
 
-func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord) (string, error) {
-	if record.GetModuleType() != datadir.TFREGISTRY {
+func getModuleDocumentationLink(ctx context.Context, sourceAddr string, version string) (string, error) {
+	if datadir.GetModuleType(sourceAddr) != datadir.TFREGISTRY {
 		return "", nil
 	}
 
-	shortName := strings.TrimPrefix(record.SourceAddr, "registry.terraform.io/")
+	shortName := strings.TrimPrefix(sourceAddr, "registry.terraform.io/")
 
-	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, version)
 
 	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
 	if err != nil {
