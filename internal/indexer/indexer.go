@@ -52,13 +52,13 @@ type Collector interface {
 	CollectJobId(jobId job.ID)
 }
 
-func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) job.DeferFunc {
+func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) job.DeferFunc {
 	return func(ctx context.Context, opErr error) (jobIds job.IDs) {
 		if opErr != nil {
 			return
 		}
 
-		moduleCalls, err := modStore.ModuleCalls(modPath)
+		moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
 		if err != nil {
 			return
 		}
@@ -73,7 +73,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 			if err != nil || !fi.IsDir() {
 				continue
 			}
-			modStore.Add(mc.Path)
+			idx.modStore.Add(mc.Path)
 
 			mcHandle := document.DirHandleFromPath(mc.Path)
 			// copy path for queued jobs below
@@ -82,7 +82,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 			id, err := jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return module.ParseModuleConfiguration(fs, modStore, mcPath)
+					return module.ParseModuleConfiguration(idx.fs, idx.modStore, mcPath)
 				},
 				Type: op.OpTypeParseModuleConfiguration.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
@@ -90,7 +90,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 						Dir:  mcHandle,
 						Type: op.OpTypeLoadModuleMetadata.String(),
 						Func: func(ctx context.Context) error {
-							return module.LoadModuleMetadata(modStore, mcPath)
+							return module.LoadModuleMetadata(idx.modStore, mcPath)
 						},
 					})
 					if err != nil {
@@ -98,7 +98,7 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 					}
 					ids = append(ids, id)
 
-					rIds := collectReferences(ctx, mcHandle, modStore, schemaReader)
+					rIds := idx.collectReferences(ctx, mcHandle)
 					ids = append(ids, rIds...)
 
 					return
@@ -112,14 +112,14 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 			id, err = jobStore.EnqueueJob(job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
-					return module.ParseVariables(fs, modStore, mcPath)
+					return module.ParseVariables(idx.fs, idx.modStore, mcPath)
 				},
 				Type: op.OpTypeParseVariables.String(),
 				Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
 					id, err = jobStore.EnqueueJob(job.Job{
 						Dir: mcHandle,
 						Func: func(ctx context.Context) error {
-							return module.DecodeVarsReferences(ctx, modStore, schemaReader, mcPath)
+							return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, mcPath)
 						},
 						Type: op.OpTypeDecodeVarsReferences.String(),
 					})
@@ -140,16 +140,16 @@ func decodeInstalledModuleCalls(fs ReadOnlyFS, modStore *state.ModuleStore, sche
 	}
 }
 
-func collectReferences(ctx context.Context, dirHandle document.DirHandle, modStore *state.ModuleStore, schemaReader state.SchemaReader) (ids job.IDs) {
+func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.DirHandle) (ids job.IDs) {
 	jobStore, err := job.JobStoreFromContext(ctx)
 	if err != nil {
 		return
 	}
 
 	id, err := jobStore.EnqueueJob(job.Job{
-		Dir: dirHandle,
+		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceTargets(ctx, modStore, schemaReader, dirHandle.Path())
+			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
 		Type: op.OpTypeDecodeReferenceTargets.String(),
 	})
@@ -159,9 +159,9 @@ func collectReferences(ctx context.Context, dirHandle document.DirHandle, modSto
 	ids = append(ids, id)
 
 	id, err = jobStore.EnqueueJob(job.Job{
-		Dir: dirHandle,
+		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceOrigins(ctx, modStore, schemaReader, dirHandle.Path())
+			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
 		Type: op.OpTypeDecodeReferenceOrigins.String(),
 	})

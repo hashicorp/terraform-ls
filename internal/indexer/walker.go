@@ -92,7 +92,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:  op.OpTypeParseModuleManifest.String(),
-			Defer: decodeInstalledModuleCalls(idx.fs, idx.modStore, idx.schemaStore, modHandle.Path()),
+			Defer: idx.decodeInstalledModuleCalls(modHandle),
 		})
 		if err != nil {
 			return ids, err
