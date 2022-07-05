@@ -262,11 +262,7 @@ func TestScheduler_defer(t *testing.T) {
 			Type: "test-type",
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 				ids := make(job.IDs, 0)
-				je, err := job.JobStoreFromContext(ctx)
-				if err != nil {
-					log.Fatal(err)
-					return ids, err
-				}
+				je := ss.JobStore
 
 				id1, err := je.EnqueueJob(job.Job{
 					Dir:  document.DirHandleFromPath(dirPath),
