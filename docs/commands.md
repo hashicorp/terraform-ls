@@ -126,7 +126,7 @@ The data is sourced from the declared modules inside the files of the module.
    - `version` - version constraint of the module call; applicable to modules hosted by the Terraform Registry (e.g. `~> 1.0`
    - `source_type` - source of the Terraform module, e.g. `github` or `tfregistry`
    - `docs_link` - a link to the module documentation; if available
-   - `dependent_modules` - *deprecated* - array of dependent modules with the same structure as `module_calls`
+   - `dependent_modules` - **DEPRECATED** (always empty in `v0.29+`) - array of dependent modules with the same structure as `module_calls`
 
 ```json
 {
