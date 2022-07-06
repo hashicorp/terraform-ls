@@ -8,8 +8,9 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/module"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
@@ -21,13 +22,23 @@ type moduleCallsResponse struct {
 }
 
 type moduleCall struct {
-	Name             string             `json:"name"`
-	SourceAddr       string             `json:"source_addr"`
-	Version          string             `json:"version,omitempty"`
-	SourceType       datadir.ModuleType `json:"source_type,omitempty"`
-	DocsLink         string             `json:"docs_link,omitempty"`
-	DependentModules []moduleCall       `json:"dependent_modules"` // will always be an empty list, we keep this for compatibility
+	Name             string       `json:"name"`
+	SourceAddr       string       `json:"source_addr"`
+	Version          string       `json:"version,omitempty"`
+	SourceType       ModuleType   `json:"source_type,omitempty"`
+	DocsLink         string       `json:"docs_link,omitempty"`
+	DependentModules []moduleCall `json:"dependent_modules"` // will always be an empty list, we keep this for compatibility
 }
+
+type ModuleType string
+
+const (
+	UNKNOWN    ModuleType = "unknown"
+	TFREGISTRY ModuleType = "tfregistry"
+	LOCAL      ModuleType = "local"
+	GITHUB     ModuleType = "github"
+	GIT        ModuleType = "git"
+)
 
 func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	response := moduleCallsResponse{
@@ -68,9 +79,15 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 		}
 
 		moduleName := manifest.LocalName
-		docsLink, err := getModuleDocumentationLink(ctx, manifest.SourceAddr.String(), manifest.Version.String())
-		if err != nil {
-			h.Logger.Printf("failed to get module docs link: %s", err)
+		sourceType := getModuleType(manifest.SourceAddr)
+
+		docsLink := ""
+		if sourceType == TFREGISTRY {
+			var err error
+			docsLink, err = getModuleDocumentationLink(ctx, manifest.SourceAddr.String(), manifest.Version.String())
+			if err != nil {
+				h.Logger.Printf("failed to get module docs link: %s", err)
+			}
 		}
 
 		// build what we know
@@ -79,7 +96,7 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 			SourceAddr:       manifest.SourceAddr.String(),
 			DocsLink:         docsLink,
 			Version:          manifest.Version.String(),
-			SourceType:       datadir.GetModuleType(manifest.SourceAddr.String()),
+			SourceType:       sourceType,
 			DependentModules: make([]moduleCall, 0),
 		}
 
@@ -100,10 +117,6 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 }
 
 func getModuleDocumentationLink(ctx context.Context, sourceAddr string, version string) (string, error) {
-	if datadir.GetModuleType(sourceAddr) != datadir.TFREGISTRY {
-		return "", nil
-	}
-
 	shortName := strings.TrimPrefix(sourceAddr, "registry.terraform.io/")
 
 	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, version)
@@ -114,4 +127,33 @@ func getModuleDocumentationLink(ctx context.Context, sourceAddr string, version 
 	}
 
 	return u.String(), nil
+}
+
+// GetModuleType checks source addresses to determine what kind of source the Terraform module comes
+// from. It currently supports detecting Terraform Registry modules, GitHub modules, Git modules, and
+// local file paths
+func getModuleType(sourceAddr tfmod.ModuleSourceAddr) ModuleType {
+	// Example: terraform-aws-modules/ec2-instance/aws
+	// Example: registry.terraform.io/terraform-aws-modules/vpc/aws
+	_, ok := sourceAddr.(tfaddr.Module)
+	if ok {
+		return TFREGISTRY
+	}
+
+	_, ok = sourceAddr.(module.LocalSourceAddr)
+	if ok {
+		return LOCAL
+	}
+
+	// Example: github.com/terraform-aws-modules/terraform-aws-security-group
+	if strings.HasPrefix(sourceAddr.String(), "github.com/") {
+		return GITHUB
+	}
+
+	// Example: git::https://example.com/vpc.git
+	if strings.HasPrefix(sourceAddr.String(), "git::") {
+		return GIT
+	}
+
+	return UNKNOWN
 }
