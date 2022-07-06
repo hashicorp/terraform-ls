@@ -26,7 +26,7 @@ func NewWalkerCollector() *WalkerCollector {
 func (wc *WalkerCollector) CollectError(err error) {
 	wc.errorsMu.Lock()
 	defer wc.errorsMu.Unlock()
-	multierror.Append(wc.errors, err)
+	wc.errors = multierror.Append(wc.errors, err)
 }
 
 func (wc *WalkerCollector) ErrorOrNil() error {

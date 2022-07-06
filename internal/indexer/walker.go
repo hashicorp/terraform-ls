@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
@@ -13,6 +14,7 @@ import (
 
 func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
+	var errs *multierror.Error
 
 	id, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -22,9 +24,10 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		Type: op.OpTypeParseModuleConfiguration.String(),
 	})
 	if err != nil {
-		return ids, err
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, id)
 	}
-	ids = append(ids, id)
 
 	id, err = idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -32,7 +35,9 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
-		Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			ids := make(job.IDs, 0)
+
 			id, err := idx.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
@@ -41,16 +46,17 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 				Type: op.OpTypeDecodeVarsReferences.String(),
 			})
 			if err != nil {
-				return
+				return ids, err
 			}
 			ids = append(ids, id)
-			return
+			return ids, err
 		},
 	})
 	if err != nil {
-		return ids, err
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, id)
 	}
-	ids = append(ids, id)
 
 	id, err = idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -61,9 +67,10 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		Type: op.OpTypeGetTerraformVersion.String(),
 	})
 	if err != nil {
-		return ids, err
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, id)
 	}
-	ids = append(ids, id)
 
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
@@ -78,9 +85,10 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			Type: op.OpTypeObtainSchema.String(),
 		})
 		if err != nil {
-			return ids, err
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, id)
 		}
-		ids = append(ids, id)
 	}
 
 	if dataDir.ModuleManifestPath != "" {
@@ -92,10 +100,12 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:  op.OpTypeParseModuleManifest.String(),
-			Defer: decodeInstalledModuleCalls(idx.fs, idx.modStore, idx.schemaStore, modHandle.Path()),
+			Defer: idx.decodeInstalledModuleCalls(modHandle),
 		})
 		if err != nil {
-			return ids, err
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, id)
 		}
 
 		// Here we wait for all module calls to be processed to
@@ -105,29 +115,12 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		idx.jobStore.WaitForJobs(ctx, id)
 	}
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type: op.OpTypeDecodeReferenceTargets.String(),
-	})
+	rIds, err := idx.collectReferences(ctx, modHandle)
 	if err != nil {
-		return ids, err
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, rIds...)
 	}
-	ids = append(ids, id)
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type: op.OpTypeDecodeReferenceOrigins.String(),
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
-	return ids, nil
+	return ids, errs.ErrorOrNil()
 }

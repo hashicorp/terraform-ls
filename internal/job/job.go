@@ -32,7 +32,7 @@ type Job struct {
 // DeferFunc represents a deferred function scheduling more jobs
 // based on jobErr (any error returned from the main job).
 // Newly queued job IDs should be returned to allow for synchronization.
-type DeferFunc func(ctx context.Context, jobErr error) IDs
+type DeferFunc func(ctx context.Context, jobErr error) (IDs, error)
 
 func (job Job) Copy() Job {
 	return Job{

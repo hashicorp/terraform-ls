@@ -18,12 +18,8 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
-		Defer: func(ctx context.Context, jobErr error) job.IDs {
-			ids, err := idx.decodeModule(ctx, modHandle)
-			if err != nil {
-				idx.logger.Printf("error: %s", err)
-			}
-			return ids
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			return idx.decodeModule(ctx, modHandle)
 		},
 	})
 	if err != nil {
@@ -37,7 +33,8 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
-		Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			ids := make(job.IDs, 0)
 			id, err := idx.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
@@ -46,10 +43,10 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 				Type: op.OpTypeDecodeVarsReferences.String(),
 			})
 			if err != nil {
-				return
+				return ids, err
 			}
 			ids = append(ids, id)
-			return
+			return ids, nil
 		},
 	})
 	if err != nil {
@@ -69,7 +66,8 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeLoadModuleMetadata.String(),
-		Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			ids := make(job.IDs, 0)
 			id, err := idx.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
@@ -78,7 +76,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 				Type: op.OpTypeDecodeReferenceTargets.String(),
 			})
 			if err != nil {
-				return
+				return ids, err
 			}
 			ids = append(ids, id)
 
@@ -90,7 +88,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 				Type: op.OpTypeDecodeReferenceOrigins.String(),
 			})
 			if err != nil {
-				return
+				return ids, err
 			}
 			ids = append(ids, id)
 
@@ -104,11 +102,11 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 				Type:     op.OpTypeGetModuleDataFromRegistry.String(),
 			})
 			if err != nil {
-				return
+				return ids, err
 			}
-			ids = append(ids, id)
 
-			return
+			ids = append(ids, id)
+			return ids, nil
 		},
 	})
 	if err != nil {

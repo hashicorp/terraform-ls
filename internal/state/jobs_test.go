@@ -638,11 +638,9 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer1Func := func(ctx context.Context, jobErr error) (ids job.IDs) {
-		jobStore, err := job.JobStoreFromContext(ctx)
-		if err != nil {
-			return nil
-		}
+	defer1Func := func(ctx context.Context, jobErr error) (job.IDs, error) {
+		ids := make(job.IDs, 0)
+		jobStore := ss.JobStore
 
 		id, err := jobStore.EnqueueJob(job.Job{
 			Func: func(ctx context.Context) error {
@@ -652,10 +650,10 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 			Type: "test-type",
 		})
 		if err != nil {
-			return nil
+			return ids, err
 		}
 		ids = append(ids, id)
-		return
+		return ids, err
 	}
 
 	id1, err := ss.JobStore.EnqueueJob(job.Job{
@@ -671,9 +669,11 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = job.WithJobStore(ctx, ss.JobStore)
 	// execute deferred func, which is what scheduler would do
-	deferredIds := defer1Func(ctx, nil)
+	deferredIds, err := defer1Func(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = ss.JobStore.FinishJob(id1, nil, deferredIds...)
 	if err != nil {

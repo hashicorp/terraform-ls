@@ -69,8 +69,10 @@ func (s *Scheduler) eval(ctx context.Context) {
 
 		deferredJobIds := make(job.IDs, 0)
 		if nextJob.Defer != nil {
-			deferCtx := job.WithJobStore(ctx, s.jobStorage)
-			deferredJobIds = nextJob.Defer(deferCtx, jobErr)
+			deferredJobIds, err = nextJob.Defer(ctx, jobErr)
+			if err != nil {
+				s.logger.Printf("deferred job failed: %s", err)
+			}
 		}
 
 		err = s.jobStorage.FinishJob(id, jobErr, deferredJobIds...)

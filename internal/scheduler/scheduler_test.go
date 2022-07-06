@@ -260,12 +260,9 @@ func TestScheduler_defer(t *testing.T) {
 			},
 			Dir:  document.DirHandleFromPath(dirPath),
 			Type: "test-type",
-			Defer: func(ctx context.Context, jobErr error) (ids job.IDs) {
-				je, err := job.JobStoreFromContext(ctx)
-				if err != nil {
-					log.Fatal(err)
-					return nil
-				}
+			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+				ids := make(job.IDs, 0)
+				je := ss.JobStore
 
 				id1, err := je.EnqueueJob(job.Job{
 					Dir:  document.DirHandleFromPath(dirPath),
@@ -277,7 +274,7 @@ func TestScheduler_defer(t *testing.T) {
 				})
 				if err != nil {
 					log.Fatal(err)
-					return nil
+					return ids, err
 				}
 				ids = append(ids, id1)
 
@@ -291,11 +288,11 @@ func TestScheduler_defer(t *testing.T) {
 				})
 				if err != nil {
 					log.Fatal(err)
-					return nil
+					return ids, err
 				}
 				ids = append(ids, id2)
 
-				return
+				return ids, nil
 			},
 		})
 		if err != nil {
