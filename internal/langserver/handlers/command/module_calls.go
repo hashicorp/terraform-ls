@@ -84,7 +84,7 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 		docsLink := ""
 		if sourceType == TFREGISTRY {
 			var err error
-			docsLink, err = getModuleDocumentationLink(ctx, manifest.SourceAddr.String(), manifest.Version.String())
+			docsLink, err = getModuleDocumentationLink(ctx, manifest.SourceAddr.String())
 			if err != nil {
 				h.Logger.Printf("failed to get module docs link: %s", err)
 			}
@@ -116,10 +116,10 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 	return list
 }
 
-func getModuleDocumentationLink(ctx context.Context, sourceAddr string, version string) (string, error) {
+func getModuleDocumentationLink(ctx context.Context, sourceAddr string) (string, error) {
 	shortName := strings.TrimPrefix(sourceAddr, "registry.terraform.io/")
 
-	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, version)
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/latest`, shortName)
 
 	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
 	if err != nil {

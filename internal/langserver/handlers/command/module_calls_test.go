@@ -58,7 +58,7 @@ func Test_parseModuleRecords(t *testing.T) {
 					SourceAddr:       "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
 					Version:          "2.12.0",
 					SourceType:       "tfregistry",
-					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/2.12.0?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
+					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/latest?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
 					DependentModules: []moduleCall{},
 				},
 				{
@@ -66,7 +66,7 @@ func Test_parseModuleRecords(t *testing.T) {
 					SourceAddr:       "registry.terraform.io/terraform-aws-modules/eks/aws",
 					Version:          "17.20.0",
 					SourceType:       "tfregistry",
-					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/17.20.0?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
+					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
 					DependentModules: []moduleCall{},
 				},
 				{
@@ -117,7 +117,7 @@ func Test_parseModuleRecords_v1_1(t *testing.T) {
 					SourceAddr:       "registry.terraform.io/terraform-aws-modules/ec2-instance/aws",
 					Version:          "2.12.0",
 					SourceType:       "tfregistry",
-					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/2.12.0?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
+					DocsLink:         "https://registry.terraform.io/modules/terraform-aws-modules/ec2-instance/aws/latest?utm_content=workspace%2FexecuteCommand%2Fmodule.calls&utm_source=terraform-ls",
 					DependentModules: []moduleCall{},
 				},
 			},
