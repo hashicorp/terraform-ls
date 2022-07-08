@@ -42,6 +42,10 @@ func Test_parseModuleRecords(t *testing.T) {
 						SourceAddr: module.LocalSourceAddr("./beta"),
 						Version:    nil,
 					},
+					"empty": {
+						LocalName: "empty",
+						Version:   nil,
+					},
 				},
 			},
 			want: []moduleCall{

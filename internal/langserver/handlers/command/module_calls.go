@@ -72,30 +72,26 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 
 func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.ModuleCalls) []moduleCall {
 	modules := make(map[string]moduleCall)
-	for _, manifest := range moduleCalls.Declared {
-		if manifest.SourceAddr == nil {
-			// We skip all modules without a source address
+	for _, module := range moduleCalls.Declared {
+		if module.SourceAddr == nil {
+			// We skip all modules with an empty source address
 			continue
 		}
 
-		moduleName := manifest.LocalName
-		sourceType := getModuleType(manifest.SourceAddr)
+		moduleName := module.LocalName
+		sourceType := getModuleType(module.SourceAddr)
 
-		docsLink := ""
-		if sourceType == TFREGISTRY {
-			var err error
-			docsLink, err = getModuleDocumentationLink(ctx, manifest.SourceAddr.String())
-			if err != nil {
-				h.Logger.Printf("failed to get module docs link: %s", err)
-			}
+		docsLink, err := getModuleDocumentationLink(ctx, module.SourceAddr)
+		if err != nil {
+			h.Logger.Printf("failed to get module docs link: %s", err)
 		}
 
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
-			SourceAddr:       manifest.SourceAddr.String(),
+			SourceAddr:       module.SourceAddr.String(),
 			DocsLink:         docsLink,
-			Version:          manifest.Version.String(),
+			Version:          module.Version.String(),
 			SourceType:       sourceType,
 			DependentModules: make([]moduleCall, 0),
 		}
@@ -116,10 +112,12 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 	return list
 }
 
-func getModuleDocumentationLink(ctx context.Context, sourceAddr string) (string, error) {
-	shortName := strings.TrimPrefix(sourceAddr, "registry.terraform.io/")
-
-	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/latest`, shortName)
+func getModuleDocumentationLink(ctx context.Context, sourceAddr tfmod.ModuleSourceAddr) (string, error) {
+	registryAddr, ok := sourceAddr.(tfaddr.Module)
+	if !ok || registryAddr.Package.Host != "registry.terraform.io" {
+		return "", nil
+	}
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/latest`, registryAddr.Package.ForRegistryProtocol())
 
 	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
 	if err != nil {
