@@ -122,7 +122,7 @@ The data is sourced from the declared modules inside the files of the module.
  - `v` - describes version of the format; Will be used in the future to communicate format changes.
  - `module_calls` - array of modules which are called from the module in question
    - `name` - the reference name of this particular module (i.e. `network` from `module "network" { ...`)
-   - `source_addr` - the source address given for this module call (e.g. `terraform-aws-modules/eks/aws`)
+   - `source_addr` - human-readable version of the source address given for this module call (e.g. `terraform-aws-modules/eks/aws`)
    - `version` - version constraint of the module call; applicable to modules hosted by the Terraform Registry (e.g. `~> 1.0`
    - `source_type` - source of the Terraform module, e.g. `github` or `tfregistry`
    - `docs_link` - a link to the module documentation; if available

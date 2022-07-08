@@ -89,7 +89,7 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.M
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
-			SourceAddr:       module.SourceAddr.String(),
+			SourceAddr:       module.SourceAddr.ForDisplay(),
 			DocsLink:         docsLink,
 			Version:          module.Version.String(),
 			SourceType:       sourceType,
