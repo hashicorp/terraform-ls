@@ -7,6 +7,7 @@ ENHANCEMENTS:
  - Provide basic IntelliSense (except for diagnostics) for hidden `*.tf` files ([#971](https://github.com/hashicorp/terraform-ls/pull/971))
  - deps: bump terraform-schema to introduce v1.2 `lifecycle` conditions ([terraform-schema#115](https://github.com/hashicorp/terraform-schema/pull/115))
  - deps: bump terraform-schema to introduce v1.1 `terraform` `cloud` block ([terraform-schema#117](https://github.com/hashicorp/terraform-schema/pull/117))
+ - Use `module` declarations from parsed configuration as source of truth for `module.calls` ([#987](https://github.com/hashicorp/terraform-ls/pull/987))
 
 BUG FIXES:
 
