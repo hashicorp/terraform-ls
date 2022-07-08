@@ -8,8 +8,10 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
-	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/module"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 const moduleCallsVersion = 0
@@ -20,13 +22,23 @@ type moduleCallsResponse struct {
 }
 
 type moduleCall struct {
-	Name             string             `json:"name"`
-	SourceAddr       string             `json:"source_addr"`
-	Version          string             `json:"version,omitempty"`
-	SourceType       datadir.ModuleType `json:"source_type,omitempty"`
-	DocsLink         string             `json:"docs_link,omitempty"`
-	DependentModules []moduleCall       `json:"dependent_modules"`
+	Name             string       `json:"name"`
+	SourceAddr       string       `json:"source_addr"`
+	Version          string       `json:"version,omitempty"`
+	SourceType       ModuleType   `json:"source_type,omitempty"`
+	DocsLink         string       `json:"docs_link,omitempty"`
+	DependentModules []moduleCall `json:"dependent_modules"` // will always be an empty list, we keep this for compatibility
 }
+
+type ModuleType string
+
+const (
+	UNKNOWN    ModuleType = "unknown"
+	TFREGISTRY ModuleType = "tfregistry"
+	LOCAL      ModuleType = "local"
+	GITHUB     ModuleType = "github"
+	GIT        ModuleType = "git"
+)
 
 func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	response := moduleCallsResponse{
@@ -48,48 +60,28 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, err
 	}
 
-	found, _ := h.StateStore.Modules.ModuleByPath(modPath)
-	if found == nil {
-		return response, nil
+	moduleCalls, err := h.StateStore.Modules.ModuleCalls(modPath)
+	if err != nil {
+		return response, err
 	}
 
-	if found.ModManifest == nil {
-		return response, nil
-	}
-
-	response.ModuleCalls = h.parseModuleRecords(ctx, found.ModManifest.Records)
+	response.ModuleCalls = h.parseModuleRecords(ctx, moduleCalls)
 
 	return response, nil
 }
 
-func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.ModuleRecord) []moduleCall {
-	// sort all records by key so that dependent modules are found
-	// after primary modules
-	sort.SliceStable(records, func(i, j int) bool {
-		return records[i].Key < records[j].Key
-	})
-
+func (h *CmdHandler) parseModuleRecords(ctx context.Context, moduleCalls tfmod.ModuleCalls) []moduleCall {
 	modules := make(map[string]moduleCall)
-	for _, manifest := range records {
-		if manifest.IsRoot() {
-			// this is the current directory, which is technically a module
-			// skipping as it's not relevant in the activity bar (yet?)
+	for _, module := range moduleCalls.Declared {
+		if module.SourceAddr == nil {
+			// We skip all modules with an empty source address
 			continue
 		}
 
-		moduleName := manifest.Key
-		subModuleName := ""
+		moduleName := module.LocalName
+		sourceType := getModuleType(module.SourceAddr)
 
-		// determine if this module is nested in another module
-		// in the current workspace by finding a period in the moduleName
-		// is it better to look at SourceAddr and compare?
-		if strings.Contains(manifest.Key, ".") {
-			v := strings.Split(manifest.Key, ".")
-			moduleName = v[0]
-			subModuleName = v[1]
-		}
-
-		docsLink, err := getModuleDocumentationLink(ctx, manifest)
+		docsLink, err := getModuleDocumentationLink(ctx, module.SourceAddr)
 		if err != nil {
 			h.Logger.Printf("failed to get module docs link: %s", err)
 		}
@@ -97,23 +89,14 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.M
 		// build what we know
 		moduleInfo := moduleCall{
 			Name:             moduleName,
-			SourceAddr:       manifest.SourceAddr,
+			SourceAddr:       module.SourceAddr.ForDisplay(),
 			DocsLink:         docsLink,
-			Version:          manifest.VersionStr,
-			SourceType:       manifest.GetModuleType(),
+			Version:          module.Version.String(),
+			SourceType:       sourceType,
 			DependentModules: make([]moduleCall, 0),
 		}
 
-		m, present := modules[moduleName]
-		if present {
-			// this module is located inside another so append
-			moduleInfo.Name = subModuleName
-			m.DependentModules = append(m.DependentModules, moduleInfo)
-			modules[moduleName] = m
-		} else {
-			// this is the first we've seen module
-			modules[moduleName] = moduleInfo
-		}
+		modules[moduleName] = moduleInfo
 	}
 
 	// don't need the map anymore, return a list of modules found
@@ -129,14 +112,12 @@ func (h *CmdHandler) parseModuleRecords(ctx context.Context, records []datadir.M
 	return list
 }
 
-func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord) (string, error) {
-	if record.GetModuleType() != datadir.TFREGISTRY {
+func getModuleDocumentationLink(ctx context.Context, sourceAddr tfmod.ModuleSourceAddr) (string, error) {
+	registryAddr, ok := sourceAddr.(tfaddr.Module)
+	if !ok || registryAddr.Package.Host != "registry.terraform.io" {
 		return "", nil
 	}
-
-	shortName := strings.TrimPrefix(record.SourceAddr, "registry.terraform.io/")
-
-	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/%s`, shortName, record.VersionStr)
+	rawURL := fmt.Sprintf(`https://registry.terraform.io/modules/%s/latest`, registryAddr.Package.ForRegistryProtocol())
 
 	u, err := docsURL(ctx, rawURL, "workspace/executeCommand/module.calls")
 	if err != nil {
@@ -144,4 +125,33 @@ func getModuleDocumentationLink(ctx context.Context, record datadir.ModuleRecord
 	}
 
 	return u.String(), nil
+}
+
+// GetModuleType checks source addresses to determine what kind of source the Terraform module comes
+// from. It currently supports detecting Terraform Registry modules, GitHub modules, Git modules, and
+// local file paths
+func getModuleType(sourceAddr tfmod.ModuleSourceAddr) ModuleType {
+	// Example: terraform-aws-modules/ec2-instance/aws
+	// Example: registry.terraform.io/terraform-aws-modules/vpc/aws
+	_, ok := sourceAddr.(tfaddr.Module)
+	if ok {
+		return TFREGISTRY
+	}
+
+	_, ok = sourceAddr.(module.LocalSourceAddr)
+	if ok {
+		return LOCAL
+	}
+
+	// Example: github.com/terraform-aws-modules/terraform-aws-security-group
+	if strings.HasPrefix(sourceAddr.String(), "github.com/") {
+		return GITHUB
+	}
+
+	// Example: git::https://example.com/vpc.git
+	if strings.HasPrefix(sourceAddr.String(), "git::") {
+		return GIT
+	}
+
+	return UNKNOWN
 }

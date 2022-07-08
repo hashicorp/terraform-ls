@@ -109,10 +109,9 @@ List of modules called by the module under the given URI.
 Empty array may be returned when e.g.
   - the URI doesn't represent a module
   - the configuration is invalid
-  - modules are not installed
   - there are no module calls
 
-The data is sourced from the local cache within `.terraform` and so it may not necessarily represent newly added module calls in the configuration until they're installed via `get` or `init`.
+The data is sourced from the declared modules inside the files of the module.
 
 **Arguments:**
 
@@ -123,11 +122,11 @@ The data is sourced from the local cache within `.terraform` and so it may not n
  - `v` - describes version of the format; Will be used in the future to communicate format changes.
  - `module_calls` - array of modules which are called from the module in question
    - `name` - the reference name of this particular module (i.e. `network` from `module "network" { ...`)
-   - `source_addr` - the source address given for this module call (e.g. `terraform-aws-modules/eks/aws`)
+   - `source_addr` - human-readable version of the source address given for this module call (e.g. `terraform-aws-modules/eks/aws`)
    - `version` - version constraint of the module call; applicable to modules hosted by the Terraform Registry (e.g. `~> 1.0`
    - `source_type` - source of the Terraform module, e.g. `github` or `tfregistry`
    - `docs_link` - a link to the module documentation; if available
-   - `dependent_modules` - array of dependent modules with the same structure as `module_calls`
+   - `dependent_modules` - **DEPRECATED** (always empty in `v0.29+`) - array of dependent modules with the same structure as `module_calls`
 
 ```json
 {
