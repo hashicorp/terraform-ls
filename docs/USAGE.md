@@ -4,6 +4,16 @@ This guide assumes you have installed the server by following instructions
 in the [README.md](../README.md) if that is applicable to your client
 (i.e. if the client doesn't download the server itself).
 
+The following filetypes are supported by the Terraform Language Server:
+
+- `terraform` - standard `*.tf` config files
+- `terraform-vars` - variable files (`*.tfvars`)
+
+*NOTE* Clients specifically should **not** send `*.tf.json`, `*.tfvars.json` nor
+Packer HCL config nor any other HCL config files as the server is not
+equipped to handle these file types.
+
+
 Instructions for popular IDEs are below and pull requests
 for updates or addition of more IDEs are welcomed.
 
@@ -126,11 +136,11 @@ let g:LanguageClient_serverCommands = {
 ### Neovim v0.5.0+
 
  - Install the [nvim-lspconfig plugin](https://github.com/neovim/nvim-lspconfig)
- - Add the following to your `.vimrc`:
+ - Add the following to your `.vimrc` or `init.vim` or `init.lua`:
 
 ```vim
 lua <<EOF
-  require'lspconfig'.terraformls.setup{} 
+  require'lspconfig'.terraformls.setup{}
 EOF
 autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
 ```
