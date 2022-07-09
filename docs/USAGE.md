@@ -136,13 +136,21 @@ let g:LanguageClient_serverCommands = {
 ### Neovim v0.5.0+
 
  - Install the [nvim-lspconfig plugin](https://github.com/neovim/nvim-lspconfig)
- - Add the following to your `.vimrc` or `init.vim` or `init.lua`:
+ - Add the following to your `.vimrc` or `init.vim`:
 
 ```vim
 lua <<EOF
   require'lspconfig'.terraformls.setup{}
 EOF
 autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
+```
+ - If you are using `init.lua`:
+```lua
+require'lspconfig'.terraformls.setup{}
+vim.api.nvim_create_autocmd({"BufWritePre"}, {
+  pattern = {"*.tf"},
+  callback = vim.lsp.buf.formatting_sync,
+})
 ```
 
 Make sure to read through to [server_configurations.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#terraformls) if you need more detailed settings.
