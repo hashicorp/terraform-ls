@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.13
+go 1.16
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
