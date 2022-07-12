@@ -142,13 +142,14 @@ let g:LanguageClient_serverCommands = {
 lua <<EOF
   require'lspconfig'.terraformls.setup{}
 EOF
+autocmd BufWritePre *.tfvars lua vim.lsp.buf.formatting_sync()
 autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
 ```
  - If you are using `init.lua`:
 ```lua
 require'lspconfig'.terraformls.setup{}
 vim.api.nvim_create_autocmd({"BufWritePre"}, {
-  pattern = {"*.tf"},
+  pattern = {"*.tf", "*.tfvars"},
   callback = vim.lsp.buf.formatting_sync,
 })
 ```
