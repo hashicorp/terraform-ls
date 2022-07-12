@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/hashicorp/go-memdb"
@@ -373,6 +374,9 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
 		return nil, err
+	}
+	if mod.MetaState != op.OpStateLoaded {
+		return nil, fmt.Errorf("%s: module data not available", modPath)
 	}
 	return &tfmod.Meta{
 		Path:                 mod.Path,

@@ -199,7 +199,7 @@ func formatModuleRecords(mds []datadir.ModuleRecord) []string {
 			continue
 		}
 		if m.IsExternal() {
-			out = append(out, "EXTERNAL(%s)", m.SourceAddr)
+			out = append(out, "EXTERNAL(%s)", m.SourceAddr.String())
 			continue
 		}
 		out = append(out, fmt.Sprintf("%s (%s)", m.Dir, m.SourceAddr))

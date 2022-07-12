@@ -10,6 +10,7 @@ import (
 
 	version "github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/pathcmp"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 func ModuleManifestFilePath(fs fs.StatFS, modulePath string) (string, bool) {
@@ -34,11 +35,12 @@ type ModuleRecord struct {
 	// position within the static module tree.
 	Key string `json:"Key"`
 
-	// SourceAddr is the source address given for this module in configuration.
-	// This is used only to detect if the source was changed in configuration
-	// since the module was last installed, which means that the installer
-	// must re-install it.
-	SourceAddr string `json:"Source"`
+	// SourceAddr is the source address for the module.
+	SourceAddr tfmod.ModuleSourceAddr `json:"-"`
+
+	// RawSourceAddr is the raw source address for the module
+	// as it appears in the manifest.
+	RawSourceAddr string `json:"Source"`
 
 	// Version is the exact version of the module, which results from parsing
 	// VersionStr. nil for un-versioned modules.
@@ -61,6 +63,11 @@ func (r *ModuleRecord) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+
+	if record.RawSourceAddr != "" {
+		record.SourceAddr = tfmod.ParseModuleSourceAddr(record.RawSourceAddr)
+	}
+
 	if record.VersionStr != "" {
 		record.Version, err = version.NewVersion(record.VersionStr)
 		if err != nil {

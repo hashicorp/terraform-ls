@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 func TestParseModuleManifestFromFile(t *testing.T) {
@@ -22,26 +23,29 @@ func TestParseModuleManifestFromFile(t *testing.T) {
 		rootDir: modPath,
 		Records: []ModuleRecord{
 			{
-				Key:        "web_server_sg1",
-				SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
-				VersionStr: "3.10.0",
-				Version:    version.Must(version.NewVersion("3.10.0")),
-				Dir:        filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
+				Key:           "web_server_sg1",
+				SourceAddr:    tfmod.ParseModuleSourceAddr("terraform-aws-modules/security-group/aws//modules/http-80"),
+				RawSourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
+				VersionStr:    "3.10.0",
+				Version:       version.Must(version.NewVersion("3.10.0")),
+				Dir:           filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
 			},
 			{
-				Key:        "web_server_sg2",
-				SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
-				VersionStr: "3.10.0",
-				Version:    version.Must(version.NewVersion("3.10.0")),
-				Dir:        filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
+				Key:           "web_server_sg2",
+				SourceAddr:    tfmod.ParseModuleSourceAddr("terraform-aws-modules/security-group/aws//modules/http-80"),
+				RawSourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
+				VersionStr:    "3.10.0",
+				Version:       version.Must(version.NewVersion("3.10.0")),
+				Dir:           filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
 			},
 			{
 				Dir: ".",
 			},
 			{
-				Key:        "local",
-				SourceAddr: "./nested/path",
-				Dir:        filepath.Join("nested", "path"),
+				Key:           "local",
+				SourceAddr:    tfmod.ParseModuleSourceAddr("./nested/path"),
+				RawSourceAddr: "./nested/path",
+				Dir:           filepath.Join("nested", "path"),
 			},
 		},
 	}
