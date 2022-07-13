@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/hashicorp/go-memdb"
@@ -73,7 +74,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	if mm.ModuleCalls != nil {
 		newMm.ModuleCalls = make(map[string]tfmod.DeclaredModuleCall, len(mm.ModuleCalls))
 		for name, moduleCall := range mm.ModuleCalls {
-			newMm.ModuleCalls[name] = moduleCall
+			newMm.ModuleCalls[name] = moduleCall.Copy()
 		}
 	}
 
@@ -362,6 +363,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 			LocalName:  mc.LocalName,
 			SourceAddr: mc.SourceAddr,
 			Version:    mc.Version,
+			InputNames: mc.InputNames,
 		}
 	}
 
@@ -372,6 +374,9 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
 		return nil, err
+	}
+	if mod.MetaState != op.OpStateLoaded {
+		return nil, fmt.Errorf("%s: module data not available", modPath)
 	}
 	return &tfmod.Meta{
 		Path:                 mod.Path,

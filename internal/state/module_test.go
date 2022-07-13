@@ -92,7 +92,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 		[]datadir.ModuleRecord{
 			{
 				Key:        "web_server_sg1",
-				SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
+				SourceAddr: tfmod.ParseModuleSourceAddr("terraform-aws-modules/security-group/aws//modules/http-80"),
 				VersionStr: "3.10.0",
 				Version:    version.Must(version.NewVersion("3.10.0")),
 				Dir:        filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
@@ -102,7 +102,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 			},
 			{
 				Key:        "local-x",
-				SourceAddr: "../nested/submodule",
+				SourceAddr: tfmod.ParseModuleSourceAddr("../nested/submodule"),
 				Dir:        filepath.Join("..", "nested", "submodule"),
 			},
 		},
@@ -115,7 +115,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 			},
 			{
 				Key:        "local-foo",
-				SourceAddr: "../another/submodule",
+				SourceAddr: tfmod.ParseModuleSourceAddr("../another/submodule"),
 				Dir:        filepath.Join("..", "another", "submodule"),
 			},
 		},
@@ -125,7 +125,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 		[]datadir.ModuleRecord{
 			{
 				Key:        "web_server_sg2",
-				SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
+				SourceAddr: tfmod.ParseModuleSourceAddr("terraform-aws-modules/security-group/aws//modules/http-80"),
 				VersionStr: "3.10.0",
 				Version:    version.Must(version.NewVersion("3.10.0")),
 				Dir:        filepath.Join(".terraform", "modules", "web_server_sg", "terraform-aws-security-group-3.10.0", "modules", "http-80"),
@@ -135,7 +135,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 			},
 			{
 				Key:        "local-y",
-				SourceAddr: "../nested/submodule",
+				SourceAddr: tfmod.ParseModuleSourceAddr("../nested/submodule"),
 				Dir:        filepath.Join("..", "nested", "submodule"),
 			},
 		},

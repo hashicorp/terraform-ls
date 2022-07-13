@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 func TestRecord_UnmarshalJSON_basic(t *testing.T) {
@@ -20,11 +21,12 @@ func TestRecord_UnmarshalJSON_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedRecord := ModuleRecord{
-		Key:        "web_server_sg",
-		SourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
-		VersionStr: "3.10.0",
-		Version:    expectedVersion,
-		Dir:        `.terraform\modules\web_server_sg\terraform-aws-security-group-3.10.0\modules\http-80`,
+		Key:           "web_server_sg",
+		SourceAddr:    tfmod.ParseModuleSourceAddr("terraform-aws-modules/security-group/aws//modules/http-80"),
+		RawSourceAddr: "terraform-aws-modules/security-group/aws//modules/http-80",
+		VersionStr:    "3.10.0",
+		Version:       expectedVersion,
+		Dir:           `.terraform\modules\web_server_sg\terraform-aws-security-group-3.10.0\modules\http-80`,
 	}
 	if diff := cmp.Diff(expectedRecord, record); diff != "" {
 		t.Fatalf("version mismatch: %s", diff)

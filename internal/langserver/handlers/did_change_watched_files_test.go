@@ -735,14 +735,14 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 					},
 					{
 						Method:        "GetExecPath",
-						Repeatability: 2,
+						Repeatability: 1,
 						ReturnArguments: []interface{}{
 							"",
 						},
 					},
 					{
 						Method:        "ProviderSchemas",
-						Repeatability: 2,
+						Repeatability: 1,
 						Arguments: []interface{}{
 							mock.AnythingOfType(""),
 						},
@@ -750,7 +750,7 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 							&tfjson.ProviderSchemas{
 								FormatVersion: "0.1",
 								Schemas: map[string]*tfjson.ProviderSchema{
-									"test": {
+									"foo": {
 										ConfigSchema: &tfjson.Schema{},
 									},
 								},
@@ -780,12 +780,12 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 		ReqParams: "{}",
 	})
 
-	addr := tfaddr.MustParseProviderSource("-/test")
+	addr := tfaddr.MustParseProviderSource("-/foo")
 	vc := version.MustConstraints(version.NewConstraint(">= 1.0"))
 
 	_, err = ss.ProviderSchemas.ProviderSchema(testHandle.Path(), addr, vc)
 	if err == nil {
-		t.Fatal("expected -/test schema to be missing")
+		t.Fatal("expected -/foo schema to be missing")
 	}
 
 	// Install Terraform
@@ -876,7 +876,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 		ReqParams: "{}",
 	})
 
-	submodulePath := filepath.Join(testDir, "application")
+	submodulePath := filepath.Join(testDir, ".terraform", "modules", "azure-hcp-consul")
 	_, err = ss.Modules.ModuleByPath(submodulePath)
 	if err == nil || !state.IsModuleNotFound(err) {
 		t.Fatalf("expected submodule not to be found: %s", err)
@@ -922,7 +922,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(mod.Meta.Variables) != 3 {
-		t.Fatalf("expected exactly 3 variables, %d given", len(mod.Meta.Variables))
+	if len(mod.Meta.Variables) != 8 {
+		t.Fatalf("expected exactly 8 variables, %d given", len(mod.Meta.Variables))
 	}
 }

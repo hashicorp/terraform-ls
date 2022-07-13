@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.13
+go 1.16
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.17.2
 	github.com/hashicorp/terraform-json v0.14.0
 	github.com/hashicorp/terraform-registry-address v0.0.0-20220623143253-7d51757b572c
-	github.com/hashicorp/terraform-schema v0.0.0-20220708122804-408b2aefd4d6
+	github.com/hashicorp/terraform-schema v0.0.0-20220712135911-08c17f04e2bc
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.4
