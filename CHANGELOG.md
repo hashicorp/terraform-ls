@@ -10,7 +10,7 @@ ENHANCEMENTS:
  - deps: bump terraform-schema to introduce v1.2 `lifecycle` conditions ([terraform-schema#115](https://github.com/hashicorp/terraform-schema/pull/115))
  - deps: bump terraform-schema to introduce v1.2 `lifecycle` `replace_triggered_by` ([terraform-schema#123](https://github.com/hashicorp/terraform-schema/pull/123))
  - Use `module` declarations from parsed configuration as source of truth for `module.calls` ([#987](https://github.com/hashicorp/terraform-ls/pull/987))
- - walker: Index uninitialized modules ([#997](https://github.com/hashicorp/terraform-schema/pull/997))
+ - walker: Index uninitialized modules ([#997](https://github.com/hashicorp/terraform-ls/pull/997))
 
 BUG FIXES:
 
