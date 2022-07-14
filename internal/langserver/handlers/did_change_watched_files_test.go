@@ -701,7 +701,7 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	originalTestDir := filepath.Join(testData, "uninitialized-single-submodule")
+	originalTestDir := filepath.Join(testData, "uninitialized-submodules")
 	testDir := t.TempDir()
 	// Copy test configuration so the test can run in isolation
 	err = copy.Copy(originalTestDir, testDir)
@@ -835,7 +835,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	originalTestDir := filepath.Join(testData, "uninitialized-single-submodule")
+	originalTestDir := filepath.Join(testData, "uninitialized-submodules")
 	testDir := t.TempDir()
 	// Copy test configuration so the test can run in isolation
 	err = copy.Copy(originalTestDir, testDir)
