@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -68,6 +69,16 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		Type: op.OpTypeLoadModuleMetadata.String(),
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 			ids := make(job.IDs, 0)
+
+			var errs *multierror.Error
+
+			mcIds, err := idx.decodeDeclaredModuleCalls(modHandle)(ctx, jobErr)
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				ids = append(ids, mcIds...)
+			}
+
 			id, err := idx.jobStore.EnqueueJob(job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {

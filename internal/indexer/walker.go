@@ -35,6 +35,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 				Func: func(ctx context.Context) error {
 					return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
 				},
+				Defer: idx.decodeDeclaredModuleCalls(modHandle),
 			})
 			if err != nil {
 				return ids, err
