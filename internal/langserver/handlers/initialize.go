@@ -183,9 +183,8 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 		"lsVersion":                                       "",
 	}
 
-	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
-	properties["options.rootModulePaths"] = len(out.Options.ModulePaths) > 0
-	properties["options.excludeModulePaths"] = len(out.Options.ExcludeModulePaths) > 0
+	properties["options.rootModulePaths"] = len(out.Options.XLegacyModulePaths) > 0
+	properties["options.excludeModulePaths"] = len(out.Options.XLegacyExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
 	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
@@ -248,14 +247,33 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 		return err
 	}
 
-	var excludeModulePaths []string
-	for _, rawPath := range options.ExcludeModulePaths {
+	if len(options.XLegacyModulePaths) != 0 {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("rootModulePaths (%q) is deprecated (no-op), add a folder to workspace "+
+				"instead if you'd like it to be indexed", options.XLegacyModulePaths),
+		})
+	}
+	if len(options.XLegacyExcludeModulePaths) != 0 {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("excludeModulePaths (%q) is deprecated (no-op), use ignorePaths instead",
+				options.XLegacyExcludeModulePaths),
+		})
+	}
+
+	var ignoredPaths []string
+	for _, rawPath := range options.IgnorePaths {
 		modPath, err := resolvePath(root.Path(), rawPath)
 		if err != nil {
-			svc.logger.Printf("Ignoring excluded module path %s: %s", rawPath, err)
+			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+				Type: lsp.Warning,
+				Message: fmt.Sprintf("Unable to ignore path (unsupported or invalid URI): %s: %s",
+					rawPath, err),
+			})
 			continue
 		}
-		excludeModulePaths = append(excludeModulePaths, modPath)
+		ignoredPaths = append(ignoredPaths, modPath)
 	}
 
 	err = svc.stateStore.WalkerPaths.EnqueueDir(root)
@@ -268,7 +286,7 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 			if !uri.IsURIValid(folder.URI) {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type: lsp.Warning,
-					Message: fmt.Sprintf("Ignoring workspace folder (unsupport or invalid URI) %s."+
+					Message: fmt.Sprintf("Ignoring workspace folder (unsupported or invalid URI) %s."+
 						" This is most likely bug, please report it.", folder.URI),
 				})
 				continue
@@ -288,10 +306,10 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 		}
 	}
 
-	svc.closedDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
-	svc.closedDirWalker.SetExcludeModulePaths(excludeModulePaths)
-	svc.openDirWalker.SetIgnoreDirectoryNames(options.IgnoreDirectoryNames)
-	svc.openDirWalker.SetExcludeModulePaths(excludeModulePaths)
+	svc.closedDirWalker.SetIgnoredDirectoryNames(options.IgnoreDirectoryNames)
+	svc.closedDirWalker.SetIgnoredPaths(ignoredPaths)
+	svc.openDirWalker.SetIgnoredDirectoryNames(options.IgnoreDirectoryNames)
+	svc.openDirWalker.SetIgnoredPaths(ignoredPaths)
 
 	return nil
 }

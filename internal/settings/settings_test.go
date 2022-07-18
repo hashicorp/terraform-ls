@@ -16,14 +16,14 @@ func TestDecodeOptions_nil(t *testing.T) {
 	}
 	opts := out.Options
 
-	if opts.ModulePaths != nil {
-		t.Fatalf("expected no options for nil, %#v given", opts.ModulePaths)
+	if opts.IgnoreDirectoryNames != nil {
+		t.Fatalf("expected no options for nil, %#v given", opts.IgnoreDirectoryNames)
 	}
 }
 
 func TestDecodeOptions_wrongType(t *testing.T) {
 	_, err := DecodeOptions(map[string]interface{}{
-		"rootModulePaths": "/random/path",
+		"ignorePaths": "/random/path",
 	})
 	if err == nil {
 		t.Fatal("expected decoding of wrong type to result in error")
@@ -32,14 +32,14 @@ func TestDecodeOptions_wrongType(t *testing.T) {
 
 func TestDecodeOptions_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"rootModulePaths": []string{"/random/path"},
+		"ignorePaths": []string{"/random/path"},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	opts := out.Options
 	expectedPaths := []string{"/random/path"}
-	if diff := cmp.Diff(expectedPaths, opts.ModulePaths); diff != "" {
+	if diff := cmp.Diff(expectedPaths, opts.IgnorePaths); diff != "" {
 		t.Fatalf("options mismatch: %s", diff)
 	}
 }

@@ -22,26 +22,30 @@ Path to the Terraform binary.
 This is usually looked up automatically from `$PATH` and should not need to be
 specified in majority of cases. Use this to override the automatic lookup.
 
-## `rootModulePaths` (`[]string`)
+## **DEPRECATED**: `rootModulePaths` (`[]string`)
 
-This allows overriding automatic root module discovery by passing a static list
-of absolute or relative paths to root modules (i.e. folders with `*.tf` files
-which have been `terraform init`-ed). Conflicts with `ExcludeModulePaths` option.
+This option is deprecated and ignored from v0.29+, it was used as an escape hatch
+to force indexing of paths in cases where indexer wouldn't index them otherwise.
+Indexer in 0.29.0 no longer limited to just initialized modules (folders with `.terraform`)
+and instead indexes all directories with `*.tf` files in them.
+Therefore this option is no longer relevant.
 
-Relative paths are resolved relative to the directory opened in the editor.
+If you previously used it to force indexing of a folder outside of a workspace,
+you can just add that folder to the workspace and it will be indexed as usual.
 
-Path separators are converted automatically to the match separators
-of the target platform (e.g. `\` on Windows, or `/` on Unix),
-symlinks are followed, trailing slashes automatically removed,
-and `~` is replaced with your home directory.
+## **DEPRECATED**: `excludeModulePaths` (`[]string`)
 
-## `excludeModulePaths` (`[]string`)
+Deprecated in favour of `ignorePaths`
 
-This allows exclude root module path when automatic root module discovery by passing a static list
-of absolute or relative paths to root modules (i.e. folders with `*.tf` files
-which have been `terraform init`-ed). Conflicts with `rootModulePaths` option.
+## `ignorePaths` (`[]string`)
 
-Relative paths are resolved relative to the directory opened in the editor.
+Paths to ignore when indexing the workspace on initialization. This can serve
+as an escape hatch in large workspaces. Key side effect of ignoring a path
+is that go-to-definition, go-to-references and generally most IntelliSense
+related to local `module` blocks will **not** work until the target module code
+is explicitly opened.
+
+Relative paths are resolved relative to the root (workspace) path opened in the editor.
 
 Path separators are converted automatically to the match separators
 of the target platform (e.g. `\` on Windows, or `/` on Unix),
