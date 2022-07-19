@@ -65,6 +65,8 @@ func (s *Scheduler) eval(ctx context.Context) {
 			return
 		}
 
+		ctx = job.WithIgnoreState(ctx, nextJob.IgnoreState)
+
 		jobErr := nextJob.Func(ctx)
 
 		deferredJobIds := make(job.IDs, 0)

@@ -40,7 +40,7 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
 	})
@@ -58,7 +58,7 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
 	})

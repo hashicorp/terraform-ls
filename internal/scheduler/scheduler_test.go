@@ -18,6 +18,67 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 )
 
+func TestScheduler_withIgnoreExistingState(t *testing.T) {
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+
+	ctx := context.Background()
+
+	s := NewScheduler(ss.JobStore, 1, job.LowPriority)
+	s.SetLogger(testLogger())
+	s.Start(ctx)
+	t.Cleanup(func() {
+		s.Stop()
+	})
+
+	var stateIgnored int64 = 0
+	firstJobId, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			if job.IgnoreState(ctx) {
+				atomic.AddInt64(&stateIgnored, 1)
+			}
+			return nil
+		},
+		Dir:         document.DirHandleFromPath(tmpDir),
+		Type:        "test-type",
+		IgnoreState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stateNotIgnored int64 = 0
+	secondJobId, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			if !job.IgnoreState(ctx) {
+				atomic.AddInt64(&stateNotIgnored, 1)
+			}
+			return nil
+		},
+		Dir:  document.DirHandleFromPath(tmpDir),
+		Type: "test-type",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ss.JobStore.WaitForJobs(ctx, firstJobId, secondJobId)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if stateIgnored != 1 {
+		t.Fatalf("expected state to be ignored once, given: %d", stateIgnored)
+	}
+	if stateNotIgnored != 1 {
+		t.Fatalf("expected state not to be ignored once, given: %d", stateNotIgnored)
+	}
+}
+
 func TestScheduler_closedOnly(t *testing.T) {
 	ss, err := state.NewStateStore()
 	if err != nil {

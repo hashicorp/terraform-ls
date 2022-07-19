@@ -103,8 +103,8 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 		return "", fmt.Errorf("failed to insert new job: %w", err)
 	}
 
-	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t)",
-		sJob.ID, sJob.Type, sJob.Dir, sJob.IsDirOpen)
+	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t, IgnoreState: %t)",
+		sJob.ID, sJob.Type, sJob.Dir, sJob.IsDirOpen, sJob.IgnoreState)
 
 	txn.Commit()
 

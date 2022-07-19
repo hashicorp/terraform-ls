@@ -22,7 +22,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
 	})
@@ -40,7 +40,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			Dir:  modHandle,
 			Type: op.OpTypeLoadModuleMetadata.String(),
 			Func: func(ctx context.Context) error {
-				return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+				return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
 			},
 			DependsOn: job.IDs{parseId},
 		})
@@ -56,7 +56,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
 	})
@@ -93,7 +93,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		modManifestId, err = idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type: op.OpTypeParseModuleManifest.String(),
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {

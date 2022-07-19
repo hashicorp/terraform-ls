@@ -17,7 +17,7 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 	modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleManifest.String(),
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {

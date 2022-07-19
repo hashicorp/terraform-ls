@@ -32,6 +32,11 @@ type Job struct {
 	// This will be taken into account when scheduling, so that only
 	// jobs with no dependencies are dispatched at any time.
 	DependsOn IDs
+
+	// IgnoreState indicates to the job (as defined by Func)
+	// whether to ignore existing state, i.e. whether to invalidate cache.
+	// It is up to [Func] to read this flag from ctx and reflect it.
+	IgnoreState bool
 }
 
 // DeferFunc represents a deferred function scheduling more jobs
@@ -41,12 +46,13 @@ type DeferFunc func(ctx context.Context, jobErr error) (IDs, error)
 
 func (job Job) Copy() Job {
 	return Job{
-		Func:      job.Func,
-		Dir:       job.Dir,
-		Type:      job.Type,
-		Priority:  job.Priority,
-		Defer:     job.Defer,
-		DependsOn: job.DependsOn.Copy(),
+		Func:        job.Func,
+		Dir:         job.Dir,
+		Type:        job.Type,
+		Priority:    job.Priority,
+		Defer:       job.Defer,
+		IgnoreState: job.IgnoreState,
+		DependsOn:   job.DependsOn.Copy(),
 	}
 }
 

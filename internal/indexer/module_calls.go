@@ -43,7 +43,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		parseId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseModuleConfiguration(idx.fs, idx.modStore, mcPath)
+				return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, mcPath)
 			},
 			Type: op.OpTypeParseModuleConfiguration.String(),
 		})
@@ -60,7 +60,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 				Dir:  mcHandle,
 				Type: op.OpTypeLoadModuleMetadata.String(),
 				Func: func(ctx context.Context) error {
-					return module.LoadModuleMetadata(idx.modStore, mcPath)
+					return module.LoadModuleMetadata(ctx, idx.modStore, mcPath)
 				},
 				DependsOn: job.IDs{parseId},
 			})
@@ -84,7 +84,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		varsParseId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseVariables(idx.fs, idx.modStore, mcPath)
+				return module.ParseVariables(ctx, idx.fs, idx.modStore, mcPath)
 			},
 			Type: op.OpTypeParseVariables.String(),
 		})

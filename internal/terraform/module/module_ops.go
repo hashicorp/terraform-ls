@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
+	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -58,6 +60,11 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 		return err
 	}
 
+	// Avoid getting version if getting is already in progress or already known
+	if mod.TerraformVersionState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
 	err = modStore.SetTerraformVersionState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
@@ -103,6 +110,16 @@ func providerVersionsFromTfVersion(pv map[string]*version.Version) map[tfaddr.Pr
 }
 
 func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid obtaining schema if it is already in progress or already known
+	if mod.ProviderSchemaState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
 	pReqs, err := modStore.ProviderRequirementsForModule(modPath)
 	if err != nil {
 		return err
@@ -157,8 +174,18 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return nil
 }
 
-func ParseModuleConfiguration(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid parsing if it is already in progress or already known
+	if mod.ModuleParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -178,8 +205,18 @@ func ParseModuleConfiguration(fs ReadOnlyFS, modStore *state.ModuleStore, modPat
 	return err
 }
 
-func ParseVariables(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetVarsParsingState(modPath, op.OpStateLoading)
+func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid parsing if it is already in progress or already known
+	if mod.VarsParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetVarsParsingState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -199,8 +236,18 @@ func ParseVariables(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) 
 	return err
 }
 
-func ParseModuleManifest(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetModManifestState(modPath, op.OpStateLoading)
+func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid parsing if it is already in progress or already known
+	if mod.ModManifestState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetModManifestState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -249,13 +296,18 @@ func ParseProviderVersions(fs ReadOnlyFS, modStore *state.ModuleStore, modPath s
 	return err
 }
 
-func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetMetaState(modPath, op.OpStateLoading)
+func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
 	}
 
-	mod, err := modStore.ModuleByPath(modPath)
+	// Avoid parsing if it is already in progress or already known
+	if mod.MetaState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetMetaState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -288,7 +340,17 @@ func LoadModuleMetadata(modStore *state.ModuleStore, modPath string) error {
 }
 
 func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	err := modStore.SetReferenceTargetsState(modPath, op.OpStateLoading)
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid collection if it is already in progress or already done
+	if mod.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetReferenceTargetsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -319,7 +381,17 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 }
 
 func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	err := modStore.SetReferenceOriginsState(modPath, op.OpStateLoading)
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid collection if it is already in progress or already done
+	if mod.RefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetReferenceOriginsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -349,7 +421,17 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 }
 
 func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	err := modStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid collection if it is already in progress or already done
+	if mod.VarsRefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
