@@ -12,6 +12,7 @@ ENHANCEMENTS:
  - Use `module` declarations from parsed configuration as source of truth for `module.calls` ([#987](https://github.com/hashicorp/terraform-ls/pull/987))
  - walker: Index uninitialized modules ([#997](https://github.com/hashicorp/terraform-ls/pull/997))
  - Recognize inputs and outputs of uninitialized local modules ([#598](https://github.com/hashicorp/terraform-ls/issues/598))
+ - Enable go to module output declaration from reference ([#1007](https://github.com/hashicorp/terraform-ls/issues/1007))
 
 BUG FIXES:
 
