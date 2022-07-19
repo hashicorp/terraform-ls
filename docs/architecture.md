@@ -93,15 +93,13 @@ Jobs also depend on each other. These dependencies are illustrated in the diagra
 
 Walker is responsible for walking the filesystem hierarchy of the whole workspace (including files which may not be open by the user) on the background, to provide richer data in completion, hover etc. and to enable go-to-definition and other cross-module functionality. All indexing is scheduled as jobs via Job Scheduler and executed asynchronously, such that walking the hierarchy can scale independently of the indexing. As mentioned in [Job Scheduler](#job-scheduler) section, walker follows the LSP/RPC lifecycle of the server, i.e. it is launched by `initialize` request and shut down by `shutdown` request.
 
-Most walker functionality is contained within [`terraform/module/walker.go`](https://github.com/hashicorp/terraform-ls/blob/main/internal/terraform/module/walker.go).
+Walker logic is contained within [`internal/walker/walker.go`](https://github.com/hashicorp/terraform-ls/blob/main/internal/walker/walker.go). The actual indexing logic (i.e. what happens when an "indexable" directory is found by the walker) is contained within [`internal/indexer/walker.go`](https://github.com/hashicorp/terraform-ls/blob/main/internal/indexer/walker.go).
 
-## Watcher
+## Watched Files
 
-Watcher is responsible for watching for certain changes on the filesystem. Generally LSP discourages servers from watching the filesystem, but it doesn't make it easy for server to indicate what files client should watch. Clients are generally in control of what files/patterns are watched and sent to the server. This design works for editable documents (such as `*.tf` or `*.tfvars` in Terraform) - and follow that design there by relying entirely on clients there, but it doesn't work as well for other (important but not editable) metadata which may affect the UX.
+Clients are expected to watch `*.tf` and `*.tfvars` files by default and send updates to the server via [`workspace/didChangeWatchedFiles` notifications](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspace_didChangeWatchedFiles). Additionally, the server uses [dynamic watcher registration](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#didChangeWatchedFilesRegistrationOptions) per LSP to instruct clients to watch for plugin and module lock files within `.terraform` directories, such that it can refresh schemas or module metadata, both of which can be used to provide IntelliSense.
 
-Metadata relevant and worth watching in Terraform include most of `.terraform` directory, which contains module and provider metadata. This data is important for LS to understand e.g. where to find installed modules on the filesystem, or (indirectly) to know when to obtain schemas via `terraform providers schema -json`.
+The mentioned dynamic registration happens as part of [`initialized`](https://github.com/hashicorp/terraform-ls/blob/ca335f5ec3f320ab5a517592ae63ac90b04f127f/internal/langserver/handlers/initialized.go#L22-L71).
 
-The directory (and hence the metadata) may change at runtime (during the lifecycle of LS) anytime user runs `terraform init` or `terraform get` and watching these files enables LS to have up-to-date metadata.
-
-Most watcher functionality is contained within [`terraform/module/watcher.go`](https://github.com/hashicorp/terraform-ls/blob/main/internal/terraform/module/watcher.go).
+[`workspace/didChangeWatchedFiles` handler](https://github.com/hashicorp/terraform-ls/blob/ca335f5ec3f320ab5a517592ae63ac90b04f127f/internal/langserver/handlers/did_change_watched_files.go#L20) re-indexes and invalidates relevant data based on what files were changed.
 
