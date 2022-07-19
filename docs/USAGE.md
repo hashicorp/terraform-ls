@@ -10,6 +10,21 @@ for updates or addition of more IDEs are welcomed.
 See also [settings](./SETTINGS.md) to understand
 how you may configure the settings.
 
+## Workspaces / Folders / Files
+
+Most editors support opening folders. Such a root folder is commonly referred to
+as "workspace". Opening folders is always preferred over individual files
+as it allows the language server to index the whole folder and keep track
+of changes more easily. We do however support "single-file mode" which provides
+limited IntelliSense.
+
+Indexing enables IntelliSense related to `module` blocks,
+such as go-to-definition, completion of `module.*` references,
+or workspace-wide symbol lookup.
+
+The server will _not_ index any folders or files above the workspace root
+initially opened in the editor.
+
 ## Emacs
 
 If you are using `use-package`, you can put this in the [init.el](https://www.gnu.org/software/emacs/manual/html_node/emacs/Init-File.html)
