@@ -187,6 +187,7 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.excludeModulePaths"] = len(out.Options.XLegacyExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
 	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
+	properties["options.ignorePaths"] = len(out.Options.IgnorePaths) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
 	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
