@@ -186,8 +186,8 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.rootModulePaths"] = len(out.Options.XLegacyModulePaths) > 0
 	properties["options.excludeModulePaths"] = len(out.Options.XLegacyExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
-	properties["options.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
-	properties["options.ignorePaths"] = len(out.Options.IgnorePaths) > 0
+	properties["options.indexing.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
+	properties["options.indexing.ignorePaths"] = len(out.Options.IgnorePaths) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
 	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
@@ -258,7 +258,7 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 	if len(options.XLegacyExcludeModulePaths) != 0 {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type: lsp.Warning,
-			Message: fmt.Sprintf("excludeModulePaths (%q) is deprecated (no-op), use ignorePaths instead",
+			Message: fmt.Sprintf("excludeModulePaths (%q) is deprecated (no-op), use indexing.ignorePaths instead",
 				options.XLegacyExcludeModulePaths),
 		})
 	}

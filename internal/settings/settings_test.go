@@ -23,7 +23,7 @@ func TestDecodeOptions_nil(t *testing.T) {
 
 func TestDecodeOptions_wrongType(t *testing.T) {
 	_, err := DecodeOptions(map[string]interface{}{
-		"ignorePaths": "/random/path",
+		"indexing.ignorePaths": "/random/path",
 	})
 	if err == nil {
 		t.Fatal("expected decoding of wrong type to result in error")
@@ -32,7 +32,7 @@ func TestDecodeOptions_wrongType(t *testing.T) {
 
 func TestDecodeOptions_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"ignorePaths": []string{"/random/path"},
+		"indexing.ignorePaths": []string{"/random/path"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -55,7 +55,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 
 	for _, table := range tables {
 		out, err := DecodeOptions(map[string]interface{}{
-			"ignoreDirectoryNames": []string{table.input},
+			"indexing.ignoreDirectoryNames": []string{table.input},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +69,7 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 }
 func TestValidate_IgnoreDirectoryNames_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"ignoreDirectoryNames": []string{"directory"},
+		"indexing.ignoreDirectoryNames": []string{"directory"},
 	})
 	if err != nil {
 		t.Fatal(err)

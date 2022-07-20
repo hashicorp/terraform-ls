@@ -17,8 +17,8 @@ type ExperimentalFeatures struct {
 
 type Options struct {
 	CommandPrefix        string   `mapstructure:"commandPrefix"`
-	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
-	IgnorePaths          []string `mapstructure:"ignorePaths"`
+	IgnoreDirectoryNames []string `mapstructure:"indexing.ignoreDirectoryNames"`
+	IgnorePaths          []string `mapstructure:"indexing.ignorePaths"`
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`

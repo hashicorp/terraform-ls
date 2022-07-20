@@ -37,7 +37,7 @@ you can just add that folder to the workspace and it will be indexed as usual.
 
 Deprecated in favour of `ignorePaths`
 
-## `ignorePaths` (`[]string`)
+## `indexing.ignorePaths` (`[]string`)
 
 Paths to ignore when indexing the workspace on initialization. This can serve
 as an escape hatch in large workspaces. Key side effect of ignoring a path
@@ -72,7 +72,11 @@ Or if left empty
 This setting should be deprecated once the language server supports multiple workspaces,
 as this arises in VS code because a server instance is started per VS Code workspace.
 
-## `ignoreDirectoryNames` (`[]string`)
+## **DEPRECATED**: `ignoreDirectoryNames` (`[]string`)
+
+Deprecated in favour of `indexing.ignoreDirectoryNames`
+
+## `indexing.ignoreDirectoryNames` (`[]string`)
 
 This allows excluding directories from being indexed upon initialization by passing a list of directory names.
 
