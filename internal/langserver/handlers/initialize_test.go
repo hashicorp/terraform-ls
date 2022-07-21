@@ -196,7 +196,7 @@ func TestInitialize_ignoreDirectoryNames(t *testing.T) {
 			"rootUri": %q,
 			"processId": 12345,
 			"initializationOptions": {
-				"ignoreDirectoryNames": [%q]
+				"indexing.ignoreDirectoryNames": [%q]
 			}
 	}`, tmpDir.URI, "ignore")})
 	waitForWalkerPath(t, ss, wc, tmpDir)

@@ -44,8 +44,8 @@ type Walker struct {
 
 	cancelFunc context.CancelFunc
 
-	excludeModulePaths   map[string]bool
-	ignoreDirectoryNames map[string]bool
+	ignoredPaths          map[string]bool
+	ignoredDirectoryNames map[string]bool
 }
 
 type WalkFunc func(ctx context.Context, modHandle document.DirHandle) (job.IDs, error)
@@ -62,12 +62,12 @@ type ModuleStore interface {
 
 func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
 	return &Walker{
-		fs:                   fs,
-		pathStore:            pathStore,
-		modStore:             modStore,
-		walkFunc:             walkFunc,
-		logger:               discardLogger,
-		ignoreDirectoryNames: skipDirNames,
+		fs:                    fs,
+		pathStore:             pathStore,
+		modStore:              modStore,
+		walkFunc:              walkFunc,
+		logger:                discardLogger,
+		ignoredDirectoryNames: skipDirNames,
 	}
 }
 
@@ -75,19 +75,19 @@ func (w *Walker) SetLogger(logger *log.Logger) {
 	w.logger = logger
 }
 
-func (w *Walker) SetExcludeModulePaths(excludeModulePaths []string) {
-	w.excludeModulePaths = make(map[string]bool)
-	for _, path := range excludeModulePaths {
-		w.excludeModulePaths[path] = true
+func (w *Walker) SetIgnoredPaths(ignoredPaths []string) {
+	w.ignoredPaths = make(map[string]bool)
+	for _, path := range ignoredPaths {
+		w.ignoredPaths[path] = true
 	}
 }
 
-func (w *Walker) SetIgnoreDirectoryNames(ignoreDirectoryNames []string) {
+func (w *Walker) SetIgnoredDirectoryNames(ignoredDirectoryNames []string) {
 	if w.cancelFunc != nil {
 		panic("cannot set ignorelist after walking started")
 	}
-	for _, path := range ignoreDirectoryNames {
-		w.ignoreDirectoryNames[path] = true
+	for _, path := range ignoredDirectoryNames {
+		w.ignoredDirectoryNames[path] = true
 	}
 }
 
@@ -154,12 +154,12 @@ func (w *Walker) collectJobIds(jobIds job.IDs) {
 }
 
 func (w *Walker) isSkippableDir(dirName string) bool {
-	_, ok := w.ignoreDirectoryNames[dirName]
+	_, ok := w.ignoredDirectoryNames[dirName]
 	return ok
 }
 
 func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
-	if _, ok := w.excludeModulePaths[dir.Path()]; ok {
+	if _, ok := w.ignoredPaths[dir.Path()]; ok {
 		w.logger.Printf("skipping walk due to dir being excluded: %s", dir.Path())
 		return nil
 	}

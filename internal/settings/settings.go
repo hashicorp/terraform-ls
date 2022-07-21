@@ -16,11 +16,9 @@ type ExperimentalFeatures struct {
 }
 
 type Options struct {
-	// ModulePaths describes a list of absolute paths to modules to load
-	ModulePaths          []string `mapstructure:"rootModulePaths"`
-	ExcludeModulePaths   []string `mapstructure:"excludeModulePaths"`
 	CommandPrefix        string   `mapstructure:"commandPrefix"`
-	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
+	IgnoreDirectoryNames []string `mapstructure:"indexing.ignoreDirectoryNames"`
+	IgnorePaths          []string `mapstructure:"indexing.ignorePaths"`
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
@@ -30,13 +28,12 @@ type Options struct {
 	TerraformExecPath    string `mapstructure:"terraformExecPath"`
 	TerraformExecTimeout string `mapstructure:"terraformExecTimeout"`
 	TerraformLogFilePath string `mapstructure:"terraformLogFilePath"`
+
+	XLegacyModulePaths        []string `mapstructure:"rootModulePaths"`
+	XLegacyExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
 }
 
 func (o *Options) Validate() error {
-	if len(o.ModulePaths) != 0 && len(o.ExcludeModulePaths) != 0 {
-		return fmt.Errorf("at most one of `rootModulePaths` and `excludeModulePaths` could be set")
-	}
-
 	if o.TerraformExecPath != "" {
 		path := o.TerraformExecPath
 		if !filepath.IsAbs(path) {
