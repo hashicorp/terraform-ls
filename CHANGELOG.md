@@ -1,5 +1,11 @@
 ## 0.29.0 (Unreleased)
 
+NOTES / BREAKING CHANGES:
+
+ - `rootModulePaths` option was deprecated and is ignored. Users should instead leverage the workspace LSP API and add the folder to a workspace, if they wish it to be indexed ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
+ - `excludeModulePaths` option was deprecated in favour of `indexing.ignorePaths`. `excludeModulePaths` is now ignored ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
+ - `ignoreDirectoryNames` option was deprecated in favour of `indexing.ignoreDirectoryNames` ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
+
 ENHANCEMENTS:
 
  - Replace internal watcher (used for watching changes in installed plugins and modules) with LSP dynamic capability registration & `workspace/didChangeWatchedFiles`. This should leave to improved performance in most cases. ([#953](https://github.com/hashicorp/terraform-ls/pull/953))
@@ -13,6 +19,7 @@ ENHANCEMENTS:
  - walker: Index uninitialized modules ([#997](https://github.com/hashicorp/terraform-ls/pull/997))
  - Recognize inputs and outputs of uninitialized local modules ([#598](https://github.com/hashicorp/terraform-ls/issues/598))
  - Enable go to module output declaration from reference ([#1007](https://github.com/hashicorp/terraform-ls/issues/1007))
+ - settings: New option `indexing.ignorePaths` was introduced ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
 
 BUG FIXES:
 
