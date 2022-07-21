@@ -16,6 +16,27 @@ Clients specifically should **not** send `*.tf.json`, `*.tfvars.json` nor
 Packer HCL config nor any other HCL config files as the server is not
 equipped to handle these file types.
 
+## Configuration
+
+Unless the client allows the end-user to pass arbitrary config options (e.g.
+generic Sublime Text LSP package without Terraform LSP package), the client
+should expose configuration as per [SETTINGS.md](./SETTINGS.md).
+
+Client should match the option names exactly, and if possible match the
+underlying data structures too. i.e. if a field is documented as `ignoreDirectoryNames`,
+it should be exposed as `ignoreDirectoryNames`, **not** ~`IgnoreDirectoryNames`~,
+or ~`ignore_directory_names`~. This is to avoid user confusion when the server
+refers to any config option in informative, warning, or error messages.
+
+Client may use a flat structure using the `.` (single dot) as a separator between
+the object name and option nested under it, such as `{ "foo.bar": "..." }` instead
+of `{ "foo": { "bar": "..." } }`. This is acceptable in situations when using
+objects is not possible or practical (e.g. VS Code wouldn't display objects
+in the Settings UI).
+
+The server will generally refer to options using the `.` address, for simplicity
+and avoidance of doubts.
+
 ## Watched Files
 
 The server (`>= 0.28.0`) supports `workspace/didChangeWatchedFiles` notifications.

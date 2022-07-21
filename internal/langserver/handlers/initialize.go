@@ -174,7 +174,8 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 		"options.rootModulePaths":                         false,
 		"options.excludeModulePaths":                      false,
 		"options.commandPrefix":                           false,
-		"options.ignoreDirectoryNames":                    false,
+		"options.indexing.ignoreDirectoryNames":           false,
+		"options.indexing.ignorePaths":                    false,
 		"options.experimentalFeatures.validateOnSave":     false,
 		"options.terraformExecPath":                       false,
 		"options.terraformExecTimeout":                    "",
@@ -186,8 +187,8 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.rootModulePaths"] = len(out.Options.XLegacyModulePaths) > 0
 	properties["options.excludeModulePaths"] = len(out.Options.XLegacyExcludeModulePaths) > 0
 	properties["options.commandPrefix"] = len(out.Options.CommandPrefix) > 0
-	properties["options.indexing.ignoreDirectoryNames"] = len(out.Options.IgnoreDirectoryNames) > 0
-	properties["options.indexing.ignorePaths"] = len(out.Options.IgnorePaths) > 0
+	properties["options.indexing.ignoreDirectoryNames"] = len(out.Options.Indexing.IgnoreDirectoryNames) > 0
+	properties["options.indexing.ignorePaths"] = len(out.Options.Indexing.IgnorePaths) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
 	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
@@ -264,7 +265,7 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 	}
 
 	var ignoredPaths []string
-	for _, rawPath := range options.IgnorePaths {
+	for _, rawPath := range options.Indexing.IgnorePaths {
 		modPath, err := resolvePath(root.Path(), rawPath)
 		if err != nil {
 			jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
@@ -307,9 +308,9 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 		}
 	}
 
-	svc.closedDirWalker.SetIgnoredDirectoryNames(options.IgnoreDirectoryNames)
+	svc.closedDirWalker.SetIgnoredDirectoryNames(options.Indexing.IgnoreDirectoryNames)
 	svc.closedDirWalker.SetIgnoredPaths(ignoredPaths)
-	svc.openDirWalker.SetIgnoredDirectoryNames(options.IgnoreDirectoryNames)
+	svc.openDirWalker.SetIgnoredDirectoryNames(options.Indexing.IgnoreDirectoryNames)
 	svc.openDirWalker.SetIgnoredPaths(ignoredPaths)
 
 	return nil
