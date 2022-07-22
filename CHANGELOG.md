@@ -4,7 +4,7 @@ NOTES / BREAKING CHANGES:
 
  - settings: `rootModulePaths` option was deprecated and is ignored. Users should instead leverage the workspace LSP API and add the folder to a workspace, if they wish it to be indexed ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
  - settings: `excludeModulePaths` option was deprecated in favour of `indexing.ignorePaths`. `excludeModulePaths` is now ignored ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003))
- - settings: `ignoreDirectoryNames` option was deprecated in favour of [`indexing.ignoreDirectoryNames`](https://github.com/hashicorp/terraform-ls/blob/main/docs/SETTINGS.md#ignoredirectorynames-string) ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003), [#1010](https://github.com/hashicorp/terraform-ls/pull/1010))
+ - settings: `ignoreDirectoryNames` option was deprecated in favour of [`indexing.ignoreDirectoryNames`](https://github.com/hashicorp/terraform-ls/blob/main/docs/SETTINGS.md#ignoredirectorynames-string). `ignoreDirectoryNames` is now ignored ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003), [#1010](https://github.com/hashicorp/terraform-ls/pull/1010))
 
 ENHANCEMENTS:
 
