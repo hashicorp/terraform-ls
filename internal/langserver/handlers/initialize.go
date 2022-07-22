@@ -262,6 +262,13 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 				options.XLegacyExcludeModulePaths),
 		})
 	}
+	if len(options.XLegacyIgnoreDirectoryNames) != 0 {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("ignoreDirectoryNames (%q) is deprecated (no-op), use indexing.ignoreDirectoryNames instead",
+				options.XLegacyIgnoreDirectoryNames),
+		})
+	}
 
 	var ignoredPaths []string
 	for _, rawPath := range options.IgnorePaths {

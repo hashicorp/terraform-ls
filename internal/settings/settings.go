@@ -29,8 +29,9 @@ type Options struct {
 	TerraformExecTimeout string `mapstructure:"terraformExecTimeout"`
 	TerraformLogFilePath string `mapstructure:"terraformLogFilePath"`
 
-	XLegacyModulePaths        []string `mapstructure:"rootModulePaths"`
-	XLegacyExcludeModulePaths []string `mapstructure:"excludeModulePaths"`
+	XLegacyModulePaths          []string `mapstructure:"rootModulePaths"`
+	XLegacyExcludeModulePaths   []string `mapstructure:"excludeModulePaths"`
+	XLegacyIgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
 }
 
 func (o *Options) Validate() error {
