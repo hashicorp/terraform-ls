@@ -257,12 +257,12 @@ var ignore = map[string]bool{
 	"delphix-integrations/delphix": true,
 	"harness-io/harness":           true,
 	"harness/harness-platform":     true,
-	"HewlettPackard/oneview":       true,
-	"HewlettPackard/hpegl":         true,
+	"hewlettpackard/oneview":       true,
+	"hewlettpackard/hpegl":         true,
 	"jradtilbrook/buildkite":       true,
 	"kvrhdn/honeycombio":           true,
 	"logicmonitor/logicmonitor":    true,
-	"ThalesGroup/ciphertrust":      true,
+	"thalesgroup/ciphertrust":      true,
 	"nullstone-io/ns":              true,
 	"zededa/zedcloud":              true,
 	"lightstep/lightstep":          true,
@@ -316,10 +316,10 @@ var darwinArm64Ignore = map[string]bool{
 
 func filter(providers []provider) (filtered []provider) {
 	for _, provider := range providers {
-		if ok := ignore[provider.Source()]; ok {
+		src := strings.ToLower(provider.Source())
+		if ok := ignore[src]; ok {
 			continue
 		}
-		src := strings.ToLower(provider.Source())
 		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 			if ok := darwinArm64Ignore[src]; ok {
 				continue
