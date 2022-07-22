@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/hashicorp/go-version"
 	hcinstall "github.com/hashicorp/hc-install"
@@ -267,10 +269,61 @@ var ignore = map[string]bool{
 	"thousandeyes/thousandeyes":    true,
 }
 
+var darwinArm64Ignore = map[string]bool{
+	"a10networks/thunder":         true,
+	"alertmixer/amixr":            true,
+	"aristanetworks/cloudvision":  true,
+	"bluecatlabs/bluecat":         true,
+	"ciscodevnet/ciscoasa":        true,
+	"ciscodevnet/mso":             true,
+	"ciscodevnet/sdwan":           true,
+	"cloudtamer-io/cloudtamerio":  true,
+	"cohesity/cohesity":           true,
+	"commvault/commvault":         true,
+	"consensys/quorum":            true,
+	"f5networks/bigip":            true,
+	"gocachebr/gocache":           true,
+	"hashicorp/opc":               true,
+	"hashicorp/oraclepaas":        true,
+	"hashicorp/template":          true,
+	"icinga/icinga2":              true,
+	"infobloxopen/infoblox":       true,
+	"infracost/infracost":         true,
+	"instaclustr/instaclustr":     true,
+	"ionos-cloud/profitbricks":    true,
+	"juniper/junos-vsrx":          true,
+	"llnw/limelight":              true,
+	"netapp/netapp-elementsw":     true,
+	"nirmata/nirmata":             true,
+	"nttcom/ecl":                  true,
+	"nutanix/nutanixkps":          true,
+	"oktadeveloper/oktaasa":       true,
+	"phoenixnap/pnap":             true,
+	"purestorage-openconnect/cbs": true,
+	"rafaysystems/rafay":          true,
+	"rundeck/rundeck":             true,
+	"sematext/sematext":           true,
+	"skytap/skytap":               true,
+	"splunk/synthetics":           true,
+	"splunk/victorops":            true,
+	"statuscakedev/statuscake":    true,
+	"transloadit/transloadit":     true,
+	"valtix-security/valtix":      true,
+	"vmware-tanzu/carvel":         true,
+	"wallix/waapm":                true,
+	"william20111/thousandeyes":   true,
+}
+
 func filter(providers []provider) (filtered []provider) {
 	for _, provider := range providers {
 		if ok := ignore[provider.Source()]; ok {
 			continue
+		}
+		src := strings.ToLower(provider.Source())
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			if ok := darwinArm64Ignore[src]; ok {
+				continue
+			}
 		}
 		filtered = append(filtered, provider)
 	}
