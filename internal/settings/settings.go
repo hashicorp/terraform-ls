@@ -20,6 +20,12 @@ type Indexing struct {
 	IgnorePaths          []string `mapstructure:"ignorePaths"`
 }
 
+type Terraform struct {
+	Path        string `mapstructure:"path"`
+	Timeout     string `mapstructure:"timeout"`
+	LogFilePath string `mapstructure:"logFilePath"`
+}
+
 type Options struct {
 	CommandPrefix string   `mapstructure:"commandPrefix"`
 	Indexing      Indexing `mapstructure:"indexing"`
@@ -29,18 +35,19 @@ type Options struct {
 
 	IgnoreSingleFileWarning bool `mapstructure:"ignoreSingleFileWarning"`
 
-	TerraformExecPath    string `mapstructure:"terraformExecPath"`
-	TerraformExecTimeout string `mapstructure:"terraformExecTimeout"`
-	TerraformLogFilePath string `mapstructure:"terraformLogFilePath"`
+	Terraform Terraform `mapstructure:"terraform"`
 
-	XLegacyModulePaths          []string `mapstructure:"rootModulePaths"`
-	XLegacyExcludeModulePaths   []string `mapstructure:"excludeModulePaths"`
-	XLegacyIgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
+	XLegacyModulePaths              []string `mapstructure:"rootModulePaths"`
+	XLegacyExcludeModulePaths       []string `mapstructure:"excludeModulePaths"`
+	XLegacyIgnoreDirectoryNames     []string `mapstructure:"ignoreDirectoryNames"`
+	XLegacyTerraformExecPath        string   `mapstructure:"terraformExecPath"`
+	XLegacyTerraformExecTimeout     string   `mapstructure:"terraformExecTimeout"`
+	XLegacyTerraformExecLogFilePath string   `mapstructure:"terraformExecLogFilePath"`
 }
 
 func (o *Options) Validate() error {
-	if o.TerraformExecPath != "" {
-		path := o.TerraformExecPath
+	if o.Terraform.Path != "" {
+		path := o.Terraform.Path
 		if !filepath.IsAbs(path) {
 			return fmt.Errorf("Expected absolute path for Terraform binary, got %q", path)
 		}

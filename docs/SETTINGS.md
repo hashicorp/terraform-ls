@@ -10,23 +10,39 @@ Clients which expose these config options to the end-user are advised to match t
 
 The language server supports the following configuration options:
 
-## `terraformLogFilePath` (`string`)
+## `terraform` (object `{}`)
+
+Terraform CLI related settings (used e.g. in formatting code via `terraform fmt`).
+
+### `logFilePath` (`string`)
 
 Path to a file for Terraform executions to be logged into (`TF_LOG_PATH`)
 with support for variables (e.g. Timestamp, Pid, Ppid) via Go template
 syntax `{{.VarName}}`
 
-## `terraformExecTimeout` (`string`)
+### `timeout` (`string`)
 
 Overrides Terraform execution timeout in [`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration)
 compatible format (e.g. `30s`)
 
-## `terraformExecPath` (`string`)
+### `path` (`string`)
 
 Path to the Terraform binary.
 
 This is usually looked up automatically from `$PATH` and should not need to be
 specified in majority of cases. Use this to override the automatic lookup.
+
+## **DEPRECATED**: `terraformLogFilePath` (`string`)
+
+Deprecated in favour of `terraform.logFilePath`
+
+## **DEPRECATED**: `terraformExecTimeout` (`string`)
+
+Deprecated in favour of `terraform.timeout`
+
+## **DEPRECATED**: `terraformExecPath` (`string`)
+
+Deprecated in favour of `terraform.path`
 
 ## **DEPRECATED**: `rootModulePaths` (`[]string`)
 
