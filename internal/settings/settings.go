@@ -15,10 +15,14 @@ type ExperimentalFeatures struct {
 	PrefillRequiredFields bool `mapstructure:"prefillRequiredFields"`
 }
 
+type Indexing struct {
+	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
+	IgnorePaths          []string `mapstructure:"ignorePaths"`
+}
+
 type Options struct {
-	CommandPrefix        string   `mapstructure:"commandPrefix"`
-	IgnoreDirectoryNames []string `mapstructure:"indexing.ignoreDirectoryNames"`
-	IgnorePaths          []string `mapstructure:"indexing.ignorePaths"`
+	CommandPrefix string   `mapstructure:"commandPrefix"`
+	Indexing      Indexing `mapstructure:"indexing"`
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
@@ -49,8 +53,8 @@ func (o *Options) Validate() error {
 		}
 	}
 
-	if len(o.IgnoreDirectoryNames) > 0 {
-		for _, directory := range o.IgnoreDirectoryNames {
+	if len(o.Indexing.IgnoreDirectoryNames) > 0 {
+		for _, directory := range o.Indexing.IgnoreDirectoryNames {
 			if directory == datadir.DataDirName {
 				return fmt.Errorf("cannot ignore directory %q", datadir.DataDirName)
 			}

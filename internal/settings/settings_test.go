@@ -16,14 +16,16 @@ func TestDecodeOptions_nil(t *testing.T) {
 	}
 	opts := out.Options
 
-	if opts.IgnoreDirectoryNames != nil {
-		t.Fatalf("expected no options for nil, %#v given", opts.IgnoreDirectoryNames)
+	if opts.Indexing.IgnoreDirectoryNames != nil {
+		t.Fatalf("expected no options for nil, %#v given", opts.Indexing.IgnoreDirectoryNames)
 	}
 }
 
 func TestDecodeOptions_wrongType(t *testing.T) {
 	_, err := DecodeOptions(map[string]interface{}{
-		"indexing.ignorePaths": "/random/path",
+		"indexing": map[string]interface{}{
+			"ignorePaths": "/random/path",
+		},
 	})
 	if err == nil {
 		t.Fatal("expected decoding of wrong type to result in error")
@@ -32,14 +34,16 @@ func TestDecodeOptions_wrongType(t *testing.T) {
 
 func TestDecodeOptions_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"indexing.ignorePaths": []string{"/random/path"},
+		"indexing": map[string]interface{}{
+			"ignorePaths": []string{"/random/path"},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	opts := out.Options
 	expectedPaths := []string{"/random/path"}
-	if diff := cmp.Diff(expectedPaths, opts.IgnorePaths); diff != "" {
+	if diff := cmp.Diff(expectedPaths, opts.Indexing.IgnorePaths); diff != "" {
 		t.Fatalf("options mismatch: %s", diff)
 	}
 }
@@ -55,7 +59,9 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 
 	for _, table := range tables {
 		out, err := DecodeOptions(map[string]interface{}{
-			"indexing.ignoreDirectoryNames": []string{table.input},
+			"indexing": map[string]interface{}{
+				"ignoreDirectoryNames": []string{table.input},
+			},
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +75,9 @@ func TestValidate_IgnoreDirectoryNames_error(t *testing.T) {
 }
 func TestValidate_IgnoreDirectoryNames_success(t *testing.T) {
 	out, err := DecodeOptions(map[string]interface{}{
-		"indexing.ignoreDirectoryNames": []string{"directory"},
+		"indexing": map[string]interface{}{
+			"ignoreDirectoryNames": []string{"directory"},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)

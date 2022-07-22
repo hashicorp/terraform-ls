@@ -1,5 +1,11 @@
 # Settings
 
+## Data Structures
+
+We use (JSON) objects to group some config options. Where applicable and necessary, we refer to nested fields using the `.` as a separator. i.e. A hypothetical `bar` option under `{"foo": { "bar": "..." } }` would be referred to as `foo.bar`.
+
+Clients which expose these config options to the end-user are advised to match the option names and, if possible data structures. Some clients (VS Code extension) may however use flat structure, such as `{"foo.bar": "..."}` if using objects is not possible or practical.
+
 ## Supported Options
 
 The language server supports the following configuration options:
@@ -35,9 +41,11 @@ you can just add that folder to the workspace and it will be indexed as usual.
 
 ## **DEPRECATED**: `excludeModulePaths` (`[]string`)
 
-Deprecated in favour of `ignorePaths`
+Deprecated in favour of `indexing.ignorePaths`
 
-## `indexing.ignorePaths` (`[]string`)
+## `indexing` (object `{}`)
+
+### `ignorePaths` (`[]string`)
 
 Paths to ignore when indexing the workspace on initialization. This can serve
 as an escape hatch in large workspaces. Key side effect of ignoring a path
@@ -51,6 +59,22 @@ Path separators are converted automatically to the match separators
 of the target platform (e.g. `\` on Windows, or `/` on Unix),
 symlinks are followed, trailing slashes automatically removed,
 and `~` is replaced with your home directory.
+
+## `ignoreDirectoryNames` (`[]string`)
+
+This allows excluding directories from being indexed upon initialization by passing a list of directory names.
+
+The following list of directories will always be ignored:
+
+- `.git`
+- `.idea`
+- `.vscode`
+- `terraform.tfstate.d`
+- `.terragrunt-cache`
+
+## **DEPRECATED**: `ignoreDirectoryNames` (`[]string`)
+
+Deprecated in favour of `indexing.ignoreDirectoryNames`
 
 ## `commandPrefix`
 
@@ -71,22 +95,6 @@ Or if left empty
 
 This setting should be deprecated once the language server supports multiple workspaces,
 as this arises in VS code because a server instance is started per VS Code workspace.
-
-## **DEPRECATED**: `ignoreDirectoryNames` (`[]string`)
-
-Deprecated in favour of `indexing.ignoreDirectoryNames`
-
-## `indexing.ignoreDirectoryNames` (`[]string`)
-
-This allows excluding directories from being indexed upon initialization by passing a list of directory names.
-
-The following list of directories will always be ignored:
-
-- `.git`
-- `.idea`
-- `.vscode`
-- `terraform.tfstate.d`
-- `.terragrunt-cache`
 
 ## `ignoreSingleFileWarning` (`bool`)
 
