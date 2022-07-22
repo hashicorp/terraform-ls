@@ -108,8 +108,6 @@ func gen() error {
 
 	defer i.Remove(ctx)
 
-	log.Println("running terraform init")
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -119,6 +117,14 @@ func gen() error {
 	if err != nil {
 		return err
 	}
+
+	coreVersion, _, err := tf.Version(ctx, false)
+	if err != nil {
+		return err
+	}
+	log.Printf("using Terraform %s", coreVersion)
+
+	log.Println("running terraform init")
 
 	err = tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
