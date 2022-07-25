@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/hashicorp/go-version"
 	hcinstall "github.com/hashicorp/hc-install"
@@ -108,8 +110,6 @@ func gen() error {
 
 	defer i.Remove(ctx)
 
-	log.Println("running terraform init")
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -119,6 +119,14 @@ func gen() error {
 	if err != nil {
 		return err
 	}
+
+	coreVersion, _, err := tf.Version(ctx, false)
+	if err != nil {
+		return err
+	}
+	log.Printf("using Terraform %s", coreVersion)
+
+	log.Println("running terraform init")
 
 	err = tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -249,22 +257,73 @@ var ignore = map[string]bool{
 	"delphix-integrations/delphix": true,
 	"harness-io/harness":           true,
 	"harness/harness-platform":     true,
-	"HewlettPackard/oneview":       true,
-	"HewlettPackard/hpegl":         true,
+	"hewlettpackard/oneview":       true,
+	"hewlettpackard/hpegl":         true,
 	"jradtilbrook/buildkite":       true,
 	"kvrhdn/honeycombio":           true,
 	"logicmonitor/logicmonitor":    true,
-	"ThalesGroup/ciphertrust":      true,
+	"thalesgroup/ciphertrust":      true,
 	"nullstone-io/ns":              true,
 	"zededa/zedcloud":              true,
 	"lightstep/lightstep":          true,
 	"thousandeyes/thousandeyes":    true,
 }
 
+var darwinArm64Ignore = map[string]bool{
+	"a10networks/thunder":         true,
+	"alertmixer/amixr":            true,
+	"aristanetworks/cloudvision":  true,
+	"bluecatlabs/bluecat":         true,
+	"ciscodevnet/ciscoasa":        true,
+	"ciscodevnet/mso":             true,
+	"ciscodevnet/sdwan":           true,
+	"cloudtamer-io/cloudtamerio":  true,
+	"cohesity/cohesity":           true,
+	"commvault/commvault":         true,
+	"consensys/quorum":            true,
+	"f5networks/bigip":            true,
+	"gocachebr/gocache":           true,
+	"hashicorp/opc":               true,
+	"hashicorp/oraclepaas":        true,
+	"hashicorp/template":          true,
+	"icinga/icinga2":              true,
+	"infobloxopen/infoblox":       true,
+	"infracost/infracost":         true,
+	"instaclustr/instaclustr":     true,
+	"ionos-cloud/profitbricks":    true,
+	"juniper/junos-vsrx":          true,
+	"llnw/limelight":              true,
+	"netapp/netapp-elementsw":     true,
+	"nirmata/nirmata":             true,
+	"nttcom/ecl":                  true,
+	"nutanix/nutanixkps":          true,
+	"oktadeveloper/oktaasa":       true,
+	"phoenixnap/pnap":             true,
+	"purestorage-openconnect/cbs": true,
+	"rafaysystems/rafay":          true,
+	"rundeck/rundeck":             true,
+	"sematext/sematext":           true,
+	"skytap/skytap":               true,
+	"splunk/synthetics":           true,
+	"splunk/victorops":            true,
+	"statuscakedev/statuscake":    true,
+	"transloadit/transloadit":     true,
+	"valtix-security/valtix":      true,
+	"vmware-tanzu/carvel":         true,
+	"wallix/waapm":                true,
+	"william20111/thousandeyes":   true,
+}
+
 func filter(providers []provider) (filtered []provider) {
 	for _, provider := range providers {
-		if ok := ignore[provider.Source()]; ok {
+		src := strings.ToLower(provider.Source())
+		if ok := ignore[src]; ok {
 			continue
+		}
+		if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+			if ok := darwinArm64Ignore[src]; ok {
+				continue
+			}
 		}
 		filtered = append(filtered, provider)
 	}
