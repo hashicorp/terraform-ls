@@ -88,3 +88,19 @@ func TestValidate_IgnoreDirectoryNames_success(t *testing.T) {
 		t.Fatalf("did not expect error: %s", result)
 	}
 }
+
+func TestValidate_relativePath(t *testing.T) {
+	out, err := DecodeOptions(map[string]interface{}{
+		"terraform": map[string]interface{}{
+			"path": "relative/path",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result := out.Options.Validate()
+	if result == nil {
+		t.Fatal("expected decoding of relative path to result in error")
+	}
+}
