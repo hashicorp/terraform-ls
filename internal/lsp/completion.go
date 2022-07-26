@@ -71,6 +71,7 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
 		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippetSupport),
+		Data:                candidate.ResolveHook,
 	}
 
 	if caps.CompletionItem.DeprecatedSupport {
