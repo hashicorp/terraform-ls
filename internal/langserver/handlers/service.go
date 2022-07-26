@@ -372,17 +372,40 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 }
 
 func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *settings.Options) error {
+	// Raise warnings for deprecated options
+	if cfgOpts.XLegacyTerraformExecPath != "" {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("terraformExecPath (%q) is deprecated (no-op), use terraform.path instead",
+				cfgOpts.XLegacyExcludeModulePaths),
+		})
+	}
+	if cfgOpts.XLegacyTerraformExecTimeout != "" {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("terraformExecTimeout (%q) is deprecated (no-op), use terraform.timeout instead",
+				cfgOpts.XLegacyExcludeModulePaths),
+		})
+	}
+	if cfgOpts.XLegacyTerraformExecLogFilePath != "" {
+		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
+			Type: lsp.Warning,
+			Message: fmt.Sprintf("terraformExecLogFilePath (%q) is deprecated (no-op), use terraform.logFilePath instead",
+				cfgOpts.XLegacyExcludeModulePaths),
+		})
+	}
+
 	// The following is set via CLI flags, hence available in the server context
 	execOpts := &exec.ExecutorOpts{}
 	cliExecPath, ok := lsctx.TerraformExecPath(svc.srvCtx)
 	if ok {
-		if len(cfgOpts.TerraformExecPath) > 0 {
+		if len(cfgOpts.Terraform.Path) > 0 {
 			return fmt.Errorf("Terraform exec path can either be set via (-tf-exec) CLI flag " +
-				"or (terraformExecPath) LSP config option, not both")
+				"or (terraform.path) LSP config option, not both")
 		}
 		execOpts.ExecPath = cliExecPath
-	} else if len(cfgOpts.TerraformExecPath) > 0 {
-		execOpts.ExecPath = cfgOpts.TerraformExecPath
+	} else if len(cfgOpts.Terraform.Path) > 0 {
+		execOpts.ExecPath = cfgOpts.Terraform.Path
 	} else {
 		path, err := svc.tfDiscoFunc()
 		if err == nil {
@@ -393,26 +416,26 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	path, ok := lsctx.TerraformExecLogPath(svc.srvCtx)
 	if ok {
-		if len(cfgOpts.TerraformLogFilePath) > 0 {
+		if len(cfgOpts.Terraform.LogFilePath) > 0 {
 			return fmt.Errorf("Terraform log file path can either be set via (-tf-log-file) CLI flag " +
-				"or (terraformLogFilePath) LSP config option, not both")
+				"or (terraform.logFilePath) LSP config option, not both")
 		}
 		execOpts.ExecLogPath = path
-	} else if len(cfgOpts.TerraformLogFilePath) > 0 {
-		execOpts.ExecLogPath = cfgOpts.TerraformLogFilePath
+	} else if len(cfgOpts.Terraform.LogFilePath) > 0 {
+		execOpts.ExecLogPath = cfgOpts.Terraform.LogFilePath
 	}
 
 	timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx)
 	if ok {
-		if len(cfgOpts.TerraformExecTimeout) > 0 {
+		if len(cfgOpts.Terraform.Timeout) > 0 {
 			return fmt.Errorf("Terraform exec timeout can either be set via (-tf-exec-timeout) CLI flag " +
-				"or (terraformExecTimeout) LSP config option, not both")
+				"or (terraform.timeout) LSP config option, not both")
 		}
 		execOpts.Timeout = timeout
-	} else if len(cfgOpts.TerraformExecTimeout) > 0 {
-		d, err := time.ParseDuration(cfgOpts.TerraformExecTimeout)
+	} else if len(cfgOpts.Terraform.Timeout) > 0 {
+		d, err := time.ParseDuration(cfgOpts.Terraform.Timeout)
 		if err != nil {
-			return fmt.Errorf("Failed to parse terraformExecTimeout LSP config option: %s", err)
+			return fmt.Errorf("Failed to parse terraform.timeout LSP config option: %s", err)
 		}
 		execOpts.Timeout = d
 	}
