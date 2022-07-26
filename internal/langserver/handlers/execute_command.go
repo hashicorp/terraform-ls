@@ -24,6 +24,7 @@ func cmdHandlers(svc *service) cmd.Handlers {
 		cmd.Name("terraform.validate"): cmdHandler.TerraformValidateHandler,
 		cmd.Name("module.calls"):       cmdHandler.ModuleCallsHandler,
 		cmd.Name("module.providers"):   cmdHandler.ModuleProvidersHandler,
+		cmd.Name("module.terraform"):   cmdHandler.TerraformVersionRequestHandler,
 	}
 }
 
