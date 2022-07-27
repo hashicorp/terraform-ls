@@ -484,10 +484,12 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
 	svc.indexer.SetLogger(svc.logger)
 
-	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
+	svc.decoder = decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: svc.modStore,
 		SchemaReader: svc.schemaStore,
 	})
+	decoderContext := idecoder.DecoderContext(ctx)
+	svc.decoder.SetContext(decoderContext)
 
 	err = schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
 	if err != nil {

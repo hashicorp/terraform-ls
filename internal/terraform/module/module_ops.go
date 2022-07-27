@@ -7,8 +7,9 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/terraform-ls/internal/decoder"
+	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -276,17 +277,20 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
-	d, err := decoder.NewDecoder(ctx, &decoder.PathReader{
+	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
 		SchemaReader: schemaReader,
-	}).Path(lang.Path{
+	})
+	d.SetContext(idecoder.DecoderContext(ctx))
+
+	pd, err := d.Path(lang.Path{
 		Path:       modPath,
 		LanguageID: ilsp.Terraform.String(),
 	})
 	if err != nil {
 		return err
 	}
-	targets, rErr := d.CollectReferenceTargets()
+	targets, rErr := pd.CollectReferenceTargets()
 
 	targets = append(targets, builtinReferences(modPath)...)
 
@@ -304,10 +308,11 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
-	d := decoder.NewDecoder(ctx, &decoder.PathReader{
+	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
 		SchemaReader: schemaReader,
 	})
+	d.SetContext(idecoder.DecoderContext(ctx))
 
 	moduleDecoder, err := d.Path(lang.Path{
 		Path:       modPath,
@@ -333,10 +338,11 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 		return err
 	}
 
-	d := decoder.NewDecoder(ctx, &decoder.PathReader{
+	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
 		SchemaReader: schemaReader,
 	})
+	d.SetContext(idecoder.DecoderContext(ctx))
 
 	varsDecoder, err := d.Path(lang.Path{
 		Path:       modPath,
