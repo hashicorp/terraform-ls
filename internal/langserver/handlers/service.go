@@ -397,14 +397,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	// The following is set via CLI flags, hence available in the server context
 	execOpts := &exec.ExecutorOpts{}
-	cliExecPath, ok := lsctx.TerraformExecPath(svc.srvCtx)
-	if ok {
-		if len(cfgOpts.Terraform.Path) > 0 {
-			return fmt.Errorf("Terraform exec path can either be set via (-tf-exec) CLI flag " +
-				"or (terraform.path) LSP config option, not both")
-		}
-		execOpts.ExecPath = cliExecPath
-	} else if len(cfgOpts.Terraform.Path) > 0 {
+	if len(cfgOpts.Terraform.Path) > 0 {
 		execOpts.ExecPath = cfgOpts.Terraform.Path
 	} else {
 		path, err := svc.tfDiscoFunc()
@@ -414,25 +407,11 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	}
 	svc.srvCtx = lsctx.WithTerraformExecPath(svc.srvCtx, execOpts.ExecPath)
 
-	path, ok := lsctx.TerraformExecLogPath(svc.srvCtx)
-	if ok {
-		if len(cfgOpts.Terraform.LogFilePath) > 0 {
-			return fmt.Errorf("Terraform log file path can either be set via (-tf-log-file) CLI flag " +
-				"or (terraform.logFilePath) LSP config option, not both")
-		}
-		execOpts.ExecLogPath = path
-	} else if len(cfgOpts.Terraform.LogFilePath) > 0 {
+	if len(cfgOpts.Terraform.LogFilePath) > 0 {
 		execOpts.ExecLogPath = cfgOpts.Terraform.LogFilePath
 	}
 
-	timeout, ok := lsctx.TerraformExecTimeout(svc.srvCtx)
-	if ok {
-		if len(cfgOpts.Terraform.Timeout) > 0 {
-			return fmt.Errorf("Terraform exec timeout can either be set via (-tf-exec-timeout) CLI flag " +
-				"or (terraform.timeout) LSP config option, not both")
-		}
-		execOpts.Timeout = timeout
-	} else if len(cfgOpts.Terraform.Timeout) > 0 {
+	if len(cfgOpts.Terraform.Timeout) > 0 {
 		d, err := time.ParseDuration(cfgOpts.Terraform.Timeout)
 		if err != nil {
 			return fmt.Errorf("Failed to parse terraform.timeout LSP config option: %s", err)
@@ -474,7 +453,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {
-		if _, ok = lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
+		if _, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).ShowReferencesCommandId(); ok {
 			moduleHooks = append(moduleHooks, refreshCodeLens(svc.server))
 		}
 

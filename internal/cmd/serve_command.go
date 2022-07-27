@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"runtime/pprof"
 	"strings"
 	"syscall"
-	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
@@ -28,9 +26,6 @@ type ServeCommand struct {
 	// flags
 	port           int
 	logFilePath    string
-	tfExecPath     string
-	tfExecLogPath  string
-	tfExecTimeout  string
 	cpuProfile     string
 	memProfile     string
 	reqConcurrency int
@@ -42,11 +37,6 @@ func (c *ServeCommand) flags() *flag.FlagSet {
 	fs.IntVar(&c.port, "port", 0, "port number to listen on (turns server into TCP mode)")
 	fs.StringVar(&c.logFilePath, "log-file", "", "path to a file to log into with support "+
 		"for variables (e.g. timestamp, pid, ppid) via Go template syntax {{varName}}")
-	fs.StringVar(&c.tfExecPath, "tf-exec", "", "(DEPRECATED) path to Terraform binary. Use terraformExecPath LSP config option instead.")
-	fs.StringVar(&c.tfExecTimeout, "tf-exec-timeout", "", "(DEPRECATED) Overrides Terraform execution timeout (e.g. 30s)")
-	fs.StringVar(&c.tfExecLogPath, "tf-log-file", "", "(DEPRECATED) path to a file for Terraform executions"+
-		" to be logged into with support for variables (e.g. timestamp, pid, ppid) via Go template"+
-		" syntax {{varName}}")
 	fs.StringVar(&c.cpuProfile, "cpuprofile", "", "file into which to write CPU profile (if not empty)"+
 		" with support for variables (e.g. timestamp, pid, ppid) via Go template"+
 		" syntax {{varName}}")
@@ -98,61 +88,6 @@ func (c *ServeCommand) Run(args []string) int {
 	ctx, cancelFunc := lsctx.WithSignalCancel(context.Background(), logger,
 		os.Interrupt, syscall.SIGTERM)
 	defer cancelFunc()
-
-	// Setting this option as a CLI flag is deprecated
-	// in favor of `terraformLogFilePath` LSP config option.
-	// This validation code is duplicated, make changes accordingly.
-	if c.tfExecLogPath != "" {
-		err := logging.ValidateExecLogPath(c.tfExecLogPath)
-		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to setup logging for Terraform: %s", err))
-			return 1
-		}
-		ctx = lsctx.WithTerraformExecLogPath(ctx, c.tfExecLogPath)
-		logger.Printf("Terraform executions will be logged to %s "+
-			"(interpolated at the time of execution)", c.tfExecLogPath)
-		logger.Println("[WARN] -tf-log-file is deprecated in favor of `terraformLogFilePath` LSP config option")
-	}
-
-	// Setting this option as a CLI flag is deprecated
-	// in favor of `terraformExecTimeout` LSP config option.
-	// This validation code is duplicated, make changes accordingly.
-	if c.tfExecTimeout != "" {
-		d, err := time.ParseDuration(c.tfExecTimeout)
-		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Failed to parse Terraform timeout: %s", err))
-			return 1
-		}
-		ctx = lsctx.WithTerraformExecTimeout(ctx, d)
-		logger.Printf("Terraform execution timeout set to %s", d)
-		logger.Println("[WARN] -tf-exec-timeout is deprecated in favor of `terraformExecTimeout` LSP config option")
-	}
-
-	// Setting this option as a CLI flag is deprecated
-	// in favor of `terraformExecPath` LSP config option.
-	// This validation code is duplicated, make changes accordingly.
-	if c.tfExecPath != "" {
-		path := c.tfExecPath
-
-		// just some sanity checking here, no need to get too specific otherwise will be complex cross-OS
-		if !filepath.IsAbs(path) {
-			c.Ui.Error(fmt.Sprintf("Expected absolute path for Terraform binary, got %q", path))
-			return 1
-		}
-		stat, err := os.Stat(path)
-		if err != nil {
-			c.Ui.Error(fmt.Sprintf("Unable to find Terraform binary: %s", err))
-			return 1
-		}
-		if stat.IsDir() {
-			c.Ui.Error(fmt.Sprintf("Expected a Terraform binary, got a directory: %q", path))
-			return 1
-		}
-
-		ctx = lsctx.WithTerraformExecPath(ctx, path)
-		logger.Printf("Terraform exec path set to %q", path)
-		logger.Println("[WARN] -tf-exec is deprecated in favor of `terraformExecPath` LSP config option")
-	}
 
 	if c.reqConcurrency != 0 {
 		ctx = langserver.WithRequestConcurrency(ctx, c.reqConcurrency)
