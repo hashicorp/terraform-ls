@@ -70,7 +70,7 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		Documentation:       doc,
 		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
-		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippetSupport),
+		AdditionalTextEdits: TextEdits(candidate.AdditionalTextEdits, snippetSupport),
 		Data:                candidate.ResolveHook,
 		// TODO set deprecated via `tags` if supported.
 	}

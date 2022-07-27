@@ -217,6 +217,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, svc.TextDocumentComplete)
 		},
+		"completionItem/resolve": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = ilsp.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+
+			return handle(ctx, req, svc.CompletionItemResolve)
+		},
 		"textDocument/hover": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
