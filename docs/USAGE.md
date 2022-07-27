@@ -4,6 +4,19 @@ This guide assumes you have installed the server by following instructions
 in the [README.md](../README.md) if that is applicable to your client
 (i.e. if the client doesn't download the server itself).
 
+The following filetypes are supported by the Terraform Language Server:
+
+- `terraform` - standard `*.tf` config files
+- `terraform-vars` - variable files (`*.tfvars`)
+
+*NOTE* Clients should be configured to follow the above language ID conventions
+and do **not** send `*.tf.json`, `*.tfvars.json` nor Packer HCL config
+nor any other HCL config files as the server is not
+equipped to handle these file types.
+
+In most clients with a dedicated Terraform extension/plugin this is
+already the default configuration, so you should not need to worry about it.
+
 Instructions for popular IDEs are below and pull requests
 for updates or addition of more IDEs are welcomed.
 
@@ -141,13 +154,22 @@ let g:LanguageClient_serverCommands = {
 ### Neovim v0.5.0+
 
  - Install the [nvim-lspconfig plugin](https://github.com/neovim/nvim-lspconfig)
- - Add the following to your `.vimrc`:
+ - Add the following to your `.vimrc` or `init.vim`:
 
 ```vim
 lua <<EOF
-  require'lspconfig'.terraformls.setup{} 
+  require'lspconfig'.terraformls.setup{}
 EOF
+autocmd BufWritePre *.tfvars lua vim.lsp.buf.formatting_sync()
 autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
+```
+ - If you are using `init.lua`:
+```lua
+require'lspconfig'.terraformls.setup{}
+vim.api.nvim_create_autocmd({"BufWritePre"}, {
+  pattern = {"*.tf", "*.tfvars"},
+  callback = vim.lsp.buf.formatting_sync,
+})
 ```
 
 Make sure to read through to [server_configurations.md#terraformls](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#terraformls) if you need more detailed settings.
