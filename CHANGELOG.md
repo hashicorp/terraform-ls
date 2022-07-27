@@ -8,6 +8,7 @@ NOTES / BREAKING CHANGES:
  - settings: `terraformExecPath` option was deprecated in favour of [`terraform.path`](https://github.com/hashicorp/terraform-ls/blob/v0.29.0/docs/SETTINGS.md#path-string). Old option is now ignored. ([#1011](https://github.com/hashicorp/terraform-ls/pull/1011))
  - settings: `terraformExecTimeout` option was deprecated in favour of [`terraform.timeout`](https://github.com/hashicorp/terraform-ls/blob/v0.29.0/docs/SETTINGS.md#timeout-string). Old option is now ignored. ([#1011](https://github.com/hashicorp/terraform-ls/pull/1011))
  - settings: `terraformLogFilePath` option was deprecated in favour of [`terraform.logFilePath`](https://github.com/hashicorp/terraform-ls/blob/v0.29.0/docs/SETTINGS.md#logfilepath-string). Old option is now ignored. ([#1011](https://github.com/hashicorp/terraform-ls/pull/1011))
+ - cmd/serve: Previously deprecated `-tf-exec*` CLI flags were removed (`-tf-exec`, `-tf-exec-timeout` and `-tf-log-file`) in favour of LSP-based [`terraform.*`](https://github.com/hashicorp/terraform-ls/blob/main/docs/SETTINGS.md#terraform-object-) configuration options ([#1012](https://github.com/hashicorp/terraform-ls/pull/1012))
 
 ENHANCEMENTS:
 
