@@ -9,10 +9,13 @@ The following filetypes are supported by the Terraform Language Server:
 - `terraform` - standard `*.tf` config files
 - `terraform-vars` - variable files (`*.tfvars`)
 
-*NOTE* Clients specifically should **not** send `*.tf.json`, `*.tfvars.json` nor
-Packer HCL config nor any other HCL config files as the server is not
+*NOTE* Clients should be configured to follow the above language ID conventions
+and do **not** send `*.tf.json`, `*.tfvars.json` nor Packer HCL config
+nor any other HCL config files as the server is not
 equipped to handle these file types.
 
+In most clients with a dedicated Terraform extension/plugin this is
+already the default configuration, so you should not need to worry about it.
 
 Instructions for popular IDEs are below and pull requests
 for updates or addition of more IDEs are welcomed.
