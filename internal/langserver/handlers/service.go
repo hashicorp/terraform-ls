@@ -489,6 +489,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		SchemaReader: svc.schemaStore,
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
+	svc.AppendCompletionHooks(decoderContext)
 	svc.decoder.SetContext(decoderContext)
 
 	err = schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)

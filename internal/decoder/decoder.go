@@ -75,9 +75,11 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 
 func DecoderContext(ctx context.Context) decoder.DecoderContext {
 	dCtx := decoder.DecoderContext{
-		UtmSource:     utm.UtmSource,
-		UtmMedium:     utm.UtmMedium(ctx),
-		UseUtmContent: true,
+		UtmSource:              utm.UtmSource,
+		UtmMedium:              utm.UtmMedium(ctx),
+		UseUtmContent:          true,
+		CompletionHooks:        make(decoder.CompletionFuncMap),
+		CompletionResolveHooks: make(decoder.CompletionResolveFuncMap),
 	}
 
 	cc, err := ilsp.ClientCapabilities(ctx)
