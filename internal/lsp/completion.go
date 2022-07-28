@@ -71,8 +71,11 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
 		AdditionalTextEdits: TextEdits(candidate.AdditionalTextEdits, snippetSupport),
-		Data:                candidate.ResolveHook,
 		// TODO set deprecated via `tags` if supported.
+	}
+
+	if candidate.ResolveHook != nil {
+		item.Data = candidate.ResolveHook
 	}
 
 	if caps.CompletionItem.DeprecatedSupport {
