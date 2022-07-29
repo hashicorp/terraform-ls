@@ -48,17 +48,15 @@ func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cm
 		return response, nil
 	}
 
-	progress.Report(ctx, "Module info found ...")
-	if mod.TerraformVersion == nil {
-		return response, nil
+	progress.Report(ctx, "Recording terraform version info ...")
+	if mod.TerraformVersion != nil {
+		response.DiscoveredVersion = mod.TerraformVersion.String()
 	}
-	if mod.Meta.CoreRequirements == nil {
-		return response, nil
+	if mod.Meta.CoreRequirements != nil {
+		response.RequiredVersion = mod.Meta.CoreRequirements.String()
 	}
 
-	progress.Report(ctx, "Recording terraform version info ...")
-	response.DiscoveredVersion = mod.TerraformVersion.String()
-	response.RequiredVersion = mod.Meta.CoreRequirements.String()
+	progress.Report(ctx, "Sending response ...")
 
 	return response, nil
 }
