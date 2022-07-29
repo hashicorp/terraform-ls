@@ -16,7 +16,6 @@ type terraformInfoResponse struct {
 	FormatVersion     int    `json:"v"`
 	RequiredVersion   string `json:"required_version,omitempty"`
 	DiscoveredVersion string `json:"discovered_version,omitempty"`
-	DiscoveredPath    string `json:"discovered_path,omitempty"`
 }
 
 func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
