@@ -6,6 +6,7 @@ import (
 
 	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
+	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -19,10 +20,16 @@ type terraformInfoResponse struct {
 }
 
 func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
+	progress.Begin(ctx, "Initializing")
+	defer func() {
+		progress.End(ctx, "Finished")
+	}()
+
 	response := terraformInfoResponse{
 		FormatVersion: terraformVersionRequestVersion,
 	}
 
+	progress.Report(ctx, "Finding current module info ...")
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
 		return response, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
@@ -42,6 +49,7 @@ func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cm
 		return response, nil
 	}
 
+	progress.Report(ctx, "Module info found ...")
 	if mod.TerraformVersion == nil {
 		return response, nil
 	}
@@ -49,6 +57,7 @@ func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cm
 		return response, nil
 	}
 
+	progress.Report(ctx, "Recording terraform version info ...")
 	response.DiscoveredVersion = mod.TerraformVersion.String()
 	response.RequiredVersion = mod.Meta.CoreRequirements.String()
 
