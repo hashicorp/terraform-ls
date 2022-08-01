@@ -55,14 +55,15 @@ var dbSchema = &memdb.DBSchema{
 					Unique:  true,
 					Indexer: &StringerFieldIndexer{Field: "ID"},
 				},
-				"priority_state": {
-					Name: "priority_state",
+				"priority_dependecies_state": {
+					Name: "priority_dependecies_state",
 					Indexer: &memdb.CompoundIndex{
 						Indexes: []memdb.Indexer{
 							&JobPriorityIndex{
 								PriorityIntField:   "Priority",
 								IsDirOpenBoolField: "IsDirOpen",
 							},
+							&SliceLengthIndex{Field: "DependsOn"},
 							&memdb.UintFieldIndex{Field: "State"},
 						},
 					},
@@ -102,6 +103,13 @@ var dbSchema = &memdb.DBSchema{
 							&memdb.UintFieldIndex{Field: "State"},
 						},
 					},
+				},
+				"depends_on": {
+					Name: "depends_on",
+					Indexer: &JobIdSliceIndex{
+						Field: "DependsOn",
+					},
+					AllowMissing: true,
 				},
 			},
 		},

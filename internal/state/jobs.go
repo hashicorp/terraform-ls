@@ -79,6 +79,18 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 
 	newJobID := job.ID(fmt.Sprintf("%d", atomic.AddUint64(&js.lastJobId, 1)))
 
+	dependsOn := make(job.IDs, 0)
+	for _, jobId := range newJob.DependsOn {
+		isDone, err := js.isJobDone(txn, jobId)
+		if err != nil {
+			return "", err
+		}
+		if !isDone {
+			dependsOn = append(dependsOn, jobId)
+		}
+	}
+	newJob.DependsOn = dependsOn
+
 	sJob := &ScheduledJob{
 		ID:        newJobID,
 		Job:       newJob,
@@ -88,7 +100,7 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 
 	err = txn.Insert(js.tableName, sJob)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to insert new job: %w", err)
 	}
 
 	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t)",
@@ -97,6 +109,19 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 	txn.Commit()
 
 	return newJobID, nil
+}
+
+func (js *JobStore) isJobDone(txn *memdb.Txn, id job.ID) (bool, error) {
+	obj, err := txn.First(js.tableName, "id", id)
+	if err != nil {
+		return false, err
+	}
+	if obj == nil {
+		return true, nil
+	}
+
+	sj := obj.(*ScheduledJob)
+	return sj.State == StateDone, nil
 }
 
 func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
@@ -114,6 +139,11 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 		sJob := obj.(*ScheduledJob)
 
 		_, err = txn.DeleteAll(js.tableName, "id", sJob.ID)
+		if err != nil {
+			return err
+		}
+
+		err = js.removeJobFromDependsOn(txn, sJob.ID)
 		if err != nil {
 			return err
 		}
@@ -216,7 +246,7 @@ func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) 
 func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
 	txn := js.db.Txn(false)
 
-	wCh, obj, err := txn.FirstWatch(js.tableName, "priority_state", priority, StateQueued)
+	wCh, obj, err := txn.FirstWatch(js.tableName, "priority_dependecies_state", priority, 0, StateQueued)
 	if err != nil {
 		return "", job.Job{}, err
 	}
@@ -366,6 +396,11 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 	js.logger.Printf("JOBS: Finishing job %q: %q for %q (err = %s, deferredJobs: %q)",
 		sj.ID, sj.Type, sj.Dir, jobErr, deferredJobIds)
 
+	err = js.removeJobFromDependsOn(txn, id)
+	if err != nil {
+		return err
+	}
+
 	_, err = txn.DeleteAll(js.tableName, "id", id)
 	if err != nil {
 		return err
@@ -392,6 +427,36 @@ func (js *JobStore) FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID)
 	}
 
 	txn.Commit()
+
+	return nil
+}
+
+func (js *JobStore) removeJobFromDependsOn(txn *memdb.Txn, id job.ID) error {
+	it, err := txn.Get(js.tableName, "depends_on", id)
+	if err != nil {
+		return err
+	}
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		sJob := obj.(*ScheduledJob)
+		idx, ok := idIsInSlice(sJob.DependsOn, id)
+		if ok {
+			jobCopy := sJob.Copy()
+
+			// remove found ID from DependsOn
+			jobCopy.DependsOn[idx] = jobCopy.DependsOn[len(jobCopy.DependsOn)-1]
+			jobCopy.DependsOn = jobCopy.DependsOn[:len(jobCopy.DependsOn)-1]
+
+			// re-insert updated data
+			_, err := txn.DeleteAll(js.tableName, "id", id)
+			if err != nil {
+				return err
+			}
+			err = txn.Insert(js.tableName, jobCopy)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return nil
 }

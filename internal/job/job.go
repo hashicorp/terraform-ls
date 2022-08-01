@@ -27,6 +27,11 @@ type Job struct {
 	// and before the job is marked as done (StateDone).
 	// This can be used to schedule jobs dependent on the main job.
 	Defer DeferFunc
+
+	// DependsOn represents any other job IDs this job depends on.
+	// This will be taken into account when scheduling, so that only
+	// jobs with no dependencies are dispatched at any time.
+	DependsOn IDs
 }
 
 // DeferFunc represents a deferred function scheduling more jobs
@@ -36,11 +41,12 @@ type DeferFunc func(ctx context.Context, jobErr error) (IDs, error)
 
 func (job Job) Copy() Job {
 	return Job{
-		Func:     job.Func,
-		Dir:      job.Dir,
-		Type:     job.Type,
-		Priority: job.Priority,
-		Defer:    job.Defer,
+		Func:      job.Func,
+		Dir:       job.Dir,
+		Type:      job.Type,
+		Priority:  job.Priority,
+		Defer:     job.Defer,
+		DependsOn: job.DependsOn.Copy(),
 	}
 }
 
