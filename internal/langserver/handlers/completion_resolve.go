@@ -4,19 +4,12 @@ import (
 	"context"
 
 	"github.com/hashicorp/hcl-lang/decoder"
-	"github.com/hashicorp/hcl-lang/lang"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/mdplain"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-type CompletionItem struct {
-	lsp.CompletionItem
-
-	ResolveHook *lang.ResolveHook `json:"data,omitempty"`
-}
-
-func (svc *service) CompletionItemResolve(ctx context.Context, params CompletionItem) (CompletionItem, error) {
+func (svc *service) CompletionItemResolve(ctx context.Context, params lsp.CompletionItemR) (lsp.CompletionItemR, error) {
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return params, err
