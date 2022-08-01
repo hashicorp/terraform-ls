@@ -61,6 +61,10 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		expServerCaps.RefreshModuleCalls = true
 		properties["experimentalCapabilities.refreshModuleCalls"] = true
 	}
+	if _, ok := expClientCaps.RefreshTerraformVersionCommandId(); ok {
+		expServerCaps.RefreshTerraformVersion = true
+		properties["experimentalCapabilities.refreshTerraformVersion"] = true
+	}
 
 	serverCaps.Capabilities.Experimental = expServerCaps
 

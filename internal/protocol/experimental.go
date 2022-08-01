@@ -1,9 +1,10 @@
 package protocol
 
 type ExperimentalServerCapabilities struct {
-	ReferenceCountCodeLens bool `json:"referenceCountCodeLens"`
-	RefreshModuleProviders bool `json:"refreshModuleProviders"`
-	RefreshModuleCalls     bool `json:"refreshModuleCalls"`
+	ReferenceCountCodeLens  bool `json:"referenceCountCodeLens"`
+	RefreshModuleProviders  bool `json:"refreshModuleProviders"`
+	RefreshModuleCalls      bool `json:"refreshModuleCalls"`
+	RefreshTerraformVersion bool `json:"refreshTerraformVersion"`
 }
 
 type ExpClientCapabilities map[string]interface{}
@@ -39,6 +40,15 @@ func (cc ExpClientCapabilities) RefreshModuleCallsCommandId() (string, bool) {
 	}
 
 	cmdId, ok := cc["refreshModuleCallsCommandId"].(string)
+	return cmdId, ok
+}
+
+func (cc ExpClientCapabilities) RefreshTerraformVersionCommandId() (string, bool) {
+	if cc == nil {
+		return "", false
+	}
+
+	cmdId, ok := cc["refreshTerraformVersionCommandId"].(string)
 	return cmdId, ok
 }
 
