@@ -9,7 +9,7 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func (svc *service) CompletionItemResolve(ctx context.Context, params lsp.CompletionItemR) (lsp.CompletionItemR, error) {
+func (svc *service) CompletionItemResolve(ctx context.Context, params lsp.CompletionItemWithResolveHook) (lsp.CompletionItemWithResolveHook, error) {
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err != nil {
 		return params, err
