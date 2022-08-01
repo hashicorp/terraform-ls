@@ -16,72 +16,60 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	ids := make(job.IDs, 0)
 	var errs *multierror.Error
 
-	// blockingJobIds tracks job IDs which need to finish
-	// prior to collecting references
-	blockingJobIds := make(job.IDs, 0)
-
-	id, err := idx.jobStore.EnqueueJob(job.Job{
+	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
-		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			ids := make(job.IDs, 0)
-
-			id, err := idx.jobStore.EnqueueJob(job.Job{
-				Dir:  modHandle,
-				Type: op.OpTypeLoadModuleMetadata.String(),
-				Func: func(ctx context.Context) error {
-					return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
-				},
-			})
-			if err != nil {
-				return ids, err
-			} else {
-				ids = append(ids, id)
-			}
-
-			return ids, nil
-		},
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)
 	} else {
-		ids = append(ids, id)
-		blockingJobIds = append(blockingJobIds, id)
+		ids = append(ids, parseId)
 	}
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
+	metaId, err := idx.jobStore.EnqueueJob(job.Job{
+		Dir:  modHandle,
+		Type: op.OpTypeLoadModuleMetadata.String(),
+		Func: func(ctx context.Context) error {
+			return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+		},
+		DependsOn: job.IDs{parseId},
+	})
+	if err != nil {
+		return ids, err
+	} else {
+		ids = append(ids, metaId)
+	}
+
+	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
-		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			ids := make(job.IDs, 0)
-
-			id, err := idx.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-				},
-				Type: op.OpTypeDecodeVarsReferences.String(),
-			})
-			if err != nil {
-				return ids, err
-			}
-			ids = append(ids, id)
-			return ids, err
-		},
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)
 	} else {
-		ids = append(ids, id)
+		ids = append(ids, parseVarsId)
 	}
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
+	varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		Type:      op.OpTypeDecodeVarsReferences.String(),
+		DependsOn: job.IDs{parseVarsId},
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, varsRefsId)
+
+	tfVersionId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
@@ -92,15 +80,17 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	if err != nil {
 		errs = multierror.Append(errs, err)
 	} else {
-		ids = append(ids, id)
-		blockingJobIds = append(blockingJobIds, id)
+		ids = append(ids, tfVersionId)
 	}
 
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
 
+	refCollectionDeps := job.IDs{
+		parseId, metaId, tfVersionId,
+	}
 	if dataDir.PluginLockFilePath != "" {
-		id, err := idx.jobStore.EnqueueJob(job.Job{
+		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
@@ -111,40 +101,33 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
-			ids = append(ids, id)
-			blockingJobIds = append(blockingJobIds, id)
+			ids = append(ids, pSchemaId)
+			refCollectionDeps = append(refCollectionDeps, pSchemaId)
 		}
 	}
 
 	if dataDir.ModuleManifestPath != "" {
 		// References are collected *after* manifest parsing
 		// so that we reflect any references to submodules.
-		id, err := idx.jobStore.EnqueueJob(job.Job{
+		modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
 			},
-			Type:  op.OpTypeParseModuleManifest.String(),
-			Defer: idx.decodeInstalledModuleCalls(modHandle),
+			Type: op.OpTypeParseModuleManifest.String(),
+			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+				return idx.decodeInstalledModuleCalls(modHandle)
+			},
 		})
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
-			ids = append(ids, id)
-			blockingJobIds = append(blockingJobIds, id)
+			ids = append(ids, modManifestId)
+			refCollectionDeps = append(refCollectionDeps, modManifestId)
 		}
 	}
 
-	// Here we wait for all dependent jobs to be processed to
-	// reflect any data required to collect reference origins.
-	// This assumes scheduler is running to consume the jobs
-	// by the time we reach this point.
-	err = idx.jobStore.WaitForJobs(ctx, blockingJobIds...)
-	if err != nil {
-		return ids, err
-	}
-
-	rIds, err := idx.collectReferences(ctx, modHandle)
+	rIds, err := idx.collectReferences(modHandle, refCollectionDeps)
 	if err != nil {
 		errs = multierror.Append(errs, err)
 	} else {
