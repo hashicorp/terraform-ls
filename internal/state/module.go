@@ -230,6 +230,16 @@ func (s *ModuleStore) Add(modPath string) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
+	err := s.add(txn, modPath)
+	if err != nil {
+		return err
+	}
+	txn.Commit()
+
+	return nil
+}
+
+func (s *ModuleStore) add(txn *memdb.Txn, modPath string) error {
 	// TODO: Introduce Exists method to Txn?
 	obj, err := txn.First(s.tableName, "id", modPath)
 	if err != nil {
@@ -252,7 +262,6 @@ func (s *ModuleStore) Add(modPath string) error {
 		return err
 	}
 
-	txn.Commit()
 	return nil
 }
 
@@ -318,19 +327,25 @@ func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
 	return mod, nil
 }
 
-func (s *ModuleStore) Exists(path string) (bool, error) {
-	txn := s.db.Txn(false)
+func (s *ModuleStore) AddIfNotExists(path string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
 
 	_, err := moduleByPath(txn, path)
 	if err != nil {
 		if IsModuleNotFound(err) {
-			return false, nil
+			err := s.add(txn, path)
+			if err != nil {
+				return err
+			}
+			txn.Commit()
+			return nil
 		}
 
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
 func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
