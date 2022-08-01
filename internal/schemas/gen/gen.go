@@ -267,6 +267,7 @@ var ignore = map[string]bool{
 	"zededa/zedcloud":              true,
 	"lightstep/lightstep":          true,
 	"thousandeyes/thousandeyes":    true,
+	"nttcom/ecl":                   true,
 }
 
 var darwinArm64Ignore = map[string]bool{
