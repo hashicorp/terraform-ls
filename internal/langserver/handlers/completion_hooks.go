@@ -12,5 +12,6 @@ func (s *service) AppendCompletionHooks(ctx decoder.DecoderContext) {
 	}
 
 	ctx.CompletionHooks["CompleteLocalModuleSources"] = h.LocalModuleSources
+	ctx.CompletionHooks["CompleteRegistryModuleVersions"] = h.RegistryModuleVersions
 
 }
