@@ -124,7 +124,7 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("using Terraform %s", coreVersion)
+	log.Printf("using Terraform %s (at %s)", coreVersion, execPath)
 
 	log.Println("running terraform init")
 
