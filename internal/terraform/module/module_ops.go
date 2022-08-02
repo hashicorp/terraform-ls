@@ -390,7 +390,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 		}
 
 		// get module data from Terraform Registry
-		metaData, err := regClient.GetModuleData(sourceAddr, declaredModule.Version)
+		metaData, err := regClient.GetModuleData(ctx, sourceAddr, declaredModule.Version)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 			continue

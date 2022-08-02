@@ -1,10 +1,13 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
@@ -12,6 +15,7 @@ import (
 )
 
 func TestGetModuleData(t *testing.T) {
+	ctx := context.Background()
 	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +39,7 @@ func TestGetModuleData(t *testing.T) {
 	client.BaseURL = srv.URL
 	t.Cleanup(srv.Close)
 
-	data, err := client.GetModuleData(addr, cons)
+	data, err := client.GetModuleData(ctx, addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,11 +124,12 @@ func TestGetModuleData(t *testing.T) {
 }
 
 func TestGetMatchingModuleVersion(t *testing.T) {
+	ctx := context.Background()
 	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
 	}
-	cons := version.MustConstraints(version.NewConstraint("0.0.8"))
+	cons := version.MustConstraints(version.NewConstraint(">=0.0.7"))
 	client := NewClient()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +142,7 @@ func TestGetMatchingModuleVersion(t *testing.T) {
 	client.BaseURL = srv.URL
 	t.Cleanup(srv.Close)
 
-	v, err := client.GetMatchingModuleVersion(addr, cons)
+	v, err := client.GetMatchingModuleVersion(ctx, addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,5 +150,39 @@ func TestGetMatchingModuleVersion(t *testing.T) {
 	expectedVersion := version.Must(version.NewVersion("0.0.8"))
 	if !expectedVersion.Equal(v) {
 		t.Fatalf("expected version: %s, given: %s", expectedVersion, v)
+	}
+}
+
+func TestCancellationThroughContext(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancelFunc := context.WithTimeout(ctx, 50*time.Millisecond)
+	t.Cleanup(cancelFunc)
+
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cons := version.MustConstraints(version.NewConstraint(">=0.0.7"))
+	client := NewClient()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
+			w.Write([]byte(moduleVersionsMockResponse))
+			return
+		}
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+	client.BaseURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	_, err = client.GetMatchingModuleVersion(ctx, addr, cons)
+	e, ok := err.(*url.Error)
+	if !ok {
+		t.Fatalf("expected error, got %#v", err)
+	}
+
+	if e.Err != context.DeadlineExceeded {
+		t.Fatalf("expected error: %#v, given: %#v", context.DeadlineExceeded, e.Err)
 	}
 }
