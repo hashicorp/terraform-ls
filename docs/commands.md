@@ -183,3 +183,25 @@ installed version.
   }
 }
 ```
+
+### `module.terraform`
+
+Provides information about the terraform binary version for the current module.
+
+**Arguments:**
+
+ - `uri` - URI of the directory of the module in question, e.g. `file:///path/to/network`
+
+**Outputs:**
+
+ - `v` - describes version of the format; Will be used in the future to communicate format changes.
+ - `required_version` - Version constraint specified in configuration
+ - `discovered_version` - Version discovered from `terraform version --json` in the directory specified in `uri`
+
+```json
+{
+  "v": 0,
+  "required_version": "~> 0.15",
+  "discovered_version": "1.1.0"
+}
+```

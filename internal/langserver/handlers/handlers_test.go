@@ -76,7 +76,8 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				"experimental": {
 					"referenceCountCodeLens": false,
 					"refreshModuleProviders": false,
-					"refreshModuleCalls": false
+					"refreshModuleCalls": false,
+					"refreshTerraformVersion": false
 				}
 			},
 			"serverInfo": {

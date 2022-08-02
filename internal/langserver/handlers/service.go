@@ -476,6 +476,10 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 			moduleHooks = append(moduleHooks, callRefreshClientCommand(svc.server, commandId))
 		}
 
+		if commandId, ok := lsp.ExperimentalClientCapabilities(cc.Experimental).RefreshTerraformVersionCommandId(); ok {
+			moduleHooks = append(moduleHooks, callRefreshClientCommand(svc.server, commandId))
+		}
+
 		if cc.Workspace.SemanticTokens.RefreshSupport {
 			moduleHooks = append(moduleHooks, refreshSemanticTokens(svc.server))
 		}
