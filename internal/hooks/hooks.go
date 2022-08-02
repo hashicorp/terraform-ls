@@ -3,8 +3,12 @@
 // registered via AppendCompletionHooks in completion_hooks.go.
 package hooks
 
-import "github.com/hashicorp/terraform-ls/internal/state"
+import (
+	"github.com/hashicorp/terraform-ls/internal/registry"
+	"github.com/hashicorp/terraform-ls/internal/state"
+)
 
 type Hooks struct {
-	ModStore *state.ModuleStore
+	ModStore       *state.ModuleStore
+	RegistryClient registry.Client
 }

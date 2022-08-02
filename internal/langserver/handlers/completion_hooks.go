@@ -7,7 +7,8 @@ import (
 
 func (s *service) AppendCompletionHooks(ctx decoder.DecoderContext) {
 	h := hooks.Hooks{
-		ModStore: s.modStore,
+		ModStore:       s.modStore,
+		RegistryClient: s.registryClient,
 	}
 
 	ctx.CompletionHooks["CompleteLocalModuleSources"] = h.LocalModuleSources
