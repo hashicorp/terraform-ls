@@ -385,6 +385,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 			SourceAddr: mc.SourceAddr,
 			Version:    mc.Version,
 			InputNames: mc.InputNames,
+			RangePtr:   mc.RangePtr,
 		}
 	}
 
