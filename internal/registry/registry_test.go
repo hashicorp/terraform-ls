@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 )
 
 func TestGetModuleData(t *testing.T) {
+	ctx := context.Background()
 	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
@@ -35,7 +37,7 @@ func TestGetModuleData(t *testing.T) {
 	client.BaseURL = srv.URL
 	t.Cleanup(srv.Close)
 
-	data, err := client.GetModuleData(addr, cons)
+	data, err := client.GetModuleData(ctx, addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +122,7 @@ func TestGetModuleData(t *testing.T) {
 }
 
 func TestGetMatchingModuleVersion(t *testing.T) {
+	ctx := context.Background()
 	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +140,7 @@ func TestGetMatchingModuleVersion(t *testing.T) {
 	client.BaseURL = srv.URL
 	t.Cleanup(srv.Close)
 
-	v, err := client.GetMatchingModuleVersion(addr, cons)
+	v, err := client.GetMatchingModuleVersion(ctx, addr, cons)
 	if err != nil {
 		t.Fatal(err)
 	}

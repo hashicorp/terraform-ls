@@ -1,9 +1,11 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"sort"
 	"time"
 
@@ -29,10 +31,10 @@ func NewClient() Client {
 	}
 }
 
-func (c Client) GetModuleData(addr tfaddr.Module, cons version.Constraints) (*ModuleResponse, error) {
+func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons version.Constraints) (*ModuleResponse, error) {
 	var response ModuleResponse
 
-	v, err := c.GetMatchingModuleVersion(addr, cons)
+	v, err := c.GetMatchingModuleVersion(ctx, addr, cons)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +47,13 @@ func (c Client) GetModuleData(addr tfaddr.Module, cons version.Constraints) (*Mo
 		addr.Package.Name,
 		addr.Package.TargetSystem,
 		v.String())
-	resp, err := client.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +75,7 @@ func (c Client) GetModuleData(addr tfaddr.Module, cons version.Constraints) (*Mo
 	return &response, nil
 }
 
-func (c Client) GetMatchingModuleVersion(addr tfaddr.Module, con version.Constraints) (*version.Version, error) {
+func (c Client) GetMatchingModuleVersion(ctx context.Context, addr tfaddr.Module, con version.Constraints) (*version.Version, error) {
 	url := fmt.Sprintf("%s/v1/modules/%s/%s/%s/versions", c.BaseURL,
 		addr.Package.Namespace,
 		addr.Package.Name,
@@ -76,7 +84,12 @@ func (c Client) GetMatchingModuleVersion(addr tfaddr.Module, con version.Constra
 	client := cleanhttp.DefaultClient()
 	client.Timeout = defaultTimeout
 
-	resp, err := client.Get(url)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
