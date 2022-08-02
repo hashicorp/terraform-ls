@@ -701,7 +701,7 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	originalTestDir := filepath.Join(testData, "uninitialized-single-submodule")
+	originalTestDir := filepath.Join(testData, "single-fake-provider")
 	testDir := t.TempDir()
 	// Copy test configuration so the test can run in isolation
 	err = copy.Copy(originalTestDir, testDir)
@@ -786,30 +786,6 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 	_, err = ss.ProviderSchemas.ProviderSchema(testHandle.Path(), addr, vc)
 	if err == nil {
 		t.Fatal("expected -/foo schema to be missing")
-	}
-
-	// Install Terraform
-	tfVersion := version.Must(version.NewVersion("1.1.7"))
-	i := install.NewInstaller()
-	ctx := context.Background()
-	execPath, err := i.Install(ctx, []src.Installable{
-		&releases.ExactVersion{
-			Product: product.Terraform,
-			Version: tfVersion,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Install submodule
-	tf, err := exec.NewExecutor(testHandle.Path(), execPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = tf.Init(ctx)
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	ls.Call(t, &langserver.CallRequest{

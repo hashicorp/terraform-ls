@@ -25,4 +25,5 @@ const (
 	OpTypeDecodeReferenceOrigins
 	OpTypeDecodeVarsReferences
 	OpTypeGetModuleDataFromRegistry
+	OpTypeParseProviderVersions
 )

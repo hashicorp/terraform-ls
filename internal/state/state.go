@@ -234,6 +234,10 @@ type ModuleStore struct {
 
 	// TimeProvider provides current time (for mocking time.Now in tests)
 	TimeProvider func() time.Time
+
+	// MaxModuleNesting represents how many nesting levels we'd attempt
+	// to parse provider requirements before returning error.
+	MaxModuleNesting int
 }
 
 type ModuleChangeStore struct {
@@ -289,10 +293,11 @@ func NewStateStore() (*StateStore, error) {
 			nextJobLowPrioMu:  &sync.Mutex{},
 		},
 		Modules: &ModuleStore{
-			db:           db,
-			tableName:    moduleTableName,
-			logger:       defaultLogger,
-			TimeProvider: time.Now,
+			db:               db,
+			tableName:        moduleTableName,
+			logger:           defaultLogger,
+			TimeProvider:     time.Now,
+			MaxModuleNesting: 50,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,

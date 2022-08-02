@@ -192,6 +192,64 @@ func (s *ProviderSchemaStore) AddPreloadedSchema(addr tfaddr.Provider, pv *versi
 	return nil
 }
 
+func (s *ProviderSchemaStore) AllSchemasExist(pvm map[tfaddr.Provider]version.Constraints) (bool, error) {
+	for pAddr, pCons := range pvm {
+		exists, err := s.schemaExists(pAddr, pCons)
+		if err != nil {
+			return false, err
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (s *ProviderSchemaStore) schemaExists(addr tfaddr.Provider, pCons version.Constraints) (bool, error) {
+	txn := s.db.Txn(false)
+
+	it, err := txn.Get(s.tableName, "id_prefix", addr)
+	if err != nil {
+		return false, err
+	}
+
+	for item := it.Next(); item != nil; item = it.Next() {
+		ps, ok := item.(*ProviderSchema)
+		if ok {
+			if ps.Schema == nil {
+				// Incomplete entry may be a result of provider version being
+				// sourced earlier where schema is yet to be sourced or sourcing failed.
+				continue
+			}
+		}
+
+		if providerAddrEquals(ps.Address, addr) && pCons.Check(ps.Version) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func providerAddrEquals(a, b tfaddr.Provider) bool {
+	if a.Equals(b) {
+		return true
+	}
+
+	// Account for legacy addresses which may come from Terraform
+	// 0.12 or 0.13 running locally or just lack of required_providers
+	// entry in configuration.
+	if a.IsLegacy() {
+		a.Namespace = "hashicorp"
+	}
+	if b.IsLegacy() {
+		b.Namespace = "hashicorp"
+	}
+
+	return a.Equals(b)
+}
+
 func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
 	s.logger.Printf("PSS: getting provider schema (%s, %s, %s)", modPath, addr, vc)
 	txn := s.db.Txn(false)

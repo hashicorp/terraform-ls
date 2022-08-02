@@ -819,6 +819,99 @@ func TestStateStore_ListSchemas(t *testing.T) {
 	}
 }
 
+func TestAllSchemasExist(t *testing.T) {
+	testCases := []struct {
+		Name               string
+		Requirements       map[tfaddr.Provider]version.Constraints
+		InstalledProviders InstalledProviders
+		ExpectedMatch      bool
+		ExpectedErr        bool
+	}{
+		{
+			Name:               "empty requirements",
+			Requirements:       map[tfaddr.Provider]version.Constraints{},
+			InstalledProviders: InstalledProviders{},
+			ExpectedMatch:      true,
+			ExpectedErr:        false,
+		},
+		{
+			Name: "missing all installed providers",
+			Requirements: map[tfaddr.Provider]version.Constraints{
+				tfaddr.MustParseProviderSource("hashicorp/test"): version.MustConstraints(version.NewConstraint("1.0.0")),
+			},
+			InstalledProviders: InstalledProviders{},
+			ExpectedMatch:      false,
+			ExpectedErr:        false,
+		},
+		{
+			Name: "missing one of two installed providers",
+			Requirements: map[tfaddr.Provider]version.Constraints{
+				tfaddr.MustParseProviderSource("hashicorp/aws"):    version.MustConstraints(version.NewConstraint(">= 1.0.0")),
+				tfaddr.MustParseProviderSource("hashicorp/google"): version.MustConstraints(version.NewConstraint(">= 1.0.0")),
+			},
+			InstalledProviders: InstalledProviders{
+				tfaddr.MustParseProviderSource("hashicorp/aws"): version.Must(version.NewVersion("1.0.0")),
+			},
+			ExpectedMatch: false,
+			ExpectedErr:   false,
+		},
+		{
+			Name: "missing installed provider version",
+			Requirements: map[tfaddr.Provider]version.Constraints{
+				tfaddr.MustParseProviderSource("hashicorp/aws"): version.MustConstraints(version.NewConstraint(">= 1.0.0")),
+			},
+			InstalledProviders: InstalledProviders{
+				tfaddr.MustParseProviderSource("hashicorp/aws"): version.Must(version.NewVersion("0.1.0")),
+			},
+			ExpectedMatch: false,
+			ExpectedErr:   false,
+		},
+		{
+			Name: "matching installed providers",
+			Requirements: map[tfaddr.Provider]version.Constraints{
+				tfaddr.MustParseProviderSource("hashicorp/test"): version.MustConstraints(version.NewConstraint("1.0.0")),
+			},
+			InstalledProviders: InstalledProviders{
+				tfaddr.MustParseProviderSource("hashicorp/test"): version.Must(version.NewVersion("1.0.0")),
+			},
+			ExpectedMatch: true,
+			ExpectedErr:   false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			ss, err := NewStateStore()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for pAddr, pVersion := range tc.InstalledProviders {
+				err = ss.ProviderSchemas.AddPreloadedSchema(pAddr, pVersion, &tfschema.ProviderSchema{})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			exist, err := ss.ProviderSchemas.AllSchemasExist(tc.Requirements)
+			if err != nil && !tc.ExpectedErr {
+				t.Fatal(err)
+			}
+			if err == nil && tc.ExpectedErr {
+				t.Fatal("expected error")
+			}
+			if exist && !tc.ExpectedMatch {
+				t.Fatalf("expected schemas mismatch\nrequirements: %v\ninstalled: %v\n",
+					tc.Requirements, tc.InstalledProviders)
+			}
+			if !exist && tc.ExpectedMatch {
+				t.Fatalf("expected schemas match\nrequirements: %v\ninstalled: %v\n",
+					tc.Requirements, tc.InstalledProviders)
+			}
+		})
+	}
+}
+
 // BenchmarkProviderSchema exercises the hot path for most handlers which require schema
 func BenchmarkProviderSchema(b *testing.B) {
 	s, err := NewStateStore()

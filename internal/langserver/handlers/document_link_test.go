@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -17,9 +19,13 @@ import (
 func TestDocumentLink_withValidData(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
+	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("provider \"test\" {\n\n}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var testSchema tfjson.ProviderSchemas
-	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
 	if err != nil {
 		t.Fatal(err)
 	}

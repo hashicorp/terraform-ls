@@ -97,7 +97,7 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) 
 		newDefaultProvider("aws"):    version.Must(version.NewVersion("1.2.3")),
 		newDefaultProvider("google"): version.Must(version.NewVersion("2.5.5")),
 	}
-	err = s.Modules.UpdateInstalledProviders(modDir, pVersions)
+	err = s.Modules.UpdateInstalledProviders(modDir, pVersions, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
