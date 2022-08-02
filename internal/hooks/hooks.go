@@ -4,6 +4,7 @@
 package hooks
 
 import (
+	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 )
@@ -11,4 +12,5 @@ import (
 type Hooks struct {
 	ModStore       *state.ModuleStore
 	RegistryClient registry.Client
+	AlgoliaClient  *search.Client
 }

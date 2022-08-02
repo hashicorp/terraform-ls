@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
+	github.com/algolia/algoliasearch-client-go/v3 v3.26.0
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v0.41.0
 	github.com/google/go-cmp v0.5.8
