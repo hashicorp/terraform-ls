@@ -13,6 +13,10 @@ import (
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
+var manifestPathElements = []string{
+	DataDirName, "modules", "modules.json",
+}
+
 func ModuleManifestFilePath(fs fs.StatFS, modulePath string) (string, bool) {
 	manifestPath := filepath.Join(
 		append([]string{modulePath},
