@@ -15,12 +15,6 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func NewDecoder(ctx context.Context, pathReader decoder.PathReader) *decoder.Decoder {
-	d := decoder.NewDecoder(pathReader)
-	d.SetContext(decoderContext(ctx))
-	return d
-}
-
 func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
 	schema, err := schemaForModule(mod, schemaReader, modReader)
 	if err != nil {
@@ -79,12 +73,11 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 	return pathCtx, nil
 }
 
-func decoderContext(ctx context.Context) decoder.DecoderContext {
-	dCtx := decoder.DecoderContext{
-		UtmSource:     utm.UtmSource,
-		UtmMedium:     utm.UtmMedium(ctx),
-		UseUtmContent: true,
-	}
+func DecoderContext(ctx context.Context) decoder.DecoderContext {
+	dCtx := decoder.NewDecoderContext()
+	dCtx.UtmSource = utm.UtmSource
+	dCtx.UtmMedium = utm.UtmMedium(ctx)
+	dCtx.UseUtmContent = true
 
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {

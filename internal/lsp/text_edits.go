@@ -19,7 +19,7 @@ func TextEditsFromDocumentChanges(changes document.Changes) []lsp.TextEdit {
 	return edits
 }
 
-func textEdits(tes []lang.TextEdit, snippetSupport bool) []lsp.TextEdit {
+func TextEdits(tes []lang.TextEdit, snippetSupport bool) []lsp.TextEdit {
 	edits := make([]lsp.TextEdit, len(tes))
 
 	for i, te := range tes {

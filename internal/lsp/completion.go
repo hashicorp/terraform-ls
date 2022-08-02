@@ -70,7 +70,11 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		Documentation:       doc,
 		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
-		AdditionalTextEdits: textEdits(candidate.AdditionalTextEdits, snippetSupport),
+		AdditionalTextEdits: TextEdits(candidate.AdditionalTextEdits, snippetSupport),
+	}
+
+	if candidate.ResolveHook != nil {
+		item.Data = candidate.ResolveHook
 	}
 
 	if caps.CompletionItem.DeprecatedSupport {

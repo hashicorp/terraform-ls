@@ -40,7 +40,7 @@ func (svc *service) TextDocumentComplete(ctx context.Context, params lsp.Complet
 	}
 
 	svc.logger.Printf("Looking for candidates at %q -> %#v", doc.Filename, pos)
-	candidates, err := d.CandidatesAtPos(doc.Filename, pos)
+	candidates, err := d.CandidatesAtPos(ctx, doc.Filename, pos)
 	svc.logger.Printf("received candidates: %#v", candidates)
 	return ilsp.ToCompletionList(candidates, cc.TextDocument), err
 }

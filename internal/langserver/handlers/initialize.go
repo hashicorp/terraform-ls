@@ -207,7 +207,7 @@ func initializeResult(ctx context.Context) lsp.InitializeResult {
 				Change:    lsp.Incremental,
 			},
 			CompletionProvider: lsp.CompletionOptions{
-				ResolveProvider:   false,
+				ResolveProvider:   true,
 				TriggerCharacters: []string{".", "["},
 			},
 			CodeActionProvider: lsp.CodeActionOptions{

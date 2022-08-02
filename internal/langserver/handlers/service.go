@@ -217,6 +217,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, svc.TextDocumentComplete)
 		},
+		"completionItem/resolve": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = ilsp.WithClientCapabilities(ctx, cc)
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+
+			return handle(ctx, req, svc.CompletionItemResolve)
+		},
 		"textDocument/hover": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
@@ -484,10 +495,13 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
 	svc.indexer.SetLogger(svc.logger)
 
-	svc.decoder = idecoder.NewDecoder(ctx, &idecoder.PathReader{
+	svc.decoder = decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: svc.modStore,
 		SchemaReader: svc.schemaStore,
 	})
+	decoderContext := idecoder.DecoderContext(ctx)
+	svc.AppendCompletionHooks(decoderContext)
+	svc.decoder.SetContext(decoderContext)
 
 	err = schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
 	if err != nil {
