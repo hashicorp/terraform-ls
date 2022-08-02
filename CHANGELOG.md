@@ -24,6 +24,7 @@ ENHANCEMENTS:
  - Recognize inputs and outputs of uninitialized local modules ([#598](https://github.com/hashicorp/terraform-ls/issues/598))
  - Enable go to module output declaration from reference ([#1007](https://github.com/hashicorp/terraform-ls/issues/1007))
  - settings: New option [`indexing.ignorePaths`](https://github.com/hashicorp/terraform-ls/blob/v0.29.0/docs/SETTINGS.md#ignorepaths-string) was introduced ([#1003](https://github.com/hashicorp/terraform-ls/pull/1003), [#1010](https://github.com/hashicorp/terraform-ls/pull/1010))
+ - Introduce `module.terraform` custom LSP command to expose Terraform requirements & version ([#1016](https://github.com/hashicorp/terraform-ls/pull/1016))
 
 BUG FIXES:
 
