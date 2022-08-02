@@ -196,7 +196,7 @@ Provides information about the terraform binary version for the current module.
 
  - `v` - describes version of the format; Will be used in the future to communicate format changes.
  - `required_version` - Version constraint specified in configuration
- - `discovered_version` - Version discovered from `terraform version --json` using the `uri` given
+ - `discovered_version` - Version discovered from `terraform version --json` in the directory specified in `uri`
 
 ```json
 {
