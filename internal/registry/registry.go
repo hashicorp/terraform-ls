@@ -106,7 +106,7 @@ func (c Client) GetMatchingModuleVersion(addr tfaddr.Module, con version.Constra
 		}
 	}
 
-	sort.Sort(foundVersions)
+	sort.Sort(sort.Reverse(foundVersions))
 
 	for _, fv := range foundVersions {
 		if con.Check(fv) {

@@ -124,7 +124,7 @@ func TestGetMatchingModuleVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cons := version.MustConstraints(version.NewConstraint("0.0.8"))
+	cons := version.MustConstraints(version.NewConstraint(">=0.0.7"))
 	client := NewClient()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
