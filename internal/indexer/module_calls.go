@@ -105,7 +105,6 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 			})
 			if err != nil {
 				multierror.Append(errs, err)
-				continue
 			} else {
 				jobIds = append(jobIds, varsRefId)
 			}
