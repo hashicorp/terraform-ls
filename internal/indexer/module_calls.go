@@ -38,6 +38,8 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		// copy path for queued jobs below
 		mcPath := mc.Path
 
+		refCollectionDeps := make(job.IDs, 0)
+
 		parseId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
@@ -47,31 +49,36 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		})
 		if err != nil {
 			multierror.Append(errs, err)
-			continue
-		}
-		jobIds = append(jobIds, parseId)
-
-		metaId, err := idx.jobStore.EnqueueJob(job.Job{
-			Dir:  mcHandle,
-			Type: op.OpTypeLoadModuleMetadata.String(),
-			Func: func(ctx context.Context) error {
-				return module.LoadModuleMetadata(idx.modStore, mcPath)
-			},
-			DependsOn: job.IDs{parseId},
-		})
-		if err != nil {
-			multierror.Append(errs, err)
-			continue
 		} else {
-			jobIds = append(jobIds, metaId)
+			jobIds = append(jobIds, parseId)
+			refCollectionDeps = append(refCollectionDeps, parseId)
 		}
 
-		ids, err := idx.collectReferences(mcHandle, job.IDs{parseId, metaId})
-		if err != nil {
-			multierror.Append(errs, err)
-			continue
-		} else {
-			jobIds = append(jobIds, ids...)
+		var metaId job.ID
+		if parseId != "" {
+			metaId, err = idx.jobStore.EnqueueJob(job.Job{
+				Dir:  mcHandle,
+				Type: op.OpTypeLoadModuleMetadata.String(),
+				Func: func(ctx context.Context) error {
+					return module.LoadModuleMetadata(idx.modStore, mcPath)
+				},
+				DependsOn: job.IDs{parseId},
+			})
+			if err != nil {
+				multierror.Append(errs, err)
+			} else {
+				jobIds = append(jobIds, metaId)
+				refCollectionDeps = append(refCollectionDeps, metaId)
+			}
+		}
+
+		if parseId != "" {
+			ids, err := idx.collectReferences(mcHandle, refCollectionDeps)
+			if err != nil {
+				multierror.Append(errs, err)
+			} else {
+				jobIds = append(jobIds, ids...)
+			}
 		}
 
 		varsParseId, err := idx.jobStore.EnqueueJob(job.Job{
@@ -83,23 +90,26 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		})
 		if err != nil {
 			multierror.Append(errs, err)
-			continue
+		} else {
+			jobIds = append(jobIds, varsParseId)
 		}
-		jobIds = append(jobIds, varsParseId)
 
-		varsRefId, err := idx.jobStore.EnqueueJob(job.Job{
-			Dir: mcHandle,
-			Func: func(ctx context.Context) error {
-				return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, mcPath)
-			},
-			Type:      op.OpTypeDecodeVarsReferences.String(),
-			DependsOn: job.IDs{varsParseId},
-		})
-		if err != nil {
-			multierror.Append(errs, err)
-			continue
+		if varsParseId != "" {
+			varsRefId, err := idx.jobStore.EnqueueJob(job.Job{
+				Dir: mcHandle,
+				Func: func(ctx context.Context) error {
+					return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, mcPath)
+				},
+				Type:      op.OpTypeDecodeVarsReferences.String(),
+				DependsOn: job.IDs{varsParseId},
+			})
+			if err != nil {
+				multierror.Append(errs, err)
+				continue
+			} else {
+				jobIds = append(jobIds, varsRefId)
+			}
 		}
-		ids = append(ids, varsRefId)
 	}
 
 	return jobIds, errs.ErrorOrNil()

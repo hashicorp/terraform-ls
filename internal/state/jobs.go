@@ -447,7 +447,7 @@ func (js *JobStore) removeJobFromDependsOn(txn *memdb.Txn, id job.ID) error {
 			jobCopy.DependsOn = jobCopy.DependsOn[:len(jobCopy.DependsOn)-1]
 
 			// re-insert updated data
-			_, err := txn.DeleteAll(js.tableName, "id", id)
+			_, err := txn.DeleteAll(js.tableName, "id", jobCopy.ID)
 			if err != nil {
 				return err
 			}

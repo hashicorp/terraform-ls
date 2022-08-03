@@ -16,6 +16,8 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	ids := make(job.IDs, 0)
 	var errs *multierror.Error
 
+	refCollectionDeps := make(job.IDs, 0)
+
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
@@ -27,20 +29,25 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		errs = multierror.Append(errs, err)
 	} else {
 		ids = append(ids, parseId)
+		refCollectionDeps = append(refCollectionDeps, parseId)
 	}
 
-	metaId, err := idx.jobStore.EnqueueJob(job.Job{
-		Dir:  modHandle,
-		Type: op.OpTypeLoadModuleMetadata.String(),
-		Func: func(ctx context.Context) error {
-			return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
-		},
-		DependsOn: job.IDs{parseId},
-	})
-	if err != nil {
-		return ids, err
-	} else {
-		ids = append(ids, metaId)
+	var metaId job.ID
+	if parseId != "" {
+		metaId, err = idx.jobStore.EnqueueJob(job.Job{
+			Dir:  modHandle,
+			Type: op.OpTypeLoadModuleMetadata.String(),
+			Func: func(ctx context.Context) error {
+				return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+			},
+			DependsOn: job.IDs{parseId},
+		})
+		if err != nil {
+			return ids, err
+		} else {
+			ids = append(ids, metaId)
+			refCollectionDeps = append(refCollectionDeps, metaId)
+		}
 	}
 
 	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
@@ -56,18 +63,22 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		ids = append(ids, parseVarsId)
 	}
 
-	varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type:      op.OpTypeDecodeVarsReferences.String(),
-		DependsOn: job.IDs{parseVarsId},
-	})
-	if err != nil {
-		return ids, err
+	if parseVarsId != "" {
+		varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			},
+			Type:      op.OpTypeDecodeVarsReferences.String(),
+			DependsOn: job.IDs{parseVarsId},
+		})
+		if err != nil {
+			return ids, err
+		} else {
+			ids = append(ids, varsRefsId)
+			refCollectionDeps = append(refCollectionDeps, varsRefsId)
+		}
 	}
-	ids = append(ids, varsRefsId)
 
 	tfVersionId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -81,14 +92,12 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		errs = multierror.Append(errs, err)
 	} else {
 		ids = append(ids, tfVersionId)
+		refCollectionDeps = append(refCollectionDeps, tfVersionId)
 	}
 
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
 
-	refCollectionDeps := job.IDs{
-		parseId, metaId, tfVersionId,
-	}
 	if dataDir.PluginLockFilePath != "" {
 		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
@@ -127,11 +136,13 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		}
 	}
 
-	rIds, err := idx.collectReferences(modHandle, refCollectionDeps)
-	if err != nil {
-		errs = multierror.Append(errs, err)
-	} else {
-		ids = append(ids, rIds...)
+	if parseId != "" {
+		rIds, err := idx.collectReferences(modHandle, refCollectionDeps)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, rIds...)
+		}
 	}
 
 	return ids, errs.ErrorOrNil()
