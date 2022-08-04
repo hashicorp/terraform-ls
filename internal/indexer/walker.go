@@ -17,6 +17,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	var errs *multierror.Error
 
 	refCollectionDeps := make(job.IDs, 0)
+	providerVersionDeps := make(job.IDs, 0)
 
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -30,6 +31,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	} else {
 		ids = append(ids, parseId)
 		refCollectionDeps = append(refCollectionDeps, parseId)
+		providerVersionDeps = append(providerVersionDeps, parseId)
 	}
 
 	var metaId job.ID
@@ -47,6 +49,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		} else {
 			ids = append(ids, metaId)
 			refCollectionDeps = append(refCollectionDeps, metaId)
+			providerVersionDeps = append(providerVersionDeps, metaId)
 		}
 	}
 
@@ -98,27 +101,11 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
 
-	if dataDir.PluginLockFilePath != "" {
-		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
-			Dir: modHandle,
-			Func: func(ctx context.Context) error {
-				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-				return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-			},
-			Type: op.OpTypeObtainSchema.String(),
-		})
-		if err != nil {
-			errs = multierror.Append(errs, err)
-		} else {
-			ids = append(ids, pSchemaId)
-			refCollectionDeps = append(refCollectionDeps, pSchemaId)
-		}
-	}
-
+	var modManifestId job.ID
 	if dataDir.ModuleManifestPath != "" {
 		// References are collected *after* manifest parsing
 		// so that we reflect any references to submodules.
-		modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
+		modManifestId, err = idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
@@ -133,6 +120,59 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		} else {
 			ids = append(ids, modManifestId)
 			refCollectionDeps = append(refCollectionDeps, modManifestId)
+			// provider requirements may be within the (installed) modules
+			providerVersionDeps = append(providerVersionDeps, modManifestId)
+		}
+	}
+
+	if dataDir.PluginLockFilePath != "" {
+		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+			},
+			Type:      op.OpTypeParseProviderVersions.String(),
+			DependsOn: providerVersionDeps,
+			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+				ids := make(job.IDs, 0)
+
+				pReqs, err := idx.modStore.ProviderRequirementsForModule(modHandle.Path())
+				if err != nil {
+					return ids, err
+				}
+
+				exist, err := idx.schemaStore.AllSchemasExist(pReqs)
+				if err != nil {
+					return ids, err
+				}
+				if exist {
+					idx.logger.Printf("Avoiding obtaining schemas as they all exist: %#v", pReqs)
+					// avoid obtaining schemas if we already have it
+					return ids, nil
+				}
+				idx.logger.Printf("Obtaining schemas for: %#v", pReqs)
+
+				id, err := idx.jobStore.EnqueueJob(job.Job{
+					Dir: modHandle,
+					Func: func(ctx context.Context) error {
+						ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+						return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+					},
+					Type: op.OpTypeObtainSchema.String(),
+				})
+				if err != nil {
+					return ids, err
+				}
+				ids = append(ids, id)
+
+				return ids, nil
+			},
+		})
+		if err != nil {
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, pSchemaId)
+			refCollectionDeps = append(refCollectionDeps, pSchemaId)
 		}
 	}
 

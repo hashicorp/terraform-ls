@@ -92,7 +92,9 @@ type Module struct {
 	TerraformVersionErr   error
 	TerraformVersionState op.OpState
 
-	InstalledProviders InstalledProviders
+	InstalledProviders      InstalledProviders
+	InstalledProvidersErr   error
+	InstalledProvidersState op.OpState
 
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
@@ -142,6 +144,9 @@ func (m *Module) Copy() *Module {
 
 		ProviderSchemaErr:   m.ProviderSchemaErr,
 		ProviderSchemaState: m.ProviderSchemaState,
+
+		InstalledProvidersErr:   m.InstalledProvidersErr,
+		InstalledProvidersState: m.InstalledProvidersState,
 
 		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,
@@ -216,13 +221,14 @@ func (m *Module) Copy() *Module {
 
 func newModule(modPath string) *Module {
 	return &Module{
-		Path:                  modPath,
-		ModManifestState:      op.OpStateUnknown,
-		TerraformVersionState: op.OpStateUnknown,
-		ProviderSchemaState:   op.OpStateUnknown,
-		RefTargetsState:       op.OpStateUnknown,
-		ModuleParsingState:    op.OpStateUnknown,
-		MetaState:             op.OpStateUnknown,
+		Path:                    modPath,
+		ModManifestState:        op.OpStateUnknown,
+		TerraformVersionState:   op.OpStateUnknown,
+		ProviderSchemaState:     op.OpStateUnknown,
+		InstalledProvidersState: op.OpStateUnknown,
+		RefTargetsState:         op.OpStateUnknown,
+		ModuleParsingState:      op.OpStateUnknown,
+		MetaState:               op.OpStateUnknown,
 	}
 }
 
@@ -385,6 +391,97 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 	return modCalls, err
 }
 
+func (s *ModuleStore) ProviderRequirementsForModule(modPath string) (tfmod.ProviderRequirements, error) {
+	return s.providerRequirementsForModule(modPath, 0)
+}
+
+func (s *ModuleStore) providerRequirementsForModule(modPath string, level int) (tfmod.ProviderRequirements, error) {
+	// This is just a naive way of checking for cycles, so we don't end up
+	// crashing due to stack overflow.
+	//
+	// Cycles are however unlikely - at least for installed modules, since
+	// Terraform would return error when attempting to install modules
+	// with cycles.
+	if level > s.MaxModuleNesting {
+		return nil, fmt.Errorf("%s: too deep module nesting (%d)", modPath, s.MaxModuleNesting)
+	}
+	mod, err := s.ModuleByPath(modPath)
+	if err != nil {
+		return nil, err
+	}
+
+	level++
+
+	requirements := make(tfmod.ProviderRequirements, 0)
+	for k, v := range mod.Meta.ProviderRequirements {
+		requirements[k] = v
+	}
+
+	for _, mc := range mod.Meta.ModuleCalls {
+		localAddr, ok := mc.SourceAddr.(tfmod.LocalSourceAddr)
+		if !ok {
+			continue
+		}
+
+		fullPath := filepath.Join(modPath, localAddr.String())
+
+		pr, err := s.providerRequirementsForModule(fullPath, level)
+		if err != nil {
+			return requirements, err
+		}
+		for pAddr, pCons := range pr {
+			if cons, ok := requirements[pAddr]; ok {
+				for _, c := range pCons {
+					if !constraintContains(cons, c) {
+						requirements[pAddr] = append(requirements[pAddr], c)
+					}
+				}
+			}
+			requirements[pAddr] = pCons
+		}
+	}
+
+	if mod.ModManifest != nil {
+		for _, record := range mod.ModManifest.Records {
+			_, ok := record.SourceAddr.(tfmod.LocalSourceAddr)
+			if ok {
+				continue
+			}
+
+			if record.IsRoot() {
+				continue
+			}
+
+			fullPath := filepath.Join(modPath, record.Dir)
+			pr, err := s.providerRequirementsForModule(fullPath, level)
+			if err != nil {
+				continue
+			}
+			for pAddr, pCons := range pr {
+				if cons, ok := requirements[pAddr]; ok {
+					for _, c := range pCons {
+						if !constraintContains(cons, c) {
+							requirements[pAddr] = append(requirements[pAddr], c)
+						}
+					}
+				}
+				requirements[pAddr] = pCons
+			}
+		}
+	}
+
+	return requirements, nil
+}
+
+func constraintContains(vCons version.Constraints, cons *version.Constraint) bool {
+	for _, c := range vCons {
+		if c == cons {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
@@ -452,8 +549,11 @@ func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
 	return mod.Copy(), nil
 }
 
-func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provider]*version.Version) error {
+func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provider]*version.Version, pvErr error) error {
 	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetInstalledProvidersState(path, op.OpStateLoaded)
+	})
 	defer txn.Abort()
 
 	oldMod, err := moduleByPath(txn, path)
@@ -462,20 +562,8 @@ func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provi
 	}
 
 	mod := oldMod.Copy()
-
-	// Providers may come from different sources (schema or version command)
-	// and we don't get their versions in both cases, so we make sure the existing
-	// versions are retained to get the most of both sources.
-	newProviders := make(map[tfaddr.Provider]*version.Version, 0)
-	for addr, pv := range pvs {
-		if pv == nil {
-			if v, ok := oldMod.InstalledProviders[addr]; ok && v != nil {
-				pv = v
-			}
-		}
-		newProviders[addr] = pv
-	}
-	mod.InstalledProviders = newProviders
+	mod.InstalledProviders = pvs
+	mod.InstalledProvidersErr = pvErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -483,6 +571,26 @@ func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provi
 	}
 
 	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetInstalledProvidersState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.InstalledProvidersState = state
+
+	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}

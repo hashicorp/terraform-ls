@@ -37,15 +37,46 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 	id, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			eo, ok := exec.ExecutorOptsFromContext(ctx)
-			if ok {
-				ctx = exec.WithExecutorOpts(ctx, eo)
+			return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+		},
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			ids := make(job.IDs, 0)
+
+			mod, err := idx.modStore.ModuleByPath(modHandle.Path())
+			if err != nil {
+				return ids, err
 			}
 
-			return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			exist, err := idx.schemaStore.AllSchemasExist(mod.Meta.ProviderRequirements)
+			if err != nil {
+				return ids, err
+			}
+			if exist {
+				// avoid obtaining schemas if we already have it
+				return ids, nil
+			}
+
+			id, err := idx.jobStore.EnqueueJob(job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+					eo, ok := exec.ExecutorOptsFromContext(ctx)
+					if ok {
+						ctx = exec.WithExecutorOpts(ctx, eo)
+					}
+
+					return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				},
+				Type: op.OpTypeObtainSchema.String(),
+			})
+			if err != nil {
+				return ids, err
+			}
+			ids = append(ids, id)
+
+			return ids, nil
 		},
-		Type: op.OpTypeObtainSchema.String(),
+		Type: op.OpTypeParseProviderVersions.String(),
 	})
 	if err != nil {
 		return ids, err

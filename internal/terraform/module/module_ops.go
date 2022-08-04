@@ -74,22 +74,17 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	}
 
 	v, pv, err := tfExec.Version(ctx)
-	pVersions := providerVersions(pv)
+	pVersions := providerVersionsFromTfVersion(pv)
 
 	sErr := modStore.UpdateTerraformVersion(modPath, v, pVersions, err)
 	if sErr != nil {
 		return sErr
 	}
 
-	ipErr := modStore.UpdateInstalledProviders(modPath, pVersions)
-	if ipErr != nil {
-		return ipErr
-	}
-
 	return err
 }
 
-func providerVersions(pv map[string]*version.Version) map[tfaddr.Provider]*version.Version {
+func providerVersionsFromTfVersion(pv map[string]*version.Version) map[tfaddr.Provider]*version.Version {
 	m := make(map[tfaddr.Provider]*version.Version, 0)
 
 	for rawAddr, v := range pv {
@@ -131,16 +126,12 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		return err
 	}
 
-	installedProviders := make(map[tfaddr.Provider]*version.Version, 0)
-
 	for rawAddr, pJsonSchema := range ps.Schemas {
 		pAddr, err := tfaddr.ParseProviderSource(rawAddr)
 		if err != nil {
 			// skip unparsable address
 			continue
 		}
-
-		installedProviders[pAddr] = nil
 
 		if pAddr.IsLegacy() {
 			// TODO: check for migrations via Registry API?
@@ -154,7 +145,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		}
 	}
 
-	return modStore.UpdateInstalledProviders(modPath, installedProviders)
+	return nil
 }
 
 func ParseModuleConfiguration(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
@@ -230,6 +221,22 @@ func ParseModuleManifest(fs ReadOnlyFS, modStore *state.ModuleStore, modPath str
 	if sErr != nil {
 		return sErr
 	}
+	return err
+}
+
+func ParseProviderVersions(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	err := modStore.SetInstalledProvidersState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	pvm, err := datadir.ParsePluginVersions(fs, modPath)
+
+	sErr := modStore.UpdateInstalledProviders(modPath, pvm, err)
+	if sErr != nil {
+		return sErr
+	}
+
 	return err
 }
 

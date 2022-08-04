@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -592,6 +593,100 @@ func TestModuleStore_UpdateVarsReferenceOrigins(t *testing.T) {
 	}
 	if diff := cmp.Diff(mod.VarsRefOriginsState, operation.OpStateLoaded, cmpOpts); diff != "" {
 		t.Fatalf("unexpected module vars ref origins state: %s", diff)
+	}
+}
+
+func TestProviderRequirementsForModule_cycle(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss.Modules.MaxModuleNesting = 3
+
+	modHandle := document.DirHandleFromPath(t.TempDir())
+	meta := &tfmod.Meta{
+		Path: modHandle.Path(),
+		ModuleCalls: map[string]tfmod.DeclaredModuleCall{
+			"test": {
+				LocalName:  "submod",
+				SourceAddr: tfmod.LocalSourceAddr("./"),
+			},
+		},
+	}
+
+	err = ss.Modules.Add(modHandle.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ss.Modules.UpdateMetadata(modHandle.Path(), meta, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = ss.Modules.ProviderRequirementsForModule(modHandle.Path())
+	if err == nil {
+		t.Fatal("expected error for cycle")
+	}
+}
+
+func TestProviderRequirementsForModule_basic(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// root module
+	modHandle := document.DirHandleFromPath(t.TempDir())
+	meta := &tfmod.Meta{
+		Path: modHandle.Path(),
+		ProviderRequirements: tfmod.ProviderRequirements{
+			tfaddr.MustParseProviderSource("hashicorp/aws"): version.MustConstraints(version.NewConstraint(">= 1.0")),
+		},
+		ModuleCalls: map[string]tfmod.DeclaredModuleCall{
+			"test": {
+				LocalName:  "submod",
+				SourceAddr: tfmod.LocalSourceAddr("./sub"),
+			},
+		},
+	}
+	err = ss.Modules.Add(modHandle.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.Modules.UpdateMetadata(modHandle.Path(), meta, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// submodule
+	submodHandle := document.DirHandleFromPath(filepath.Join(modHandle.Path(), "sub"))
+	subMeta := &tfmod.Meta{
+		Path: modHandle.Path(),
+		ProviderRequirements: tfmod.ProviderRequirements{
+			tfaddr.MustParseProviderSource("hashicorp/google"): version.MustConstraints(version.NewConstraint("> 2.0")),
+		},
+	}
+	err = ss.Modules.Add(submodHandle.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.Modules.UpdateMetadata(submodHandle.Path(), subMeta, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedReqs := tfmod.ProviderRequirements{
+		tfaddr.MustParseProviderSource("hashicorp/aws"):    version.MustConstraints(version.NewConstraint(">= 1.0")),
+		tfaddr.MustParseProviderSource("hashicorp/google"): version.MustConstraints(version.NewConstraint("> 2.0")),
+	}
+	pReqs, err := ss.Modules.ProviderRequirementsForModule(modHandle.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(expectedReqs, pReqs, cmpOpts); diff != "" {
+		t.Fatalf("unexpected requirements: %s", diff)
 	}
 }
 
