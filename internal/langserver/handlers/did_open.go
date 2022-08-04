@@ -6,12 +6,8 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
-	"github.com/hashicorp/terraform-ls/internal/job"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
-	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
-	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -60,24 +56,9 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
 	modHandle := document.DirHandleFromPath(mod.Path)
-	jobIds, err := svc.indexer.DocumentChanged(modHandle)
+	jobIds, err := svc.indexer.DocumentOpened(modHandle)
 	if err != nil {
 		return err
-	}
-
-	if mod.TerraformVersionState == op.OpStateUnknown {
-		jobId, err := svc.stateStore.JobStore.EnqueueJob(job.Job{
-			Dir: modHandle,
-			Func: func(ctx context.Context) error {
-				ctx = exec.WithExecutorFactory(ctx, svc.tfExecFactory)
-				return module.GetTerraformVersion(ctx, svc.modStore, mod.Path)
-			},
-			Type: op.OpTypeGetTerraformVersion.String(),
-		})
-		if err != nil {
-			return err
-		}
-		jobIds = append(jobIds, jobId)
 	}
 
 	if svc.singleFileMode {

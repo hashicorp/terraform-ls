@@ -83,21 +83,6 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		}
 	}
 
-	tfVersionId, err := idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			return module.GetTerraformVersion(ctx, idx.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeGetTerraformVersion.String(),
-	})
-	if err != nil {
-		errs = multierror.Append(errs, err)
-	} else {
-		ids = append(ids, tfVersionId)
-		refCollectionDeps = append(refCollectionDeps, tfVersionId)
-	}
-
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
 
