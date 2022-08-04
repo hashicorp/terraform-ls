@@ -56,8 +56,7 @@ type PathStore interface {
 }
 
 type ModuleStore interface {
-	Exists(dir string) (bool, error)
-	Add(dir string) error
+	AddIfNotExists(dir string) error
 }
 
 func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
@@ -190,20 +189,14 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			dirIndexed = true
 			w.logger.Printf("found module %s", dir)
 
-			exists, err := w.modStore.Exists(dir.Path())
+			err := w.modStore.AddIfNotExists(dir.Path())
 			if err != nil {
 				return err
-			}
-			if !exists {
-				err := w.modStore.Add(dir.Path())
-				if err != nil {
-					return err
-				}
 			}
 
 			ids, err := w.walkFunc(ctx, dir)
 			if err != nil {
-				w.collectError(err)
+				w.collectError(fmt.Errorf("walkFunc: %w", err))
 			}
 			w.collectJobIds(ids)
 			continue

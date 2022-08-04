@@ -702,3 +702,70 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 		t.Fatalf("unexpected jobs: %s", diff)
 	}
 }
+
+func TestJobStore_FinishJob_dependsOn(t *testing.T) {
+	ss, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	parentId, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:  document.DirHandleFromPath(t.TempDir()),
+		Type: "parent-job",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	childId, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(ctx context.Context) error {
+			return nil
+		},
+		Dir:       document.DirHandleFromPath(t.TempDir()),
+		Type:      "child-job",
+		DependsOn: job.IDs{parentId},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ids, err := ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedIds := job.IDs{parentId, childId}
+	if diff := cmp.Diff(expectedIds, ids); diff != "" {
+		t.Fatalf("unexpected IDs: %s", diff)
+	}
+
+	err = ss.JobStore.FinishJob(parentId, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ids, err = ss.JobStore.ListQueuedJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedIds = job.IDs{childId}
+	if diff := cmp.Diff(expectedIds, ids); diff != "" {
+		t.Fatalf("unexpected IDs after finishing: %s", diff)
+	}
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
+	t.Cleanup(cancelFunc)
+	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if nextId != childId {
+		t.Fatalf("expected next ID %q, given %q", childId, nextId)
+	}
+	expectedDependsOn := job.IDs{}
+	if diff := cmp.Diff(expectedDependsOn, j.DependsOn); diff != "" {
+		t.Fatalf("unexpected DependsOn: %s", diff)
+	}
+}

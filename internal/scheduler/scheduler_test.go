@@ -10,7 +10,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -313,6 +315,83 @@ func TestScheduler_defer(t *testing.T) {
 	expectedDeferredJobs := int64(jobsToExecute * 2)
 	if deferredJobsExecuted != expectedDeferredJobs {
 		t.Fatalf("expected %d deferred jobs to execute, got: %d", expectedDeferredJobs, deferredJobsExecuted)
+	}
+}
+
+func TestScheduler_dependsOn(t *testing.T) {
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss.SetLogger(testLogger())
+
+	tmpDir := t.TempDir()
+
+	ctx := context.Background()
+
+	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
+	s.SetLogger(testLogger())
+	s.Start(ctx)
+	t.Cleanup(func() {
+		s.Stop()
+	})
+
+	ids := make(job.IDs, 0)
+	executedJobs := make([]string, 0)
+
+	dirPath := filepath.Join(tmpDir, "test-folder")
+
+	id0, err := ss.JobStore.EnqueueJob(job.Job{
+		Func: func(c context.Context) error {
+			time.Sleep(20 * time.Millisecond)
+			executedJobs = append(executedJobs, "test-0")
+			return nil
+		},
+		Dir:  document.DirHandleFromPath(dirPath),
+		Type: "test-0",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids = append(ids, id0)
+
+	id1, err := ss.JobStore.EnqueueJob(job.Job{
+		Dir:  document.DirHandleFromPath(dirPath),
+		Type: "test-1",
+		Func: func(c context.Context) error {
+			time.Sleep(20 * time.Millisecond)
+			executedJobs = append(executedJobs, "test-1")
+			return nil
+		},
+		DependsOn: job.IDs{id0},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids = append(ids, id1)
+
+	id2, err := ss.JobStore.EnqueueJob(job.Job{
+		Dir:  document.DirHandleFromPath(dirPath),
+		Type: "test-2",
+		Func: func(c context.Context) error {
+			executedJobs = append(executedJobs, "test-2")
+			return nil
+		},
+		DependsOn: job.IDs{id0, id1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids = append(ids, id2)
+
+	err = ss.JobStore.WaitForJobs(ctx, ids...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedJobs := []string{"test-0", "test-1", "test-2"}
+	if diff := cmp.Diff(expectedJobs, executedJobs); diff != "" {
+		t.Fatalf("unexpected jobs: %s", diff)
 	}
 }
 

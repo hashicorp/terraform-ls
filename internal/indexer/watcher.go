@@ -13,18 +13,20 @@ import (
 func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
-	id, err := idx.jobStore.EnqueueJob(job.Job{
+	modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type:  op.OpTypeParseModuleManifest.String(),
-		Defer: idx.decodeInstalledModuleCalls(modHandle),
+		Type: op.OpTypeParseModuleManifest.String(),
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			return idx.decodeInstalledModuleCalls(modHandle)
+		},
 	})
 	if err != nil {
 		return ids, err
 	}
-	ids = append(ids, id)
+	ids = append(ids, modManifestId)
 
 	return ids, nil
 }
