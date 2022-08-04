@@ -93,6 +93,7 @@ type Module struct {
 	TerraformVersionState op.OpState
 
 	InstalledProviders      InstalledProviders
+	InstalledProvidersErr   error
 	InstalledProvidersState op.OpState
 
 	ProviderSchemaErr   error
@@ -143,6 +144,9 @@ func (m *Module) Copy() *Module {
 
 		ProviderSchemaErr:   m.ProviderSchemaErr,
 		ProviderSchemaState: m.ProviderSchemaState,
+
+		InstalledProvidersErr:   m.InstalledProvidersErr,
+		InstalledProvidersState: m.InstalledProvidersState,
 
 		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,
@@ -217,13 +221,14 @@ func (m *Module) Copy() *Module {
 
 func newModule(modPath string) *Module {
 	return &Module{
-		Path:                  modPath,
-		ModManifestState:      op.OpStateUnknown,
-		TerraformVersionState: op.OpStateUnknown,
-		ProviderSchemaState:   op.OpStateUnknown,
-		RefTargetsState:       op.OpStateUnknown,
-		ModuleParsingState:    op.OpStateUnknown,
-		MetaState:             op.OpStateUnknown,
+		Path:                    modPath,
+		ModManifestState:        op.OpStateUnknown,
+		TerraformVersionState:   op.OpStateUnknown,
+		ProviderSchemaState:     op.OpStateUnknown,
+		InstalledProvidersState: op.OpStateUnknown,
+		RefTargetsState:         op.OpStateUnknown,
+		ModuleParsingState:      op.OpStateUnknown,
+		MetaState:               op.OpStateUnknown,
 	}
 }
 
@@ -558,6 +563,7 @@ func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provi
 
 	mod := oldMod.Copy()
 	mod.InstalledProviders = pvs
+	mod.InstalledProvidersErr = pvErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

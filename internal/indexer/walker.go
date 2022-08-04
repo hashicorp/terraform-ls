@@ -17,6 +17,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	var errs *multierror.Error
 
 	refCollectionDeps := make(job.IDs, 0)
+	providerVersionDeps := make(job.IDs, 0)
 
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
@@ -30,6 +31,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	} else {
 		ids = append(ids, parseId)
 		refCollectionDeps = append(refCollectionDeps, parseId)
+		providerVersionDeps = append(providerVersionDeps, parseId)
 	}
 
 	var metaId job.ID
@@ -47,6 +49,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		} else {
 			ids = append(ids, metaId)
 			refCollectionDeps = append(refCollectionDeps, metaId)
+			providerVersionDeps = append(providerVersionDeps, metaId)
 		}
 	}
 
@@ -117,23 +120,19 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		} else {
 			ids = append(ids, modManifestId)
 			refCollectionDeps = append(refCollectionDeps, modManifestId)
+			// provider requirements may be within the (installed) modules
+			providerVersionDeps = append(providerVersionDeps, modManifestId)
 		}
 	}
 
 	if dataDir.PluginLockFilePath != "" {
-		dependsOn := job.IDs{parseId, metaId}
-
-		if modManifestId != "" {
-			// provider requirements may be within the (installed) modules
-			dependsOn = append(dependsOn, modManifestId)
-		}
 		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:      op.OpTypeParseProviderVersions.String(),
-			DependsOn: dependsOn,
+			DependsOn: providerVersionDeps,
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 				ids := make(job.IDs, 0)
 
