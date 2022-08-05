@@ -97,7 +97,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			},
 			Type: op.OpTypeParseModuleManifest.String(),
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-				return idx.decodeInstalledModuleCalls(modHandle)
+				return idx.decodeInstalledModuleCalls(modHandle, false)
 			},
 		})
 		if err != nil {
@@ -114,7 +114,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:      op.OpTypeParseProviderVersions.String(),
 			DependsOn: providerVersionDeps,
@@ -144,7 +144,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if parseId != "" {
-		rIds, err := idx.collectReferences(modHandle, refCollectionDeps)
+		rIds, err := idx.collectReferences(modHandle, refCollectionDeps, false)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		} else {

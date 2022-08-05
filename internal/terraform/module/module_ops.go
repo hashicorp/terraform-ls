@@ -180,6 +180,10 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 		return err
 	}
 
+	// TODO: Avoid parsing if the content matches existing AST
+
+	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
+
 	// Avoid parsing if it is already in progress or already known
 	if mod.ModuleParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
@@ -210,6 +214,10 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	if err != nil {
 		return err
 	}
+
+	// TODO: Avoid parsing if the content matches existing AST
+
+	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
 
 	// Avoid parsing if it is already in progress or already known
 	if mod.VarsParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
@@ -280,8 +288,18 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 	return err
 }
 
-func ParseProviderVersions(fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	err := modStore.SetInstalledProvidersState(modPath, op.OpStateLoading)
+func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid parsing if it is already in progress or already known
+	if mod.InstalledProvidersState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetInstalledProvidersState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -301,6 +319,8 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 	if err != nil {
 		return err
 	}
+
+	// TODO: Avoid parsing if upstream (parsing) job reported no changes
 
 	// Avoid parsing if it is already in progress or already known
 	if mod.MetaState != op.OpStateUnknown && !job.IgnoreState(ctx) {
@@ -345,6 +365,8 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
+	// TODO: Avoid collection if upstream jobs reported no changes
+
 	// Avoid collection if it is already in progress or already done
 	if mod.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
@@ -386,6 +408,8 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 		return err
 	}
 
+	// TODO: Avoid collection if upstream jobs reported no changes
+
 	// Avoid collection if it is already in progress or already done
 	if mod.RefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
@@ -426,6 +450,8 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 		return err
 	}
 
+	// TODO: Avoid collection if upstream (parsing) job reported no changes
+
 	// Avoid collection if it is already in progress or already done
 	if mod.VarsRefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
@@ -465,6 +491,8 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 	if err != nil {
 		return err
 	}
+
+	// TODO: Avoid collection if upstream jobs (parsing, meta) reported no changes
 
 	var errs *multierror.Error
 

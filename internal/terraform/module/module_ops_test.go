@@ -368,7 +368,8 @@ func TestParseProviderVersions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ParseProviderVersions(fs, ss.Modules, modPath)
+	ctx := context.Background()
+	err = ParseProviderVersions(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}

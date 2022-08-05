@@ -19,9 +19,10 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseModuleManifest.String(),
+		Type:        op.OpTypeParseModuleManifest.String(),
+		IgnoreState: true,
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			return idx.decodeInstalledModuleCalls(modHandle)
+			return idx.decodeInstalledModuleCalls(modHandle, true)
 		},
 	})
 	if err != nil {
@@ -39,9 +40,10 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 	pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseProviderVersions.String(),
+		IgnoreState: true,
+		Type:        op.OpTypeParseProviderVersions.String(),
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)
@@ -55,8 +57,9 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
 			return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeObtainSchema.String(),
-		DependsOn: job.IDs{pSchemaVerId},
+		IgnoreState: true,
+		Type:        op.OpTypeObtainSchema.String(),
+		DependsOn:   job.IDs{pSchemaVerId},
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)

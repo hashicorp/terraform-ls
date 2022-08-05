@@ -42,14 +42,15 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseModuleConfiguration.String(),
+		Type:        op.OpTypeParseModuleConfiguration.String(),
+		IgnoreState: true,
 	})
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, parseId)
 
-	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId})
+	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId}, true)
 	if err != nil {
 		return ids, err
 	}
@@ -60,7 +61,8 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 		Func: func(ctx context.Context) error {
 			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseVariables.String(),
+		Type:        op.OpTypeParseVariables.String(),
+		IgnoreState: true,
 	})
 	if err != nil {
 		return ids, err
