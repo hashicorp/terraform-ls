@@ -41,7 +41,16 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
 	stop := ls.Start(t)
 	defer stop()
 
@@ -52,6 +61,8 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 		"rootUri": %q,
 		"processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -66,6 +77,8 @@ func TestCodeLens_withoutOptIn(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeLens",
 		ReqParams: fmt.Sprintf(`{
@@ -170,6 +183,8 @@ output "test" {
 	value = var.test
 }
 `, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeLens",
 		ReqParams: fmt.Sprintf(`{
@@ -282,6 +297,8 @@ variable "instances" {
   type = number
 }
 `, submodUri.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeLens",
 		ReqParams: fmt.Sprintf(`{

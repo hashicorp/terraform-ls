@@ -80,6 +80,8 @@ func TestLangServer_didOpenLanguageIdStored(t *testing.T) {
         "text": %q
     }
 }`, TempDir(t).URI, originalText)})
+	waitForAllJobs(t, ss)
+
 	path := filepath.Join(TempDir(t).Path(), "main.tf")
 	dh := document.HandleFromPath(path)
 	doc, err := ss.DocumentStore.GetDocument(dh)

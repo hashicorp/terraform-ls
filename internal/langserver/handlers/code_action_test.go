@@ -104,6 +104,8 @@ func TestLangServer_codeAction_basic(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/codeAction",
 		ReqParams: fmt.Sprintf(`{
@@ -351,6 +353,7 @@ func TestLangServer_codeAction_no_code_action_requested(t *testing.T) {
 					"uri": "%s/main.tf"
 				}
 			}`, tmpDir.URI)})
+			waitForAllJobs(t, ss)
 
 			ls.CallAndExpectResponse(t, tt.request, tt.want)
 		})

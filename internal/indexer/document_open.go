@@ -35,9 +35,6 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 		// Given that getting version may take time and we only use it to
 		// enhance the UX, we ignore the outcome (job ID) here
 		// to avoid delays when documents of new modules are open.
-
-		// TODO: This affects some completion data, so we'll need to either
-		// update the tests or find some way of synchronizing this in tests
 	}
 
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{

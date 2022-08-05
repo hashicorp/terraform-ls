@@ -114,6 +114,7 @@ func TestHover_withValidData(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, TempDir(t).URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/hover",
@@ -232,6 +233,7 @@ func TestVarsHover_withValidData(t *testing.T) {
 			"uri": "%s/terraform.tfvars"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/hover",

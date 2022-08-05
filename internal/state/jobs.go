@@ -540,6 +540,23 @@ func (js *JobStore) ListQueuedJobs() (job.IDs, error) {
 	return jobIDs, nil
 }
 
+func (js *JobStore) ListAllJobs() (job.IDs, error) {
+	txn := js.db.Txn(false)
+
+	it, err := txn.Get(js.tableName, "id")
+	if err != nil {
+		return nil, err
+	}
+
+	jobIDs := make(job.IDs, 0)
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		sj := obj.(*ScheduledJob)
+		jobIDs = append(jobIDs, sj.ID)
+	}
+
+	return jobIDs, nil
+}
+
 func (js *JobStore) allJobs() (job.IDs, error) {
 	txn := js.db.Txn(false)
 

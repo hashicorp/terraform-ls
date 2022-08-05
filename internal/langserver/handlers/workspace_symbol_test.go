@@ -90,6 +90,7 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 			"uri": "%s/blah/third.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/symbol",

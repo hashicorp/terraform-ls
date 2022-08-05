@@ -59,6 +59,7 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 			"uri": %q
 		}
 	}`, testFileURI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",

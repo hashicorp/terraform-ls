@@ -129,6 +129,7 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -355,6 +356,7 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -669,6 +671,7 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 			"uri": "%s/terraform.tfvars"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -821,6 +824,7 @@ output "test" {
 			"uri": "%s/main.tf"
 		}
 	}`, mainCfg, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
@@ -1089,6 +1093,7 @@ output "test" {
 			"uri": "%s/main.tf"
 		}
 	}`, mainCfg, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	// first module
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
@@ -1429,6 +1434,8 @@ variable "ccc" {}
 			"uri": "%s/outputs.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
 		ReqParams: fmt.Sprintf(`{

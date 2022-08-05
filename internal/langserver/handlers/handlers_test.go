@@ -103,6 +103,18 @@ func waitForWalkerPath(t testOrBench, ss *state.StateStore, wc *walker.WalkerCol
 	}
 }
 
+func waitForAllJobs(t testOrBench, ss *state.StateStore) {
+	ctx := context.Background()
+	ids, err := ss.JobStore.ListAllJobs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ss.JobStore.WaitForJobs(ctx, ids...)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type testOrBench interface {
 	Fatal(args ...interface{})
 	Fatalf(format string, args ...interface{})
