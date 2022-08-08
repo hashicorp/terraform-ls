@@ -263,6 +263,372 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 		}`)
 }
 
+// verify that for old versions we serve earliest available (v0.12) schema
+func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore: ss,
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.10.0")),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "variable \"test\" {\n\n}\n",
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 0,
+				"line": 1
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
+				"items": [
+					{
+						"label": "default",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, any type",
+						"documentation": "Default value to use when variable is not explicitly set",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "default"
+						}
+					},
+					{
+						"label": "description",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, string",
+						"documentation": "Description to document the purpose of the variable and what value is expected",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "description"
+						}
+					},
+					{
+						"label": "type",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, type",
+						"documentation": "Type constraint restricting the type of value to accept, e.g. string or list(string)",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "type"
+						}
+					}
+				]
+			}
+		}`)
+}
+
+// verify that for unknown new versions we serve latest available schema
+func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore: ss,
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("999.999.999")),
+							nil,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "variable \"test\" {\n\n}\n",
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 0,
+				"line": 1
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"isIncomplete": false,
+				"itemDefaults": {
+					"editRange": {
+						"start": {"line": 0, "character": 0},
+						"end": {"line": 0, "character": 0}
+					}
+				},
+				"items": [
+					{
+						"label": "default",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, any type",
+						"documentation": "Default value to use when variable is not explicitly set",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "default"
+						}
+					},
+					{
+						"label": "description",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, string",
+						"documentation": "Description to document the purpose of the variable and what value is expected",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "description"
+						}
+					},
+					{
+						"label": "sensitive",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, bool",
+						"documentation": "Whether the variable contains sensitive material and should be hidden in the UI",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "sensitive"
+						}
+					},
+					{
+						"label": "type",
+						"labelDetails": {},
+						"kind": 10,
+						"detail": "optional, type",
+						"documentation": "Type constraint restricting the type of value to accept, e.g. string or list(string)",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "type"
+						}
+					},
+					{
+						"label": "validation",
+						"labelDetails": {},
+						"kind": 7,
+						"detail": "Block",
+						"documentation": "Custom validation rule to restrict what value is expected for the variable",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "validation"
+						}
+					}
+				]
+			}
+		}`)
+}
+
 func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
