@@ -103,12 +103,21 @@ func providerVersionsFromTfVersion(pv map[string]*version.Version) map[tfaddr.Pr
 }
 
 func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+	pReqs, err := modStore.ProviderRequirementsForModule(modPath)
 	if err != nil {
 		return err
 	}
 
-	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
+	exist, err := schemaStore.AllSchemasExist(pReqs)
+	if err != nil {
+		return err
+	}
+	if exist {
+		// avoid obtaining schemas if we already have it
+		return nil
+	}
+
+	tfExec, err := TerraformExecutorForModule(ctx, modPath)
 	if err != nil {
 		sErr := modStore.FinishProviderSchemaLoading(modPath, err)
 		if sErr != nil {

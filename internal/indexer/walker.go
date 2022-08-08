@@ -111,47 +111,29 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if dataDir.PluginLockFilePath != "" {
-		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:      op.OpTypeParseProviderVersions.String(),
 			DependsOn: providerVersionDeps,
-			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-				ids := make(job.IDs, 0)
+		})
+		if err != nil {
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, pSchemaVerId)
+			refCollectionDeps = append(refCollectionDeps, pSchemaVerId)
+		}
 
-				pReqs, err := idx.modStore.ProviderRequirementsForModule(modHandle.Path())
-				if err != nil {
-					return ids, err
-				}
-
-				exist, err := idx.schemaStore.AllSchemasExist(pReqs)
-				if err != nil {
-					return ids, err
-				}
-				if exist {
-					idx.logger.Printf("Avoiding obtaining schemas as they all exist: %#v", pReqs)
-					// avoid obtaining schemas if we already have it
-					return ids, nil
-				}
-				idx.logger.Printf("Obtaining schemas for: %#v", pReqs)
-
-				id, err := idx.jobStore.EnqueueJob(job.Job{
-					Dir: modHandle,
-					Func: func(ctx context.Context) error {
-						ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-						return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-					},
-					Type: op.OpTypeObtainSchema.String(),
-				})
-				if err != nil {
-					return ids, err
-				}
-				ids = append(ids, id)
-
-				return ids, nil
+		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+				return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 			},
+			Type:      op.OpTypeObtainSchema.String(),
+			DependsOn: job.IDs{pSchemaVerId},
 		})
 		if err != nil {
 			errs = multierror.Append(errs, err)
