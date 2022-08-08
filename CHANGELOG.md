@@ -31,7 +31,8 @@ BUG FIXES:
 
  - handlers/command: Return partially parsed metadata from `module.providers` ([#951](https://github.com/hashicorp/terraform-ls/pull/951))
  - fix: Avoid ignoring hidden `*.tfvars` files ([#968](https://github.com/hashicorp/terraform-ls/pull/968))
- - fix: avoid crash on invalid URIs ([#969](https://github.com/hashicorp/terraform-ls/pull/969))
+ - fix: Avoid crash on invalid URIs ([#969](https://github.com/hashicorp/terraform-ls/pull/969))
+ - fix: Avoid crash on invalid provider name ([#1030](https://github.com/hashicorp/terraform-ls/pull/1030))
 
 INTERNAL:
 
