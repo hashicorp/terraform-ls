@@ -9,30 +9,14 @@ import (
 )
 
 func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modReader state.ModuleCallReader) (*schema.BodySchema, error) {
-	var coreSchema *schema.BodySchema
-	coreRequirements := make(version.Constraints, 0)
-	if mod.TerraformVersion != nil {
-		var err error
-		coreSchema, err = tfschema.CoreModuleSchemaForVersion(mod.TerraformVersion)
-		if err != nil {
-			return nil, err
-		}
-		coreRequirements, err = version.NewConstraint(mod.TerraformVersion.String())
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		coreSchema = tfschema.UniversalCoreModuleSchema()
-	}
-
-	sm := tfschema.NewSchemaMerger(coreSchema)
+	sm := tfschema.NewSchemaMerger(coreSchema(mod))
 	sm.SetSchemaReader(schemaReader)
 	sm.SetTerraformVersion(mod.TerraformVersion)
 	sm.SetModuleReader(modReader)
 
 	meta := &tfmodule.Meta{
 		Path:                 mod.Path,
-		CoreRequirements:     coreRequirements,
+		CoreRequirements:     mod.Meta.CoreRequirements,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		ProviderReferences:   mod.Meta.ProviderReferences,
 		Variables:            mod.Meta.Variables,
@@ -41,4 +25,37 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modRead
 	}
 
 	return sm.SchemaForModule(meta)
+}
+
+func coreSchema(mod *state.Module) *schema.BodySchema {
+	if mod.TerraformVersion != nil {
+		s, err := tfschema.CoreModuleSchemaForVersion(mod.TerraformVersion)
+		if err == nil {
+			return s
+		}
+		if mod.TerraformVersion.LessThan(tfschema.OldestAvailableVersion) {
+			return mustCoreSchemaForVersion(tfschema.OldestAvailableVersion)
+		}
+
+		return mustCoreSchemaForVersion(tfschema.LatestAvailableVersion)
+	}
+
+	s, err := tfschema.CoreModuleSchemaForConstraint(mod.Meta.CoreRequirements)
+	if err == nil {
+		return s
+	}
+	if mod.Meta.CoreRequirements.Check(tfschema.OldestAvailableVersion) {
+		return mustCoreSchemaForVersion(tfschema.OldestAvailableVersion)
+	}
+
+	return mustCoreSchemaForVersion(tfschema.LatestAvailableVersion)
+}
+
+func mustCoreSchemaForVersion(v *version.Version) *schema.BodySchema {
+	s, err := tfschema.CoreModuleSchemaForVersion(v)
+	if err != nil {
+		// this should never happen
+		panic(err)
+	}
+	return s
 }

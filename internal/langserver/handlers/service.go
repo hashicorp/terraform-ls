@@ -43,6 +43,7 @@ type service struct {
 	sessCtx     context.Context
 	stopSession context.CancelFunc
 
+	// TODO: Rename to *scheduler to avoid confusion
 	lowPrioIndexer  *scheduler.Scheduler
 	highPrioIndexer *scheduler.Scheduler
 

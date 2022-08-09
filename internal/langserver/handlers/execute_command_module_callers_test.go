@@ -18,15 +18,22 @@ import (
 )
 
 func TestLangServer_workspaceExecuteCommand_moduleCallers_argumentError(t *testing.T) {
-	rootDir := t.TempDir()
-	rootUri := uri.FromPath(rootDir)
+	rootDir := document.DirHandleFromPath(t.TempDir())
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
-				rootDir: validTfMockCalls(),
+				rootDir.Path(): validTfMockCalls(),
 			},
 		},
+		StateStore:      ss,
+		WalkerCollector: wc,
 	}))
 	stop := ls.Start(t)
 	defer stop()
@@ -37,7 +44,9 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_argumentError(t *testi
 	    "capabilities": {},
 	    "rootUri": %q,
 		"processId": 12345
-	}`, rootUri)})
+	}`, rootDir.URI)})
+	waitForWalkerPath(t, ss, wc, rootDir)
+
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -51,7 +60,8 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_argumentError(t *testi
 			"text": "provider \"github\" {}",
 			"uri": %q
 		}
-	}`, fmt.Sprintf("%s/main.tf", rootUri))})
+	}`, fmt.Sprintf("%s/main.tf", rootDir.URI))})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",
@@ -109,6 +119,7 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_basic(t *testing.T) {
 			"uri": %q
 		}
 	}`, fmt.Sprintf("%s/main.tf", baseDirUri))})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "workspace/executeCommand",

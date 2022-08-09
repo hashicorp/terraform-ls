@@ -101,6 +101,7 @@ func TestDocumentLink_withValidData(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/documentLink",

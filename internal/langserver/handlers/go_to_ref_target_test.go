@@ -86,6 +86,8 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -217,6 +219,8 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -370,6 +374,7 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
@@ -476,6 +481,8 @@ func TestDefinition_moduleInputToVariable(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, modHandle.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/definition",
 		ReqParams: fmt.Sprintf(`{
@@ -576,6 +583,8 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/declaration",
 		ReqParams: fmt.Sprintf(`{
@@ -707,6 +716,8 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/declaration",
 		ReqParams: fmt.Sprintf(`{

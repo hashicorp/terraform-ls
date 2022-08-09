@@ -83,23 +83,5 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 	}
 	ids = append(ids, id)
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			eo, ok := exec.ExecutorOptsFromContext(ctx)
-			if ok {
-				ctx = exec.WithExecutorOpts(ctx, eo)
-			}
-
-			return module.GetTerraformVersion(ctx, idx.modStore, modHandle.Path())
-		},
-		Type: op.OpTypeGetTerraformVersion.String(),
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, id)
-
 	return ids, nil
 }

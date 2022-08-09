@@ -87,6 +87,8 @@ output "foo" {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/references",
 		ReqParams: fmt.Sprintf(`{
@@ -198,6 +200,8 @@ variable "instances" {
 			"uri": "%s/main.tf"
 		}
 	}`, subHandle.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/references",
 		ReqParams: fmt.Sprintf(`{

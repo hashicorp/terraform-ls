@@ -9,7 +9,9 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -33,7 +35,15 @@ func TestLangServer_formattingWithoutInitialization(t *testing.T) {
 func TestLangServer_formatting_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore:      ss,
+		WalkerCollector: wc,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): {
@@ -82,6 +92,7 @@ func TestLangServer_formatting_basic(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -96,6 +107,8 @@ func TestLangServer_formatting_basic(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
@@ -119,7 +132,16 @@ func TestLangServer_formatting_basic(t *testing.T) {
 
 func TestLangServer_formatting_oldVersion(t *testing.T) {
 	tmpDir := TempDir(t)
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore:      ss,
+		WalkerCollector: wc,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): {
@@ -168,6 +190,8 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -182,6 +206,8 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
@@ -194,7 +220,15 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 func TestLangServer_formatting_variables(t *testing.T) {
 	tmpDir := TempDir(t)
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore:      ss,
+		WalkerCollector: wc,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): {
@@ -243,6 +277,8 @@ func TestLangServer_formatting_variables(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -257,6 +293,8 @@ func TestLangServer_formatting_variables(t *testing.T) {
 			"uri": "%s/terraform.tfvars"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{
@@ -298,7 +336,15 @@ func TestLangServer_formatting_diffBug(t *testing.T) {
 }
 `
 
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		StateStore:      ss,
+		WalkerCollector: wc,
 		TerraformCalls: &exec.TerraformMockCalls{
 			PerWorkDir: map[string][]*mock.Call{
 				tmpDir.Path(): {
@@ -347,6 +393,8 @@ func TestLangServer_formatting_diffBug(t *testing.T) {
 	    "rootUri": %q,
 	    "processId": 12345
 	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "initialized",
 		ReqParams: "{}",
@@ -361,6 +409,8 @@ func TestLangServer_formatting_diffBug(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/formatting",
 		ReqParams: fmt.Sprintf(`{

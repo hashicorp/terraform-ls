@@ -113,6 +113,7 @@ func TestSemanticTokensFull(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -233,6 +234,7 @@ func TestSemanticTokensFull_clientSupportsDelta(t *testing.T) {
 			"uri": "%s/main.tf"
 		}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",
@@ -360,6 +362,7 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 				"uri": "%s/terraform.tfvars"
 			}
 	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
 
 	ls.CallAndExpectResponse(t, &langserver.CallRequest{
 		Method: "textDocument/semanticTokens/full",

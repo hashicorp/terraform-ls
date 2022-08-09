@@ -72,6 +72,8 @@ module "app" {
         "text": %q
     }
 }`, TempDir(t).URI, originalText)})
+	waitForAllJobs(t, ss)
+
 	ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/didChange",
 		ReqParams: fmt.Sprintf(`{
