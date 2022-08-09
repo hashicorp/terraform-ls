@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/terraform-ls/internal/algolia"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -27,6 +28,7 @@ var (
 	ctxLsVersion            = &contextKey{"language server version"}
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
+	ctxAlgoliaCredentials   = &contextKey{"algolia credentials"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -161,4 +163,16 @@ func ExperimentalFeatures(ctx context.Context) (settings.ExperimentalFeatures, e
 		return settings.ExperimentalFeatures{}, missingContextErr(ctxExperimentalFeatures)
 	}
 	return *expFeatures, nil
+}
+
+func WithAlgoliaCredentials(ctx context.Context, algoliaAppID, algoliaAPIKey string) context.Context {
+	return context.WithValue(ctx, ctxAlgoliaCredentials, algolia.AlgoliaCredentials{
+		AlgoliaAppID:  algoliaAppID,
+		AlgoliaAPIKey: algoliaAPIKey,
+	})
+}
+
+func AlgoliaCredentials(ctx context.Context) (algolia.AlgoliaCredentials, bool) {
+	credentials, ok := ctx.Value(ctxAlgoliaCredentials).(algolia.AlgoliaCredentials)
+	return credentials, ok
 }

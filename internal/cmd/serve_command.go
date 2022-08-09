@@ -23,6 +23,9 @@ type ServeCommand struct {
 	Ui      cli.Ui
 	Version string
 
+	AlgoliaAppID  string
+	AlgoliaAPIKey string
+
 	// flags
 	port           int
 	logFilePath    string
@@ -97,6 +100,7 @@ func (c *ServeCommand) Run(args []string) int {
 	logger.Printf("Starting terraform-ls %s", c.Version)
 
 	ctx = lsctx.WithLanguageServerVersion(ctx, c.Version)
+	ctx = lsctx.WithAlgoliaCredentials(ctx, c.AlgoliaAppID, c.AlgoliaAPIKey)
 
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
 	srv.SetLogger(logger)

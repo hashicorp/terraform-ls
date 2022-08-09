@@ -3,11 +3,9 @@ package handlers
 import (
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/hashicorp/hcl-lang/decoder"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/hooks"
 )
-
-var AlgoliaAppID = ""
-var AlgoliaAPIKey = ""
 
 func (s *service) AppendCompletionHooks(decoderContext decoder.DecoderContext) {
 	h := hooks.Hooks{
@@ -15,8 +13,9 @@ func (s *service) AppendCompletionHooks(decoderContext decoder.DecoderContext) {
 		RegistryClient: s.registryClient,
 	}
 
-	if AlgoliaAppID != "" && AlgoliaAPIKey != "" {
-		h.AlgoliaClient = search.NewClient(AlgoliaAppID, AlgoliaAPIKey)
+	credentials, ok := lsctx.AlgoliaCredentials(s.srvCtx)
+	if ok {
+		h.AlgoliaClient = search.NewClient(credentials.AlgoliaAppID, credentials.AlgoliaAPIKey)
 	}
 
 	decoderContext.CompletionHooks["CompleteLocalModuleSources"] = h.LocalModuleSources
