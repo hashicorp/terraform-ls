@@ -22,7 +22,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
 	})
@@ -40,7 +40,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			Dir:  modHandle,
 			Type: op.OpTypeLoadModuleMetadata.String(),
 			Func: func(ctx context.Context) error {
-				return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+				return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
 			},
 			DependsOn: job.IDs{parseId},
 		})
@@ -56,7 +56,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
 	})
@@ -93,11 +93,11 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		modManifestId, err = idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type: op.OpTypeParseModuleManifest.String(),
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-				return idx.decodeInstalledModuleCalls(modHandle)
+				return idx.decodeInstalledModuleCalls(modHandle, false)
 			},
 		})
 		if err != nil {
@@ -111,47 +111,31 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if dataDir.PluginLockFilePath != "" {
-		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		dependsOn := make(job.IDs, 0)
+		pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type:      op.OpTypeParseProviderVersions.String(),
 			DependsOn: providerVersionDeps,
-			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-				ids := make(job.IDs, 0)
+		})
+		if err != nil {
+			errs = multierror.Append(errs, err)
+		} else {
+			ids = append(ids, pSchemaVerId)
+			dependsOn = append(dependsOn, pSchemaVerId)
+			refCollectionDeps = append(refCollectionDeps, pSchemaVerId)
+		}
 
-				pReqs, err := idx.modStore.ProviderRequirementsForModule(modHandle.Path())
-				if err != nil {
-					return ids, err
-				}
-
-				exist, err := idx.schemaStore.AllSchemasExist(pReqs)
-				if err != nil {
-					return ids, err
-				}
-				if exist {
-					idx.logger.Printf("Avoiding obtaining schemas as they all exist: %#v", pReqs)
-					// avoid obtaining schemas if we already have it
-					return ids, nil
-				}
-				idx.logger.Printf("Obtaining schemas for: %#v", pReqs)
-
-				id, err := idx.jobStore.EnqueueJob(job.Job{
-					Dir: modHandle,
-					Func: func(ctx context.Context) error {
-						ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-						return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-					},
-					Type: op.OpTypeObtainSchema.String(),
-				})
-				if err != nil {
-					return ids, err
-				}
-				ids = append(ids, id)
-
-				return ids, nil
+		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+				return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 			},
+			Type:      op.OpTypeObtainSchema.String(),
+			DependsOn: dependsOn,
 		})
 		if err != nil {
 			errs = multierror.Append(errs, err)
@@ -162,7 +146,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if parseId != "" {
-		rIds, err := idx.collectReferences(modHandle, refCollectionDeps)
+		rIds, err := idx.collectReferences(modHandle, refCollectionDeps, false)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		} else {

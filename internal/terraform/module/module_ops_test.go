@@ -43,12 +43,12 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	err = ParseModuleConfiguration(fs, ss.Modules, modPath)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = LoadModuleMetadata(ss.Modules, modPath)
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,12 +115,12 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	err = ParseModuleConfiguration(fs, ss.Modules, modPath)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = LoadModuleMetadata(ss.Modules, modPath)
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,12 +194,12 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	err = ParseModuleConfiguration(fs, ss.Modules, modPath)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = LoadModuleMetadata(ss.Modules, modPath)
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +368,8 @@ func TestParseProviderVersions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ParseProviderVersions(fs, ss.Modules, modPath)
+	ctx := context.Background()
+	err = ParseProviderVersions(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}

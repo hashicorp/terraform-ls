@@ -41,7 +41,7 @@ jobs:
             -bench=InitializeFolder_basic \
             -run=^# \
             -benchtime=60s \
-            -timeout=30m | tee ${{ runner.temp }}/benchmarks.txt
+            -timeout=60m | tee ${{ runner.temp }}/benchmarks.txt
       -
         name: Evaluate benchmarks
         id: bench-eval

@@ -11,7 +11,7 @@ import (
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (job.IDs, error) {
+func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
 	jobIds := make(job.IDs, 0)
 
 	moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
@@ -43,9 +43,10 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		parseId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseModuleConfiguration(idx.fs, idx.modStore, mcPath)
+				return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, mcPath)
 			},
-			Type: op.OpTypeParseModuleConfiguration.String(),
+			Type:        op.OpTypeParseModuleConfiguration.String(),
+			IgnoreState: ignoreState,
 		})
 		if err != nil {
 			multierror.Append(errs, err)
@@ -60,9 +61,10 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 				Dir:  mcHandle,
 				Type: op.OpTypeLoadModuleMetadata.String(),
 				Func: func(ctx context.Context) error {
-					return module.LoadModuleMetadata(idx.modStore, mcPath)
+					return module.LoadModuleMetadata(ctx, idx.modStore, mcPath)
 				},
-				DependsOn: job.IDs{parseId},
+				DependsOn:   job.IDs{parseId},
+				IgnoreState: ignoreState,
 			})
 			if err != nil {
 				multierror.Append(errs, err)
@@ -73,7 +75,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		}
 
 		if parseId != "" {
-			ids, err := idx.collectReferences(mcHandle, refCollectionDeps)
+			ids, err := idx.collectReferences(mcHandle, refCollectionDeps, ignoreState)
 			if err != nil {
 				multierror.Append(errs, err)
 			} else {
@@ -84,9 +86,10 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 		varsParseId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseVariables(idx.fs, idx.modStore, mcPath)
+				return module.ParseVariables(ctx, idx.fs, idx.modStore, mcPath)
 			},
-			Type: op.OpTypeParseVariables.String(),
+			Type:        op.OpTypeParseVariables.String(),
+			IgnoreState: ignoreState,
 		})
 		if err != nil {
 			multierror.Append(errs, err)
@@ -100,8 +103,9 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 				Func: func(ctx context.Context) error {
 					return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, mcPath)
 				},
-				Type:      op.OpTypeDecodeVarsReferences.String(),
-				DependsOn: job.IDs{varsParseId},
+				Type:        op.OpTypeDecodeVarsReferences.String(),
+				DependsOn:   job.IDs{varsParseId},
+				IgnoreState: ignoreState,
 			})
 			if err != nil {
 				multierror.Append(errs, err)
@@ -114,7 +118,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle) (jo
 	return jobIds, errs.ErrorOrNil()
 }
 
-func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn job.IDs) (job.IDs, error) {
+func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
 	var errs *multierror.Error
@@ -124,8 +128,9 @@ func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn jo
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeDecodeReferenceTargets.String(),
-		DependsOn: dependsOn,
+		Type:        op.OpTypeDecodeReferenceTargets.String(),
+		DependsOn:   dependsOn,
+		IgnoreState: ignoreState,
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)
@@ -138,8 +143,9 @@ func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn jo
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeDecodeReferenceOrigins.String(),
-		DependsOn: dependsOn,
+		Type:        op.OpTypeDecodeReferenceOrigins.String(),
+		DependsOn:   dependsOn,
+		IgnoreState: ignoreState,
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)

@@ -58,22 +58,6 @@ const (
 )
 
 func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
-	jobID, queued, err := js.jobExists(newJob, StateQueued)
-	if err != nil {
-		return "", err
-	}
-	if queued {
-		return jobID, nil
-	}
-
-	jobID, running, err := js.jobExists(newJob, StateRunning)
-	if err != nil {
-		return "", err
-	}
-	if running {
-		return jobID, nil
-	}
-
 	txn := js.db.Txn(true)
 	defer txn.Abort()
 
@@ -98,13 +82,13 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 		State:     StateQueued,
 	}
 
-	err = txn.Insert(js.tableName, sJob)
+	err := txn.Insert(js.tableName, sJob)
 	if err != nil {
 		return "", fmt.Errorf("failed to insert new job: %w", err)
 	}
 
-	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t)",
-		sJob.ID, sJob.Type, sJob.Dir, sJob.IsDirOpen)
+	js.logger.Printf("JOBS: Enqueueing new job %q: %q for %q (IsDirOpen: %t, IgnoreState: %t)",
+		sJob.ID, sJob.Type, sJob.Dir, sJob.IsDirOpen, sJob.IgnoreState)
 
 	txn.Commit()
 

@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -16,11 +17,12 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 	modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleManifest(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseModuleManifest.String(),
+		Type:        op.OpTypeParseModuleManifest.String(),
+		IgnoreState: true,
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			return idx.decodeInstalledModuleCalls(modHandle)
+			return idx.decodeInstalledModuleCalls(modHandle, true)
 		},
 	})
 	if err != nil {
@@ -33,55 +35,39 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 
 func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
+	dependsOn := make(job.IDs, 0)
+	var errs *multierror.Error
 
-	id, err := idx.jobStore.EnqueueJob(job.Job{
+	pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseProviderVersions(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			ids := make(job.IDs, 0)
-
-			mod, err := idx.modStore.ModuleByPath(modHandle.Path())
-			if err != nil {
-				return ids, err
-			}
-
-			exist, err := idx.schemaStore.AllSchemasExist(mod.Meta.ProviderRequirements)
-			if err != nil {
-				return ids, err
-			}
-			if exist {
-				// avoid obtaining schemas if we already have it
-				return ids, nil
-			}
-
-			id, err := idx.jobStore.EnqueueJob(job.Job{
-				Dir: modHandle,
-				Func: func(ctx context.Context) error {
-					ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-					eo, ok := exec.ExecutorOptsFromContext(ctx)
-					if ok {
-						ctx = exec.WithExecutorOpts(ctx, eo)
-					}
-
-					return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-				},
-				Type: op.OpTypeObtainSchema.String(),
-			})
-			if err != nil {
-				return ids, err
-			}
-			ids = append(ids, id)
-
-			return ids, nil
-		},
-		Type: op.OpTypeParseProviderVersions.String(),
+		IgnoreState: true,
+		Type:        op.OpTypeParseProviderVersions.String(),
 	})
 	if err != nil {
-		return ids, err
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, pSchemaVerId)
+		dependsOn = append(dependsOn, pSchemaVerId)
 	}
-	ids = append(ids, id)
 
-	return ids, nil
+	pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+			return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		IgnoreState: true,
+		Type:        op.OpTypeObtainSchema.String(),
+		DependsOn:   dependsOn,
+	})
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, pSchemaId)
+	}
+
+	return ids, errs.ErrorOrNil()
 }

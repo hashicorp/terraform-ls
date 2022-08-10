@@ -15,16 +15,17 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	parseId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseModuleConfiguration.String(),
+		Type:        op.OpTypeParseModuleConfiguration.String(),
+		IgnoreState: true,
 	})
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, parseId)
 
-	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId})
+	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId}, true)
 	if err != nil {
 		return ids, err
 	}
@@ -33,9 +34,10 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
 		},
-		Type: op.OpTypeParseVariables.String(),
+		Type:        op.OpTypeParseVariables.String(),
+		IgnoreState: true,
 	})
 	if err != nil {
 		return ids, err
@@ -47,8 +49,9 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 		Func: func(ctx context.Context) error {
 			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeDecodeVarsReferences.String(),
-		DependsOn: job.IDs{parseVarsId},
+		Type:        op.OpTypeDecodeVarsReferences.String(),
+		DependsOn:   job.IDs{parseVarsId},
+		IgnoreState: true,
 	})
 	if err != nil {
 		return ids, err
@@ -58,16 +61,17 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	return ids, nil
 }
 
-func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs) (job.IDs, error) {
+func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
 	metaId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.LoadModuleMetadata(idx.modStore, modHandle.Path())
+			return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
 		},
-		Type:      op.OpTypeLoadModuleMetadata.String(),
-		DependsOn: dependsOn,
+		Type:        op.OpTypeLoadModuleMetadata.String(),
+		DependsOn:   dependsOn,
+		IgnoreState: ignoreState,
 	})
 	if err != nil {
 		return ids, err
@@ -79,8 +83,9 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeDecodeReferenceTargets.String(),
-		DependsOn: job.IDs{metaId},
+		Type:        op.OpTypeDecodeReferenceTargets.String(),
+		DependsOn:   job.IDs{metaId},
+		IgnoreState: ignoreState,
 	})
 	if err != nil {
 		return ids, err
@@ -92,8 +97,9 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
-		Type:      op.OpTypeDecodeReferenceOrigins.String(),
-		DependsOn: job.IDs{metaId},
+		Type:        op.OpTypeDecodeReferenceOrigins.String(),
+		DependsOn:   job.IDs{metaId},
+		IgnoreState: ignoreState,
 	})
 	if err != nil {
 		return ids, err
