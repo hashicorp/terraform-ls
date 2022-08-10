@@ -35,6 +35,7 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 
 func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
+	dependsOn := make(job.IDs, 0)
 	var errs *multierror.Error
 
 	pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
@@ -49,6 +50,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 		errs = multierror.Append(errs, err)
 	} else {
 		ids = append(ids, pSchemaVerId)
+		dependsOn = append(dependsOn, pSchemaVerId)
 	}
 
 	pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
@@ -59,7 +61,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 		},
 		IgnoreState: true,
 		Type:        op.OpTypeObtainSchema.String(),
-		DependsOn:   job.IDs{pSchemaVerId},
+		DependsOn:   dependsOn,
 	})
 	if err != nil {
 		errs = multierror.Append(errs, err)

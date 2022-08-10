@@ -111,6 +111,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if dataDir.PluginLockFilePath != "" {
+		dependsOn := make(job.IDs, 0)
 		pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
@@ -123,6 +124,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			errs = multierror.Append(errs, err)
 		} else {
 			ids = append(ids, pSchemaVerId)
+			dependsOn = append(dependsOn, pSchemaVerId)
 			refCollectionDeps = append(refCollectionDeps, pSchemaVerId)
 		}
 
@@ -133,7 +135,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 				return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 			},
 			Type:      op.OpTypeObtainSchema.String(),
-			DependsOn: job.IDs{pSchemaVerId},
+			DependsOn: dependsOn,
 		})
 		if err != nil {
 			errs = multierror.Append(errs, err)
