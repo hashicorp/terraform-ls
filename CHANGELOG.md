@@ -27,6 +27,7 @@ ENHANCEMENTS:
  - Introduce `module.terraform` custom LSP command to expose Terraform requirements & version ([#1016](https://github.com/hashicorp/terraform-ls/pull/1016))
  - Avoid obtaining schema via Terraform CLI if the same version is already cached (based on plugin lock file) ([#1014](https://github.com/hashicorp/terraform-ls/pull/1014))
  - Avoid getting version via `terraform version` during background indexing and pick relevant IntelliSense data based on `required_version` constraint ([#1027](https://github.com/hashicorp/terraform-ls/pull/1027))
+ - Provide 0.12 based IntelliSense for any <0.12 Terraform versions ([#1027](https://github.com/hashicorp/terraform-ls/pull/1027))
 
 BUG FIXES:
 
@@ -44,6 +45,7 @@ INTERNAL:
  - deps: bump github.com/hashicorp/terraform-exec from 0.16.1 to 0.17.0 ([#963](https://github.com/hashicorp/terraform-ls/pull/963))
  - deps: bump github.com/hashicorp/go-version from 1.5.0 to 1.6.0 ([#979](https://github.com/hashicorp/terraform-ls/pull/979))
  - indexer: refactor & improve/cleanup error handling ([#988](https://github.com/hashicorp/terraform-ls/pull/988))
+ - indexer/walker: Avoid running jobs where not needed ([#1006](https://github.com/hashicorp/terraform-ls/pull/1006))
 
 ## 0.28.1 (9 June 2022)
 
