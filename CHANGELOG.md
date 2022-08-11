@@ -28,6 +28,7 @@ ENHANCEMENTS:
  - Avoid obtaining schema via Terraform CLI if the same version is already cached (based on plugin lock file) ([#1014](https://github.com/hashicorp/terraform-ls/pull/1014))
  - Avoid getting version via `terraform version` during background indexing and pick relevant IntelliSense data based on `required_version` constraint ([#1027](https://github.com/hashicorp/terraform-ls/pull/1027))
  - Provide 0.12 based IntelliSense for any <0.12 Terraform versions ([#1027](https://github.com/hashicorp/terraform-ls/pull/1027))
+ - Complete module source and version attributes for local and registry modules ([#1024](https://github.com/hashicorp/terraform-ls/pull/1024))
 
 BUG FIXES:
 
