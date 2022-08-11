@@ -1,4 +1,4 @@
-## 0.29.0 (Unreleased)
+## 0.29.0 (11 Aug 2022)
 
 NOTES / BREAKING CHANGES:
 
