@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/hcl"
@@ -27,9 +28,7 @@ func (svc *service) TextDocumentFormatting(ctx context.Context, params lsp.Docum
 		return edits, err
 	}
 
-	svc.logger.Printf("formatting document via %q", tfExec.GetExecPath())
-
-	edits, err = formatDocument(ctx, tfExec, doc.Text, dh)
+	edits, err = svc.formatDocument(ctx, tfExec, doc.Text, dh)
 	if err != nil {
 		return edits, err
 	}
@@ -37,13 +36,18 @@ func (svc *service) TextDocumentFormatting(ctx context.Context, params lsp.Docum
 	return edits, nil
 }
 
-func formatDocument(ctx context.Context, tfExec exec.TerraformExecutor, original []byte, dh document.Handle) ([]lsp.TextEdit, error) {
+func (svc *service) formatDocument(ctx context.Context, tfExec exec.TerraformExecutor, original []byte, dh document.Handle) ([]lsp.TextEdit, error) {
 	var edits []lsp.TextEdit
 
+	svc.logger.Printf("formatting document via %q", tfExec.GetExecPath())
+
+	startTime := time.Now()
 	formatted, err := tfExec.Format(ctx, original)
 	if err != nil {
+		svc.logger.Printf("Failed 'terraform fmt' in %s", time.Now().Sub(startTime))
 		return edits, err
 	}
+	svc.logger.Printf("Finished 'terraform fmt' in %s", time.Now().Sub(startTime))
 
 	changes := hcl.Diff(dh, original, formatted)
 
