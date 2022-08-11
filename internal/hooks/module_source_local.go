@@ -3,6 +3,7 @@ package hooks
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -21,12 +22,14 @@ func (h *Hooks) LocalModuleSources(ctx context.Context, value cty.Value) ([]deco
 	}
 
 	for _, mod := range modules {
-		if strings.Contains(mod.Path, datadir.DataDirName) {
-			// Skip anything from the data directory
+		dirName := fmt.Sprintf("%c%s%c", os.PathSeparator, datadir.DataDirName, os.PathSeparator)
+		if strings.Contains(mod.Path, dirName) {
+			// Skip installed module copies in cache directories
 			continue
 		}
 		if mod.Path == path.Path {
-			// Exclude the current module
+			// Exclude the module we're providing completion in
+			// to avoid cyclic references
 			continue
 		}
 
@@ -34,10 +37,12 @@ func (h *Hooks) LocalModuleSources(ctx context.Context, value cty.Value) ([]deco
 		if err != nil {
 			continue
 		}
-		if !strings.HasPrefix(relPath, ".") {
-			relPath = fmt.Sprintf("./%s", relPath)
+		if !strings.HasPrefix(relPath, "..") {
+			// filepath.Rel will return the cleaned relative path, but Terraform
+			// expects local module sources to start with ./
+			relPath = "./" + relPath
 		}
-		relPath = strings.ReplaceAll(relPath, "\\", "/")
+		relPath = filepath.ToSlash(relPath)
 		c := decoder.ExpressionCompletionCandidate(decoder.ExpressionCandidate{
 			Value:  cty.StringVal(relPath),
 			Detail: "local",

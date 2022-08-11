@@ -15,10 +15,12 @@ type RegistryModule struct {
 	Description string `json:"description"`
 }
 
+const algoliaModuleIndex = "tf-registry:prod:modules"
+
 func (h *Hooks) fetchModulesFromAlgolia(ctx context.Context, term string) ([]RegistryModule, error) {
 	modules := make([]RegistryModule, 0)
 
-	index := h.AlgoliaClient.InitIndex("tf-registry:prod:modules")
+	index := h.AlgoliaClient.InitIndex(algoliaModuleIndex)
 	params := []interface{}{
 		ctx, // transport.Request will magically extract the context from here
 		opt.AttributesToRetrieve("full-name", "description"),

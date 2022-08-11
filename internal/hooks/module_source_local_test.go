@@ -2,16 +2,12 @@ package hooks
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -29,16 +25,8 @@ func TestHooks_LocalModuleSources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	regClient := registry.NewClient()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
-	}))
-	regClient.BaseURL = srv.URL
-	t.Cleanup(srv.Close)
-
 	h := &Hooks{
-		ModStore:       s.Modules,
-		RegistryClient: regClient,
+		ModStore: s.Modules,
 	}
 
 	modules := []string{
@@ -47,6 +35,9 @@ func TestHooks_LocalModuleSources(t *testing.T) {
 		filepath.Join(tmpDir, "beta"),
 		filepath.Join(tmpDir, "..", "gamma"),
 		filepath.Join(".terraform", "modules", "web_server_sg"),
+		filepath.Join(tmpDir, "any.terraformany"),
+		filepath.Join(tmpDir, "any.terraform"),
+		filepath.Join(tmpDir, ".terraformany"),
 	}
 
 	for _, mod := range modules {
@@ -58,10 +49,28 @@ func TestHooks_LocalModuleSources(t *testing.T) {
 
 	expectedCandidates := []decoder.Candidate{
 		{
+			Label:         "\"./.terraformany\"",
+			Detail:        "local",
+			Kind:          lang.StringCandidateKind,
+			RawInsertText: "\"./.terraformany\"",
+		},
+		{
 			Label:         "\"./alpha\"",
 			Detail:        "local",
 			Kind:          lang.StringCandidateKind,
 			RawInsertText: "\"./alpha\"",
+		},
+		{
+			Label:         "\"./any.terraform\"",
+			Detail:        "local",
+			Kind:          lang.StringCandidateKind,
+			RawInsertText: "\"./any.terraform\"",
+		},
+		{
+			Label:         "\"./any.terraformany\"",
+			Detail:        "local",
+			Kind:          lang.StringCandidateKind,
+			RawInsertText: "\"./any.terraformany\"",
 		},
 		{
 			Label:         "\"./beta\"",

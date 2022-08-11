@@ -3,7 +3,7 @@ package handlers
 import (
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/hashicorp/hcl-lang/decoder"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
+	"github.com/hashicorp/terraform-ls/internal/algolia"
 	"github.com/hashicorp/terraform-ls/internal/hooks"
 )
 
@@ -13,9 +13,9 @@ func (s *service) AppendCompletionHooks(decoderContext decoder.DecoderContext) {
 		RegistryClient: s.registryClient,
 	}
 
-	credentials, ok := lsctx.AlgoliaCredentials(s.srvCtx)
+	credentials, ok := algolia.CredentialsFromContext(s.srvCtx)
 	if ok {
-		h.AlgoliaClient = search.NewClient(credentials.AlgoliaAppID, credentials.AlgoliaAPIKey)
+		h.AlgoliaClient = search.NewClient(credentials.AppID, credentials.APIKey)
 	}
 
 	decoderContext.CompletionHooks["CompleteLocalModuleSources"] = h.LocalModuleSources

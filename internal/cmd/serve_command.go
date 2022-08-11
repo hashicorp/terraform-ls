@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/hashicorp/terraform-ls/internal/algolia"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers"
@@ -100,7 +101,9 @@ func (c *ServeCommand) Run(args []string) int {
 	logger.Printf("Starting terraform-ls %s", c.Version)
 
 	ctx = lsctx.WithLanguageServerVersion(ctx, c.Version)
-	ctx = lsctx.WithAlgoliaCredentials(ctx, c.AlgoliaAppID, c.AlgoliaAPIKey)
+	if c.AlgoliaAppID != "" && c.AlgoliaAPIKey != "" {
+		ctx = algolia.WithCredentials(ctx, c.AlgoliaAppID, c.AlgoliaAPIKey)
+	}
 
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
 	srv.SetLogger(logger)

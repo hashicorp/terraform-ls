@@ -75,6 +75,10 @@ func (h *Hooks) RegistryModuleVersions(ctx context.Context, value cty.Value) ([]
 		c := decoder.ExpressionCompletionCandidate(decoder.ExpressionCandidate{
 			Value: cty.StringVal(v.String()),
 		})
+		// We rely on the fact that hcl-lang limits number of candidates
+		// to 100, so padding with <=3 zeros provides naive but good enough
+		// way to reliably "lexicographically" sort the versions as there's
+		// no better way to do it in LSP.
 		c.SortText = fmt.Sprintf("%3d", i)
 
 		candidates = append(candidates, c)

@@ -5,17 +5,18 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/algolia/algoliasearch-client-go/v3/algolia/search"
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
-	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -81,14 +82,7 @@ func TestHooks_RegistryModuleSources(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	regServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
-	}))
-	t.Cleanup(regServer.Close)
-	regClient := registry.NewClient()
-	regClient.BaseURL = regServer.URL
-
-	searchServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	searchClient := buildSearchClientMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/1/indexes/tf-registry%3Aprod%3Amodules/query" {
 			b, _ := io.ReadAll(r.Body)
 
@@ -105,29 +99,10 @@ func TestHooks_RegistryModuleSources(t *testing.T) {
 		}
 		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
 	}))
-	searchServer.StartTLS()
-	t.Cleanup(searchServer.Close)
-
-	// Algolia requires hosts to be without a protocol and always assumes https
-	u, err := url.Parse(searchServer.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	r := &testRequester{
-		client: &http.Client{Transport: tr},
-	}
-	searchClient := search.NewClientWithConfig(search.Configuration{
-		Hosts:     []string{u.Host},
-		Requester: r,
-	})
 
 	h := &Hooks{
-		ModStore:       s.Modules,
-		RegistryClient: regClient,
-		AlgoliaClient:  searchClient,
+		ModStore:      s.Modules,
+		AlgoliaClient: searchClient,
 	}
 
 	tests := []struct {
@@ -185,4 +160,59 @@ func TestHooks_RegistryModuleSources(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHooks_RegistryModuleSourcesCtxCancel(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancelFunc := context.WithTimeout(ctx, 50*time.Millisecond)
+	t.Cleanup(cancelFunc)
+
+	s, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	searchClient := buildSearchClientMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+
+	h := &Hooks{
+		ModStore:      s.Modules,
+		AlgoliaClient: searchClient,
+	}
+
+	_, err = h.RegistryModuleSources(ctx, cty.StringVal("aws"))
+	e, ok := err.(net.Error)
+	if !ok {
+		t.Fatalf("expected error, got %#v", err)
+	}
+
+	if !strings.Contains(e.Error(), "context deadline exceeded") {
+		t.Fatalf("expected error with: %q, given: %q", "context deadline exceeded", e.Error())
+	}
+}
+
+func buildSearchClientMock(t *testing.T, handler http.HandlerFunc) *search.Client {
+	searchServer := httptest.NewTLSServer(handler)
+	t.Cleanup(searchServer.Close)
+
+	// Algolia requires hosts to be without a protocol and always assumes https
+	u, err := url.Parse(searchServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	searchClient := search.NewClientWithConfig(search.Configuration{
+		Hosts: []string{u.Host},
+		// We need to disable certificate checking here, because of the self signed cert
+		Requester: &testRequester{
+			client: &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				},
+			},
+		},
+	})
+
+	return searchClient
 }

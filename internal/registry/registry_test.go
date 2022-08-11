@@ -166,7 +166,7 @@ func TestCancellationThroughContext(t *testing.T) {
 	client := NewClient()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
 			w.Write([]byte(moduleVersionsMockResponse))
 			return
