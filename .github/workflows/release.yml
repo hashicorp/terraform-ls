@@ -63,6 +63,8 @@ jobs:
           version: latest
           args: release
         env:
+          ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+          ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           HC_RELEASES_HOST: ${{ secrets.HC_RELEASES_HOST_STAGING }}
           HC_RELEASES_KEY: ${{ secrets.HC_RELEASES_KEY_STAGING }}
           CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}

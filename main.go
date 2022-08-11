@@ -29,8 +29,10 @@ func main() {
 	c.Commands = map[string]cli.CommandFactory{
 		"serve": func() (cli.Command, error) {
 			return &cmd.ServeCommand{
-				Ui:      ui,
-				Version: VersionString(),
+				Ui:            ui,
+				Version:       VersionString(),
+				AlgoliaAppID:  algoliaAppID,
+				AlgoliaAPIKey: algoliaAPIKey,
 			}, nil
 		},
 		"inspect-module": func() (cli.Command, error) {

@@ -71,6 +71,7 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		TextEdit:            textEdit(candidate.TextEdit, snippetSupport),
 		Command:             cmd,
 		AdditionalTextEdits: TextEdits(candidate.AdditionalTextEdits, snippetSupport),
+		SortText:            candidate.SortText,
 	}
 
 	if candidate.ResolveHook != nil {

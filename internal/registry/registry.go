@@ -76,6 +76,21 @@ func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons vers
 }
 
 func (c Client) GetMatchingModuleVersion(ctx context.Context, addr tfaddr.Module, con version.Constraints) (*version.Version, error) {
+	foundVersions, err := c.GetModuleVersions(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fv := range foundVersions {
+		if con.Check(fv) {
+			return fv, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no suitable version found for %q %q", addr, con)
+}
+
+func (c Client) GetModuleVersions(ctx context.Context, addr tfaddr.Module) (version.Collection, error) {
 	url := fmt.Sprintf("%s/v1/modules/%s/%s/%s/versions", c.BaseURL,
 		addr.Package.Namespace,
 		addr.Package.Name,
@@ -121,11 +136,5 @@ func (c Client) GetMatchingModuleVersion(ctx context.Context, addr tfaddr.Module
 
 	sort.Sort(sort.Reverse(foundVersions))
 
-	for _, fv := range foundVersions {
-		if con.Check(fv) {
-			return fv, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no suitable version found for %q %q", addr, con)
+	return foundVersions, nil
 }
