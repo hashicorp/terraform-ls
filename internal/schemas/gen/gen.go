@@ -268,6 +268,7 @@ var ignore = map[string]bool{
 	"lightstep/lightstep":          true,
 	"thousandeyes/thousandeyes":    true,
 	"nttcom/ecl":                   true,
+	"oracle/oci":                   true,
 }
 
 var darwinArm64Ignore = map[string]bool{
@@ -282,6 +283,7 @@ var darwinArm64Ignore = map[string]bool{
 	"cohesity/cohesity":           true,
 	"commvault/commvault":         true,
 	"consensys/quorum":            true,
+	"dynatrace-oss/dynatrace":     true,
 	"f5networks/bigip":            true,
 	"gocachebr/gocache":           true,
 	"hashicorp/opc":               true,
@@ -299,6 +301,7 @@ var darwinArm64Ignore = map[string]bool{
 	"nttcom/ecl":                  true,
 	"nutanix/nutanixkps":          true,
 	"oktadeveloper/oktaasa":       true,
+	"opsgenie/opsgenie":           true,
 	"phoenixnap/pnap":             true,
 	"purestorage-openconnect/cbs": true,
 	"rafaysystems/rafay":          true,
