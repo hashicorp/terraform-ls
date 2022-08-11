@@ -15,41 +15,41 @@ We optimize for what we consider the common case, which is approximately 1-100 r
 We run benchmarks with the following modules which estimates the **average time to index** + **average memory allocation** on `Standard_DS2_v2` MS Azure VMs (via [GitHub-hosted runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#cloud-hosts-for-github-hosted-runners)).
 
  - [nearly empty local module with no submodule and no provider](../internal/langserver/handlers/testdata/single-module-no-provider)
-   - `35ms`
-   - `1.4MB`
+   - `15ms`
+   - `1.7MB`
  - [local module with a single submodule, no provider](../internal/langserver/handlers/testdata/single-submodule-no-provider)
    - `225ms`
-   - `2.6MB`
+   - `5.9MB`
  - [local module with the `random` provider](../internal/langserver/handlers/testdata/single-module-random)
    - `220ms`
-   - `1.9MB`
+   - `2.5MB`
  - [local module with the `aws` provider](../internal/langserver/handlers/testdata/single-module-aws)
    - `1.5s`
-   - `102MB`
+   - `119MB`
  - [aws-consul](https://github.com/hashicorp/terraform-aws-consul)
    - `1.6s`
-   - `123MB`
+   - `158MB`
  - [aws-eks](https://registry.terraform.io/modules/terraform-aws-modules/eks/aws)
    - `1.9s`
-   - `137MB`
+   - `253MB`
  - [aws-vpc](https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws)
    - `1.7s`
-   - `120MB`
+   - `198MB`
  - [google-project](https://registry.terraform.io/modules/terraform-google-modules/project-factory/google)
    - `1.9s`
-   - `145MB`
+   - `217MB`
  - [google-network](https://registry.terraform.io/modules/terraform-google-modules/network/google)
    - `1.8s`
-   - `130MB`
+   - `267MB`
  - [google-gke](https://registry.terraform.io/modules/terraform-google-modules/kubernetes-engine/google)
    - `3.3s`
-   - `129MB`
+   - `404MB`
  - [k8s-metrics-server](https://registry.terraform.io/modules/cookielab/metrics-server/kubernetes)
    - `1.6s`
-   - `59MB`
+   - `65MB`
  - [k8s-dashboard](https://registry.terraform.io/modules/cookielab/dashboard/kubernetes)
    - `2.0s`
-   - `59MB`
+   - `68MB`
 
 Sections below provide more details on the factors affecting the usage and usage patterns.
 
