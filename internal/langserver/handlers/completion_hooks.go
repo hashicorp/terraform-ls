@@ -11,6 +11,7 @@ func (s *service) AppendCompletionHooks(decoderContext decoder.DecoderContext) {
 	h := hooks.Hooks{
 		ModStore:       s.modStore,
 		RegistryClient: s.registryClient,
+		Logger:         s.logger,
 	}
 
 	credentials, ok := algolia.CredentialsFromContext(s.srvCtx)

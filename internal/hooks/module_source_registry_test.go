@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -103,6 +105,7 @@ func TestHooks_RegistryModuleSources(t *testing.T) {
 	h := &Hooks{
 		ModStore:      s.Modules,
 		AlgoliaClient: searchClient,
+		Logger:        log.New(ioutil.Discard, "", 0),
 	}
 
 	tests := []struct {
@@ -180,6 +183,7 @@ func TestHooks_RegistryModuleSourcesCtxCancel(t *testing.T) {
 	h := &Hooks{
 		ModStore:      s.Modules,
 		AlgoliaClient: searchClient,
+		Logger:        log.New(ioutil.Discard, "", 0),
 	}
 
 	_, err = h.RegistryModuleSources(ctx, cty.StringVal("aws"))

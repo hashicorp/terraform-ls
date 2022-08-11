@@ -56,6 +56,7 @@ func (h *Hooks) RegistryModuleSources(ctx context.Context, value cty.Value) ([]d
 
 	modules, err := h.fetchModulesFromAlgolia(ctx, prefix)
 	if err != nil {
+		h.Logger.Printf("Error fetching modules from Algolia: %#v", err)
 		return candidates, err
 	}
 
