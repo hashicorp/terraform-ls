@@ -57,9 +57,7 @@ func (svc *service) textDocumentCodeAction(ctx context.Context, params lsp.CodeA
 				return ca, errors.EnrichTfExecError(err)
 			}
 
-			svc.logger.Printf("Formatting document via %q", tfExec.GetExecPath())
-
-			edits, err := formatDocument(ctx, tfExec, doc.Text, dh)
+			edits, err := svc.formatDocument(ctx, tfExec, doc.Text, dh)
 			if err != nil {
 				return ca, err
 			}
