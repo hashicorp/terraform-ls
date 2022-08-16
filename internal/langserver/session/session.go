@@ -48,7 +48,7 @@ func (s *session) Initialize(req *jrpc2.Request) error {
 		if s.IsInitializedUnconfirmed() {
 			return SessionAlreadyInitializedErr(s.initializeReq.ID())
 		}
-		return fmt.Errorf("session is not ready to be initalized. State: %s",
+		return fmt.Errorf("session is not ready to be initialized. State: %s",
 			s.state)
 	}
 
