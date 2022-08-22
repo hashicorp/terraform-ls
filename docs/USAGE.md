@@ -123,7 +123,7 @@ inoremap <silent><expr> <c-space> coc#refresh()
 
 ### vim-lsp
 
- - Install the following plugins:
+ - [Install](https://opensource.com/article/20/2/how-install-vim-plugins) the following plugins:
    * [async.vim plugin](https://github.com/prabirshrestha/async.vim)
    * [vim-lsp plugin](https://github.com/prabirshrestha/vim-lsp)
    * [asyncomplete.vim plugin](https://github.com/prabirshrestha/asyncomplete.vim)
