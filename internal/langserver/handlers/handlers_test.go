@@ -256,10 +256,10 @@ func validTfMockCalls() []*mock.Call {
 // additional nested dir specified, use slash "/" to nest for more complex
 // setups
 //
-//  ex: TempDir(t, "a/b", "c")
-//  ├── a
-//  │   └── b
-//  └── c
+//	ex: TempDir(t, "a/b", "c")
+//	├── a
+//	│   └── b
+//	└── c
 //
 // The returned filehandler is the parent tmp dir
 func TempDir(t *testing.T, nested ...string) document.DirHandle {
