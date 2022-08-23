@@ -222,6 +222,8 @@ github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T
 github.com/hashicorp/hcl-lang v0.0.0-20220801150536-118ac453e267/go.mod h1:zGFgYSTTY5D5F+diri+HFKo2JGLqJb5icJl4CSEGPHk=
 github.com/hashicorp/hcl-lang v0.0.0-20220808135720-b66451713db4 h1:NltaEn+1rMj2T0kmmTm8u+6abPntW6PPoOlq4h2Kyvk=
 github.com/hashicorp/hcl-lang v0.0.0-20220808135720-b66451713db4/go.mod h1:zGFgYSTTY5D5F+diri+HFKo2JGLqJb5icJl4CSEGPHk=
+github.com/hashicorp/hcl-lang v0.0.0-20220823151539-1fce4f11c137 h1:PdOsf6eIhzEq6k1h5ZL9DQ87WN8KTBHmdxD8mG8nTC8=
+github.com/hashicorp/hcl-lang v0.0.0-20220823151539-1fce4f11c137/go.mod h1:Ev8KD37pqUW9duG1sKiGUnDZTf93cHm0O5ndFEY7Zgw=
 github.com/hashicorp/hcl/v2 v2.13.0 h1:0Apadu1w6M11dyGFxWnmhhcMjkbAiKCv7G1r/2QgCNc=
 github.com/hashicorp/hcl/v2 v2.13.0/go.mod h1:e4z5nxYlWNPdDSNYX+ph14EvWYMFm3eP0zIUqPc2jr0=
 github.com/hashicorp/terraform-exec v0.17.2 h1:EU7i3Fh7vDUI9nNRdMATCEfnm9axzTnad8zszYZ73Go=
@@ -399,6 +401,7 @@ github.com/zclconf/go-cty v1.2.0/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q
 github.com/zclconf/go-cty v1.8.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.10.0 h1:mp9ZXQeIcN8kAwuqorjH+Q+njbJKjLrvB2yIh4q7U+0=
 github.com/zclconf/go-cty v1.10.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
+github.com/zclconf/go-cty v1.11.0/go.mod h1:s9IfD1LK5ccNMSWCVFCE2rJfHiZgi7JijgeWIMfhLvA=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b h1:FosyBZYxY34Wul7O/MSKey3txpPYyCqVO5ZyceuQJEI=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b/go.mod h1:ZRKQfBXbGkpdV6QMzT3rU1kSTAnfu1dO8dPKjYprgj8=
 go.bobheadxi.dev/gobenchdata v1.2.1 h1:Sz4CoG7PVWqaK+Emx++9W2yHlAPLe3meANUD5j0M8Rk=
