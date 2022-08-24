@@ -216,12 +216,14 @@ func (s *ProviderSchemaStore) schemaExists(addr tfaddr.Provider, pCons version.C
 
 	for item := it.Next(); item != nil; item = it.Next() {
 		ps, ok := item.(*ProviderSchema)
-		if ok {
-			if ps.Schema == nil {
-				// Incomplete entry may be a result of provider version being
-				// sourced earlier where schema is yet to be sourced or sourcing failed.
-				continue
-			}
+		if !ok {
+			continue
+		}
+		if ps.Schema == nil || ps.Version == nil {
+			// Incomplete entries may result from the provider version being
+			// sourced earlier where the schema is yet to be sourced,
+			// or vice versa, or sourcing failed.
+			continue
 		}
 
 		if providerAddrEquals(ps.Address, addr) && pCons.Check(ps.Version) {
