@@ -877,6 +877,17 @@ func TestAllSchemasExist(t *testing.T) {
 			ExpectedMatch: true,
 			ExpectedErr:   false,
 		},
+		{
+			Name: "missing provider version in schema store",
+			Requirements: map[tfaddr.Provider]version.Constraints{
+				tfaddr.MustParseProviderSource("hashicorp/test"): version.MustConstraints(version.NewConstraint(">=1.0.0")),
+			},
+			InstalledProviders: InstalledProviders{
+				tfaddr.MustParseProviderSource("hashicorp/test"): nil,
+			},
+			ExpectedMatch: false,
+			ExpectedErr:   false,
+		},
 	}
 
 	for _, tc := range testCases {
