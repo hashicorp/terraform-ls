@@ -1,3 +1,18 @@
+## 0.29.1 (24 Aug 2022)
+
+ENHANCEMENTS:
+
+ - docs: Add link to post explaining vim plugin installation ([#1044](https://github.com/hashicorp/terraform-ls/pull/1044))
+
+BUG FIXES:
+
+ - goreleaser: Use correct ldflag (versionPrerelease) when compiling LS ([#1043](https://github.com/hashicorp/terraform-ls/pull/1043))
+ - Fix panic on obtaining provider schemas ([#1048](https://github.com/hashicorp/terraform-ls/pull/1048))
+
+INTERNAL:
+
+ - cleanup: Remove LogHandler ([#1038](https://github.com/hashicorp/terraform-ls/pull/1038))
+
 ## 0.29.0 (11 Aug 2022)
 
 NOTES / BREAKING CHANGES:
