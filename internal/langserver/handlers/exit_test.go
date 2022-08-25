@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 )
@@ -15,6 +16,8 @@ func TestExit(t *testing.T) {
 	ls.Notify(t, &langserver.CallRequest{
 		Method:    "exit",
 		ReqParams: `{}`})
+
+	time.Sleep(10 * time.Millisecond)
 
 	if !ms.StopFuncCalled() {
 		t.Fatal("Expected service stop function to be called")
