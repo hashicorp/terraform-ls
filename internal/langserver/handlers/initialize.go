@@ -134,6 +134,18 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		rootURI := string(params.RootURI)
 		if !uri.IsURIValid(rootURI) {
 			properties["root_uri"] = "invalid"
+
+			if uri.IsURLEncodedPath(rootURI) {
+				uri, err := uri.UnEncodeURI(rootURI)
+				if err == nil {
+					if uri.Scheme == "file" && uri.Host == "wsl$" {
+						// panic("foo")
+						return serverCaps, fmt.Errorf("Unsupported WSLPATH: %q "+
+							"This is most likely bug, please report it.", rootURI)
+					}
+				}
+			}
+
 			return serverCaps, fmt.Errorf("Unsupported or invalid URI: %q "+
 				"This is most likely bug, please report it.", rootURI)
 		}

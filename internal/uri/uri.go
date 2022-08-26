@@ -69,6 +69,32 @@ func IsURIValid(uri string) bool {
 	return true
 }
 
+// IsURIValid checks whether uri is a valid URI per RFC 8089
+func IsURLEncodedPath(uri string) bool {
+	unescapedPath, err := url.PathUnescape(uri)
+	if err != nil {
+		return false
+	}
+
+	_, err = url.ParseRequestURI(unescapedPath)
+	return err == nil
+}
+
+// IsURIValid checks whether uri is a valid URI per RFC 8089
+func UnEncodeURI(uri string) (*url.URL, error) {
+	unescapedPath, err := url.PathUnescape(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed, err := url.ParseRequestURI(unescapedPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
 // PathFromURI extracts OS-specific path from an RFC 8089 "file" URI Scheme
 func PathFromURI(rawUri string) (string, error) {
 	uri, err := parseUri(rawUri)
