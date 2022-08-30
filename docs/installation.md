@@ -9,7 +9,7 @@ Some editors have built-in logic to install and update the language server autom
 
 ## Manual Installation
 
-You can install the language server manually using one of the many package managers available or download an archive from the release page. After installation, follow the [install instructions for your IDE](./docs/USAGE.md)
+You can install the language server manually using one of the many package managers available or download an archive from the release page. After installation, follow the [install instructions for your IDE](./USAGE.md)
 
 ### Homebrew (macOS / Linux)
 
