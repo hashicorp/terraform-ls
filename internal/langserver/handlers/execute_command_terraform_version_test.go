@@ -46,7 +46,7 @@ func TestLangServer_workspaceExecuteCommand_terraformVersion_basic(t *testing.T)
 		t.Fatal(err)
 	}
 
-	err = s.Modules.UpdateTerraformVersion(modDir, ver, map[tfaddr.Provider]*version.Version{}, nil)
+	err = s.Modules.UpdateTerraformAndProviderVersions(modDir, ver, map[tfaddr.Provider]*version.Version{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

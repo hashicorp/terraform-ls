@@ -738,7 +738,7 @@ func (s *ModuleStore) FinishProviderSchemaLoading(path string, psErr error) erro
 	return nil
 }
 
-func (s *ModuleStore) UpdateTerraformVersion(modPath string, tfVer *version.Version, pv map[tfaddr.Provider]*version.Version, vErr error) error {
+func (s *ModuleStore) UpdateTerraformAndProviderVersions(modPath string, tfVer *version.Version, pv map[tfaddr.Provider]*version.Version, vErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetTerraformVersionState(modPath, op.OpStateLoaded)

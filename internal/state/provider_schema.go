@@ -219,10 +219,19 @@ func (s *ProviderSchemaStore) schemaExists(addr tfaddr.Provider, pCons version.C
 		if !ok {
 			continue
 		}
-		if ps.Schema == nil || ps.Version == nil {
-			// Incomplete entries may result from the provider version being
-			// sourced earlier where the schema is yet to be sourced,
-			// or vice versa, or sourcing failed.
+		if ps.Schema == nil {
+			// Incomplete entry may be a result of provider version being
+			// sourced earlier where schema is yet to be sourced or sourcing failed.
+			continue
+		}
+		if ps.Version == nil {
+			// Obtaining schema is always done *after* getting the version.
+			// Therefore, this can only happen in a rare case when getting
+			// provider versions fails but getting schema was successful.
+			// e.g. custom plugin cache location in combination with 0.12
+			// (where lock files didn't exist) [1], or user-triggered race
+			// condition when the lock file is deleted/created.
+			// [1] See https://github.com/hashicorp/terraform-ls/issues/24
 			continue
 		}
 
