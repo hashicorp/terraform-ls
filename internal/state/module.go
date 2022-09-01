@@ -576,6 +576,11 @@ func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provi
 		return err
 	}
 
+	err = updateProviderVersions(txn, path, pvs)
+	if err != nil {
+		return err
+	}
+
 	txn.Commit()
 	return nil
 }
