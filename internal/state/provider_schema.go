@@ -382,11 +382,12 @@ func (ss sortableSchemas) Len() int {
 func (ss sortableSchemas) Less(i, j int) bool {
 	var leftRank, rightRank int
 
-	// TODO: Rank by version constraints match
+	leftRank += ss.rankByVersionMatch(ss.schemas[i].Version)
+	rightRank += ss.rankByVersionMatch(ss.schemas[j].Version)
 
 	// TODO: Rank by hierarchy proximity
 
-	// TODO: Rank by version
+	// TODO: Rank by version (higher wins)
 
 	leftRank += ss.rankBySource(ss.schemas[i].Source)
 	rightRank += ss.rankBySource(ss.schemas[j].Source)
@@ -408,6 +409,14 @@ func (ss sortableSchemas) rankBySource(src SchemaSource) int {
 			mod.ModManifest.ContainsLocalModule(ss.requiredModPath) {
 			return 1
 		}
+	}
+
+	return 0
+}
+
+func (ss sortableSchemas) rankByVersionMatch(v *version.Version) int {
+	if v != nil && ss.requiredVersion.Check(v) {
+		return 2
 	}
 
 	return 0
