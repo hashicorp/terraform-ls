@@ -1,3 +1,9 @@
+## 0.29.2 (Unreleased)
+
+BUG FIXES:
+
+ - fix: Improve IntelliSense accuracy by tracking provider schema versions (accidentally removed in 0.29.0) ([#1060](https://github.com/hashicorp/terraform-ls/pull/1060))
+
 ## 0.29.1 (24 Aug 2022)
 
 ENHANCEMENTS:
