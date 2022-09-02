@@ -60,7 +60,7 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 	}
 
 	tfVersion := version.Must(version.NewVersion("1.0.0"))
-	err = s.Modules.UpdateTerraformVersion(modPath, tfVersion, nil, nil)
+	err = s.Modules.UpdateTerraformAndProviderVersions(modPath, tfVersion, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 	}
 }
 
-func TestModuleStore_UpdateTerraformVersion(t *testing.T) {
+func TestModuleStore_UpdateTerraformAndProviderVersions(t *testing.T) {
 	s, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -301,7 +301,7 @@ func TestModuleStore_UpdateTerraformVersion(t *testing.T) {
 
 	vErr := customErr{}
 
-	err = s.Modules.UpdateTerraformVersion(tmpDir, testVersion(t, "0.12.4"), nil, vErr)
+	err = s.Modules.UpdateTerraformAndProviderVersions(tmpDir, testVersion(t, "0.12.4"), nil, vErr)
 	if err != nil {
 		t.Fatal(err)
 	}

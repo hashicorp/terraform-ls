@@ -73,7 +73,7 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 
 	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
 	if err != nil {
-		sErr := modStore.UpdateTerraformVersion(modPath, nil, nil, err)
+		sErr := modStore.UpdateTerraformAndProviderVersions(modPath, nil, nil, err)
 		if err != nil {
 			return sErr
 		}
@@ -81,9 +81,16 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	}
 
 	v, pv, err := tfExec.Version(ctx)
+
+	// TODO: Remove and rely purely on ParseProviderVersions
+	// In most cases we get the provider version from the datadir/lockfile
+	// but there is an edge case with custom plugin location
+	// when this may not be available, so leveraging versions
+	// from "terraform version" accounts for this.
+	// See https://github.com/hashicorp/terraform-ls/issues/24
 	pVersions := providerVersionsFromTfVersion(pv)
 
-	sErr := modStore.UpdateTerraformVersion(modPath, v, pVersions, err)
+	sErr := modStore.UpdateTerraformAndProviderVersions(modPath, v, pVersions, err)
 	if sErr != nil {
 		return sErr
 	}

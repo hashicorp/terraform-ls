@@ -138,7 +138,7 @@ func TestModuleChanges_AwaitNextChangeBatch_multipleChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ss.Modules.UpdateTerraformVersion(modPath, testVersion(t, "1.0.0"), map[tfaddr.Provider]*version.Version{}, nil)
+	err = ss.Modules.UpdateTerraformAndProviderVersions(modPath, testVersion(t, "1.0.0"), map[tfaddr.Provider]*version.Version{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
