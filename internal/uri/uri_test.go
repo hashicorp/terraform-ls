@@ -178,3 +178,36 @@ func TestMustParseURI(t *testing.T) {
 		})
 	}
 }
+
+func TestIsWSLURI(t *testing.T) {
+	type args struct {
+		uri string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "UNC WSL Path should return true",
+			args: args{
+				uri: `file://wsl%24/Ubuntu/home/james/some/path`,
+			},
+			want: true,
+		},
+		{
+			name: "Regular file path should return false",
+			args: args{
+				uri: `file://C:/foo/james/foo`,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsWSLURI(tt.args.uri); got != tt.want {
+				t.Errorf("IsWSLURI() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
