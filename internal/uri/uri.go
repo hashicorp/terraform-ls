@@ -69,32 +69,6 @@ func IsURIValid(uri string) bool {
 	return true
 }
 
-// IsURIValid checks whether uri is a valid URI per RFC 8089
-func IsURLEncodedPath(uri string) bool {
-	unescapedPath, err := url.PathUnescape(uri)
-	if err != nil {
-		return false
-	}
-
-	_, err = url.ParseRequestURI(unescapedPath)
-	return err == nil
-}
-
-// IsURIValid checks whether uri is a valid URI per RFC 8089
-func UnEncodeURI(uri string) (*url.URL, error) {
-	unescapedPath, err := url.PathUnescape(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	parsed, err := url.ParseRequestURI(unescapedPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return parsed, nil
-}
-
 // PathFromURI extracts OS-specific path from an RFC 8089 "file" URI Scheme
 func PathFromURI(rawUri string) (string, error) {
 	uri, err := parseUri(rawUri)
@@ -210,4 +184,24 @@ func isLikelyWindowsDriveURIPath(uriPath string) bool {
 		return false
 	}
 	return uriPath[0] == '/' && unicode.IsLetter(rune(uriPath[1])) && uriPath[2] == ':'
+}
+
+// IsWSLURI checks whether URI represents a WSL (Windows Subsystem for Linux)
+// UNC path on Windows, such as \\wsl$\Ubuntu\path.
+//
+// Such a URI represents a common user error since the LS is generally
+// expected to run in the same environment where files are located
+// (i.e. within the Linux subsystem with Linux paths such as /Ubuntu/path).
+func IsWSLURI(uri string) bool {
+	unescapedPath, err := url.PathUnescape(uri)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.ParseRequestURI(unescapedPath)
+	if err != nil {
+		return false
+	}
+
+	return u.Scheme == "file" && u.Host == "wsl$"
 }

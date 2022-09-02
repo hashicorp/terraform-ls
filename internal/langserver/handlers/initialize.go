@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2"
+	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -132,22 +133,23 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		}
 	} else {
 		rootURI := string(params.RootURI)
+
+		invalidUriErr := jrpc2.Errorf(code.InvalidParams,
+			"Unsupported or invalid URI: %q "+
+				"This is most likely client bug, please report it.", rootURI)
+
+		if uri.IsWSLURI(rootURI) {
+			properties["root_uri"] = "invalid"
+			// For WSL URIs we return additional error data
+			// such that clients (e.g. VS Code) can provide better UX
+			// and nudge users to open in the WSL Remote Extension instead.
+			return serverCaps, invalidUriErr.WithData("INVALID_URI_WSL")
+		}
+
 		if !uri.IsURIValid(rootURI) {
 			properties["root_uri"] = "invalid"
 
-			if uri.IsURLEncodedPath(rootURI) {
-				uri, err := uri.UnEncodeURI(rootURI)
-				if err == nil {
-					if uri.Scheme == "file" && uri.Host == "wsl$" {
-						// panic("foo")
-						return serverCaps, fmt.Errorf("Unsupported WSLPATH: %q "+
-							"This is most likely bug, please report it.", rootURI)
-					}
-				}
-			}
-
-			return serverCaps, fmt.Errorf("Unsupported or invalid URI: %q "+
-				"This is most likely bug, please report it.", rootURI)
+			return serverCaps, invalidUriErr
 		}
 
 		err := svc.setupWalker(ctx, params, cfgOpts)
