@@ -45,8 +45,9 @@ func (h *Hooks) RegistryModuleSources(ctx context.Context, value cty.Value) ([]d
 	candidates := make([]decoder.Candidate, 0)
 	prefix := value.AsString()
 
-	if isModuleSourceLocal(prefix) {
-		// We're dealing with a local module source here, no need to search the registry
+	if strings.HasPrefix(prefix, ".") {
+		// We're likely dealing with a local module source here; no need to search the registry
+		// A search for "." will not return any results
 		return candidates, nil
 	}
 
@@ -70,20 +71,4 @@ func (h *Hooks) RegistryModuleSources(ctx context.Context, value cty.Value) ([]d
 	}
 
 	return candidates, nil
-}
-
-var moduleSourceLocalPrefixes = []string{
-	"./",
-	"../",
-	".\\",
-	"..\\",
-}
-
-func isModuleSourceLocal(raw string) bool {
-	for _, prefix := range moduleSourceLocalPrefixes {
-		if strings.HasPrefix(raw, prefix) {
-			return true
-		}
-	}
-	return false
 }
