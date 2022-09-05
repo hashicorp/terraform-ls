@@ -9,3 +9,4 @@ internal/schemas/schemas_gen.go
 internal/schemas/data/
 terraform-ls
 terraform-ls.exe
+go.work*
