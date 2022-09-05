@@ -197,6 +197,61 @@ func TestHooks_RegistryModuleSourcesCtxCancel(t *testing.T) {
 	}
 }
 
+func TestHooks_RegistryModuleSourcesIgnore(t *testing.T) {
+	ctx := context.Background()
+
+	s, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	searchClient := buildSearchClientMock(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+
+	h := &Hooks{
+		ModStore:      s.Modules,
+		AlgoliaClient: searchClient,
+		Logger:        log.New(ioutil.Discard, "", 0),
+	}
+
+	tests := []struct {
+		name  string
+		value cty.Value
+		want  []decoder.Candidate
+	}{
+		{
+			"search dot",
+			cty.StringVal("."),
+			[]decoder.Candidate{},
+		},
+		{
+			"search dot dot",
+			cty.StringVal(".."),
+			[]decoder.Candidate{},
+		},
+		{
+			"local module",
+			cty.StringVal("../aws"),
+			[]decoder.Candidate{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			candidates, err := h.RegistryModuleSources(ctx, tt.value)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(tt.want, candidates); diff != "" {
+				t.Fatalf("mismatched candidates: %s", diff)
+			}
+		})
+	}
+}
+
 func buildSearchClientMock(t *testing.T, handler http.HandlerFunc) *search.Client {
 	searchServer := httptest.NewTLSServer(handler)
 	t.Cleanup(searchServer.Close)
