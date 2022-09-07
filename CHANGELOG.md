@@ -1,4 +1,4 @@
-## 0.29.2 (7 Sep 2022)
+## 0.29.2 (7 September 2022)
 
 BUG FIXES:
 
@@ -6,7 +6,7 @@ BUG FIXES:
  - Don't query the Terraform Registry for module sources starting with `.` ([#1062](https://github.com/hashicorp/terraform-ls/pull/1062))
  - fix race condition in schema merging ([terraform-schema#137](https://github.com/hashicorp/terraform-schema/pull/137))
 
-## 0.29.1 (24 Aug 2022)
+## 0.29.1 (24 August 2022)
 
 ENHANCEMENTS:
 
@@ -21,7 +21,7 @@ INTERNAL:
 
  - cleanup: Remove LogHandler ([#1038](https://github.com/hashicorp/terraform-ls/pull/1038))
 
-## 0.29.0 (11 Aug 2022)
+## 0.29.0 (11 August 2022)
 
 NOTES / BREAKING CHANGES:
 
