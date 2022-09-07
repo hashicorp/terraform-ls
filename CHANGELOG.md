@@ -1,4 +1,4 @@
-## 0.29.2 (Unreleased)
+## 0.29.2 (7 Sep 2022)
 
 BUG FIXES:
 
