@@ -185,3 +185,23 @@ func isLikelyWindowsDriveURIPath(uriPath string) bool {
 	}
 	return uriPath[0] == '/' && unicode.IsLetter(rune(uriPath[1])) && uriPath[2] == ':'
 }
+
+// IsWSLURI checks whether URI represents a WSL (Windows Subsystem for Linux)
+// UNC path on Windows, such as \\wsl$\Ubuntu\path.
+//
+// Such a URI represents a common user error since the LS is generally
+// expected to run in the same environment where files are located
+// (i.e. within the Linux subsystem with Linux paths such as /Ubuntu/path).
+func IsWSLURI(uri string) bool {
+	unescapedPath, err := url.PathUnescape(uri)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.ParseRequestURI(unescapedPath)
+	if err != nil {
+		return false
+	}
+
+	return u.Scheme == "file" && u.Host == "wsl$"
+}

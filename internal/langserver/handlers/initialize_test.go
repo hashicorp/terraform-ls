@@ -113,7 +113,7 @@ func TestInitialize_withInvalidRootURI(t *testing.T) {
 	    "capabilities": {},
 	    "processId": 12345,
 	    "rootUri": "meh"
-	}`}, code.SystemError.Err())
+	}`}, code.InvalidParams.Err())
 }
 
 func TestInitialize_multipleFolders(t *testing.T) {
