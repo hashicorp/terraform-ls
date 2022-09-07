@@ -6,6 +6,10 @@ BUG FIXES:
  - Don't query the Terraform Registry for module sources starting with `.` ([#1062](https://github.com/hashicorp/terraform-ls/pull/1062))
  - fix race condition in schema merging ([terraform-schema#137](https://github.com/hashicorp/terraform-schema/pull/137))
 
+INTERNAL:
+
+ - Use Go 1.19 (previously 1.17) to build the server ([#1046](https://github.com/hashicorp/terraform-ls/pull/1046))
+
 ## 0.29.1 (24 August 2022)
 
 ENHANCEMENTS:
