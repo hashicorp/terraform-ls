@@ -3,6 +3,8 @@
 BUG FIXES:
 
  - fix: Improve IntelliSense accuracy by tracking provider schema versions (accidentally removed in 0.29.0) ([#1060](https://github.com/hashicorp/terraform-ls/pull/1060))
+ - Don't query the Terraform Registry for module sources starting with `.` ([#1062](https://github.com/hashicorp/terraform-ls/pull/1062))
+ - fix race condition in schema merging ([terraform-schema#137](https://github.com/hashicorp/terraform-schema/pull/137))
 
 ## 0.29.1 (24 Aug 2022)
 
