@@ -47,14 +47,14 @@ checks:
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1400
-      max: 5000
+      max: 7500
   - package: ./internal/langserver/handlers
     name: google-project
     benchmarks: [BenchmarkInitializeFolder_basic/google-project]
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1570
-      max: 9000
+      max: 10000
   - package: ./internal/langserver/handlers
     name: google-network
     benchmarks: [BenchmarkInitializeFolder_basic/google-network]
