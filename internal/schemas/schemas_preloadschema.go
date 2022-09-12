@@ -4,12 +4,19 @@
 package schemas
 
 import (
+	_ "embed"
 	"encoding/json"
 	"sync"
 
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
 )
+
+//go:embed data/schemas.json
+var schemasJsonBytes []byte
+
+//go:embed data/versions.json
+var versionsJsonBytes []byte
 
 var (
 	_preloadedProviderSchemas     *tfjson.ProviderSchemas
@@ -20,23 +27,11 @@ var (
 
 func PreloadedProviderSchemas() (*tfjson.ProviderSchemas, VersionOutput, error) {
 	_preloadedProviderSchemasOnce.Do(func() {
-		schemasFile, fErr := files.Open("schemas.json")
-		if fErr != nil {
-			_preloadedProviderSchemasErr = fErr
-			return
-		}
-
 		_preloadedProviderSchemas = &tfjson.ProviderSchemas{}
-		_preloadedProviderSchemasErr = json.NewDecoder(schemasFile).Decode(_preloadedProviderSchemas)
-
-		versionFile, fErr := files.Open("versions.json")
-		if fErr != nil {
-			_preloadedProviderSchemasErr = fErr
-			return
-		}
+		_preloadedProviderSchemasErr = json.Unmarshal(schemasJsonBytes, _preloadedProviderSchemas)
 
 		output := &RawVersionOutput{}
-		err := json.NewDecoder(versionFile).Decode(output)
+		err := json.Unmarshal(versionsJsonBytes, output)
 		if err != nil {
 			_preloadedProviderSchemasErr = err
 			return

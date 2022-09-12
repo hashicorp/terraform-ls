@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
-	"github.com/shurcooL/vfsgen"
 )
 
 const terraformBlock = `terraform {
@@ -138,7 +137,6 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	fs := http.Dir("data")
 
 	coreVersion, providerVersions, err := tf.Version(ctx, true)
 	if err != nil {
@@ -175,17 +173,7 @@ func gen() error {
 	}
 
 	log.Println("writing schemas to file")
-	err = json.NewEncoder(schemasFile).Encode(ps)
-	if err != nil {
-		return err
-	}
-
-	log.Println("generating embedded go file")
-	return vfsgen.Generate(fs, vfsgen.Options{
-		Filename:     "schemas_gen.go",
-		PackageName:  "schemas",
-		VariableName: "files",
-	})
+	return json.NewEncoder(schemasFile).Encode(ps)
 }
 
 func stringifyProviderVersions(m map[string]*version.Version) map[string]string {
