@@ -1,3 +1,9 @@
+## 0.29.3 (Unreleased)
+
+BUG FIXES:
+
+ - fix: Enable IntelliSense for resources & data sources whose name match the provider (e.g. `data`) ([#1072](https://github.com/hashicorp/terraform-ls/pull/1072))
+
 ## 0.29.2 (7 September 2022)
 
 BUG FIXES:
