@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.26.1
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.41.1
+	github.com/creachadair/jrpc2 v0.41.2
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.3
@@ -87,7 +87,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
 	golang.org/x/text v0.3.7 // indirect
