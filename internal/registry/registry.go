@@ -20,14 +20,16 @@ const (
 )
 
 type Client struct {
-	BaseURL string
-	Timeout time.Duration
+	BaseURL          string
+	Timeout          time.Duration
+	ProviderPageSize int
 }
 
 func NewClient() Client {
 	return Client{
-		BaseURL: defaultBaseURL,
-		Timeout: defaultTimeout,
+		BaseURL:          defaultBaseURL,
+		Timeout:          defaultTimeout,
+		ProviderPageSize: 100,
 	}
 }
 
