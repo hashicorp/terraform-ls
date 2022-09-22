@@ -26,7 +26,6 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/scheduler"
-	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/settings"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
@@ -507,11 +506,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	decoderContext := idecoder.DecoderContext(ctx)
 	svc.AppendCompletionHooks(decoderContext)
 	svc.decoder.SetContext(decoderContext)
-
-	err = schemas.PreloadSchemasToStore(svc.stateStore.ProviderSchemas)
-	if err != nil {
-		return err
-	}
 
 	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
 	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.modStore, svc.indexer.WalkedModule)

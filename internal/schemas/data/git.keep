@@ -1,0 +1,3 @@
+This file is kept here intentionally to allow building with otherwise empty embed FS (without schemas).
+The embed library would otherwise ignore empty directory and hidden files.
+See https://pkg.go.dev/embed
