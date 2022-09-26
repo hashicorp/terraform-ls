@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -71,6 +72,22 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 			} else {
 				jobIds = append(jobIds, metaId)
 				refCollectionDeps = append(refCollectionDeps, metaId)
+			}
+
+			eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+				Dir: mcHandle,
+				Func: func(ctx context.Context) error {
+					return module.PreloadEmbeddedSchema(ctx, schemas.FS, idx.modStore, idx.schemaStore, mcPath)
+				},
+				Type:        op.OpTypePreloadEmbeddedSchema.String(),
+				DependsOn:   job.IDs{metaId},
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				multierror.Append(errs, err)
+			} else {
+				jobIds = append(jobIds, eSchemaId)
+				refCollectionDeps = append(refCollectionDeps, eSchemaId)
 			}
 		}
 

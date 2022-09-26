@@ -2,12 +2,14 @@ package module
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -16,7 +18,9 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -616,3 +620,309 @@ func TestParseProviderVersions_multipleVersions(t *testing.T) {
 		t.Fatalf("expected attribute from second provider schema, not found")
 	}
 }
+
+func TestPreloadEmbeddedSchema_basic(t *testing.T) {
+	ctx := context.Background()
+	dataDir := "data"
+	schemasFS := fstest.MapFS{
+		dataDir:                            &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
+			Data: []byte(randomSchemaJSON),
+		},
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := "testmod"
+
+	cfgFS := fstest.MapFS{
+		// These are somewhat awkward double entries
+		// to account for io/fs and our own path separator differences
+		// See https://github.com/hashicorp/terraform-ls/issues/1025
+		modPath + "/main.tf": &fstest.MapFile{
+			Data: []byte{},
+		},
+		filepath.Join(modPath, "main.tf"): &fstest.MapFile{
+			Data: []byte(`terraform {
+	required_providers {
+		random = {
+			source = "hashicorp/random"
+			version = "1.0.0"
+		}
+	}
+}
+`),
+		},
+	}
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// verify schema was loaded
+	pAddr := tfaddr.MustParseProviderSource("hashicorp/random")
+	vc := version.MustConstraints(version.NewConstraint(">= 1.0.0"))
+
+	// ask for schema for an unrelated module to avoid path-based matching
+	s, err := ss.ProviderSchemas.ProviderSchema("unknown-path", pAddr, vc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s == nil {
+		t.Fatalf("expected non-nil schema for %s %s", pAddr, vc)
+	}
+
+	_, ok := s.Provider.Attributes["test"]
+	if !ok {
+		t.Fatalf("expected test attribute in provider schema, not found")
+	}
+}
+
+func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
+	ctx := context.Background()
+	dataDir := "data"
+	schemasFS := fstest.MapFS{
+		dataDir: &fstest.MapFile{Mode: fs.ModeDir},
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := "testmod"
+
+	cfgFS := fstest.MapFS{
+		// These are somewhat awkward double entries
+		// to account for io/fs and our own path separator differences
+		// See https://github.com/hashicorp/terraform-ls/issues/1025
+		modPath + "/main.tf": &fstest.MapFile{
+			Data: []byte{},
+		},
+		filepath.Join(modPath, "main.tf"): &fstest.MapFile{
+			Data: []byte(`terraform {
+	required_providers {
+		unknown = {
+			source = "hashicorp/unknown"
+			version = "1.0.0"
+		}
+	}
+}
+`),
+		},
+	}
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
+	ctx := context.Background()
+	dataDir := "data"
+	schemasFS := fstest.MapFS{
+		dataDir:                            &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
+			Data: []byte(randomSchemaJSON),
+		},
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := "testmod"
+
+	cfgFS := fstest.MapFS{
+		// These are somewhat awkward two entries
+		// to account for io/fs and our own path separator differences
+		// See https://github.com/hashicorp/terraform-ls/issues/1025
+		modPath + "/main.tf": &fstest.MapFile{
+			Data: []byte{},
+		},
+		filepath.Join(modPath, "main.tf"): &fstest.MapFile{
+			Data: []byte(`terraform {
+	required_providers {
+		random = {
+			source = "hashicorp/random"
+			version = "1.0.0"
+		}
+		unknown = {
+			source = "hashicorp/unknown"
+			version = "5.0.0"
+		}
+	}
+}
+`),
+		},
+	}
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// first
+	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// second - testing module state
+	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		if !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
+			t.Fatal(err)
+		}
+	}
+
+	ctx = job.WithIgnoreState(ctx, true)
+	// third - testing requirement matching
+	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
+	ctx := context.Background()
+	dataDir := "data"
+	schemasFS := fstest.MapFS{
+		dataDir:                            &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
+			Data: []byte(randomSchemaJSON),
+		},
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := "testmod"
+
+	cfgFS := fstest.MapFS{
+		// These are somewhat awkward two entries
+		// to account for io/fs and our own path separator differences
+		// See https://github.com/hashicorp/terraform-ls/issues/1025
+		modPath + "/main.tf": &fstest.MapFile{
+			Data: []byte{},
+		},
+		filepath.Join(modPath, "main.tf"): &fstest.MapFile{
+			Data: []byte(`terraform {
+	required_providers {
+		random = {
+			source = "hashicorp/random"
+			version = "1.0.0"
+		}
+		unknown = {
+			source = "hashicorp/unknown"
+			version = "5.0.0"
+		}
+	}
+}
+`),
+		},
+	}
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		err := PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+		if err != nil && !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
+			t.Error(err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		err := PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+		if err != nil && !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
+			t.Error(err)
+		}
+	}()
+	wg.Wait()
+}
+
+var randomSchemaJSON = `{
+	"format_version": "1.0",
+	"provider_schemas": {
+		"registry.terraform.io/hashicorp/random": {
+			"provider": {
+				"version": 0,
+				"block": {
+					"attributes": {
+						"test": {
+							"type": "string",
+							"description": "Test description",
+							"description_kind": "markdown",
+							"optional": true
+						}
+					},
+					"description_kind": "plain"
+				}
+			}
+		}
+	}
+}`

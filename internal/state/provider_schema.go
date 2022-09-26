@@ -206,6 +206,20 @@ func (s *ProviderSchemaStore) AllSchemasExist(pvm map[tfaddr.Provider]version.Co
 	return true, nil
 }
 
+func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Constraints) (map[tfaddr.Provider]version.Constraints, error) {
+	missingSchemas := make(map[tfaddr.Provider]version.Constraints, 0)
+	for pAddr, pCons := range pvm {
+		exists, err := s.schemaExists(pAddr, pCons)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			missingSchemas[pAddr] = pCons
+		}
+	}
+	return missingSchemas, nil
+}
+
 func (s *ProviderSchemaStore) schemaExists(addr tfaddr.Provider, pCons version.Constraints) (bool, error) {
 	txn := s.db.Txn(false)
 

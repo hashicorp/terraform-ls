@@ -362,6 +362,9 @@ func initErrorIsRetryable(err error) (string, bool) {
 	if strings.Contains(err.Error(), "request canceled while waiting for connection") {
 		return "connection timeout", true
 	}
+	if strings.Contains(err.Error(), "handshake timeout") {
+		return "handshake timeout", true
+	}
 	if strings.Contains(err.Error(), "no route to host") {
 		return "no route to host", true
 	}

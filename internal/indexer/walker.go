@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -144,6 +145,24 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			refCollectionDeps = append(refCollectionDeps, pSchemaId)
 		}
 	}
+
+	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.PreloadEmbeddedSchema(ctx, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		// This could theoretically also depend on ObtainSchema to avoid
+		// attempt to preload the same schema twice but we avoid that dependency
+		// as obtaining schema via CLI often takes a long time (multiple
+		// seconds) and this would then defeat the main benefit
+		// of preloaded schemas which can be loaded in miliseconds.
+		DependsOn: providerVersionDeps,
+		Type:      op.OpTypePreloadEmbeddedSchema.String(),
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, eSchemaId)
 
 	if parseId != "" {
 		rIds, err := idx.collectReferences(modHandle, refCollectionDeps, false)
