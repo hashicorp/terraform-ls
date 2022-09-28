@@ -127,7 +127,7 @@ func gen() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("installed Terraform %s", coreVersion)
+	log.Printf("using Terraform %s (%s)", coreVersion, execPath)
 
 	workspacePath, err := filepath.Abs("gen-workspace")
 	if err != nil {
@@ -158,6 +158,16 @@ func gen() error {
 		}
 	}
 
+	cacheDirPath, err := filepath.Abs("tf-plugin-cache")
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(cacheDirPath, 0755)
+	if err != nil {
+		return err
+	}
+	log.Printf("Terraform plugin cache will be stored at %s", cacheDirPath)
+
 	// install each provider and obtain schema for it
 	var wg sync.WaitGroup
 	for _, p := range providers {
@@ -170,6 +180,7 @@ func gen() error {
 				TerraformExecPath: execPath,
 				WorkspacePath:     workspacePath,
 				DataDirPath:       dataDirPath,
+				CacheDirPath:      cacheDirPath,
 				CoreVersion:       coreVersion,
 				Provider:          p,
 			})
@@ -192,6 +203,7 @@ type Inputs struct {
 	TerraformExecPath string
 	WorkspacePath     string
 	DataDirPath       string
+	CacheDirPath      string
 	CoreVersion       *version.Version
 	Provider          Provider
 }
@@ -283,6 +295,23 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 	if err != nil {
 		return nil, err
 	}
+
+	// See https://github.com/hashicorp/terraform-exec/issues/337
+	// Terraform would refuse to init any provider otherwise
+	// and some providers refuse to give schemas or break
+	// the gRPC protocol for some mysterious reason
+	env := make(map[string]string, 0)
+	for _, rawKeyPair := range os.Environ() {
+		parts := strings.Split(rawKeyPair, "=")
+		env[parts[0]] = os.Getenv(parts[0])
+	}
+	// This is to help keep paths short, esp. on Windows
+	// (260 characters by default)
+	// See https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file#maximum-path-length-limitation
+	// and also to avoid embedding the provider binaries
+	env["TF_PLUGIN_CACHE_DIR"] = input.CacheDirPath
+
+	tf.SetEnv(env)
 
 	var initElapsed time.Duration
 	if !input.Provider.Addr.IsBuiltIn() {
