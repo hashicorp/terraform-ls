@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -346,7 +347,7 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 	}
 
 	// TODO upstream change to have tfexec write to file directly instead of unmarshal/remarshal
-	ps, err := tf.ProvidersSchema(ctx)
+	ps, err := retryProviderSchema(ctx, tf, input.Provider.Addr.ForDisplay(), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -399,6 +400,33 @@ func retryInit(ctx context.Context, tf *tfexec.Terraform, fullName string, retri
 
 	timeElapsed := time.Now().Sub(startTime)
 	return timeElapsed, nil
+}
+
+func retryProviderSchema(ctx context.Context, tf *tfexec.Terraform, fullName string, retried int) (*tfjson.ProviderSchemas, error) {
+	maxRetries := 5
+	backoffPeriod := 2 * time.Second
+
+	ps, err := tf.ProvidersSchema(ctx)
+	if err != nil {
+		if retried >= maxRetries {
+			return nil, fmt.Errorf("%s: final error after 5 retries: %w", fullName, err)
+		}
+
+		// It's unclear why, but some providers just panic
+		// (especially on Windows) on the first attempt.
+		// While this shouldn't be happening at all,
+		// retrying is the easiest workaround here.
+		if strings.Contains(err.Error(), "Failed to load plugin schemas") {
+			log.Printf("%s: %s", fullName, err)
+			retried++
+			log.Printf("%s: will retry provider schema (attempt %d) in %s", fullName, retried, backoffPeriod)
+			time.Sleep(backoffPeriod)
+			return retryProviderSchema(ctx, tf, fullName, retried)
+		}
+
+		return nil, fmt.Errorf("%s: final error after 5 retries: %w", fullName, err)
+	}
+	return ps, nil
 }
 
 func initErrorIsRetryable(err error) (string, bool) {
