@@ -315,6 +315,12 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 	env := make(map[string]string, 0)
 	for _, rawKeyPair := range os.Environ() {
 		parts := strings.Split(rawKeyPair, "=")
+		if parts[0] == "" {
+			// For unknown reasons on Windows there can be some odd variables
+			// such as "=::=::\\", "=C:=C:\\path" or "=ExitCode=00000000"
+			// which we ignore here
+			continue
+		}
 		env[parts[0]] = os.Getenv(parts[0])
 	}
 	// This is to help keep paths short, esp. on Windows
