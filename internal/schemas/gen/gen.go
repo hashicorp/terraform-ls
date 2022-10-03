@@ -129,8 +129,14 @@ func gen() error {
 	}
 	log.Printf("installed Terraform %s", coreVersion)
 
-	workspacePath := "gen-workspace"
-	dataDirPath := "data"
+	workspacePath, err := filepath.Abs("gen-workspace")
+	if err != nil {
+		return err
+	}
+	dataDirPath, err := filepath.Abs("data")
+	if err != nil {
+		return err
+	}
 
 	// remove data from previous run
 	err = os.RemoveAll(workspacePath)
