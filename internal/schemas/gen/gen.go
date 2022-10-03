@@ -169,32 +169,43 @@ func gen() error {
 	log.Printf("Terraform plugin cache will be stored at %s", cacheDirPath)
 
 	// install each provider and obtain schema for it
-	var wg sync.WaitGroup
-	for _, p := range providers {
-		wg.Add(1)
-		go func(p Provider) {
-			defer wg.Done()
-
-			log.Printf("%s: obtaining schema ...", p.Addr.ForDisplay())
-			details, err := schemaForProvider(ctx, client, Inputs{
+	providerChan := make(chan Inputs)
+	go func() {
+		for _, p := range providers {
+			providerChan <- Inputs{
 				TerraformExecPath: execPath,
 				WorkspacePath:     workspacePath,
 				DataDirPath:       dataDirPath,
 				CacheDirPath:      cacheDirPath,
 				CoreVersion:       coreVersion,
 				Provider:          p,
-			})
-			if err != nil {
-				log.Printf("%s: %s", p.Addr.ForDisplay(), err)
-				return
 			}
+		}
+		close(providerChan)
+	}()
 
-			log.Printf("%s: obtained schema for %s (%d bytes); terraform init: %s",
-				p.Addr.ForDisplay(), details.Version,
-				details.Size, details.InitElapsedTime)
-		}(p)
+	var workerWg sync.WaitGroup
+	workerCount := runtime.NumCPU()
+	log.Printf("worker count: %d", workerCount)
+	workerWg.Add(workerCount)
+	for i := 1; i <= workerCount; i++ {
+		go func(i int) {
+			defer workerWg.Done()
+			for input := range providerChan {
+				log.Printf("%s: obtaining schema ...", input.Provider.Addr.ForDisplay())
+				details, err := schemaForProvider(ctx, client, input)
+				if err != nil {
+					log.Printf("%s: %s", input.Provider.Addr.ForDisplay(), err)
+					continue
+				}
+
+				log.Printf("%s: obtained schema for %s (%d bytes); terraform init: %s",
+					input.Provider.Addr.ForDisplay(), details.Version,
+					details.Size, details.InitElapsedTime)
+			}
+		}(i)
 	}
-	wg.Wait()
+	workerWg.Wait()
 
 	return nil
 }
