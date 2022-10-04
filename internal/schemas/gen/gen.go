@@ -402,6 +402,7 @@ func retryInit(ctx context.Context, tf *tfexec.Terraform, fullName string, retri
 	startTime := time.Now()
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
+		retried++
 		if retried >= maxRetries {
 			timeElapsed := time.Now().Sub(startTime)
 			return timeElapsed, fmt.Errorf("%s: final error after 5 retries: %w", fullName, err)
@@ -409,7 +410,6 @@ func retryInit(ctx context.Context, tf *tfexec.Terraform, fullName string, retri
 
 		if shortErr, ok := initErrorIsRetryable(err); ok {
 			log.Printf("%s: %s", fullName, err)
-			retried++
 			log.Printf("%s: will retry init (attempt %d) in %s due to %s", fullName, retried, backoffPeriod, shortErr)
 			time.Sleep(backoffPeriod)
 			return retryInit(ctx, tf, fullName, retried)
@@ -427,6 +427,7 @@ func retryProviderSchema(ctx context.Context, tf *tfexec.Terraform, fullName str
 
 	ps, err := tf.ProvidersSchema(ctx)
 	if err != nil {
+		retried++
 		if retried >= maxRetries {
 			return nil, fmt.Errorf("%s: final error after 5 retries: %w", fullName, err)
 		}
@@ -437,7 +438,6 @@ func retryProviderSchema(ctx context.Context, tf *tfexec.Terraform, fullName str
 		// retrying is the easiest workaround here.
 		if strings.Contains(err.Error(), "Failed to load plugin schemas") {
 			log.Printf("%s: %s", fullName, err)
-			retried++
 			log.Printf("%s: will retry provider schema (attempt %d) in %s", fullName, retried, backoffPeriod)
 			time.Sleep(backoffPeriod)
 			return retryProviderSchema(ctx, tf, fullName, retried)
