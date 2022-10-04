@@ -1,5 +1,12 @@
 ## 0.29.3 (Unreleased)
 
+ENHANCEMENTS:
+
+ - schemas: Lazy-load embedded provider schemas ([#1071](https://github.com/hashicorp/terraform-ls/pull/1071))
+   - Reduced runtime memory consumption from static ~572MB (representing ~220 providers) to more dynamic depending on providers in use.
+     For example, no configuration (no provider requirements) should consume around 10MB, indexed folder w/ `hashicorp/aws` requirement ~70MB.
+   - Reduced launch time from ~ 2 seconds to 1-3 ms.
+
 BUG FIXES:
 
  - fix: Enable IntelliSense for resources & data sources whose name match the provider (e.g. `data`) ([#1072](https://github.com/hashicorp/terraform-ls/pull/1072))
