@@ -1,10 +1,13 @@
 package schemas
 
 import (
+	"compress/gzip"
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
+	"log"
 	"path"
 
 	"github.com/hashicorp/go-version"
@@ -15,7 +18,7 @@ import (
 var FS embed.FS
 
 type ProviderSchema struct {
-	File    fs.File
+	File    io.Reader
 	Version *version.Version
 }
 
@@ -44,7 +47,7 @@ func FindProviderSchemaFile(filesystem fs.ReadDirFS, pAddr tfaddr.Provider) (*Pr
 
 	rawVersion := entries[0].Name()
 
-	filePath := path.Join(providerPath, rawVersion, "schema.json")
+	filePath := path.Join(providerPath, rawVersion, "schema.json.gz")
 	file, err := filesystem.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -55,8 +58,14 @@ func FindProviderSchemaFile(filesystem fs.ReadDirFS, pAddr tfaddr.Provider) (*Pr
 		return nil, err
 	}
 
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("unzipped file at %s", filePath)
+
 	return &ProviderSchema{
-		File:    file,
+		File:    gzipReader,
 		Version: version,
 	}, nil
 }

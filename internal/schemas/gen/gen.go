@@ -4,6 +4,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -200,9 +202,9 @@ func gen() error {
 					continue
 				}
 
-				log.Printf("%s: obtained schema for %s (%d bytes); terraform init: %s",
+				log.Printf("%s: obtained schema for %s (%db raw / %db compressed); terraform init: %s",
 					input.Provider.Addr.ForDisplay(), details.Version,
-					details.Size, details.InitElapsedTime)
+					details.RawSize, details.CompressedSize, details.InitElapsedTime)
 			}
 		}(i)
 	}
@@ -222,7 +224,8 @@ type Inputs struct {
 
 type Outputs struct {
 	Version         string
-	Size            int64
+	RawSize         int
+	CompressedSize  int64
 	InitElapsedTime time.Duration
 }
 
@@ -358,14 +361,23 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 		return nil, err
 	}
 
-	f, err := os.Create(filepath.Join(dataDir, "schema.json"))
+	f, err := os.Create(filepath.Join(dataDir, "schema.json.gz"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create schema file: %w", err)
 	}
-
-	err = json.NewEncoder(f).Encode(ps)
+	var rawJson bytes.Buffer
+	err = json.NewEncoder(&rawJson).Encode(ps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode schema file: %w", err)
+	}
+	gzw := gzip.NewWriter(f)
+	_, err = gzw.Write(rawJson.Bytes())
+	if err != nil {
+		return nil, fmt.Errorf("failed to write compressed file: %w", err)
+	}
+	err = gzw.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close compressed file: %w", err)
 	}
 
 	fi, err := f.Stat()
@@ -375,7 +387,8 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 
 	return &Outputs{
 		Version:         pVersion.String(),
-		Size:            fi.Size(),
+		RawSize:         rawJson.Len(),
+		CompressedSize:  fi.Size(),
 		InitElapsedTime: initElapsed,
 	}, nil
 }
