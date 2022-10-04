@@ -1,6 +1,8 @@
 package module
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -630,8 +632,8 @@ func TestPreloadEmbeddedSchema_basic(t *testing.T) {
 		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
-		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
-			Data: []byte(randomSchemaJSON),
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json.gz": &fstest.MapFile{
+			Data: gzipCompressBytes(t, []byte(randomSchemaJSON)),
 		},
 	}
 
@@ -759,8 +761,8 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
-		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
-			Data: []byte(randomSchemaJSON),
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json.gz": &fstest.MapFile{
+			Data: gzipCompressBytes(t, []byte(randomSchemaJSON)),
 		},
 	}
 
@@ -838,8 +840,8 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 		dataDir + "/registry.terraform.io/hashicorp":              &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random":       &fstest.MapFile{Mode: fs.ModeDir},
 		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0": &fstest.MapFile{Mode: fs.ModeDir},
-		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json": &fstest.MapFile{
-			Data: []byte(randomSchemaJSON),
+		dataDir + "/registry.terraform.io/hashicorp/random/1.0.0/schema.json.gz": &fstest.MapFile{
+			Data: gzipCompressBytes(t, []byte(randomSchemaJSON)),
 		},
 	}
 
@@ -903,6 +905,20 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 		}
 	}()
 	wg.Wait()
+}
+
+func gzipCompressBytes(t *testing.T, b []byte) []byte {
+	var compressedBytes bytes.Buffer
+	gw := gzip.NewWriter(&compressedBytes)
+	_, err := gw.Write(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = gw.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return compressedBytes.Bytes()
 }
 
 var randomSchemaJSON = `{
