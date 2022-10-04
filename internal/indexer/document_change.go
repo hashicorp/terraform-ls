@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -77,6 +78,20 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 		return ids, err
 	}
 	ids = append(ids, metaId)
+
+	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.PreloadEmbeddedSchema(ctx, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		DependsOn:   job.IDs{metaId},
+		Type:        op.OpTypePreloadEmbeddedSchema.String(),
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, eSchemaId)
 
 	refTargetsId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,

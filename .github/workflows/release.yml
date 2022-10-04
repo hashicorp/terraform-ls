@@ -38,7 +38,9 @@ jobs:
           go-version: ${{ steps.go-version.outputs.content }}
       -
         name: Generate provider schemas
-        run: go generate ./internal/schemas
+        run: |
+          go generate ./internal/schemas
+          du -h -s ./internal/schemas/data
       -
         name: Install hc-codesign
         run: |

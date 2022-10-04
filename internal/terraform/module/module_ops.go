@@ -2,18 +2,25 @@ package module
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
+	"log"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	tfjson "github.com/hashicorp/terraform-json"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -24,7 +31,7 @@ import (
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/json"
+	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
 type DeferFunc func(opError error)
@@ -176,6 +183,84 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid preloading schema if it is already in progress or already known
+	if mod.PreloadEmbeddedSchemaState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetPreloadEmbeddedSchemaState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+	defer modStore.SetPreloadEmbeddedSchemaState(modPath, op.OpStateLoaded)
+
+	pReqs, err := modStore.ProviderRequirementsForModule(modPath)
+	if err != nil {
+		return err
+	}
+
+	missingReqs, err := schemaStore.MissingSchemas(pReqs)
+	if err != nil {
+		return err
+	}
+	if len(missingReqs) == 0 {
+		// avoid preloading any schemas if we already have all
+		return nil
+	}
+
+	for pAddr := range missingReqs {
+		startTime := time.Now()
+		pSchemaFile, err := schemas.FindProviderSchemaFile(fs, pAddr)
+		if err != nil {
+			if errors.Is(err, schemas.SchemaNotAvailable{Addr: pAddr}) {
+				log.Printf("preloaded schema not available for %s", pAddr)
+				continue
+			}
+			return err
+		}
+
+		b, err := io.ReadAll(pSchemaFile.File)
+		if err != nil {
+			return err
+		}
+
+		jsonSchemas := tfjson.ProviderSchemas{}
+		err = json.Unmarshal(b, &jsonSchemas)
+		if err != nil {
+			return err
+		}
+		ps, ok := jsonSchemas.Schemas[pAddr.String()]
+		if !ok {
+			return fmt.Errorf("%q: no schema found in file", pAddr)
+		}
+
+		pSchema := tfschema.ProviderSchemaFromJson(ps, pAddr)
+		pSchema.SetProviderVersion(pAddr, pSchemaFile.Version)
+		err = schemaStore.AddPreloadedSchema(pAddr, pSchemaFile.Version, pSchema)
+		if err != nil {
+			existsError := &state.AlreadyExistsError{}
+			if errors.As(err, &existsError) {
+				// This accounts for a possible race condition
+				// where we may be preloading the same schema
+				// for different providers at the same time
+				log.Printf("schema for %s is already loaded", pAddr)
+				continue
+			}
+			return err
+		}
+		elapsedTime := time.Now().Sub(startTime)
+		log.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
 	}
 
 	return nil
@@ -543,7 +628,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 				// cty marshalers, making it lossy, so we just try to decode
 				// on best-effort basis.
 				rawType := []byte(fmt.Sprintf("%q", input.Type))
-				typ, err := json.UnmarshalType(rawType)
+				typ, err := ctyjson.UnmarshalType(rawType)
 				if err == nil {
 					inputType = typ
 				}
@@ -554,7 +639,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 				// Registry API unfortunately doesn't marshal values using
 				// cty marshalers, making it lossy, so we just try to decode
 				// on best-effort basis.
-				val, err := json.Unmarshal([]byte(input.Default), inputType)
+				val, err := ctyjson.Unmarshal([]byte(input.Default), inputType)
 				if err == nil {
 					inputs[i].Default = val
 				}

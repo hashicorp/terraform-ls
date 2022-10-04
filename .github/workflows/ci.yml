@@ -37,9 +37,11 @@ jobs:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version.outputs.content }}
-      - # since release builds specify the preloadschema tag, we must run the generator
+      -
         name: Generate provider schemas
-        run: go generate ./internal/schemas
+        run: |
+          go generate ./internal/schemas
+          du -h -s ./internal/schemas/data
       -
         name: Snapshot build (cross-platform)
         uses: goreleaser/goreleaser-action@v3

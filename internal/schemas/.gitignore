@@ -1,0 +1,4 @@
+gen-workspace
+tf-plugin-cache
+data/*
+!data/git.keep

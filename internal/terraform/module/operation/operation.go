@@ -26,4 +26,5 @@ const (
 	OpTypeDecodeVarsReferences
 	OpTypeGetModuleDataFromRegistry
 	OpTypeParseProviderVersions
+	OpTypePreloadEmbeddedSchema
 )

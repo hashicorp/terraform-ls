@@ -99,6 +99,8 @@ type Module struct {
 	ProviderSchemaErr   error
 	ProviderSchemaState op.OpState
 
+	PreloadEmbeddedSchemaState op.OpState
+
 	RefTargets      reference.Targets
 	RefTargetsErr   error
 	RefTargetsState op.OpState
@@ -144,6 +146,8 @@ func (m *Module) Copy() *Module {
 
 		ProviderSchemaErr:   m.ProviderSchemaErr,
 		ProviderSchemaState: m.ProviderSchemaState,
+
+		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
 
 		InstalledProvidersErr:   m.InstalledProvidersErr,
 		InstalledProvidersState: m.InstalledProvidersState,
@@ -221,14 +225,15 @@ func (m *Module) Copy() *Module {
 
 func newModule(modPath string) *Module {
 	return &Module{
-		Path:                    modPath,
-		ModManifestState:        op.OpStateUnknown,
-		TerraformVersionState:   op.OpStateUnknown,
-		ProviderSchemaState:     op.OpStateUnknown,
-		InstalledProvidersState: op.OpStateUnknown,
-		RefTargetsState:         op.OpStateUnknown,
-		ModuleParsingState:      op.OpStateUnknown,
-		MetaState:               op.OpStateUnknown,
+		Path:                       modPath,
+		ModManifestState:           op.OpStateUnknown,
+		TerraformVersionState:      op.OpStateUnknown,
+		ProviderSchemaState:        op.OpStateUnknown,
+		PreloadEmbeddedSchemaState: op.OpStateUnknown,
+		InstalledProvidersState:    op.OpStateUnknown,
+		RefTargetsState:            op.OpStateUnknown,
+		ModuleParsingState:         op.OpStateUnknown,
+		MetaState:                  op.OpStateUnknown,
 	}
 }
 
@@ -705,6 +710,25 @@ func (s *ModuleStore) SetProviderSchemaState(path string, state op.OpState) erro
 	}
 
 	mod.ProviderSchemaState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetPreloadEmbeddedSchemaState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.PreloadEmbeddedSchemaState = state
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
