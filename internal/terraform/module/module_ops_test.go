@@ -676,7 +676,7 @@ func TestPreloadEmbeddedSchema_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -746,7 +746,7 @@ func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -810,13 +810,13 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 	}
 
 	// first
-	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// second - testing module state
-	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		if !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
 			t.Fatal(err)
@@ -825,7 +825,7 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 
 	ctx = job.WithIgnoreState(ctx, true)
 	// third - testing requirement matching
-	err = PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -892,14 +892,14 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		err := PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+		err := PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 		if err != nil && !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
 			t.Error(err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		err := PreloadEmbeddedSchema(ctx, schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
+		err := PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss.Modules, ss.ProviderSchemas, modPath)
 		if err != nil && !errors.Is(err, job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}) {
 			t.Error(err)
 		}

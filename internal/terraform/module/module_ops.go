@@ -188,7 +188,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return nil
 }
 
-func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
+func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -236,14 +236,14 @@ func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state
 			// of all recent (0.14+) Terraform versions.
 			originalAddr := pAddr
 			pAddr.Namespace = "hashicorp"
-			log.Printf("preloading schema for %s (implying %s)",
+			logger.Printf("preloading schema for %s (implying %s)",
 				originalAddr.ForDisplay(), pAddr.ForDisplay())
 		}
 
 		pSchemaFile, err := schemas.FindProviderSchemaFile(fs, pAddr)
 		if err != nil {
 			if errors.Is(err, schemas.SchemaNotAvailable{Addr: pAddr}) {
-				log.Printf("preloaded schema not available for %s", pAddr)
+				logger.Printf("preloaded schema not available for %s", pAddr)
 				continue
 			}
 			return err
@@ -273,13 +273,13 @@ func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state
 				// This accounts for a possible race condition
 				// where we may be preloading the same schema
 				// for different providers at the same time
-				log.Printf("schema for %s is already loaded", pAddr)
+				logger.Printf("schema for %s is already loaded", pAddr)
 				continue
 			}
 			return err
 		}
 		elapsedTime := time.Now().Sub(startTime)
-		log.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
+		logger.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
 	}
 
 	return nil
