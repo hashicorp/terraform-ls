@@ -221,6 +221,25 @@ func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state
 
 	for pAddr := range missingReqs {
 		startTime := time.Now()
+
+		if pAddr.IsLegacy() {
+			// Since we use recent version of Terraform to generate
+			// embedded schemas, these will never contain legacy
+			// addresses.
+			//
+			// A legacy namespace may come from missing
+			// required_providers entry & implied requirement
+			// from the provider block or 0.12-style entry,
+			// such as { grafana = "1.0" }.
+			//
+			// Implying "hashicorp" namespace here mimics behaviour
+			// of all recent (0.14+) Terraform versions.
+			originalAddr := pAddr
+			pAddr.Namespace = "hashicorp"
+			log.Printf("preloading schema for %s (implying %s)",
+				originalAddr.ForDisplay(), pAddr.ForDisplay())
+		}
+
 		pSchemaFile, err := schemas.FindProviderSchemaFile(fs, pAddr)
 		if err != nil {
 			if errors.Is(err, schemas.SchemaNotAvailable{Addr: pAddr}) {
