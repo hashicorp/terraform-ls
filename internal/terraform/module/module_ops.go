@@ -222,7 +222,12 @@ func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDi
 	for pAddr := range missingReqs {
 		startTime := time.Now()
 
-		if pAddr.IsLegacy() {
+		if pAddr.IsLegacy() && pAddr.Type == "terraform" {
+			// The terraform provider is built into Terraform 0.11+
+			// and while it's possible, users typically don't declare
+			// entry in required_providers block for it.
+			pAddr = tfaddr.NewProvider(tfaddr.BuiltInProviderHost, tfaddr.BuiltInProviderNamespace, "terraform")
+		} else if pAddr.IsLegacy() {
 			// Since we use recent version of Terraform to generate
 			// embedded schemas, these will never contain legacy
 			// addresses.
