@@ -149,7 +149,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.PreloadEmbeddedSchema(ctx, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
 		// This could theoretically also depend on ObtainSchema to avoid
 		// attempt to preload the same schema twice but we avoid that dependency

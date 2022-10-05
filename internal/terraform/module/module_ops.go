@@ -188,7 +188,7 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return nil
 }
 
-func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
+func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -221,10 +221,34 @@ func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state
 
 	for pAddr := range missingReqs {
 		startTime := time.Now()
+
+		if pAddr.IsLegacy() && pAddr.Type == "terraform" {
+			// The terraform provider is built into Terraform 0.11+
+			// and while it's possible, users typically don't declare
+			// entry in required_providers block for it.
+			pAddr = tfaddr.NewProvider(tfaddr.BuiltInProviderHost, tfaddr.BuiltInProviderNamespace, "terraform")
+		} else if pAddr.IsLegacy() {
+			// Since we use recent version of Terraform to generate
+			// embedded schemas, these will never contain legacy
+			// addresses.
+			//
+			// A legacy namespace may come from missing
+			// required_providers entry & implied requirement
+			// from the provider block or 0.12-style entry,
+			// such as { grafana = "1.0" }.
+			//
+			// Implying "hashicorp" namespace here mimics behaviour
+			// of all recent (0.14+) Terraform versions.
+			originalAddr := pAddr
+			pAddr.Namespace = "hashicorp"
+			logger.Printf("preloading schema for %s (implying %s)",
+				originalAddr.ForDisplay(), pAddr.ForDisplay())
+		}
+
 		pSchemaFile, err := schemas.FindProviderSchemaFile(fs, pAddr)
 		if err != nil {
 			if errors.Is(err, schemas.SchemaNotAvailable{Addr: pAddr}) {
-				log.Printf("preloaded schema not available for %s", pAddr)
+				logger.Printf("preloaded schema not available for %s", pAddr)
 				continue
 			}
 			return err
@@ -254,13 +278,13 @@ func PreloadEmbeddedSchema(ctx context.Context, fs fs.ReadDirFS, modStore *state
 				// This accounts for a possible race condition
 				// where we may be preloading the same schema
 				// for different providers at the same time
-				log.Printf("schema for %s is already loaded", pAddr)
+				logger.Printf("schema for %s is already loaded", pAddr)
 				continue
 			}
 			return err
 		}
 		elapsedTime := time.Now().Sub(startTime)
-		log.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
+		logger.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
 	}
 
 	return nil

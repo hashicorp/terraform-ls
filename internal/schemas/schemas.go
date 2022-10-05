@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"path"
 
 	"github.com/hashicorp/go-version"
@@ -62,7 +61,6 @@ func FindProviderSchemaFile(filesystem fs.ReadDirFS, pAddr tfaddr.Provider) (*Pr
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("unzipped file at %s", filePath)
 
 	return &ProviderSchema{
 		File:    gzipReader,

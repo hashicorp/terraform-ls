@@ -82,7 +82,7 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.PreloadEmbeddedSchema(ctx, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
 		DependsOn:   job.IDs{metaId},
 		Type:        op.OpTypePreloadEmbeddedSchema.String(),
