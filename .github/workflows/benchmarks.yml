@@ -17,19 +17,10 @@ jobs:
         name: Unshallow
         run: git fetch --prune --unshallow
       -
-        name: Read go version
-        id: go-version
-        shell: bash
-        run: |
-          content=`cat ./.go-version`
-          echo "::set-output name=content::$content"
-      -
         name: Set up Go
         uses: actions/setup-go@v3
         with:
-          # TODO: Replace with go-version-from-file when it is supported
-          # https://github.com/actions/setup-go/pull/62
-          go-version: ${{ steps.go-version.outputs.content }}
+          go-version-file: ".go-version"
       -
         name: Go mod download
         run: go mod download -x
