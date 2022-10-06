@@ -5,6 +5,9 @@ on:
     - cron:  '0 3 * * *'
   workflow_dispatch:
 
+env:
+  GOPROXY: https://proxy.golang.org/
+
 jobs:
   benchmarks:
     runs-on: ubuntu-latest
