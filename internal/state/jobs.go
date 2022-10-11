@@ -228,38 +228,41 @@ func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) 
 }
 
 func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
-	txn := js.db.Txn(false)
-
-	wCh, obj, err := txn.FirstWatch(js.tableName, "priority_dependecies_state", priority, 0, StateQueued)
-	if err != nil {
-		return "", job.Job{}, err
-	}
-
-	if obj == nil {
-		select {
-		case <-wCh:
-		case <-ctx.Done():
-			return "", job.Job{}, ctx.Err()
+	var sJob *ScheduledJob
+	for {
+		txn := js.db.Txn(false)
+		wCh, obj, err := txn.FirstWatch(js.tableName, "priority_dependecies_state", priority, 0, StateQueued)
+		if err != nil {
+			return "", job.Job{}, err
 		}
 
-		return js.awaitNextJob(ctx, priority)
-	}
+		if obj == nil {
+			select {
+			case <-wCh:
+			case <-ctx.Done():
+				return "", job.Job{}, ctx.Err()
+			}
 
-	sJob := obj.(*ScheduledJob)
-
-	err = js.markJobAsRunning(sJob)
-	if err != nil {
-		// Although we hold a write db-wide lock when marking job as running
-		// we may still end up passing the same job from the above read-only
-		// transaction, which does *not* hold a db-wide lock.
-		//
-		// Instead of adding more sync primitives here we simply retry.
-		if errors.Is(err, jobAlreadyRunning{ID: sJob.ID}) || errors.Is(err, jobNotFound{ID: sJob.ID}) {
-			js.logger.Printf("retrying next job: %s", err)
-			return js.awaitNextJob(ctx, priority)
+			js.logger.Printf("retrying on obj is nil")
+			continue
 		}
 
-		return "", job.Job{}, err
+		sJob = obj.(*ScheduledJob)
+
+		err = js.markJobAsRunning(sJob)
+		if err != nil {
+			// Although we hold a write db-wide lock when marking job as running
+			// we may still end up passing the same job from the above read-only
+			// transaction, which does *not* hold a db-wide lock.
+			//
+			// Instead of adding more sync primitives here we simply retry.
+			if errors.Is(err, jobAlreadyRunning{ID: sJob.ID}) || errors.Is(err, jobNotFound{ID: sJob.ID}) {
+				js.logger.Printf("retrying next job: %s", err)
+				continue
+			}
+			return "", job.Job{}, err
+		}
+		break
 	}
 
 	js.logger.Printf("JOBS: Dispatching next job %q (scheduler prio: %d, job prio: %d, isDirOpen: %t): %q for %q",
