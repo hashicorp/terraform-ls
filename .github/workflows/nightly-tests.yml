@@ -1,4 +1,4 @@
-name: ci
+name: Nightly Tests
 
 on:
   schedule:
