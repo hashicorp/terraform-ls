@@ -11,6 +11,7 @@ BUG FIXES:
 
  - fix: Enable IntelliSense for resources & data sources whose name match the provider (e.g. `data`) ([#1072](https://github.com/hashicorp/terraform-ls/pull/1072))
  - state: avoid infinite recursion (surfaced as crash with "goroutine stack exceeds 1000000000-byte limit" message) ([#1084](https://github.com/hashicorp/terraform-ls/pull/1084))
+ - decoder: fix race condition in terraform-schema (surfaced as crash with "fatal error: concurrent map read and map write" message) ([#1086](https://github.com/hashicorp/terraform-ls/pull/1086))
 
 ## 0.29.2 (7 September 2022)
 
