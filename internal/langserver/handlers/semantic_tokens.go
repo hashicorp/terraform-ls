@@ -38,7 +38,7 @@ func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params l
 		return tks, err
 	}
 
-	tokens, err := d.SemanticTokensInFile(doc.Filename)
+	tokens, err := d.SemanticTokensInFile(ctx, doc.Filename)
 	if err != nil {
 		return tks, err
 	}

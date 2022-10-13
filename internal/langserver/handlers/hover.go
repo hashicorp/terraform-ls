@@ -30,7 +30,7 @@ func (svc *service) TextDocumentHover(ctx context.Context, params lsp.TextDocume
 	}
 
 	svc.logger.Printf("Looking for hover data at %q -> %#v", doc.Filename, pos)
-	hoverData, err := d.HoverAtPos(doc.Filename, pos)
+	hoverData, err := d.HoverAtPos(ctx, doc.Filename, pos)
 	svc.logger.Printf("received hover data: %#v", hoverData)
 	if err != nil {
 		return nil, err
