@@ -1,3 +1,7 @@
+## Unreleased
+
+ - Support `count.index` references in blocks with `count` for IntelliSense, hover documentation and semantic tokens information ([#860](https://github.com/hashicorp/terraform-ls/issues/860))
+
 ## 0.29.3 (13 October 2022)
 
 ENHANCEMENTS:
