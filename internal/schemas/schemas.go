@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"path"
 
 	"github.com/hashicorp/go-version"
@@ -33,11 +32,9 @@ func (e SchemaNotAvailable) Error() string {
 func FindProviderSchemaFile(filesystem fs.ReadDirFS, pAddr tfaddr.Provider) (*ProviderSchema, error) {
 	providerPath := path.Join("data", pAddr.Hostname.String(), pAddr.Namespace, pAddr.Type)
 
-	log.Printf("looking for dir at %q", providerPath)
 	entries, err := fs.ReadDir(filesystem, providerPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			log.Printf("dir not exist: %#v", err)
 			return nil, SchemaNotAvailable{Addr: pAddr}
 		}
 		return nil, err
