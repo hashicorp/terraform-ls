@@ -4,6 +4,7 @@
 ENHANCEMENTS:
 
  - Support `count.index` references in blocks with `count` for completion, hover documentation and semantic tokens highlighting ([#860](https://github.com/hashicorp/terraform-ls/issues/860))
+ - Support `each.*` references in blocks with `for_each` for completion, hover documentation and semantic tokens highlighting ([#861](https://github.com/hashicorp/terraform-ls/issues/861))
 
 ## 0.29.3 (13 October 2022)
 
