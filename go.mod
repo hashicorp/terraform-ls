@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/cli v1.1.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/otiai10/copy v1.7.0
+	github.com/otiai10/copy v1.9.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vektra/mockery/v2 v2.14.1
