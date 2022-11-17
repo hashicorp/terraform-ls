@@ -26,21 +26,21 @@ checks:
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1240
-      max: 2100
+      max: 2700
   - package: ./internal/langserver/handlers
     name: aws-consul
     benchmarks: [BenchmarkInitializeFolder_basic/aws-consul]
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1360
-      max: 2200
+      max: 2800
   - package: ./internal/langserver/handlers
     name: aws-eks
     benchmarks: [BenchmarkInitializeFolder_basic/aws-eks]
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1570
-      max: 3500
+      max: 4300
   - package: ./internal/langserver/handlers
     name: aws-vpc
     benchmarks: [BenchmarkInitializeFolder_basic/aws-vpc]
@@ -61,14 +61,14 @@ checks:
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1430
-      max: 16000
+      max: 22000
   - package: ./internal/langserver/handlers
     name: google-gke
     benchmarks: [BenchmarkInitializeFolder_basic/google-gke]
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1500
-      max: 21000
+      max: 24000
   - package: ./internal/langserver/handlers
     name: k8s-metrics-server
     benchmarks: [BenchmarkInitializeFolder_basic/k8s-metrics-server]
@@ -82,4 +82,4 @@ checks:
     diff: current.NsPerOp / 1000000 # ms
     thresholds:
       min: 1100
-      max: 4300
+      max: 6400
