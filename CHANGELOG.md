@@ -1,10 +1,15 @@
-## Unreleased
-
+## 0.30.0 (24 November 2022)
 
 ENHANCEMENTS:
 
- - Support `count.index` references in blocks with `count` for completion, hover documentation and semantic tokens highlighting ([#860](https://github.com/hashicorp/terraform-ls/issues/860))
- - Support `each.*` references in blocks with `for_each` for completion, hover documentation and semantic tokens highlighting ([#861](https://github.com/hashicorp/terraform-ls/issues/861))
+ - Support `count.index` references in blocks with `count` for completion, hover documentation and semantic tokens highlighting ([#860](https://github.com/hashicorp/terraform-ls/issues/860), [hcl-lang#160](https://github.com/hashicorp/hcl-lang/pull/160))
+ - Support `each.*` references in blocks with `for_each` for completion, hover documentation and semantic tokens highlighting ([#861](https://github.com/hashicorp/terraform-ls/issues/861), [hcl-lang#162](https://github.com/hashicorp/hcl-lang/pull/162))
+ - Support `self.*` references in `provisioner`, `connection` and `postcondition` blocks for completion, hover documentation and semantic tokens highlighting ([#859](https://github.com/hashicorp/terraform-ls/issues/859), [hcl-lang#163](https://github.com/hashicorp/hcl-lang/pull/163))
+ - `dynamic` block support, including label and content completion ([#530](https://github.com/hashicorp/terraform-ls/issues/530), [hcl-lang#154](https://github.com/hashicorp/hcl-lang/pull/154))
+ - Go-to-definition/go-to-references for `count.index`/`count` ([#1093](https://github.com/hashicorp/terraform-ls/issues/1093))
+ - Go-to-definition/go-to-references for `each.*`/`for_each` ([#1095](https://github.com/hashicorp/terraform-ls/issues/1095))
+ - Go-to-definition/go-to-references for `self.*` in `provisioner`, `connection` and `postcondition` blocks ([#1096](https://github.com/hashicorp/terraform-ls/issues/1096))
+ - Remove deprecated backends in Terraform 1.3.0 ([terraform-schema#159](https://github.com/hashicorp/terraform-schema/pull/159))
 
 ## 0.29.3 (13 October 2022)
 
