@@ -38,7 +38,7 @@ jobs:
         run: |
           docker login docker.pkg.github.com -u docker -p '${{ secrets.CODESIGN_GITHUB_TOKEN }}' && \
           docker pull docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION && \
-          echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
+          echo "image=docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION" >> $GITHUB_OUTPUT
         id: codesign
         env:
           VERSION: v0
