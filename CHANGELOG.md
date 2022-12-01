@@ -1,3 +1,14 @@
+## 0.30.1 (Unreleased)
+
+BUG FIXES:
+
+ - Support `dynamic` in the `provisioner` and `provider` blocks ([terraform-schema#165](https://github.com/hashicorp/terraform-schema/pull/165))
+ - Fix `dynamic` block `for_each` description ([hcl-lang#164](https://github.com/hashicorp/hcl-lang/pull/164))
+ - Avoid completing static block inside a `dynamic` label ([hcl-lang#165](https://github.com/hashicorp/hcl-lang/pull/165))
+ - Fix missing hover for `count` and `for_each` expression ([hcl-lang#166](https://github.com/hashicorp/hcl-lang/pull/166))
+ - Fix support of deeper nesting of `dynamic` block ([hcl-lang#167](https://github.com/hashicorp/hcl-lang/pull/167))
+ - Change `dynamic` block type to default ([hcl-lang#168](https://github.com/hashicorp/hcl-lang/pull/168))
+
 ## 0.30.0 (24 November 2022)
 
 ENHANCEMENTS:
