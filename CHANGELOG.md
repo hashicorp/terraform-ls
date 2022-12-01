@@ -1,4 +1,4 @@
-## 0.30.1 (Unreleased)
+## 0.30.1 (1 December 2022)
 
 BUG FIXES:
 
