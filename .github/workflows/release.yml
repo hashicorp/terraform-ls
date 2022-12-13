@@ -52,7 +52,7 @@ jobs:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
         name: Release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release
