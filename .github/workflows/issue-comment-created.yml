@@ -12,7 +12,7 @@ jobs:
   issue_comment_triage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
       - uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: |
