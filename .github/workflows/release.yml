@@ -52,7 +52,7 @@ jobs:
           github-token: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
       -
         name: Release
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # https://github.com/goreleaser/goreleaser-action/releases/tag/v3.2.0
         with:
           version: latest
           args: release
@@ -90,7 +90,7 @@ jobs:
           hc-releases-source_env_key: ${{ secrets.HC_RELEASES_KEY_STAGING }}
       -
         name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@95bc17402b232b5c8fbc16750c070a30575baf2e # https://github.com/aws-actions/configure-aws-credentials/tree/v1-node16
         with:
           aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
