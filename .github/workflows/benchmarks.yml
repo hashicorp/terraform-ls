@@ -15,13 +15,13 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
       -
         name: Unshallow
         run: git fetch --prune --unshallow
       -
         name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613 # https://github.com/actions/setup-go/releases/tag/v3.4.0
         with:
           go-version-file: ".go-version"
       -
@@ -67,14 +67,14 @@ jobs:
       -
         name: Upload benchmark data as artifact
         if: ${{ always() && !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
         with:
           name: benchdata-${{ github.ref_name }}-${{ github.sha }}-${{ github.run_id }}.json
           path: "${{ runner.temp }}/benchdata.json"
       -
         name: Send failures to Slack
         if: ${{ failure() && !cancelled() }}
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # https://github.com/slackapi/slack-github-action/releases/tag/v1.23.0
         with:
           payload: |
             {
