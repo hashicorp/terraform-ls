@@ -168,7 +168,28 @@ autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
 require'lspconfig'.terraformls.setup{}
 vim.api.nvim_create_autocmd({"BufWritePre"}, {
   pattern = {"*.tf", "*.tfvars"},
-  callback = vim.lsp.buf.formatting_sync,
+  callback = vim.lsp.buf.formatting_sync(),
+})
+```
+
+### Neovim v0.8.0+
+
+ - Install the [nvim-lspconfig plugin](https://github.com/neovim/nvim-lspconfig)
+ - Add the following to your `.vimrc` or `init.vim`:
+
+```vim
+lua <<EOF
+  require'lspconfig'.terraformls.setup{}
+EOF
+autocmd BufWritePre *.tfvars lua vim.lsp.buf.format()
+autocmd BufWritePre *.tf lua vim.lsp.buf.format()
+```
+ - If you are using `init.lua`:
+```lua
+require'lspconfig'.terraformls.setup{}
+vim.api.nvim_create_autocmd({"BufWritePre"}, {
+  pattern = {"*.tf", "*.tfvars"},
+  callback = vim.lsp.buf.format(),
 })
 ```
 
