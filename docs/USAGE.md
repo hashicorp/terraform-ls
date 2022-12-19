@@ -168,7 +168,7 @@ autocmd BufWritePre *.tf lua vim.lsp.buf.formatting_sync()
 require'lspconfig'.terraformls.setup{}
 vim.api.nvim_create_autocmd({"BufWritePre"}, {
   pattern = {"*.tf", "*.tfvars"},
-  callback = function() vim.lsp.buf.formatting_sync() end,
+  callback = vim.lsp.buf.formatting_sync(),
 })
 ```
 
