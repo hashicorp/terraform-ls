@@ -575,8 +575,7 @@ const requestCancelled code.Code = -32800
 
 // handle calls a jrpc2.Func compatible function
 func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{}, error) {
-	f := rpch.New(fn)
-	result, err := f.Handle(ctx, req)
+	result, err := rpch.New(fn)(ctx, req)
 	if ctx.Err() != nil && errors.Is(ctx.Err(), context.Canceled) {
 		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
 	}
