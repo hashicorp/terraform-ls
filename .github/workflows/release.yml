@@ -90,7 +90,7 @@ jobs:
           hc-releases-source_env_key: ${{ secrets.HC_RELEASES_KEY_STAGING }}
       -
         name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@95bc17402b232b5c8fbc16750c070a30575baf2e # https://github.com/aws-actions/configure-aws-credentials/tree/v1-node16
+        uses: aws-actions/configure-aws-credentials@56320524c997f8122ea86203e479213427c0b863 # https://github.com/aws-actions/configure-aws-credentials/tree/v1-node16
         with:
           aws-access-key-id: ${{ secrets.TERRAFORM_PROD_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.TERRAFORM_PROD_AWS_SECRET_ACCESS_KEY }}
