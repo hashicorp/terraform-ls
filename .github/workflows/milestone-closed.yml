@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: bflad/action-milestone-comment@9d467f6d8032006cc343576e65a0810d07ef0614 # https://github.com/bflad/action-milestone-comment/releases/tag/v1.0.1
+      - uses: bflad/action-milestone-comment@ae6c9fdf5778064d4e09b4632604a16b7289096c # https://github.com/bflad/action-milestone-comment/releases/tag/v1.0.2
         with:
           body: |
             This functionality has been released in [${{ github.event.milestone.title }} of the language server](https://github.com/${{ github.repository }}/blob/${{ github.event.milestone.title }}/CHANGELOG.md).
