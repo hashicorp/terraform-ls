@@ -181,15 +181,17 @@ vim.api.nvim_create_autocmd({"BufWritePre"}, {
 lua <<EOF
   require'lspconfig'.terraformls.setup{}
 EOF
-autocmd BufWritePre *.tfvars lua vim.lsp.buf.format()
-autocmd BufWritePre *.tf lua vim.lsp.buf.format()
+autocmd BufWritePre *.tfvars lua vim.lsp.buf.format({ async = true })
+autocmd BufWritePre *.tf lua vim.lsp.buf.format({ async = true })
 ```
  - If you are using `init.lua`:
 ```lua
 require'lspconfig'.terraformls.setup{}
 vim.api.nvim_create_autocmd({"BufWritePre"}, {
   pattern = {"*.tf", "*.tfvars"},
-  callback = vim.lsp.buf.format(),
+  callback = function()
+    vim.lsp.buf.format({ async = true })
+  end
 })
 ```
 
