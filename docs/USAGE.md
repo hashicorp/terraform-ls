@@ -197,17 +197,9 @@ Make sure to read through to [server_configurations.md#terraformls](https://gith
 
 ## VS Code
 
- - Install [Terraform VS Code Extension](https://marketplace.visualstudio.com/items?itemName=hashicorp.terraform) `>=2.0.0`
- - Latest version of the language server should be installed automatically on VS Code launch
- - In case you are upgrading from v1 you may need to reset the settings to reflect v2 default, as shown below
-
-```json
-"terraform.languageServer": {
-    "args": [
-        "serve",
-    ],
-},
-```
+ - Install [Terraform VS Code Extension](https://marketplace.visualstudio.com/items?itemName=hashicorp.terraform) `>=2.24.0`
+ - Latest compatible version of the language server is bundled with the extension
+ - See [Configuration](https://github.com/hashicorp/vscode-terraform/blob/main/README.md#configuration) in case you need to tweak anything. Default settings should work for majority of users though.
 
 ## BBEdit
 
