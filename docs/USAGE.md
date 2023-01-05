@@ -72,24 +72,10 @@ provides overlapping functionality (and more features at the time of writing).
 As a result having both enabled at the same time may result in suboptimal UX,
 such as duplicate completion candidates.
 
-## Sublime Text 2
+## Sublime Text
 
  - Install the [LSP package](https://github.com/sublimelsp/LSP#installation)
- - Add the following snippet to your _User_ `LSP.sublime-settings` (editable via `Preferences → Package Settings → LSP → Settings` or via the command pallete → `Preferences: LSP Settings`)
-
-```json
-{
-	"clients": {
-		"terraform": {
-			"command": ["terraform-ls", "serve"],
-			"enabled": true,
-			"languageId": "terraform",
-			"scopes": ["source.terraform"],
-			"syntaxes": ["Packages/Terraform/Terraform.sublime-syntax"]
-		}
-	}
-}
-```
+ - Install the [LSP-terraform package](https://github.com/sublimelsp/LSP-terraform#installation)
 
 ## Vim / NeoVim
 ### coc.nvim
