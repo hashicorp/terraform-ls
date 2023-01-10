@@ -29,7 +29,7 @@ require (
 	github.com/vektra/mockery/v2 v2.16.0
 	github.com/zclconf/go-cty v1.12.1
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
-	go.bobheadxi.dev/gobenchdata v1.2.1
+	go.bobheadxi.dev/gobenchdata v1.2.2
 	golang.org/x/tools v0.5.0
 )
 
