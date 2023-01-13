@@ -395,8 +395,8 @@ github.com/zclconf/go-cty v1.12.1 h1:PcupnljUm9EIvbgSHQnHhUr3fO6oFmkOrvs2BAFNXXY
 github.com/zclconf/go-cty v1.12.1/go.mod h1:s9IfD1LK5ccNMSWCVFCE2rJfHiZgi7JijgeWIMfhLvA=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b h1:FosyBZYxY34Wul7O/MSKey3txpPYyCqVO5ZyceuQJEI=
 github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b/go.mod h1:ZRKQfBXbGkpdV6QMzT3rU1kSTAnfu1dO8dPKjYprgj8=
-go.bobheadxi.dev/gobenchdata v1.2.2 h1:qOuLsSq/K+BksMp3H4bibQ/kUrNIz6P+dJkKnlza/mY=
-go.bobheadxi.dev/gobenchdata v1.2.2/go.mod h1:kkOmFPuZny2XMU7Aw1ilL9ZvqY95FRBjIH132snwkOg=
+go.bobheadxi.dev/gobenchdata v1.3.0 h1:6YMtFDViJ9mLs1WnpYN74+VgtOhsT9cZbrd7OCBpn30=
+go.bobheadxi.dev/gobenchdata v1.3.0/go.mod h1:em3lfd7U+FiNw5KhBWT6io6F5bz4z+h8rjYIz9x9Pfo=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
