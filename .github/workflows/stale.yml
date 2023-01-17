@@ -14,16 +14,30 @@ jobs:
     steps:
     - uses: actions/stale@6f05e4244c9a0b2ed3401882b05d701dd0a7289b # https://github.com/actions/stale/releases/tag/v7.0.0
       with:
-        days-before-stale: '-1'
-        days-before-close: '90'
         only-labels: 'waiting-response'
+
+        days-before-stale: 30
         stale-issue-label: 'stale'
         stale-issue-message: |
-          Marking this issue as stale due to inactivity. This helps our maintainers find and focus on the active issues. If this issue receives no comments in the next 90 days it will automatically be closed. Maintainers can also remove the stale label.
+          Marking this issue as stale due to inactivity over the last 30 days. This helps our maintainers find and focus on the active issues. If this issue receives no comments in the next **30 days** it will automatically be closed. Maintainers can also remove the stale label.
 
-          If this issue was automatically closed and you feel this issue should be reopened, we encourage creating a new issue linking back to this one for added context. Thank you!
+          Thank you for understanding.
         stale-pr-label: 'stale'
         stale-pr-message: |
-          Marking this pull request as stale due to inactivity. This helps our maintainers find and focus on the active pull requests. If this pull request receives no comments in the next 90 days it will automatically be closed. Maintainers can also remove the stale label.
+          Marking this pull request as stale due to inactivity over the last 30 days. This helps our maintainers find and focus on the active pull requests. If this pull request receives no comments in the next **30 days** it will automatically be closed. Maintainers can also remove the stale label.
 
-          If this pull request was automatically closed and you feel this pull request should be reopened, we encourage creating a new pull request linking back to this one for added context. Thank you!
+          Thank you for understanding.
+
+        days-before-close: 30
+        close-issue-message: |
+          Closing this issue due to its staleness.
+
+          If the issue was automatically closed and you feel it should be reopened, we encourage creating a new one linking back to this one for added context.
+
+          Thank you!
+        close-pr-message: |
+          Closing this pull request due to its staleness.
+
+          If the pull request was automatically closed and you feel it should be reopened, we encourage creating a new one linking back to this one for added context.
+
+          Thank you!
