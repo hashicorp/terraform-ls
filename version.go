@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"strings"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -15,32 +14,17 @@ var (
 	// then it means that it is a final release. Otherwise, this is a pre-release
 	// such as "dev" (in development), "beta", "rc1", etc.
 	//go:embed version/VERSION
-	fullVersion string
+	rawVersion string
 
-	version, versionPrerelease, _ = strings.Cut(fullVersion, "-")
-
-	// https://semver.org/#spec-item-10
-	versionMetadata = ""
+	fullVersion = parseRawVersion(rawVersion)
 )
-
-func init() {
-	// Verify that the version is proper semantic version, which should always be the case.
-	_, err := goversion.NewVersion(version)
-	if err != nil {
-		panic(err.Error())
-	}
-}
 
 // VersionString returns the complete version string, including prerelease
 func VersionString() string {
-	v := version
-	if versionPrerelease != "" {
-		v += "-" + versionPrerelease
-	}
+	return fullVersion.String()
+}
 
-	if versionMetadata != "" {
-		v += "+" + versionMetadata
-	}
-
-	return v
+func parseRawVersion(rawVersion string) goversion.Version {
+	v := goversion.Must(goversion.NewVersion(rawVersion))
+	return *v
 }

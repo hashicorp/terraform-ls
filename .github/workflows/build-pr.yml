@@ -12,7 +12,7 @@ jobs:
   generate-provider-schemas:
     runs-on: ubuntu-latest
     steps:
-      - name: "Checkout directory"
+      - name: Checkout
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
       - name: Set up Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
@@ -22,14 +22,8 @@ jobs:
         run: |
           go generate ./internal/schemas
           du -h -s ./internal/schemas/data
-      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
-        with:
-          name: provider-schema-data
-          path: ./internal/schemas/data
-          retention-days: 1
 
   build:
-    needs: generate-provider-schemas
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -57,11 +51,6 @@ jobs:
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
         with:
           go-version-file: ".go-version"
-      - name: Download provider schemas
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # https://github.com/actions/download-artifact/releases/tag/v3.0.2
-        with:
-          name: provider-schema-data
-          path: ./internal/schemas/data
       - name: ${{ matrix.goos }} ${{ matrix.goarch }} build
         run: |-
           go build \
