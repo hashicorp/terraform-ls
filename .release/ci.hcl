@@ -77,3 +77,16 @@ event "promote-production" {
     on = "always"
   }
 }
+
+event "promote-production-packaging" {
+  depends = ["promote-production"]
+  action "promote-production-packaging" {
+    organization = "hashicorp"
+    repository = "crt-workflows-common"
+    workflow = "promote-production-packaging"
+  }
+
+  notification {
+    on = "always"
+  }
+}
