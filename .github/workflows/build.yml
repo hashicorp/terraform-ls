@@ -102,6 +102,7 @@ jobs:
             go build \
               -o "$BIN_PATH" \
               -trimpath \
+              -buildvcs=false \
               -ldflags "
                 -s -w
                 -X 'main.algoliaAppID=${{ secrets.ALGOLIA_APP_ID }}'
