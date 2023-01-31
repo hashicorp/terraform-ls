@@ -2,6 +2,7 @@ schema = "1"
 
 project "terraform-ls" {
   slack {
+    team = "terraform-editor-experience"
     # feed-tf-editor-experience
     notification_channel = "C02AGQXCAF5"
   }
