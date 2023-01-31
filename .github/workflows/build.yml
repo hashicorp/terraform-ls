@@ -74,7 +74,7 @@ jobs:
         with:
           name: provider-schema-data
           path: ./internal/schemas/data
-          retention-days: 5
+          retention-days: 1
 
   build:
     needs:
@@ -162,3 +162,11 @@ jobs:
         with:
           name: ${{ env.DEB_PACKAGE }}
           path: out/${{ env.DEB_PACKAGE }}
+
+  delete-provider-schemas:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekyeggo/delete-artifact@54ab544f12cdb7b71613a16a2b5a37a9ade990af # https://github.com/GeekyEggo/delete-artifact/releases/tag/v2.0.0
+        with:
+          name: provider-schema-data
