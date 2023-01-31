@@ -1,7 +1,6 @@
 schema = "1"
 
 project "terraform-ls" {
-  team = "terraform-editor-experience"
   slack {
     # feed-tf-editor-experience
     notification_channel = "C02AGQXCAF5"
@@ -11,6 +10,7 @@ project "terraform-ls" {
     repository = "terraform-ls"
     release_branches = [
       "main",
+      "onboard-crt",
     ]
   }
 }
