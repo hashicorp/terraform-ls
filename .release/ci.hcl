@@ -1,20 +1,16 @@
 schema = "1"
 
 project "terraform-ls" {
+  // team is currently unused and has no meaning
+  // but is required to be non-empty by CRT orchestator
+  team = "_UNUSED_"
   slack {
-    // team is currently unused and has no meaning
-    // but is required to be non-empty by CRT orchestator
-    team = "_UNUSED_"
-    # feed-tf-editor-experience
-    notification_channel = "C02AGQXCAF5"
+    notification_channel = "C02AGQXCAF5" // # feed-tf-editor-experience
   }
   github {
     organization = "hashicorp"
     repository = "terraform-ls"
-    release_branches = [
-      "main",
-      "onboard-crt",
-    ]
+    release_branches = ["main", "onboard-crt"]
   }
 }
 
