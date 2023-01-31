@@ -2,7 +2,9 @@ schema = "1"
 
 project "terraform-ls" {
   slack {
-    team = "terraform-editor-experience"
+    // team is currently unused and has no meaning
+    // but is required to be non-empty by CRT orchestator
+    team = "_UNUSED_"
     # feed-tf-editor-experience
     notification_channel = "C02AGQXCAF5"
   }
@@ -19,7 +21,7 @@ project "terraform-ls" {
 event "build" {
   action "build" {
     organization = "hashicorp"
-    repository = "crt-workflows-common"
+    repository = "terraform-ls"
     workflow = "build"
   }
 }
