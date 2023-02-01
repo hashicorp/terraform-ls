@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - onboard-crt
 
 env:
   PKG_NAME: "terraform-ls"

@@ -10,7 +10,7 @@ project "terraform-ls" {
   github {
     organization = "hashicorp"
     repository = "terraform-ls"
-    release_branches = ["main", "onboard-crt"]
+    release_branches = ["main"]
   }
 }
 
