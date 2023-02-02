@@ -1,0 +1,59 @@
+name: build-pr
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  GOPROXY: https://proxy.golang.org/
+
+jobs:
+  generate-provider-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
+        with:
+          go-version-file: ".go-version"
+      - name: Generate provider schemas
+        run: |
+          go generate ./internal/schemas
+          du -h -s ./internal/schemas/data
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: "linux", goarch: "386" }
+          - { goos: "linux", goarch: "amd64" }
+          - { goos: "linux", goarch: "arm" }
+          - { goos: "linux", goarch: "arm64" }
+          - { goos: "freebsd", goarch: "386" }
+          - { goos: "freebsd", goarch: "amd64" }
+          - { goos: "freebsd", goarch: "arm" }
+          - { goos: "openbsd", goarch: "386" }
+          - { goos: "openbsd", goarch: "amd64" }
+          - { goos: "solaris", goarch: "amd64" }
+          - { goos: "windows", goarch: "386" }
+          - { goos: "windows", goarch: "amd64" }
+          - { goos: "windows", goarch: "arm64" }
+          - { goos: "darwin", goarch: "arm64" }
+          - { goos: "darwin", goarch: "amd64" }
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # https://github.com/actions/checkout/releases/tag/v3.3.0
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
+        with:
+          go-version-file: ".go-version"
+      - name: ${{ matrix.goos }} ${{ matrix.goarch }} build
+        run: |-
+          go build \
+            -trimpath \
+            -buildvcs=false \
+            -ldflags "-s -w"

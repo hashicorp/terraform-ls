@@ -1,0 +1,171 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PKG_NAME: "terraform-ls"
+
+jobs:
+  get-go-version:
+    name: "Determine Go toolchain version"
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.get-go-version.outputs.go-version }}
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Determine Go version
+        id: get-go-version
+        # We use .go-version as our source of truth for current Go
+        # version, because "goenv" can react to it automatically.
+        run: |
+          echo "Building with Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> $GITHUB_OUTPUT
+
+  set-product-version:
+    runs-on: ubuntu-latest
+    outputs:
+      product-version: ${{ steps.set-product-version.outputs.product-version }}
+      product-base-version: ${{ steps.set-product-version.outputs.base-product-version }}
+      product-prerelease-version: ${{ steps.set-product-version.outputs.prerelease-product-version }}
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Set Product version
+        id: set-product-version
+        uses: hashicorp/actions-set-product-version@v1
+
+  generate-metadata-file:
+    needs: set-product-version
+    runs-on: ubuntu-latest
+    outputs:
+      filepath: ${{ steps.generate-metadata-file.outputs.filepath }}
+    steps:
+      - name: "Checkout directory"
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Generate metadata file
+        id: generate-metadata-file
+        uses: hashicorp/actions-generate-metadata@v1
+        with:
+          version: ${{ needs.set-product-version.outputs.product-version }}
+          product: ${{ env.PKG_NAME }}
+          repositoryOwner: "hashicorp"
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
+        with:
+          name: metadata.json
+          path: ${{ steps.generate-metadata-file.outputs.filepath }}
+
+  generate-provider-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout directory"
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
+        with:
+          go-version-file: ".go-version"
+      - name: Generate provider schemas
+        run: |
+          go generate ./internal/schemas
+          du -h -s ./internal/schemas/data
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
+        with:
+          name: provider-schema-data
+          path: ./internal/schemas/data
+          retention-days: 1
+
+  build:
+    needs:
+      - get-go-version
+      - set-product-version
+      - generate-provider-schemas
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: "linux", goarch: "386" }
+          - { goos: "linux", goarch: "amd64" }
+          - { goos: "linux", goarch: "arm" }
+          - { goos: "linux", goarch: "arm64" }
+          - { goos: "freebsd", goarch: "386" }
+          - { goos: "freebsd", goarch: "amd64" }
+          - { goos: "freebsd", goarch: "arm" }
+          - { goos: "openbsd", goarch: "386" }
+          - { goos: "openbsd", goarch: "amd64" }
+          - { goos: "solaris", goarch: "amd64" }
+          - { goos: "windows", goarch: "386" }
+          - { goos: "windows", goarch: "amd64" }
+          - { goos: "windows", goarch: "arm64" }
+          - { goos: "darwin", goarch: "arm64" }
+          - { goos: "darwin", goarch: "amd64" }
+      fail-fast: true
+    name: Go ${{ needs.get-go-version.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
+      - name: Download provider schemas
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # https://github.com/actions/download-artifact/releases/tag/v3.0.2
+        with:
+          name: provider-schema-data
+          path: ./internal/schemas/data
+      - name: Check provider schemas
+        run: du -h -s ./internal/schemas/data
+      - uses: hashicorp/actions-go-build@v0.1.7
+        env:
+          BASE_VERSION: ${{ needs.set-product-version.outputs.product-base-version }}
+          PRERELEASE_VERSION: ${{ needs.set-product-version.outputs.product-prerelease-version}}
+          METADATA_VERSION: ${{ env.METADATA }}
+        with:
+          product_name: ${{ env.PKG_NAME }}
+          product_version: ${{ needs.set-product-version.outputs.product-version }}
+          go_version: ${{ needs.get-go-version.outputs.go-version }}
+          os: ${{ matrix.goos }}
+          arch: ${{ matrix.goarch }}
+          reproducible: report
+          instructions: |-
+            go build \
+              -o "$BIN_PATH" \
+              -trimpath \
+              -buildvcs=false \
+              -ldflags "
+                -s -w
+                -X 'main.algoliaAppID=${{ secrets.ALGOLIA_APP_ID }}'
+                -X 'main.algoliaAPIKey=${{ secrets.ALGOLIA_API_KEY }}'
+              "
+      - name: Package
+        if: ${{ matrix.goos == 'linux' }}
+        uses: hashicorp/actions-packaging-linux@v1
+        with:
+          name: ${{ github.event.repository.name }}
+          description: "Terraform Language Server"
+          arch: ${{ matrix.goarch }}
+          version: ${{ needs.set-product-version.outputs.product-version }}
+          maintainer: "HashiCorp"
+          homepage: "https://github.com/hashicorp/terraform-ls"
+          license: "MPL-2.0"
+          binary: "dist/${{ env.PKG_NAME }}"
+          deb_depends: "openssl"
+          rpm_depends: "openssl"
+      - name: Set Package Names
+        if: ${{ matrix.goos == 'linux' }}
+        run: |
+          echo "RPM_PACKAGE=$(basename out/*.rpm)" >> $GITHUB_ENV
+          echo "DEB_PACKAGE=$(basename out/*.deb)" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
+        if: ${{ matrix.goos == 'linux' }}
+        with:
+          name: ${{ env.RPM_PACKAGE }}
+          path: out/${{ env.RPM_PACKAGE }}
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb # https://github.com/actions/upload-artifact/releases/tag/v3.1.1
+        if: ${{ matrix.goos == 'linux' }}
+        with:
+          name: ${{ env.DEB_PACKAGE }}
+          path: out/${{ env.DEB_PACKAGE }}
+
+  delete-provider-schemas:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekyeggo/delete-artifact@54ab544f12cdb7b71613a16a2b5a37a9ade990af # https://github.com/GeekyEggo/delete-artifact/releases/tag/v2.0.0
+        with:
+          name: provider-schema-data

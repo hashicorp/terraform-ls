@@ -1,4 +1,3 @@
-dist/
 .idea/
 coverage.txt
 internal/schemas/.terraform/

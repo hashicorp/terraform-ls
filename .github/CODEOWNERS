@@ -1,1 +1,5 @@
 * @hashicorp/tf-editor-experience-engineers
+
+# release configuration
+/.release/                   @hashicorp/release-engineering @hashicorp/tf-editor-experience-engineers
+/.github/workflows/build.yml @hashicorp/release-engineering @hashicorp/tf-editor-experience-engineers
