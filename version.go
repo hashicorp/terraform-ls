@@ -16,15 +16,10 @@ var (
 	//go:embed version/VERSION
 	rawVersion string
 
-	fullVersion = parseRawVersion(rawVersion)
+	version = goversion.Must(goversion.NewVersion(rawVersion))
 )
 
 // VersionString returns the complete version string, including prerelease
 func VersionString() string {
-	return fullVersion.String()
-}
-
-func parseRawVersion(rawVersion string) goversion.Version {
-	v := goversion.Must(goversion.NewVersion(rawVersion))
-	return *v
+	return version.String()
 }
