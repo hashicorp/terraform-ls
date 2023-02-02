@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"strings"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -16,7 +17,7 @@ var (
 	//go:embed version/VERSION
 	rawVersion string
 
-	version = goversion.Must(goversion.NewVersion(rawVersion))
+	version = goversion.Must(goversion.NewVersion(strings.TrimSpace(rawVersion)))
 )
 
 // VersionString returns the complete version string, including prerelease
