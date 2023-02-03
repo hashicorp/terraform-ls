@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/hc-install v0.5.0
 	github.com/hashicorp/hcl-lang v0.0.0-20221130131410-9f07ba77f1d7
 	github.com/hashicorp/hcl/v2 v2.16.0
 	github.com/hashicorp/terraform-exec v0.17.3
@@ -82,7 +82,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.0 // indirect
 	go.bobheadxi.dev/streamline v1.2.1 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
