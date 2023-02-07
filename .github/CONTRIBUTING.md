@@ -215,8 +215,8 @@ bob trigger-promotion \
   --org=hashicorp \
   --repo=terraform-ls \
   --slack-channel=C02AGQXCAF5 \
-  --product-version=$VERSION \
-  --sha=$SHA \
+  --product-version="$VERSION" \
+  --sha="$SHA" \
   --branch=main \
   staging
  ```
@@ -228,8 +228,8 @@ bob trigger-promotion \
   --org=hashicorp \
   --repo=terraform-ls \
   --slack-channel=C02AGQXCAF5 \
-  --product-version=$VERSION \
-  --sha=$SHA \
+  --product-version="$VERSION" \
+  --sha="$SHA" \
   --branch=main \
   production
  ```
