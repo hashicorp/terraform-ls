@@ -204,7 +204,7 @@ Releases are made on a reasonably regular basis by the maintainers (HashiCorp st
 Release process:
 
  1. Update [`version/VERSION`](https://github.com/hashicorp/terraform-ls/blob/main/version/VERSION) to remove `-dev` suffix and set it to the intended version to be released
- 1. Wait for [`build` workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/build.yml) to finish
+ 1. Wait for [`build` workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/build.yml) and dependent `prepare` workflow to finish
  1. Ensure you have the appropriate GitHub PAT set in `BOB_GITHUB_TOKEN` variable
  1. Set `SHA` to the corresponding (long) last commit SHA (after updating `VERSION` file) & `VERSION` to the same version
  1. Use `bob` to promote artifacts to **staging**
