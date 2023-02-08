@@ -196,3 +196,40 @@ promptly to pull requests, particularly if they do not relate to an existing
 GitHub issue where the maintainer team has already participated. We _are_
 grateful for all contributions however, and will give feedback on pull requests
 as soon as we're able to.
+
+## Releasing
+
+Releases are made on a reasonably regular basis by the maintainers (HashiCorp staff), using our internal tooling. The following notes are only relevant to maintainers.
+
+Release process:
+
+ 1. Update [`version/VERSION`](https://github.com/hashicorp/terraform-ls/blob/main/version/VERSION) to remove `-dev` suffix and set it to the intended version to be released
+ 1. Wait for [`build` workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/build.yml) and dependent `prepare` workflow to finish
+ 1. Ensure you have the appropriate GitHub PAT set in `BOB_GITHUB_TOKEN` variable
+ 1. Set `SHA` to the corresponding (long) last commit SHA (after updating `VERSION` file) & `VERSION` to the same version
+ 1. Use `bob` to promote artifacts to **staging**
+ ```
+bob trigger-promotion \
+  --product-name=terraform-ls \
+  --environment=terraform-ls-oss \
+  --org=hashicorp \
+  --repo=terraform-ls \
+  --slack-channel=C02AGQXCAF5 \
+  --product-version="$VERSION" \
+  --sha="$SHA" \
+  --branch=main \
+  staging
+ ```
+ 1. Use `bob` to promote artifacts to **production**
+ ```
+bob trigger-promotion \
+  --product-name=terraform-ls \
+  --environment=terraform-ls-oss \
+  --org=hashicorp \
+  --repo=terraform-ls \
+  --slack-channel=C02AGQXCAF5 \
+  --product-version="$VERSION" \
+  --sha="$SHA" \
+  --branch=main \
+  production
+ ```
