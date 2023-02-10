@@ -363,8 +363,8 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/subosito/gotenv v1.4.0 h1:yAzM1+SmVcz5R4tXGsNMu1jUl2aOJXoiWUCEwwnGrvs=
 github.com/subosito/gotenv v1.4.0/go.mod h1:mZd6rFysKEcUhUHXJk0C/08wAgyDBFuwEYL7vWWGaGo=
-github.com/vektra/mockery/v2 v2.18.0 h1:osTyrUI2RAqSmAr5qHmNiuSPgg+GJgfLc6FjEoi8VKc=
-github.com/vektra/mockery/v2 v2.18.0/go.mod h1:mI12pwT9jEsg04dL0FnZNVkmEgfLgRfu4za9uJDpaRg=
+github.com/vektra/mockery/v2 v2.19.0 h1:zgXkXV/SN6GLREnrgwM9LiLycLpj/Rp/El0bxWEM6ak=
+github.com/vektra/mockery/v2 v2.19.0/go.mod h1:mI12pwT9jEsg04dL0FnZNVkmEgfLgRfu4za9uJDpaRg=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
