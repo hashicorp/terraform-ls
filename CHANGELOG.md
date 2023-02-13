@@ -1,3 +1,9 @@
+## 0.30.2 (unreleased)
+
+BUG FIXES:
+
+ - Continue parsing modules with inaccessible files ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
+
 ## 0.30.1 (1 December 2022)
 
 BUG FIXES:
