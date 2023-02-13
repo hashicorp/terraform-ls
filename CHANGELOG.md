@@ -3,6 +3,13 @@
 BUG FIXES:
 
  - Continue parsing modules with inaccessible files ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
+ - Fix crash due to `LocalAddr` creation in target collection for JSON files ([hcl-lang#202](https://github.com/hashicorp/hcl-lang/pull/202]))
+
+INTERNAL:
+
+ - Remove `schema.TupleConsExpr` ([hcl-lang#175](https://github.com/hashicorp/hcl-lang/pull/175))
+ - internal/schema: Replace `TupleConsExpr` with `SetExpr` ([terraform-schema#169](https://github.com/hashicorp/terraform-schema/pull/169))
+ - Use upstreamed HCL typexpr package ([terraform-schema#168](https://github.com/hashicorp/terraform-schema/pull/168))
 
 ## 0.30.1 (1 December 2022)
 
