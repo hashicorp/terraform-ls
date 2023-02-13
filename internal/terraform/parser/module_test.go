@@ -83,6 +83,15 @@ func TestParseModuleFiles(t *testing.T) {
 				},
 			},
 		},
+		{
+			"invalid-links",
+			map[string]struct{}{
+				"resources.tf": {},
+			},
+			map[string]hcl.Diagnostics{
+				"resources.tf": nil,
+			},
+		},
 	}
 
 	fs := osFs{}

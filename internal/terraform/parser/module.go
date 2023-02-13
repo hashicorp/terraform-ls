@@ -32,7 +32,9 @@ func ParseModuleFiles(fs FS, modPath string) (ast.ModFiles, ast.ModDiags, error)
 
 		src, err := fs.ReadFile(fullPath)
 		if err != nil {
-			return nil, nil, err
+			// If a file isn't accessible, continue with reading the
+			// remaining module files
+			continue
 		}
 
 		filename := ast.ModFilename(name)
