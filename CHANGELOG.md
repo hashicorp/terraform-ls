@@ -1,4 +1,4 @@
-## 0.30.2 (16 February 2023)
+## 0.30.2 (15 February 2023)
 
 ENHANCEMENTS:
 
