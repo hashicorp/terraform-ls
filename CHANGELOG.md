@@ -1,9 +1,10 @@
-## 0.30.2 (unreleased)
+## 0.30.2 (16 February 2023)
 
 BUG FIXES:
 
  - Continue parsing modules with inaccessible files ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
  - Fix crash due to `LocalAddr` creation in target collection for JSON files ([hcl-lang#202](https://github.com/hashicorp/hcl-lang/pull/202]))
+ - Leverage `TypeConstraintWithDefaults` when parsing default values ([terraform-schema#184](https://github.com/hashicorp/terraform-schema/pull/184))
 
 INTERNAL:
 
