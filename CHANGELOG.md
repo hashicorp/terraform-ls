@@ -1,9 +1,13 @@
-## 0.30.2 (unreleased)
+## 0.30.2 (15 February 2023)
 
+ENHANCEMENTS:
+
+ - Parse `optional()` object attribute _default values_ correctly, as introduced in Terraform v1.3 ([terraform-schema#184](https://github.com/hashicorp/terraform-schema/pull/184))
+ 
 BUG FIXES:
 
- - Continue parsing modules with inaccessible files ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
- - Fix crash due to `LocalAddr` creation in target collection for JSON files ([hcl-lang#202](https://github.com/hashicorp/hcl-lang/pull/202]))
+ - Ignore inaccessible files (such as emacs backup files) ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
+ - Fix crash when parsing JSON files (introduced in 0.30.0) ([hcl-lang#202](https://github.com/hashicorp/hcl-lang/pull/202]))
 
 INTERNAL:
 
