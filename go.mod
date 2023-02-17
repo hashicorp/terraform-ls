@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.26.3
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.43.0
+	github.com/creachadair/jrpc2 v0.44.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.4
