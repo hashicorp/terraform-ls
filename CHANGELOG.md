@@ -1,5 +1,9 @@
 ## 0.30.2 (15 February 2023)
 
+NOTES / BREAKING CHANGES:
+
+ - We have changed our release process: all assets continue to be available from the [HashiCorp Releases site](https://releases.hashicorp.com/terraform-ls) and/or via the [Releases API](https://releases.hashicorp.com/docs/api/v1/), not as GitHub Release assets anymore.
+
 ENHANCEMENTS:
 
  - Parse `optional()` object attribute _default values_ correctly, as introduced in Terraform v1.3 ([terraform-schema#184](https://github.com/hashicorp/terraform-schema/pull/184))
