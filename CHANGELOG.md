@@ -2,7 +2,7 @@
 
 NOTES / BREAKING CHANGES:
 
- - We have changed our release process: all assets are available (and always were and will be) from the [HashiCorp Releases site](https://releases.hashicorp.com/terraform-ls)
+ - We have changed our release process: all assets continue to be available from the [HashiCorp Releases site](https://releases.hashicorp.com/terraform-ls) and/or via the [Releases API](https://releases.hashicorp.com/docs/api/v1/), not as GitHub Release assets anymore.
 
 ENHANCEMENTS:
 
