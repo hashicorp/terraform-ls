@@ -1,3 +1,9 @@
+## 0.30.3 (22 February 2023)
+
+BUG FIXES:
+
+ - Enable static builds of Linux binaries (again) ([#1193](https://github.com/hashicorp/terraform-ls/pull/1193))
+
 ## 0.30.2 (15 February 2023)
 
 NOTES / BREAKING CHANGES:
