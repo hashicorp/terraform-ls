@@ -213,7 +213,7 @@ KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurabl
       "command": ["terraform-ls", "serve"],
       "url": "https://github.com/hashicorp/terraform-ls",
       "highlightingModeRegex": "^Terraform$",
-      "rootIndicationFileNames": ["*.tf"]
+      "rootIndicationFileNames": ["*.tf", "*.tfvars"]
     }
   }
 }
