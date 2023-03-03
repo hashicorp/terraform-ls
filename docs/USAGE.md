@@ -196,3 +196,26 @@ Make sure to read through to [server_configurations.md#terraformls](https://gith
 - In the Server tab, Set *Command* to `terraform-ls` and *Arguments* to `serve`
 - Once you've correctly installed `terraform-ls` and configured BBEdit, the status indicator on this settings panel will flip to green
 - If you'd like to pass any [settings](./SETTINGS.md) to the server you can do so via the *Arguments* field.
+
+## Kate
+
+KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurable. 
+
+- Install the `terraform-ls` package (or the equivalent package name appropriate to your distro)
+- Open Kate configuration (Settings Menu -> `Configure` Kate or Kate -> `Preferences` on macOS)
+- Select *LSP Client* in the left pane
+- Select *User Server Settings* tab
+- Paste the following JSON and *Save*:
+```json
+{
+  "servers": {
+    "terraform": {
+      "command": ["terraform-ls", "serve"],
+      "url": "https://github.com/hashicorp/terraform-ls",
+      "highlightingModeRegex": "^Terraform$",
+      "rootIndicationFileNames": ["*.tf", "*.tfvars"]
+    }
+  }
+}
+```
+- Restart of the editor should *not* be necessary. 
