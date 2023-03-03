@@ -202,7 +202,7 @@ Make sure to read through to [server_configurations.md#terraformls](https://gith
 KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurable. 
 
 - Install the `terraform-ls` package (or the equivalent package name appropriate to your distro)
-- Open Kate configuration ( Settings Menu --> Configure Kate )
+- Open Kate configuration (Settings Menu -> `Configure` Kate or Kate -> `Preferences` on macOS)
 - Select *LSP Client* in the left pane
 - Select *User Server Settings* tab
 - Paste the following JSON and *Save*:
