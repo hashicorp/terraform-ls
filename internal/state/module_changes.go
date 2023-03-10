@@ -31,6 +31,7 @@ type ModuleChanges struct {
 
 	CoreRequirements     bool
 	Backend              bool
+	Cloud                bool
 	ProviderRequirements bool
 	TerraformVersion     bool
 	InstalledProviders   bool
@@ -77,6 +78,9 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 		if len(newMod.Meta.CoreRequirements) > 0 {
 			cb.Changes.CoreRequirements = true
 		}
+		if newMod.Meta.Cloud != nil {
+			cb.Changes.Cloud = true
+		}
 		if newMod.Meta.Backend != nil {
 			cb.Changes.Backend = true
 		}
@@ -95,6 +99,9 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 
 		if len(oldMod.Meta.CoreRequirements) > 0 {
 			cb.Changes.CoreRequirements = true
+		}
+		if oldMod.Meta.Cloud != nil {
+			cb.Changes.Cloud = true
 		}
 		if oldMod.Meta.Backend != nil {
 			cb.Changes.Backend = true
@@ -115,6 +122,9 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 		}
 		if !oldMod.Meta.Backend.Equals(newMod.Meta.Backend) {
 			cb.Changes.Backend = true
+		}
+		if !oldMod.Meta.Cloud.Equals(newMod.Meta.Cloud) {
+			cb.Changes.Cloud = true
 		}
 		if !oldMod.Meta.ProviderRequirements.Equals(newMod.Meta.ProviderRequirements) {
 			cb.Changes.ProviderRequirements = true

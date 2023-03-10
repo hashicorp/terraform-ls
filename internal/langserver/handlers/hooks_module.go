@@ -44,6 +44,25 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 	if len(mod.Meta.CoreRequirements) > 0 {
 		properties["tfRequirements"] = mod.Meta.CoreRequirements.String()
 	}
+	if mod.Meta.Cloud != nil {
+		properties["cloud"] = true
+
+		hostname := mod.Meta.Cloud.Hostname
+
+		// https://developer.hashic orp.com/terraform/language/settings/terraform-cloud#usage-example
+		// Required for Terraform Enterprise;
+		// Defaults to app.terraform.io for Terraform Cloud
+		if hostname == "" {
+			hostname = "app.terraform.io"
+		}
+
+		// anonymize any non-default hostnames
+		if hostname != "app.terraform.io" {
+			hostname = "custom-hostname"
+		}
+
+		properties["cloud.hostname"] = hostname
+	}
 	if mod.Meta.Backend != nil {
 		properties["backend"] = mod.Meta.Backend.Type
 		if data, ok := mod.Meta.Backend.Data.(*backend.Remote); ok {

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/backend"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/hashicorp/terraform-schema/registry"
 
@@ -20,6 +21,7 @@ import (
 type ModuleMetadata struct {
 	CoreRequirements     version.Constraints
 	Backend              *tfmod.Backend
+	Cloud                *backend.Cloud
 	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
 	ProviderRequirements tfmod.ProviderRequirements
 	Variables            map[string]tfmod.Variable
@@ -33,6 +35,10 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 		// version.Constraints is practically immutable once parsed
 		CoreRequirements: mm.CoreRequirements,
 		Filenames:        mm.Filenames,
+	}
+
+	if mm.Cloud != nil {
+		newMm.Cloud = mm.Cloud
 	}
 
 	if mm.Backend != nil {
@@ -924,6 +930,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	mod := oldMod.Copy()
 	mod.Meta = ModuleMetadata{
 		CoreRequirements:     meta.CoreRequirements,
+		Cloud:                meta.Cloud,
 		Backend:              meta.Backend,
 		ProviderReferences:   meta.ProviderReferences,
 		ProviderRequirements: meta.ProviderRequirements,
