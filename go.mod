@@ -26,7 +26,7 @@ require (
 	github.com/otiai10/copy v1.9.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.2
-	github.com/vektra/mockery/v2 v2.21.6
+	github.com/vektra/mockery/v2 v2.22.1
 	github.com/zclconf/go-cty v1.13.0
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
@@ -55,6 +55,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/copier v0.3.5 // indirect
