@@ -49,7 +49,7 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 
 		hostname := mod.Meta.Cloud.Hostname
 
-		// https://developer.hashic orp.com/terraform/language/settings/terraform-cloud#usage-example
+		// https://developer.hashicorp.com/terraform/language/settings/terraform-cloud#usage-example
 		// Required for Terraform Enterprise;
 		// Defaults to app.terraform.io for Terraform Cloud
 		if hostname == "" {
