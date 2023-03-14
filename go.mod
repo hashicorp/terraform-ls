@@ -13,12 +13,12 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.5.0
-	github.com/hashicorp/hcl-lang v0.0.0-20230213134107-bb2205f5b041
+	github.com/hashicorp/hcl-lang v0.0.0-20230310081458-97626944945e
 	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/hashicorp/terraform-exec v0.18.1
 	github.com/hashicorp/terraform-json v0.16.0
 	github.com/hashicorp/terraform-registry-address v0.1.0
-	github.com/hashicorp/terraform-schema v0.0.0-20230215154105-62b19298872f
+	github.com/hashicorp/terraform-schema v0.0.0-20230310150226-9019fdc7a59a
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.5
 	github.com/mitchellh/go-homedir v1.1.0
