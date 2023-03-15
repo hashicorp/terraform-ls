@@ -272,6 +272,17 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 			return handle(ctx, req, svc.TextDocumentFormatting)
 		},
+		"textDocument/signatureHelp": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
+			err := session.CheckInitializationIsConfirmed()
+			if err != nil {
+				return nil, err
+			}
+
+			ctx = ilsp.WithClientCapabilities(ctx, cc)
+			ctx = ilsp.ContextWithClientName(ctx, &clientName)
+
+			return handle(ctx, req, svc.SignatureHelp)
+		},
 		"textDocument/semanticTokens/full": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
 			err := session.CheckInitializationIsConfirmed()
 			if err != nil {
