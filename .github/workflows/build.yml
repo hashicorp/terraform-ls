@@ -62,7 +62,7 @@ jobs:
       - name: "Checkout directory"
         uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # https://github.com/actions/checkout/releases/tag/v3.2.0
       - name: Set up Go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # https://github.com/actions/setup-go/releases/tag/v3.5.0
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 # https://github.com/actions/setup-go/releases/tag/v4.0.0
         with:
           go-version-file: ".go-version"
       - name: Generate provider schemas
