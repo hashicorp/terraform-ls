@@ -246,6 +246,9 @@ func initializeResult(ctx context.Context) lsp.InitializeResult {
 					ChangeNotifications: "workspace/didChangeWorkspaceFolders",
 				},
 			},
+			SignatureHelpProvider: lsp.SignatureHelpOptions{
+				TriggerCharacters: []string{"(", ","},
+			},
 		},
 	}
 
