@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.26.4
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v0.44.0
+	github.com/creachadair/jrpc2 v0.45.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.4
@@ -43,6 +43,7 @@ require (
 	github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/chigopher/pathlib v0.12.0 // indirect
+	github.com/creachadair/mds v0.0.0-20230313153906-9788b6f60568 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/djherbis/buffer v1.2.0 // indirect
 	github.com/djherbis/nio/v3 v3.0.1 // indirect
