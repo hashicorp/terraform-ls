@@ -279,7 +279,6 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			}
 
 			ctx = ilsp.WithClientCapabilities(ctx, cc)
-			ctx = ilsp.ContextWithClientName(ctx, &clientName)
 
 			return handle(ctx, req, svc.SignatureHelp)
 		},

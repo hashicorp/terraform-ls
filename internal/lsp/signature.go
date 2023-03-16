@@ -11,10 +11,11 @@ func ToSignatureHelp(signature *lang.FunctionSignature) *lsp.SignatureHelp {
 		return nil
 	}
 
-	parameters := make([]lsp.ParameterInformation, 0)
+	parameters := make([]lsp.ParameterInformation, 0, len(signature.Parameters))
 	for _, p := range signature.Parameters {
 		parameters = append(parameters, lsp.ParameterInformation{
-			Label:         p.Name,
+			Label: p.Name,
+			// TODO: Support markdown per https://github.com/hashicorp/terraform-ls/issues/1212
 			Documentation: mdplain.Clean(p.Description.Value),
 		})
 	}
@@ -22,7 +23,8 @@ func ToSignatureHelp(signature *lang.FunctionSignature) *lsp.SignatureHelp {
 	return &lsp.SignatureHelp{
 		Signatures: []lsp.SignatureInformation{
 			{
-				Label:           signature.Name,
+				Label: signature.Name,
+				// TODO: Support markdown per https://github.com/hashicorp/terraform-ls/issues/1212
 				Documentation:   mdplain.Clean(signature.Description.Value),
 				Parameters:      parameters,
 				ActiveParameter: signature.ActiveParameter,
