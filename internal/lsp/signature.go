@@ -25,11 +25,11 @@ func ToSignatureHelp(signature *lang.FunctionSignature) *lsp.SignatureHelp {
 			{
 				Label: signature.Name,
 				// TODO: Support markdown per https://github.com/hashicorp/terraform-ls/issues/1212
-				Documentation:   mdplain.Clean(signature.Description.Value),
-				Parameters:      parameters,
-				ActiveParameter: signature.ActiveParameter,
+				Documentation: mdplain.Clean(signature.Description.Value),
+				Parameters:    parameters,
 			},
 		},
+		ActiveParameter: signature.ActiveParameter,
 		ActiveSignature: 0,
 	}
 }
