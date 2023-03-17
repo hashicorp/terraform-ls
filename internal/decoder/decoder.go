@@ -26,6 +26,7 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
+		Functions:        coreFunctions(mod),
 	}
 
 	for _, origin := range mod.RefOrigins {

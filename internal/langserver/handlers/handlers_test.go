@@ -41,7 +41,9 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"completionItem":{}
 				},
 				"hoverProvider": true,
-				"signatureHelpProvider": {},
+				"signatureHelpProvider": {
+					"triggerCharacters":["(",","]
+				},
 				"declarationProvider": {},
 				"definitionProvider": true,
 				"referencesProvider": true,
