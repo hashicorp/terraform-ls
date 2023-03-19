@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
@@ -214,7 +214,7 @@ func TestLangServer_formatting_oldVersion(t *testing.T) {
 			"textDocument": {
 				"uri": "%s/main.tf"
 			}
-		}`, tmpDir.URI)}, code.SystemError.Err())
+		}`, tmpDir.URI)}, jrpc2.SystemError.Err())
 }
 
 func TestLangServer_formatting_variables(t *testing.T) {

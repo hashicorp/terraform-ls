@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -134,7 +133,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	} else {
 		rootURI := string(params.RootURI)
 
-		invalidUriErr := jrpc2.Errorf(code.InvalidParams,
+		invalidUriErr := jrpc2.Errorf(jrpc2.InvalidParams,
 			"Unsupported or invalid URI: %q "+
 				"This is most likely client bug, please report it.", rootURI)
 

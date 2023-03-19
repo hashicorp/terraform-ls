@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/code"
 	rpch "github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -581,7 +580,7 @@ func convertMap(m map[string]rpch.Func) rpch.Map {
 	return hm
 }
 
-const requestCancelled code.Code = -32800
+const requestCancelled jrpc2.Code = -32800
 
 // handle calls a jrpc2.Func compatible function
 func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{}, error) {

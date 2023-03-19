@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -63,5 +63,5 @@ func TestLangServer_workspaceExecuteCommand_validate_argumentError(t *testing.T)
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, cmd.Name("terraform.validate"))}, code.InvalidParams.Err())
+	}`, cmd.Name("terraform.validate"))}, jrpc2.InvalidParams.Err())
 }

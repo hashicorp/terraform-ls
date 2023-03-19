@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/code"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers/command"
@@ -39,7 +38,7 @@ func (svc *service) WorkspaceExecuteCommand(ctx context.Context, params lsp.Exec
 	commandPrefix, _ := lsctx.CommandPrefix(ctx)
 	handler, ok := cmdHandlers(svc).Get(params.Command, commandPrefix)
 	if !ok {
-		return nil, fmt.Errorf("%w: command handler not found for %q", code.MethodNotFound.Err(), params.Command)
+		return nil, fmt.Errorf("%w: command handler not found for %q", jrpc2.MethodNotFound.Err(), params.Command)
 	}
 
 	pt, ok := params.WorkDoneToken.(lsp.ProgressToken)
@@ -52,6 +51,6 @@ func (svc *service) WorkspaceExecuteCommand(ctx context.Context, params lsp.Exec
 
 func removedHandler(errorMessage string) cmd.Handler {
 	return func(context.Context, cmd.CommandArgs) (interface{}, error) {
-		return nil, jrpc2.Errorf(code.MethodNotFound, "REMOVED: %s", errorMessage)
+		return nil, jrpc2.Errorf(jrpc2.MethodNotFound, "REMOVED: %s", errorMessage)
 	}
 }

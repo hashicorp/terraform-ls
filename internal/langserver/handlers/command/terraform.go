@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	"github.com/hashicorp/terraform-ls/internal/uri"
@@ -31,7 +31,7 @@ func (h *CmdHandler) TerraformVersionRequestHandler(ctx context.Context, args cm
 	progress.Report(ctx, "Finding current module info ...")
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
-		return response, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
+		return response, fmt.Errorf("%w: expected module uri argument to be set", jrpc2.InvalidParams.Err())
 	}
 
 	if !uri.IsURIValid(modUri) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
@@ -67,7 +67,7 @@ func TestLangServer_workspaceExecuteCommand_moduleProviders_argumentError(t *tes
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, cmd.Name("module.providers"))}, code.InvalidParams.Err())
+	}`, cmd.Name("module.providers"))}, jrpc2.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_moduleProviders_basic(t *testing.T) {

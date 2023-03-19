@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2"
-	"github.com/creachadair/jrpc2/code"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -66,5 +65,5 @@ func TestLangServer_workspaceExecuteCommand_modules_basic(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"] 
-	}`, cmd.Name("rootmodules"), testFileURI)}, jrpc2.Errorf(code.MethodNotFound, "REMOVED: use module.callers instead"))
+	}`, cmd.Name("rootmodules"), testFileURI)}, jrpc2.Errorf(jrpc2.MethodNotFound, "REMOVED: use module.callers instead"))
 }
