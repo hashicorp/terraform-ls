@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
@@ -17,7 +17,7 @@ import (
 func (h *CmdHandler) TerraformInitHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	dirUri, ok := args.GetString("uri")
 	if !ok || dirUri == "" {
-		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
+		return nil, fmt.Errorf("%w: expected module uri argument to be set", jrpc2.InvalidParams.Err())
 	}
 
 	if !uri.IsURIValid(dirUri) {

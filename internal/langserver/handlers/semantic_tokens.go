@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -24,7 +24,7 @@ func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params l
 		// it didn't claim to support, so we just strictly follow
 		// the protocol here and avoid serving buggy clients.
 		svc.logger.Printf("semantic tokens full request support not announced by client")
-		return tks, code.MethodNotFound.Err()
+		return tks, jrpc2.MethodNotFound.Err()
 	}
 
 	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)

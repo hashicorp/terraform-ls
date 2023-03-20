@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -49,7 +49,7 @@ func TestInitialize_twice(t *testing.T) {
 	    "capabilities": {},
 	    "rootUri": %q,
 	    "processId": 12345
-	}`, tmpDir.URI)}, code.SystemError.Err())
+	}`, tmpDir.URI)}, jrpc2.SystemError.Err())
 }
 
 func TestInitialize_withIncompatibleTerraformVersion(t *testing.T) {
@@ -113,7 +113,7 @@ func TestInitialize_withInvalidRootURI(t *testing.T) {
 	    "capabilities": {},
 	    "processId": 12345,
 	    "rootUri": "meh"
-	}`}, code.InvalidParams.Err())
+	}`}, jrpc2.InvalidParams.Err())
 }
 
 func TestInitialize_multipleFolders(t *testing.T) {

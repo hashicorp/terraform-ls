@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/stretchr/testify/mock"
@@ -34,5 +34,5 @@ func TestShutdown_twice(t *testing.T) {
 
 	ls.CallAndExpectError(t, &langserver.CallRequest{
 		Method: "shutdown", ReqParams: `{}`},
-		code.InvalidRequest.Err())
+		jrpc2.InvalidRequest.Err())
 }

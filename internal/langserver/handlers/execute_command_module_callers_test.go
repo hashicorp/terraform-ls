@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
@@ -67,7 +67,7 @@ func TestLangServer_workspaceExecuteCommand_moduleCallers_argumentError(t *testi
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, cmd.Name("module.callers"))}, code.InvalidParams.Err())
+	}`, cmd.Name("module.callers"))}, jrpc2.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_moduleCallers_basic(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
@@ -66,7 +66,7 @@ func TestLangServer_workspaceExecuteCommand_init_argumentError(t *testing.T) {
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q
-	}`, cmd.Name("terraform.init"))}, code.InvalidParams.Err())
+	}`, cmd.Name("terraform.init"))}, jrpc2.InvalidParams.Err())
 }
 
 func TestLangServer_workspaceExecuteCommand_init_basic(t *testing.T) {
@@ -242,5 +242,5 @@ func TestLangServer_workspaceExecuteCommand_init_error(t *testing.T) {
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
 		"arguments": ["uri=%s"]
-	}`, cmd.Name("terraform.init"), testFileURI)}, code.SystemError.Err())
+	}`, cmd.Name("terraform.init"), testFileURI)}, jrpc2.SystemError.Err())
 }

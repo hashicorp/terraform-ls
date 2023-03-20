@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -33,7 +33,7 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
-		return response, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
+		return response, fmt.Errorf("%w: expected module uri argument to be set", jrpc2.InvalidParams.Err())
 	}
 
 	if !uri.IsURIValid(modUri) {

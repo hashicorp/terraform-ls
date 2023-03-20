@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
@@ -24,7 +24,7 @@ type moduleCaller struct {
 func (h *CmdHandler) ModuleCallersHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	modUri, ok := args.GetString("uri")
 	if !ok || modUri == "" {
-		return nil, fmt.Errorf("%w: expected module uri argument to be set", code.InvalidParams.Err())
+		return nil, fmt.Errorf("%w: expected module uri argument to be set", jrpc2.InvalidParams.Err())
 	}
 
 	if !uri.IsURIValid(modUri) {

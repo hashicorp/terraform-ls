@@ -3,10 +3,10 @@ package session
 import (
 	"fmt"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 )
 
-const SessionNotInitialized code.Code = -32002
+const SessionNotInitialized jrpc2.Code = -32002
 
 type unexpectedSessionState struct {
 	ExpectedState sessionState
@@ -27,7 +27,7 @@ func SessionNotInitializedErr(state sessionState) error {
 		return fmt.Errorf("%w: %s", SessionNotInitialized.Err(), uss)
 	}
 	if state == stateDown {
-		return fmt.Errorf("%w: %s", code.InvalidRequest.Err(), uss)
+		return fmt.Errorf("%w: %s", jrpc2.InvalidRequest.Err(), uss)
 	}
 
 	return uss
@@ -35,12 +35,12 @@ func SessionNotInitializedErr(state sessionState) error {
 
 func SessionAlreadyInitializedErr(reqID string) error {
 	return fmt.Errorf("%w: session was already initialized via request ID %s",
-		code.SystemError.Err(), reqID)
+		jrpc2.SystemError.Err(), reqID)
 }
 
 func SessionAlreadyDownErr(reqID string) error {
 	return fmt.Errorf("%w: session was already shut down via request %s",
-		code.InvalidRequest.Err(), reqID)
+		jrpc2.InvalidRequest.Err(), reqID)
 }
 
 type InvalidURIErr struct {

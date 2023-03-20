@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creachadair/jrpc2/code"
+	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -65,5 +65,5 @@ func TestLangServer_workspaceExecuteCommand_noCommandHandlerError(t *testing.T) 
 		Method: "workspace/executeCommand",
 		ReqParams: `{
 		"command": "notfound"
-	}`}, code.MethodNotFound.Err())
+	}`}, jrpc2.MethodNotFound.Err())
 }
