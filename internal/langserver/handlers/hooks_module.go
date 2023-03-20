@@ -68,8 +68,14 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 		if data, ok := mod.Meta.Backend.Data.(*backend.Remote); ok {
 			hostname := data.Hostname
 
+			// https://developer.hashicorp.com/terraform/language/settings/backends/remote#hostname
+			// Defaults to app.terraform.io for Terraform Cloud
+			if hostname == "" {
+				hostname = "app.terraform.io"
+			}
+
 			// anonymize any non-default hostnames
-			if hostname != "" && hostname != "app.terraform.io" {
+			if hostname != "app.terraform.io" {
 				hostname = "custom-hostname"
 			}
 
