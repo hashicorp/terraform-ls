@@ -79,10 +79,10 @@ github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnht
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
 github.com/coreos/go-systemd/v22 v22.3.3-0.20220203105225-a9a7ef127534/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
-github.com/creachadair/jrpc2 v0.46.0 h1:ahMNQN8Q6oJDC6Zn/TPK1YRAP5alFQ5hk2h5tzBVifE=
-github.com/creachadair/jrpc2 v0.46.0/go.mod h1:O7R/rmcUivGXUkfmbuWevcLv6f1xbKVSoMvmhW4/fr8=
-github.com/creachadair/mds v0.0.0-20230313153906-9788b6f60568 h1:LzMDPh2FLXEHnQNTjGJT+vInPSDVOUTuzqE4GskHTNg=
-github.com/creachadair/mds v0.0.0-20230313153906-9788b6f60568/go.mod h1:caBACU+n1Q/rZ252FTzfnG0/H+ZUi+UnIQtEOraMv/g=
+github.com/creachadair/jrpc2 v1.0.0 h1:MJecUFNbda24o0Qa4CYru5NJvs6BEnmzupdAx3f7+98=
+github.com/creachadair/jrpc2 v1.0.0/go.mod h1:VNiDz7Qbua37RrefUJdMki9dVmsbrQPIQOPy907UvtE=
+github.com/creachadair/mds v0.0.0-20230319162523-c2ef70fc176d h1:WIvSzW0rx1LAEVqE4oLLfYmqwrxY9aytyooR2rOUhB0=
+github.com/creachadair/mds v0.0.0-20230319162523-c2ef70fc176d/go.mod h1:caBACU+n1Q/rZ252FTzfnG0/H+ZUi+UnIQtEOraMv/g=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
