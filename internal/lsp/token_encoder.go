@@ -145,6 +145,9 @@ func (te *TokenEncoder) resolveTokenType(token lang.SemanticToken) (semtok.Token
 	case lang.TokenTypePrimitive:
 		return te.firstSupportedTokenType(
 			semtok.TokenType(lang.TokenTypePrimitive), semtok.TokenTypeKeyword)
+	case lang.TokenFunctionName:
+		return te.firstSupportedTokenType(
+			semtok.TokenType(lang.TokenFunctionName), semtok.TokenTypeFunction)
 	}
 
 	return "", false

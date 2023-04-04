@@ -56,6 +56,7 @@ Fallback types are chosen based on meaningful semantic mapping and default theme
 | `hcl-traversalStep` | `variable` |
 | `hcl-typeCapsule` | `function` |
 | `hcl-typePrimitive` | `keyword` |
+| `hcl-functionName` | `function` |
 
 #### Token Modifiers
 
