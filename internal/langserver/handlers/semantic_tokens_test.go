@@ -381,3 +381,123 @@ func TestVarsSemanticTokensFull(t *testing.T) {
 			}
 		}`)
 }
+
+func TestVarsSemanticTokensFull_functionToken(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	var testSchema tfjson.ProviderSchemas
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("1.0.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {
+			"textDocument": {
+				"semanticTokens": {
+					"tokenTypes": [
+						"type",
+						"property",
+						"string",
+						"function"
+					],
+					"tokenModifiers": [
+						"defaultLibrary",
+						"deprecated"
+					],
+					"requests": {
+						"full": true
+					}
+				}
+			}
+		},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "locals {\n  foo = abs(-42)\n}\n",
+			"uri": "%s/locals.tf"
+		}
+	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/semanticTokens/full",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/locals.tf"
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"data": [
+					0,0,6,3,0,
+					1,2,3,1,0,
+					0,6,3,0,0
+				]
+			}
+		}`)
+}
