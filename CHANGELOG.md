@@ -1,3 +1,46 @@
+## 0.31.0-beta (6 April 2023)
+
+ENHANCEMENTS:
+
+* Add support for nested expressions and functions ([#1237](https://github.com/hashicorp/terraform-ls/pull/1237))
+* Add support for function signature help in ([#1077](https://github.com/hashicorp/terraform-ls/pull/1077))
+* Fix remote backend tracking in ([#1218](https://github.com/hashicorp/terraform-ls/pull/1218))
+* lsp: Recognise new token type for function names in ([#1233](https://github.com/hashicorp/terraform-ls/pull/1233))
+
+INTERNAL:
+
+* Add instructions for Kate editor by @eternaltyro in https://github.com/hashicorp/terraform-ls/pull/1200
+* Add TFC usage detection by @jpogran in https://github.com/hashicorp/terraform-ls/pull/1208
+* build(deps): bump actions/checkout from 3.3.0 to 3.4.0 ([#1215](https://github.com/hashicorp/terraform-ls/pull/1215))
+* build(deps): bump actions/checkout from 3.4.0 to 3.5.0 ([#1228](https://github.com/hashicorp/terraform-ls/pull/1228))
+* build(deps): bump actions/setup-go from 3.5.0 to 4.0.0 ([#1214](https://github.com/hashicorp/terraform-ls/pull/1214))
+* build(deps): bump actions/stale from 7.0.0 to 8.0.0 ([#1222](https://github.com/hashicorp/terraform-ls/pull/1222))
+* build(deps): bump github.com/algolia/algoliasearch-client-go/v3 from 3.26.3 to 3.26.4 ([#1198](https://github.com/hashicorp/terraform-ls/pull/1198))
+* build(deps): bump github.com/algolia/algoliasearch-client-go/v3 from 3.26.4 to 3.26.5 ([#1230](https://github.com/hashicorp/terraform-ls/pull/1230))
+* build(deps): bump github.com/algolia/algoliasearch-client-go/v3 from 3.26.5 to 3.27.0 ([#1231](https://github.com/hashicorp/terraform-ls/pull/1231))
+* build(deps): bump github.com/creachadair/jrpc2 from 0.44.0 to 0.45.0 ([#1213](https://github.com/hashicorp/terraform-ls/pull/1213))
+* build(deps): bump github.com/creachadair/jrpc2 from 0.46.0 to 1.0.0 ([#1227](https://github.com/hashicorp/terraform-ls/pull/1227))
+* build(deps): bump github.com/creachadair/jrpc2 to v0.46.0 ([#1217](https://github.com/hashicorp/terraform-ls/pull/1217))
+* build(deps): bump github.com/hashicorp/hc-install from 0.5.0 to 0.5.1 ([#1232](https://github.com/hashicorp/terraform-ls/pull/1232))
+* build(deps): bump github.com/hashicorp/hcl/v2 from 2.16.1 to 2.16.2 ([#1205](https://github.com/hashicorp/terraform-ls/pull/1205))
+* build(deps): bump github.com/hashicorp/terraform-exec from 0.18.0 to 0.18.1 ([#1201](https://github.com/hashicorp/terraform-ls/pull/1201))
+* build(deps): bump github.com/hashicorp/terraform-json from 0.15.0 to 0.16.0 ([#1206](https://github.com/hashicorp/terraform-ls/pull/1206))
+* build(deps): bump github.com/hashicorp/terraform-registry-address from 0.0.0-20220623143253-7d51757b572c to 0.1.0 ([#1196](https://github.com/hashicorp/terraform-ls/pull/1196))
+* build(deps): bump github.com/hashicorp/terraform-registry-address from 0.1.0 to 0.2.0 ([#1226](https://github.com/hashicorp/terraform-ls/pull/1226))
+* build(deps): bump github.com/otiai10/copy from 1.9.0 to 1.10.0 ([#1236](https://github.com/hashicorp/terraform-ls/pull/1236))
+* build(deps): bump github.com/stretchr/testify from 1.8.1 to 1.8.2 ([#1199](https://github.com/hashicorp/terraform-ls/pull/1199))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.20.2 to 2.21.1 ([#1202](https://github.com/hashicorp/terraform-ls/pull/1202))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.21.1 to 2.21.4 ([#1204](https://github.com/hashicorp/terraform-ls/pull/1204))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.21.4 to 2.21.6 ([#1207](https://github.com/hashicorp/terraform-ls/pull/1207))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.21.6 to 2.22.1 ([#1209](https://github.com/hashicorp/terraform-ls/pull/1209))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.22.1 to 2.23.0 ([#1219](https://github.com/hashicorp/terraform-ls/pull/1219))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.23.0 to 2.23.1 ([#1221](https://github.com/hashicorp/terraform-ls/pull/1221))
+* build(deps): bump github.com/vektra/mockery/v2 from 2.23.1 to 2.23.2 ([#1235](https://github.com/hashicorp/terraform-ls/pull/1235))
+* build(deps): bump github.com/zclconf/go-cty from 1.12.1 to 1.13.0 ([#1197](https://github.com/hashicorp/terraform-ls/pull/1197))
+* build(deps): bump github.com/zclconf/go-cty from 1.13.0 to 1.13.1 ([#1216](https://github.com/hashicorp/terraform-ls/pull/1216))
+* build(deps): bump golang.org/x/tools from 0.6.0 to 0.7.0 ([#1203](https://github.com/hashicorp/terraform-ls/pull/1203))
+* build(deps): Bump hcl-lang & terraform-schema to latest revisions ([#1237](https://github.com/hashicorp/terraform-ls/pull/1237))
+
 ## 0.30.3 (22 February 2023)
 
 BUG FIXES:
