@@ -2,7 +2,7 @@
 
 ENHANCEMENTS:
 
-* Add support for nested expressions and functions ([#1237](https://github.com/hashicorp/terraform-ls/pull/1237))
+* Add support for nested expressions and functions ([#1237](https://github.com/hashicorp/terraform-ls/pull/1237), [hcl-lang#232](https://github.com/hashicorp/hcl-lang/pull/232), [hcl-lang#203](https://github.com/hashicorp/hcl-lang/pull/203), [hcl-lang#199](https://github.com/hashicorp/hcl-lang/pull/199), [hcl-lang#186](https://github.com/hashicorp/hcl-lang/pull/186), [hcl-lang#185](https://github.com/hashicorp/hcl-lang/pull/185), [hcl-lang#184](https://github.com/hashicorp/hcl-lang/pull/184), )
 * Add support for function signature help in ([#1077](https://github.com/hashicorp/terraform-ls/pull/1077))
 * Fix remote backend tracking in ([#1218](https://github.com/hashicorp/terraform-ls/pull/1218))
 * lsp: Recognise new token type for function names in ([#1233](https://github.com/hashicorp/terraform-ls/pull/1233))
