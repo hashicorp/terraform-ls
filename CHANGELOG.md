@@ -9,8 +9,8 @@ ENHANCEMENTS:
 
 INTERNAL:
 
-* Add instructions for Kate editor by @eternaltyro in https://github.com/hashicorp/terraform-ls/pull/1200
-* Add TFC usage detection by @jpogran in https://github.com/hashicorp/terraform-ls/pull/1208
+* Add instructions for Kate editor ([#1200](https://github.com/hashicorp/terraform-ls/pull/1200))
+* Add TFC usage detection ([#1208](https://github.com/hashicorp/terraform-ls/pull/1208))
 * build(deps): bump actions/checkout from 3.3.0 to 3.4.0 ([#1215](https://github.com/hashicorp/terraform-ls/pull/1215))
 * build(deps): bump actions/checkout from 3.4.0 to 3.5.0 ([#1228](https://github.com/hashicorp/terraform-ls/pull/1228))
 * build(deps): bump actions/setup-go from 3.5.0 to 4.0.0 ([#1214](https://github.com/hashicorp/terraform-ls/pull/1214))
