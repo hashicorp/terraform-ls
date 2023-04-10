@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 binary {
 	go_modules = true # Scan the Go modules found in the binary
 	osv        = true  # Use the Open Source Vulnerabilities (OSV) database
