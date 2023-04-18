@@ -1,3 +1,25 @@
+## 0.31.0 (18 April 2023)
+
+ENHANCEMENTS:
+
+* Add support for nested expressions and functions ([#1237](https://github.com/hashicorp/terraform-ls/pull/1237), [hcl-lang#232](https://github.com/hashicorp/hcl-lang/pull/232), [hcl-lang#203](https://github.com/hashicorp/hcl-lang/pull/203), [hcl-lang#199](https://github.com/hashicorp/hcl-lang/pull/199), [hcl-lang#186](https://github.com/hashicorp/hcl-lang/pull/186), [hcl-lang#185](https://github.com/hashicorp/hcl-lang/pull/185), [hcl-lang#184](https://github.com/hashicorp/hcl-lang/pull/184))
+* Add support for function signature help in ([#1077](https://github.com/hashicorp/terraform-ls/pull/1077))
+* Fix remote backend tracking in ([#1218](https://github.com/hashicorp/terraform-ls/pull/1218))
+* lsp: Recognise new token type for function names in ([#1233](https://github.com/hashicorp/terraform-ls/pull/1233))
+
+INTERNAL:
+
+* Add instructions for Kate editor ([#1200](https://github.com/hashicorp/terraform-ls/pull/1200))
+* Add TFC usage detection ([#1208](https://github.com/hashicorp/terraform-ls/pull/1208))
+
+BUG FIXES:
+
+* Reflect `LiteralValue`, `Description` & `IsDeprecated` in completion/hover ([hcl-lang#253](https://github.com/hashicorp/hcl-lang/pull/253))
+* Fix crash when completing `LiteralType{Type: cty.Tuple}` ([hcl-lang#255](https://github.com/hashicorp/hcl-lang/pull/255))
+* Display `Tuple` hover data on invalid element ([hcl-lang#254](https://github.com/hashicorp/hcl-lang/pull/254))
+* Fix collection of implied declared targets of complex types ([hcl-lang#259](https://github.com/hashicorp/hcl-lang/pull/259))
+* Collect targets w/ interpolation for `Any` correctly ([hcl-lang#257](https://github.com/hashicorp/hcl-lang/pull/257))
+
 ## 0.31.0-beta (6 April 2023)
 
 ENHANCEMENTS:
