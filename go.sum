@@ -671,8 +671,8 @@ github.com/ultraware/whitespace v0.0.5 h1:hh+/cpIcopyMYbZNVov9iSxvJU3OYQg78Sfaqz
 github.com/ultraware/whitespace v0.0.5/go.mod h1:aVMh/gQve5Maj9hQ/hg+F75lr/X5A89uZnzAmWSineA=
 github.com/uudashr/gocognit v1.0.6 h1:2Cgi6MweCsdB6kpcVQp7EW4U23iBFQWfTXiWlyp842Y=
 github.com/uudashr/gocognit v1.0.6/go.mod h1:nAIUuVBnYU7pcninia3BHOvQkpQCeO76Uscky5BOwcY=
-github.com/vektra/mockery/v2 v2.25.0 h1:bIJfKXmWUBzNkxPhqmT73qK8v0f+qv9lwcQT1l95oKE=
-github.com/vektra/mockery/v2 v2.25.0/go.mod h1:Og8L6VjOvLNzqLpjC2K1Ko8JHwdYfT83CuQU8jll9+I=
+github.com/vektra/mockery/v2 v2.25.1 h1:KtbJ9ysme0dfVvB3lM62FiOGd5IQXAQR4ZINrqi0T1w=
+github.com/vektra/mockery/v2 v2.25.1/go.mod h1:Og8L6VjOvLNzqLpjC2K1Ko8JHwdYfT83CuQU8jll9+I=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/yagipy/maintidx v1.0.0 h1:h5NvIsCz+nRDapQ0exNv4aJ0yXSI0420omVANTv3GJM=
