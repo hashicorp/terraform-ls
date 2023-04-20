@@ -16,6 +16,7 @@ import (
 type ExperimentalFeatures struct {
 	ValidateOnSave        bool `mapstructure:"validateOnSave"`
 	PrefillRequiredFields bool `mapstructure:"prefillRequiredFields"`
+	ProcessJobsAsync      bool `mapstructure:"processJobsAsync"`
 }
 
 type Indexing struct {

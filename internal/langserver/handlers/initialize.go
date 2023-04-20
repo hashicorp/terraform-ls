@@ -211,6 +211,7 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.indexing.ignorePaths"] = len(out.Options.Indexing.IgnorePaths) > 0
 	properties["options.experimentalFeatures.prefillRequiredFields"] = out.Options.ExperimentalFeatures.PrefillRequiredFields
 	properties["options.experimentalFeatures.validateOnSave"] = out.Options.ExperimentalFeatures.ValidateOnSave
+	properties["options.experimentalFeatures.processJobsAsync"] = out.Options.ExperimentalFeatures.ProcessJobsAsync
 	properties["options.ignoreSingleFileWarning"] = out.Options.IgnoreSingleFileWarning
 	properties["options.terraform.path"] = len(out.Options.Terraform.Path) > 0
 	properties["options.terraform.timeout"] = out.Options.Terraform.Timeout
