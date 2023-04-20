@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jrpc2"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -69,6 +70,15 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		if err != nil {
 			return err
 		}
+	}
+
+	expFeatures, err := lsctx.ExperimentalFeatures(ctx)
+	if err != nil {
+		return err
+	}
+
+	if expFeatures.ProcessJobsAsync {
+		return nil
 	}
 
 	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
