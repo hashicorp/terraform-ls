@@ -151,6 +151,9 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+
 			return handle(ctx, req, svc.TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
