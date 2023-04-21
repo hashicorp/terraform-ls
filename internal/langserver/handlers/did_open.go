@@ -78,6 +78,7 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	if expFeatures.ProcessJobsAsync {
+		// Return early without waiting on jobs
 		return nil
 	}
 

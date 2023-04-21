@@ -5,11 +5,17 @@ package handlers
 
 import (
 	"context"
+	"time"
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+)
+
+var (
+	jobTimer                 *time.Timer
+	startProcessingJobsAfter = 500 * time.Millisecond
 )
 
 func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
@@ -60,13 +66,26 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
+	if expFeatures.ProcessJobsAsync {
+		// Stop the timer from the previous request
+		if jobTimer != nil {
+			jobTimer.Stop()
+		}
+
+		// Set up a timer that will fire if no new didChange requests
+		// were triggered in the specified duration.
+		jobTimer = time.AfterFunc(startProcessingJobsAfter, func() {
+			_, err = svc.indexer.DocumentChanged(dh.Dir)
+			svc.logger.Printf("error scheduling jobs: %s", err)
+		})
+
+		// Return early without waiting on jobs
+		return nil
+	}
+
 	jobIds, err := svc.indexer.DocumentChanged(dh.Dir)
 	if err != nil {
 		return err
-	}
-
-	if expFeatures.ProcessJobsAsync {
-		return nil
 	}
 
 	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
