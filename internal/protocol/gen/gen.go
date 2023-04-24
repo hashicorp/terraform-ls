@@ -1,6 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
+//go:build generate
 // +build generate
 
 package main
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	goplsRef = "gopls/v0.8.4"
+	goplsRef = "gopls/v0.9.5"
 	urlFmt   = "https://raw.githubusercontent.com/golang/tools" +
 		"/%s/internal/lsp/protocol/tsprotocol.go"
 )
@@ -43,7 +44,7 @@ func main() {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Fatalf("status code: %d", resp.StatusCode)
+		log.Fatalf("status code: %d (%s)", resp.StatusCode, url)
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
