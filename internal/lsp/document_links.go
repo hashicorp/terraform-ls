@@ -8,12 +8,12 @@ import (
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
-func Links(links []lang.Link, caps lsp.DocumentLinkClientCapabilities) []lsp.DocumentLink {
+func Links(links []lang.Link, caps *lsp.DocumentLinkClientCapabilities) []lsp.DocumentLink {
 	docLinks := make([]lsp.DocumentLink, len(links))
 
 	for i, link := range links {
 		tooltip := ""
-		if caps.TooltipSupport {
+		if caps != nil && caps.TooltipSupport {
 			tooltip = link.Tooltip
 		}
 		docLinks[i] = lsp.DocumentLink{

@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	goplsRef = "gopls/v0.9.5"
+	goplsRef = "gopls/v0.10.0"
 	urlFmt   = "https://raw.githubusercontent.com/golang/tools" +
-		"/%s/internal/lsp/protocol/%s"
+		"/%s/gopls/internal/lsp/protocol/%s"
 )
 
 func main() {

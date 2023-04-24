@@ -64,7 +64,6 @@ func TestCompletionResolve_withoutHook(t *testing.T) {
 			"id": 2,
 			"result": {
 				"label": "\"test\"",
-				"labelDetails": {},
 				"kind": 1,
 				"data": {
 					"resolve_hook": "test",

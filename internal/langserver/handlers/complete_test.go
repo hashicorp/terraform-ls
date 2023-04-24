@@ -149,16 +149,9 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "alias",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
@@ -179,7 +172,6 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 					},
 					{
 						"label": "anonymous",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, number",
 						"documentation": "Desc 1",
@@ -200,7 +192,6 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 					},
 					{
 						"label": "base_url",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Desc 2",
@@ -221,7 +212,6 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 					},
 					{
 						"label": "individual",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, bool",
 						"documentation": "Desc 3",
@@ -242,7 +232,6 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 					},
 					{
 						"label": "version",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
@@ -353,16 +342,9 @@ func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "default",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, any type",
 						"documentation": "Default value to use when variable is not explicitly set",
@@ -383,7 +365,6 @@ func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
 					},
 					{
 						"label": "description",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Description to document the purpose of the variable and what value is expected",
@@ -404,7 +385,6 @@ func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
 					},
 					{
 						"label": "type",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, type",
 						"documentation": "Type constraint restricting the type of value to accept, e.g. string or list(string)",
@@ -515,16 +495,9 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "default",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, any type",
 						"documentation": "Default value to use when variable is not explicitly set",
@@ -545,7 +518,6 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 					},
 					{
 						"label": "description",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Description to document the purpose of the variable and what value is expected",
@@ -566,7 +538,6 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 					},
 					{
 						"label": "sensitive",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, bool",
 						"documentation": "Whether the variable contains sensitive material and should be hidden in the UI",
@@ -587,7 +558,6 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 					},
 					{
 						"label": "type",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, type",
 						"documentation": "Type constraint restricting the type of value to accept, e.g. string or list(string)",
@@ -608,7 +578,6 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 					},
 					{
 						"label": "validation",
-						"labelDetails": {},
 						"kind": 7,
 						"detail": "Block",
 						"documentation": "Custom validation rule to restrict what value is expected for the variable",
@@ -742,16 +711,9 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "alias",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Alias for using the same provider with different configurations for different resources, e.g. eu-west",
@@ -772,7 +734,6 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "anonymous",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, number",
 						"documentation": "Desc 1",
@@ -797,7 +758,6 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "base_url",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Desc 2",
@@ -822,7 +782,6 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "individual",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, bool",
 						"documentation": "Desc 3",
@@ -847,7 +806,6 @@ func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 					},
 					{
 						"label": "version",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Specifies a version constraint for the provider, e.g. ~\u003e 1.0",
@@ -1057,16 +1015,9 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "test",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, string",
 						"insertTextFormat":1,
@@ -1210,16 +1161,9 @@ output "test" {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "providers",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, map of provider references",
 						"documentation": "Explicit mapping of providers which the module uses",
@@ -1240,7 +1184,6 @@ output "test" {
 					},
 					{
 						"label": "testvar",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, string",
 						"insertTextFormat": 1,
@@ -1260,7 +1203,6 @@ output "test" {
 					},
 					{
 						"label": "version",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
@@ -1298,16 +1240,9 @@ output "test" {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "module.refname.testout",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "number",
 						"insertTextFormat": 1,
@@ -1480,16 +1415,9 @@ output "test" {
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "alpha-var",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, string",
 						"insertTextFormat": 1,
@@ -1509,7 +1437,6 @@ output "test" {
 					},
 					{
 						"label": "providers",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, map of provider references",
 						"documentation": "Explicit mapping of providers which the module uses",
@@ -1530,7 +1457,6 @@ output "test" {
 					},
 					{
 						"label": "version",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
@@ -1568,16 +1494,9 @@ output "test" {
 			"id": 4,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "beta-var",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "required, number",
 						"insertTextFormat": 1,
@@ -1597,7 +1516,6 @@ output "test" {
 					},
 					{
 						"label": "providers",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, map of provider references",
 						"documentation": "Explicit mapping of providers which the module uses",
@@ -1618,7 +1536,6 @@ output "test" {
 					},
 					{
 						"label": "version",
-						"labelDetails": {},
 						"kind": 10,
 						"detail": "optional, string",
 						"documentation": "Constraint to set the version of the module, e.g. ~\u003e 1.0. Only applicable to modules in a module registry.",
@@ -1656,16 +1573,9 @@ output "test" {
 			"id": 5,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "module.alpha",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "object",
 						"insertTextFormat": 1,
@@ -1685,7 +1595,6 @@ output "test" {
 					},
 					{
 						"label": "module.beta",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "object",
 						"insertTextFormat": 1,
@@ -1820,16 +1729,9 @@ variable "ccc" {}
 			"id": 3,
 			"result": {
 				"isIncomplete": false,
-				"itemDefaults": {
-					"editRange": {
-						"start": {"line": 0, "character": 0},
-						"end": {"line": 0, "character": 0}
-					}
-				},
 				"items": [
 					{
 						"label": "var.aaa",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "dynamic",
 						"insertTextFormat": 1,
@@ -1849,7 +1751,6 @@ variable "ccc" {}
 					},
 					{
 						"label": "var.bbb",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "dynamic",
 						"insertTextFormat": 1,
@@ -1869,7 +1770,6 @@ variable "ccc" {}
 					},
 					{
 						"label": "var.ccc",
-						"labelDetails": {},
 						"kind": 6,
 						"detail": "dynamic",
 						"insertTextFormat": 1,

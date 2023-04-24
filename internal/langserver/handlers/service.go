@@ -492,7 +492,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 			moduleHooks = append(moduleHooks, callRefreshClientCommand(svc.server, commandId))
 		}
 
-		if cc.Workspace.SemanticTokens.RefreshSupport {
+		if cc.Workspace.SemanticTokens != nil && cc.Workspace.SemanticTokens.RefreshSupport {
 			moduleHooks = append(moduleHooks, refreshSemanticTokens(svc.server))
 		}
 	}
