@@ -3,4 +3,4 @@
 
 package protocol
 
-//go:generate go run ./gen/gen.go -- protocol.go
+//go:generate go run ./gen/gen.go -- tsprotocol.go protocol.go

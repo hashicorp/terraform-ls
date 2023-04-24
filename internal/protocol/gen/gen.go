@@ -18,7 +18,7 @@ import (
 const (
 	goplsRef = "gopls/v0.9.5"
 	urlFmt   = "https://raw.githubusercontent.com/golang/tools" +
-		"/%s/internal/lsp/protocol/tsprotocol.go"
+		"/%s/internal/lsp/protocol/%s"
 )
 
 func main() {
@@ -27,16 +27,18 @@ func main() {
 		args = args[1:]
 	}
 
-	if len(args) != 1 {
-		log.Fatalf("expected exactly 1 argument (target path), given: %q", args)
+	if len(args) != 2 {
+		log.Fatalf("expected exactly 2 arguments (source filename & target path), given: %q", args)
 	}
 
-	filename, err := filepath.Abs(args[0])
+	sourceFilename := args[0]
+
+	targetFilename, err := filepath.Abs(args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	url := fmt.Sprintf(urlFmt, goplsRef)
+	url := fmt.Sprintf(urlFmt, goplsRef, sourceFilename)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -52,12 +54,12 @@ func main() {
 		log.Fatalf("failed reading body: %s", err)
 	}
 
-	f, err := os.Create(filename)
+	f, err := os.Create(targetFilename)
 	if err != nil {
 		log.Fatalf("failed to create file: %s", err)
 	}
 
 	n, err := f.Write(b)
 
-	fmt.Printf("%d bytes written to %s\n", n, filename)
+	fmt.Printf("%d bytes written to %s\n", n, targetFilename)
 }
