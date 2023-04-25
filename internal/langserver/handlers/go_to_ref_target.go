@@ -23,7 +23,7 @@ func (svc *service) GoToDefinition(ctx context.Context, params lsp.TextDocumentP
 		return nil, err
 	}
 
-	return ilsp.RefTargetsToLocationLinks(targets, cc.TextDocument.Definition.LinkSupport), nil
+	return ilsp.RefTargetsToDefinitionLocationLinks(targets, cc.TextDocument.Definition), nil
 }
 
 func (svc *service) GoToDeclaration(ctx context.Context, params lsp.TextDocumentPositionParams) (interface{}, error) {
@@ -37,7 +37,7 @@ func (svc *service) GoToDeclaration(ctx context.Context, params lsp.TextDocument
 		return nil, err
 	}
 
-	return ilsp.RefTargetsToLocationLinks(targets, cc.TextDocument.Declaration.LinkSupport), nil
+	return ilsp.RefTargetsToDeclarationLocationLinks(targets, cc.TextDocument.Declaration), nil
 }
 
 func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocumentPositionParams) (decoder.ReferenceTargets, error) {

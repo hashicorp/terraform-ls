@@ -40,14 +40,13 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				},
 				"completionProvider": {
 					"triggerCharacters": [".", "["],
-					"resolveProvider": true,
-					"completionItem":{}
+					"resolveProvider": true
 				},
 				"hoverProvider": true,
 				"signatureHelpProvider": {
 					"triggerCharacters":["(",","]
 				},
-				"declarationProvider": {},
+				"declarationProvider": true,
 				"definitionProvider": true,
 				"referencesProvider": true,
 				"documentSymbolProvider": true,
@@ -58,9 +57,6 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				"documentLinkProvider": {},
 				"workspaceSymbolProvider": true,
 				"documentFormattingProvider": true,
-				"documentOnTypeFormattingProvider": {
-					"firstTriggerCharacter": ""
-				},
 				"executeCommandProvider": {
 					"commands": %s,
 					"workDoneProgress":true
@@ -69,14 +65,14 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 					"legend": {
 						"tokenTypes": [],
 						"tokenModifiers": []
-					},
-					"full": false
+					}
 				},
 				"workspace": {
 					"workspaceFolders": {
 						"supported": true,
 						"changeNotifications": "workspace/didChangeWorkspaceFolders"
-					}
+					},
+					"fileOperations": {}
 				},
 				"experimental": {
 					"referenceCountCodeLens": false,
@@ -86,7 +82,8 @@ func initializeResponse(t *testing.T, commandPrefix string) string {
 				}
 			},
 			"serverInfo": {
-				"name": "terraform-ls"
+				"name": "terraform-ls",
+				"version": ""
 			}
 		}
 	}`, string(jsonArray))

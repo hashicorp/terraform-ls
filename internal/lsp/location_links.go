@@ -11,6 +11,20 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
+func RefTargetsToDefinitionLocationLinks(targets decoder.ReferenceTargets, defCaps *lsp.DefinitionClientCapabilities) interface{} {
+	if defCaps == nil {
+		return RefTargetsToLocationLinks(targets, false)
+	}
+	return RefTargetsToLocationLinks(targets, defCaps.LinkSupport)
+}
+
+func RefTargetsToDeclarationLocationLinks(targets decoder.ReferenceTargets, declCaps *lsp.DeclarationClientCapabilities) interface{} {
+	if declCaps == nil {
+		return RefTargetsToLocationLinks(targets, false)
+	}
+	return RefTargetsToLocationLinks(targets, declCaps.LinkSupport)
+}
+
 func RefTargetsToLocationLinks(targets decoder.ReferenceTargets, linkSupport bool) interface{} {
 	if linkSupport {
 		links := make([]lsp.LocationLink, 0)
@@ -29,9 +43,10 @@ func RefTargetsToLocationLinks(targets decoder.ReferenceTargets, linkSupport boo
 
 func refTargetToLocationLink(target *decoder.ReferenceTarget) lsp.LocationLink {
 	targetUri := uri.FromPath(filepath.Join(target.Path.Path, target.Range.Filename))
+	originRange := HCLRangeToLSP(target.OriginRange)
 
 	locLink := lsp.LocationLink{
-		OriginSelectionRange: HCLRangeToLSP(target.OriginRange),
+		OriginSelectionRange: &originRange,
 		TargetURI:            lsp.DocumentURI(targetUri),
 		TargetRange:          HCLRangeToLSP(target.Range),
 		TargetSelectionRange: HCLRangeToLSP(target.Range),

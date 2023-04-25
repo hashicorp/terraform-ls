@@ -104,37 +104,37 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 		"id": 5,
 		"result": [
 			{
-				"name": "provider \"github\"",
-				"kind": 5,
 				"location": {
 					"uri": "%s/first.tf",
 					"range": {
 						"start": {"line": 0, "character": 0},
 						"end": {"line": 0, "character": 20}
 					}
-				}
+				},
+				"name": "provider \"github\"",
+				"kind": 5
 			},
 			{
-				"name": "provider \"google\"",
-				"kind": 5,
 				"location": {
 					"uri": "%s/second.tf",
 					"range": {
 						"start": {"line": 0, "character": 0},
 						"end": {"line": 0, "character": 20}
 					}
-				}
+				},
+				"name": "provider \"google\"",
+				"kind": 5
 			},
 			{
-				"name": "myblock \"custom\"",
-				"kind": 5,
 				"location": {
 					"uri": "%s/blah/third.tf",
 					"range": {
 						"start": {"line": 0, "character": 0},
 						"end": {"line": 0, "character": 19}
 					}
-				}
+				},
+				"name": "myblock \"custom\"",
+				"kind": 5
 			}
 		]
 	}`, tmpDir.URI, tmpDir.URI, tmpDir.URI))
@@ -148,15 +148,15 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 		"id": 6,
 		"result": [
 			{
-				"name": "myblock \"custom\"",
-				"kind": 5,
 				"location": {
 					"uri": "%s/blah/third.tf",
 					"range": {
 						"start": {"line": 0, "character": 0},
 						"end": {"line": 0, "character": 19}
 					}
-				}
+				},
+				"name": "myblock \"custom\"",
+				"kind": 5
 			}
 		]
 	}`, tmpDir.URI))
