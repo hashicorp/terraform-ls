@@ -118,3 +118,40 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 		t.Fatalf("mismatch chached metadata: %s", diff)
 	}
 }
+
+func TestStateStore_cache_error(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source, err := tfaddr.ParseModuleSource("terraform-aws-modules/eks/aws")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := version.MustConstraints(version.NewConstraint(">= 3.0"))
+
+	// should be false
+	exists, err := s.RegistryModules.Exists(source, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists == true {
+		t.Fatal("should not exist")
+	}
+
+	// store an error for a moudle
+	err = s.RegistryModules.CacheError(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// should be true
+	exists, err = s.RegistryModules.Exists(source, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists != true {
+		t.Fatal("should exist")
+	}
+}
