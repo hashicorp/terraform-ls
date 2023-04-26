@@ -528,6 +528,10 @@ func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constr
 	for item := it.Next(); item != nil; item = it.Next() {
 		mod := item.(*RegistryModuleData)
 
+		if mod.Error {
+			continue
+		}
+
 		if cons.Check(mod.Version) {
 			return &registry.ModuleData{
 				Version: mod.Version,

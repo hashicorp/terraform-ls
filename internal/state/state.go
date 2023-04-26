@@ -154,6 +154,7 @@ var dbSchema = &memdb.DBSchema{
 							&StringerFieldIndexer{Field: "Source"},
 							&VersionFieldIndexer{Field: "Version"},
 						},
+						AllowMissing: true,
 					},
 				},
 				"source_addr": {
