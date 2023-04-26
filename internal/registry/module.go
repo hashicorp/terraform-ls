@@ -51,6 +51,15 @@ type ModuleVersion struct {
 	Version string `json:"version"`
 }
 
+type RegistryClientError struct {
+	Status int
+	Body   string
+}
+
+func (rce RegistryClientError) Error() string {
+	return fmt.Sprintf("%d: %s", rce.Status, rce.Body)
+}
+
 func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons version.Constraints) (*ModuleResponse, error) {
 	var response ModuleResponse
 
@@ -77,14 +86,15 @@ func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons vers
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
-		return nil, fmt.Errorf("unexpected response %s: %s", resp.Status, string(bodyBytes))
+		return nil, RegistryClientError{Status: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&response)
@@ -128,14 +138,15 @@ func (c Client) GetModuleVersions(ctx context.Context, addr tfaddr.Module) (vers
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
-		return nil, fmt.Errorf("unexpected response %s: %s", resp.Status, string(bodyBytes))
+		return nil, RegistryClientError{Status: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	var response ModuleVersionsResponse
