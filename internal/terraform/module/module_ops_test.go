@@ -164,7 +164,6 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 
 	// Verify that 2nd module is still cached even if
 	// obtaining data for the other one errored out
-
 	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec")
 	if err != nil {
 		t.Fatal(err)
@@ -185,6 +184,28 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	}
 	if diff := cmp.Diff(expectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
+	}
+
+	// Verify that the third module is still cached even if
+	// it returns a not found error
+	addr, err = tfaddr.ParseModuleSource("terraform-aws-modules/eks/aws")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cons = version.MustConstraints(version.NewConstraint("0.0.8"))
+
+	exists, err = ss.RegistryModules.Exists(addr, cons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatalf("expected cached metadata to exist for %q %q", addr, cons)
+	}
+
+	// But it shouldn't return any module data
+	_, err = ss.Modules.RegistryModuleMeta(addr, cons)
+	if err == nil {
+		t.Fatal("expected module to be not found")
 	}
 }
 
