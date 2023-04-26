@@ -638,6 +638,16 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 		metaData, err := regClient.GetModuleData(ctx, sourceAddr, declaredModule.Version)
 		if err != nil {
 			errs = multierror.Append(errs, err)
+
+			clientError := registry.RegistryClientError{}
+			if errors.As(err, &clientError) && clientError.Status == 404 {
+				// Still cache the module
+				err = modRegStore.CacheError(sourceAddr)
+				if err != nil {
+					errs = multierror.Append(errs, err)
+				}
+			}
+
 			continue
 		}
 
