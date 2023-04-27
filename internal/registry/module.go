@@ -51,13 +51,13 @@ type ModuleVersion struct {
 	Version string `json:"version"`
 }
 
-type RegistryClientError struct {
-	Status int
-	Body   string
+type ClientError struct {
+	StatusCode int
+	Body       string
 }
 
-func (rce RegistryClientError) Error() string {
-	return fmt.Sprintf("%d: %s", rce.Status, rce.Body)
+func (rce ClientError) Error() string {
+	return fmt.Sprintf("%d: %s", rce.StatusCode, rce.Body)
 }
 
 func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons version.Constraints) (*ModuleResponse, error) {
@@ -94,7 +94,7 @@ func (c Client) GetModuleData(ctx context.Context, addr tfaddr.Module, cons vers
 			return nil, err
 		}
 
-		return nil, RegistryClientError{Status: resp.StatusCode, Body: string(bodyBytes)}
+		return nil, ClientError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&response)
@@ -146,7 +146,7 @@ func (c Client) GetModuleVersions(ctx context.Context, addr tfaddr.Module) (vers
 			return nil, err
 		}
 
-		return nil, RegistryClientError{Status: resp.StatusCode, Body: string(bodyBytes)}
+		return nil, ClientError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	var response ModuleVersionsResponse
