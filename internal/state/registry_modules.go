@@ -14,6 +14,7 @@ import (
 type RegistryModuleData struct {
 	Source  tfaddr.Module
 	Version *version.Version
+	Error   bool
 	Inputs  []registry.Input
 	Outputs []registry.Output
 }
@@ -28,6 +29,13 @@ func (s *RegistryModuleStore) Exists(sourceAddr tfaddr.Module, constraint versio
 
 	for obj := iter.Next(); obj != nil; obj = iter.Next() {
 		p := obj.(*RegistryModuleData)
+		// There was an error fetching the module, so we can't compare
+		// any versions
+		if p.Error {
+			return true, nil
+		}
+
+		// Check if there an entry with a matching version
 		if constraint.Check(p.Version) {
 			return true, nil
 		}
@@ -57,6 +65,34 @@ func (s *RegistryModuleStore) Cache(sourceAddr tfaddr.Module, modVer *version.Ve
 		Version: modVer,
 		Inputs:  inputs,
 		Outputs: outputs,
+	}
+
+	err = txn.Insert(s.tableName, modData)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *RegistryModuleStore) CacheError(sourceAddr tfaddr.Module) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	obj, err := txn.First(s.tableName, "id", sourceAddr, nil)
+	if err != nil {
+		return err
+	}
+	if obj != nil {
+		return &AlreadyExistsError{
+			Idx: sourceAddr.String(),
+		}
+	}
+
+	modData := &RegistryModuleData{
+		Source: sourceAddr,
+		Error:  true,
 	}
 
 	err = txn.Insert(s.tableName, modData)
