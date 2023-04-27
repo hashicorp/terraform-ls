@@ -640,7 +640,9 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 			errs = multierror.Append(errs, err)
 
 			clientError := registry.ClientError{}
-			if errors.As(err, &clientError) && clientError.StatusCode >= 400 && clientError.StatusCode < 429 {
+			if errors.As(err, &clientError) &&
+				((clientError.StatusCode >= 400 && clientError.StatusCode < 408) ||
+					(clientError.StatusCode > 408 && clientError.StatusCode < 429)) {
 				// Still cache the module
 				err = modRegStore.CacheError(sourceAddr)
 				if err != nil {
