@@ -1,3 +1,17 @@
+## 0.31.1 (27 April 2023)
+
+ENHANCEMENTS:
+
+* Cache registry module errors ([#1258](https://github.com/hashicorp/terraform-ls/pull/1258))
+
+BUG FIXES:
+
+* Pull in gopls v0.10.0 tsprotocol.go to fix completion labels ([#1256](https://github.com/hashicorp/terraform-ls/pull/1256))
+
+INTERNAL:
+
+* Add PR test for copyright headers ([#1241](https://github.com/hashicorp/terraform-ls/pull/1241))
+
 ## 0.31.0 (18 April 2023)
 
 ENHANCEMENTS:
