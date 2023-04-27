@@ -2,7 +2,7 @@
 
 ENHANCEMENTS:
 
-* Cache registry module errors ([#1258](https://github.com/hashicorp/terraform-ls/pull/1258))
+* Cache registry module errors to improve performance in cases of private registry, submodules or other similar situations resulting in module data unavailability ([#1258](https://github.com/hashicorp/terraform-ls/pull/1258))
 
 BUG FIXES:
 
