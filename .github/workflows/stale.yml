@@ -12,7 +12,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@1160a2240286f5da8ec72b1c0816ce2481aabf84 # https://github.com/actions/stale/releases/tag/v8.0.0
+    - uses: actions/stale@1160a2240286f5da8ec72b1c0816ce2481aabf84  # TSCCR: no entry for repository "actions/stale"
       with:
         only-labels: 'waiting-response'
 
