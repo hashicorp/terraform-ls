@@ -1,3 +1,13 @@
+## 0.31.2 (11 May 2023)
+
+BUG FIXES:
+
+* Fix crash on prefix completion ([hcl-lang#275](https://github.com/hashicorp/hcl-lang/pull/275))
+
+INTERNAL:
+
+* Remove automated milestone closure commenting ([#1266](https://github.com/hashicorp/terraform-ls/pull/1266))
+
 ## 0.31.1 (27 April 2023)
 
 ENHANCEMENTS:
