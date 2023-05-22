@@ -25,7 +25,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/otiai10/copy v1.11.0
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/vektra/mockery/v2 v2.27.1
 	github.com/zclconf/go-cty v1.13.1
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
