@@ -12,17 +12,6 @@ env:
   GOPROXY: https://proxy.golang.org/
 
 jobs:
-  copywrite:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # https://github.com/actions/checkout/releases/tag/v3.5.2
-      - name: Install copywrite
-        uses: hashicorp/setup-copywrite@v1.1.2
-      - name: Validate Header Compliance
-        run: copywrite headers --plan
-
   test:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
