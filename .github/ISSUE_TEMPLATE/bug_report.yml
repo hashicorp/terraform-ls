@@ -1,0 +1,152 @@
+name: "Bug report"
+description: "Let us know about an unexpected error, a crash, or an incorrect behavior."
+labels: [bug]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: We use GitHub issues for tracking bugs and enhancements. For questions, please use [the community forum](https://discuss.hashicorp.com/c/terraform-core/terraform-editor-integrations/) where there are more people ready to help.
+
+  - type: input
+    id: version
+    attributes:
+      label: Language Server Version
+      description: |
+        Run `terraform-ls --version` to show the version.
+        If you are not running the latest version, please try upgrading because your issue may have already been fixed.
+      placeholder: v0.31.2
+    validations:
+      required: true
+
+  - type: input
+    id: terraform
+    attributes:
+      label: Terraform Version
+      description: |
+        Run `terraform -v` to show the version. Make sure you are running the same binary that the language server would normally pick up from $PATH if you have more than one version installed on your system.
+      placeholder: Terraform v1.4.6 on darwin_arm64
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: Client Version
+      description: |
+        Please share what IDE and/or plugin interacts with the server.
+      placeholder: Sublime Text (LSP plugin) v0.9.7
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Terraform Configuration
+      description: |
+        Include the relevant Terraform configuration that might be helpful for reproducing your issue.
+        Please remove any sensitive information such as passwords before sharing configuration snippets.
+
+        For large Terraform configs, please use a service like Dropbox and share a link to the ZIP file.
+        For security, you can optionally encrypt the files using [HashiCorp's GPG public key](https://www.hashicorp.com/security#secure-communications).
+      placeholder: |
+        resource "github_repository" "test" {
+          name = "vscode-terraform"
+        }
+
+        # etc...
+      render: terraform
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Please list the steps required to reproduce the issue. If applicable, add screenshots to help explain your problem.
+      placeholder: |
+        1. Open a folder in IDE XYZ
+        2. Open file example.tf from that folder
+        3. Trigger autocompletion on line 5, column 1 (1-indexed)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: |
+        What should have happened? Please give a clear and concise description in plain English.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: |
+        What actually happened? Please give a clear and concise description in plain English.
+    validations:
+      required: true
+
+  - type: input
+    id: gist
+    attributes:
+      label: Gist
+      description: |
+        If possible, please provide a link to a [GitHub Gist](https://gist.github.com/) your full debug output. Do *NOT* paste
+the debug output in the issue, since it may be long.
+
+        Full debug output can be obtained by launching the server with a particular flag (e.g. `-log-file`).
+        Please follow the instructions in [`docs/TROUBLESHOOTING.md`](https://github.com/hashicorp/terraform-ls/tree/main/docs/TROUBLESHOOTING.md).
+
+        Debug output may contain sensitive information. Please review it before posting publicly, and if you are concerned, feel free to encrypt the files using [HashiCorp's GPG public key](https://www.hashicorp.com/security#secure-communications).
+      placeholder: |
+        https://gist.github.com/gdb/b6365e79be6052e7531e7ba6ea8caf23
+    validations:
+      required: false
+
+  - type: textarea
+    id: workarounds
+    attributes:
+      label: Workarounds
+      description: |
+        Did you discover any workarounds on your own? If so, please list them here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: |
+        Are there any other GitHub issues (open or closed) or pull requests that relate to this issue? Or links to documentation pages?
+        Guide to referencing Github issues: https://help.github.com/articles/basic-writing-and-formatting-syntax/#referencing-issues-and-pull-requests
+      placeholder: |
+        - #123
+        - #456
+        - hashicorp/terraform#789
+        - https://developer.hashicorp.com/terraform/language/expressions/dynamic-blocks
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Help Wanted
+      description: Is this something you're able to or interested in helping out with? This is not required but a helpful way to signal to us that you're planning to open a PR with a fix.
+      options:
+        - label: I'm interested in contributing a fix myself
+          required: false
+
+  - type: textarea
+    id: community
+    attributes:
+      label: Community Note
+      description: Please do not remove, edit, or change the following note for our community. Just leave everything in this textbox as-is.
+      value: |
+        - Please vote on this issue by adding a 👍 [reaction](https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) to the original issue to help the community and maintainers prioritize this request
+        - Please do not leave "+1" or other comments that do not add relevant new information or questions, they generate extra noise for issue followers and do not help prioritize the request
+        - If you are interested in working on this issue or have submitted a pull request, please leave a comment
+    validations:
+      required: true
