@@ -340,8 +340,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/subosito/gotenv v1.4.2 h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8=
 github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
-github.com/vektra/mockery/v2 v2.28.1 h1:Au6fg/fTS39HPytnc1Xt/OF5IZv8+yNkT5TPcb/VnM0=
-github.com/vektra/mockery/v2 v2.28.1/go.mod h1:S1G0O8RZ66tpqfwSiJvi4bzjpk4ces+qEy0xoUG8wRg=
+github.com/vektra/mockery/v2 v2.28.2 h1:PkSIS6ikVWQiGXzbDLJurprLSuvZxmoVAvlnsbz/otQ=
+github.com/vektra/mockery/v2 v2.28.2/go.mod h1:S1G0O8RZ66tpqfwSiJvi4bzjpk4ces+qEy0xoUG8wRg=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
