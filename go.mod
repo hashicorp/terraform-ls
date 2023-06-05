@@ -30,7 +30,7 @@ require (
 	github.com/zclconf/go-cty v1.13.2
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
-	golang.org/x/tools v0.9.2
+	golang.org/x/tools v0.9.3
 )
 
 require (
