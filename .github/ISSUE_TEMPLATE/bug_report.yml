@@ -94,8 +94,8 @@ body:
     attributes:
       label: Gist
       description: |
-        If possible, please provide a link to a [GitHub Gist](https://gist.github.com/) your full debug output. Do *NOT* paste
-the debug output in the issue, since it may be long.
+        If possible, please provide a link to a [GitHub Gist](https://gist.github.com/) with your full debug output.
+        Do *NOT* pastethe debug output in the issue, since it may be long.
 
         Full debug output can be obtained by launching the server with a particular flag (e.g. `-log-file`).
         Please follow the instructions in [`docs/TROUBLESHOOTING.md`](https://github.com/hashicorp/terraform-ls/tree/main/docs/TROUBLESHOOTING.md).
