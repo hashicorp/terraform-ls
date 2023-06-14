@@ -26,7 +26,7 @@ require (
 	github.com/otiai10/copy v1.11.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vektra/mockery/v2 v2.29.0
+	github.com/vektra/mockery/v2 v2.30.1
 	github.com/zclconf/go-cty v1.13.2
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
@@ -73,7 +73,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/posener/complete v1.1.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/zerolog v1.29.0 // indirect
