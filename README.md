@@ -6,7 +6,7 @@ The official [Terraform](https://www.terraform.io) language server (`terraform-l
 
 Not all language features (from LSP's or any other perspective) are available
 at the time of writing, but this is an active project with the aim of delivering
-smaller, incremental updates over time.
+smaller, incremental updates over time. You can review [the LSP feature matrix]([./docs/features.md]).
 
 We encourage you to [browse existing issues](https://github.com/hashicorp/terraform-ls/issues)
 and/or [open new issue](https://github.com/hashicorp/terraform-ls/issues/new/choose)
