@@ -109,8 +109,11 @@ func (c *ServeCommand) Run(args []string) int {
 	}
 
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
-	srv.SetLogger(logger)
-
+	// TODO: Not sure about removing this here. We can't use window/LogMessage yet
+	// because we haven't started
+	// If we leave this here, some stuff still goes to stderr
+	// srv.SetLogger(logger)
+	
 	if c.port != 0 {
 		err := srv.StartTCP(fmt.Sprintf("localhost:%d", c.port))
 		if err != nil {

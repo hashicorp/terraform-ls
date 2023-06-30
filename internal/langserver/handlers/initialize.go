@@ -12,6 +12,7 @@ import (
 	"github.com/creachadair/jrpc2"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/settings"
@@ -39,6 +40,9 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	expClientCaps := lsp.ExperimentalClientCapabilities(clientCaps.Experimental)
 
 	svc.server = jrpc2.ServerFromContext(ctx)
+	svc.logger = logging.NewLspLogger(&logging.LspLogger{
+		Context: ctx,
+	})
 
 	setupTelemetry(expClientCaps, svc, ctx, properties)
 	defer svc.telemetry.SendEvent(ctx, "initialize", properties)

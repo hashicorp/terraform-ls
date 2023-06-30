@@ -17,6 +17,7 @@ import (
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/creachadair/jrpc2/server"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"github.com/hashicorp/terraform-ls/internal/logging"
 )
 
 type langServer struct {
@@ -85,7 +86,7 @@ func (ls *langServer) startServer(reader io.Reader, writer io.WriteCloser) (*sin
 		return nil, err
 	}
 	srv.Start(channel.LSP(reader, writer))
-
+	
 	return srv, nil
 }
 
@@ -104,6 +105,10 @@ func (ls *langServer) StartAndWait(reader io.Reader, writer io.WriteCloser) erro
 		srv.Wait()
 		cancelFunc()
 	}()
+
+	ls.SetLogger(logging.NewLspLogger(&logging.LspLogger{
+		Context: ctx,
+	}))
 
 	select {
 	case <-ctx.Done():
