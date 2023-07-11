@@ -39,7 +39,7 @@ func TestScheduler_withIgnoreExistingState(t *testing.T) {
 	})
 
 	var stateIgnored int64 = 0
-	firstJobId, err := ss.JobStore.EnqueueJob(job.Job{
+	firstJobId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			if job.IgnoreState(ctx) {
 				atomic.AddInt64(&stateIgnored, 1)
@@ -55,7 +55,7 @@ func TestScheduler_withIgnoreExistingState(t *testing.T) {
 	}
 
 	var stateNotIgnored int64 = 0
-	secondJobId, err := ss.JobStore.EnqueueJob(job.Job{
+	secondJobId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			if !job.IgnoreState(ctx) {
 				atomic.AddInt64(&stateNotIgnored, 1)
@@ -108,7 +108,7 @@ func TestScheduler_closedOnly(t *testing.T) {
 		i := i
 		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
 
-		newId, err := ss.JobStore.EnqueueJob(job.Job{
+		newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 			Func: func(c context.Context) error {
 				atomic.AddInt64(&jobsExecuted, 1)
 				return nil
@@ -153,7 +153,8 @@ func TestScheduler_closedAndOpen(t *testing.T) {
 			i := i
 			dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-x-%d", i))
 
-			newId, err := ss.JobStore.EnqueueJob(job.Job{
+			ctx := context.Background()
+			newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 				Func: func(c context.Context) error {
 					atomic.AddInt64(&closedJobsExecuted, 1)
 					return nil
@@ -178,7 +179,8 @@ func TestScheduler_closedAndOpen(t *testing.T) {
 			i := i
 			dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-y-%d", i))
 
-			newId, err := ss.JobStore.EnqueueJob(job.Job{
+			ctx := context.Background()
+			newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 				Func: func(c context.Context) error {
 					atomic.AddInt64(&openJobsExecuted, 1)
 					return nil
@@ -274,7 +276,7 @@ func BenchmarkScheduler_EnqueueAndWaitForJob_closedOnly(b *testing.B) {
 		i := i
 		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
 
-		newId, err := ss.JobStore.EnqueueJob(job.Job{
+		newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 			Func: func(c context.Context) error {
 				return nil
 			},
@@ -319,7 +321,7 @@ func TestScheduler_defer(t *testing.T) {
 		i := i
 		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
 
-		newId, err := ss.JobStore.EnqueueJob(job.Job{
+		newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 			Func: func(c context.Context) error {
 				atomic.AddInt64(&jobsExecuted, 1)
 				return nil
@@ -330,7 +332,7 @@ func TestScheduler_defer(t *testing.T) {
 				ids := make(job.IDs, 0)
 				je := ss.JobStore
 
-				id1, err := je.EnqueueJob(job.Job{
+				id1, err := je.EnqueueJob(ctx, job.Job{
 					Dir:  document.DirHandleFromPath(dirPath),
 					Type: "test-1",
 					Func: func(c context.Context) error {
@@ -344,7 +346,7 @@ func TestScheduler_defer(t *testing.T) {
 				}
 				ids = append(ids, id1)
 
-				id2, err := je.EnqueueJob(job.Job{
+				id2, err := je.EnqueueJob(ctx, job.Job{
 					Dir:  document.DirHandleFromPath(dirPath),
 					Type: "test-2",
 					Func: func(c context.Context) error {
@@ -405,7 +407,7 @@ func TestScheduler_dependsOn(t *testing.T) {
 
 	dirPath := filepath.Join(tmpDir, "test-folder")
 
-	id0, err := ss.JobStore.EnqueueJob(job.Job{
+	id0, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(c context.Context) error {
 			time.Sleep(20 * time.Millisecond)
 			executedJobs = append(executedJobs, "test-0")
@@ -419,7 +421,7 @@ func TestScheduler_dependsOn(t *testing.T) {
 	}
 	ids = append(ids, id0)
 
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Dir:  document.DirHandleFromPath(dirPath),
 		Type: "test-1",
 		Func: func(c context.Context) error {
@@ -434,7 +436,7 @@ func TestScheduler_dependsOn(t *testing.T) {
 	}
 	ids = append(ids, id1)
 
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Dir:  document.DirHandleFromPath(dirPath),
 		Type: "test-2",
 		Func: func(c context.Context) error {

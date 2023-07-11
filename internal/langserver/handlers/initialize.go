@@ -308,7 +308,7 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 		ignoredPaths = append(ignoredPaths, modPath)
 	}
 
-	err = svc.stateStore.WalkerPaths.EnqueueDir(root)
+	err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, root)
 	if err != nil {
 		return err
 	}
@@ -326,7 +326,7 @@ func (svc *service) setupWalker(ctx context.Context, params lsp.InitializeParams
 
 			modPath := document.DirHandleFromURI(folder.URI)
 
-			err := svc.stateStore.WalkerPaths.EnqueueDir(modPath)
+			err := svc.stateStore.WalkerPaths.EnqueueDir(ctx, modPath)
 			if err != nil {
 				jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 					Type: lsp.Warning,

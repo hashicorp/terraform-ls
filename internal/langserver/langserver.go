@@ -17,6 +17,7 @@ import (
 	"github.com/creachadair/jrpc2/channel"
 	"github.com/creachadair/jrpc2/server"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type langServer struct {
@@ -37,6 +38,10 @@ func NewLangServer(srvCtx context.Context, sf session.SessionFactory) *langServe
 	opts := &jrpc2.ServerOptions{
 		AllowPush:   true,
 		Concurrency: concurrency,
+		NewContext: func() context.Context {
+			spanCtx := trace.SpanContextFromContext(srvCtx)
+			return trace.ContextWithSpanContext(context.Background(), spanCtx)
+		},
 	}
 
 	return &langServer{

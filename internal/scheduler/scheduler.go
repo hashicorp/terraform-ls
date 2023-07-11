@@ -10,7 +10,13 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+const tracerName = "github.com/hashicorp/terraform-ls/internal/scheduler"
 
 type Scheduler struct {
 	logger      *log.Logger
@@ -22,7 +28,7 @@ type Scheduler struct {
 
 type JobStorage interface {
 	job.JobStore
-	AwaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error)
+	AwaitNextJob(ctx context.Context, priority job.JobPriority) (context.Context, job.ID, job.Job, error)
 	FinishJob(id job.ID, jobErr error, deferredJobIds ...job.ID) error
 }
 
@@ -59,7 +65,7 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) eval(ctx context.Context) {
 	for {
-		id, nextJob, err := s.jobStorage.AwaitNextJob(ctx, s.priority)
+		ctx, id, nextJob, err := s.jobStorage.AwaitNextJob(ctx, s.priority)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
@@ -69,8 +75,38 @@ func (s *Scheduler) eval(ctx context.Context) {
 		}
 
 		ctx = job.WithIgnoreState(ctx, nextJob.IgnoreState)
+		jobSpan := trace.SpanFromContext(ctx)
+
+		ctx, span := otel.Tracer(tracerName).Start(ctx, "job-eval:"+nextJob.Type,
+			trace.WithAttributes(attribute.KeyValue{
+				Key:   attribute.Key("JobID"),
+				Value: attribute.StringValue(id.String()),
+			}, attribute.KeyValue{
+				Key:   attribute.Key("JobType"),
+				Value: attribute.StringValue(nextJob.Type),
+			}, attribute.KeyValue{
+				Key:   attribute.Key("Priority"),
+				Value: attribute.IntValue(int(nextJob.Priority)),
+			}, attribute.KeyValue{
+				Key:   attribute.Key("URI"),
+				Value: attribute.StringValue(nextJob.Dir.URI),
+			}))
 
 		jobErr := nextJob.Func(ctx)
+
+		if jobErr != nil {
+			if errors.Is(jobErr, job.StateNotChangedErr{Dir: nextJob.Dir}) {
+				span.SetStatus(codes.Ok, "state not changed")
+			} else {
+				span.RecordError(jobErr)
+				span.SetStatus(codes.Error, "job failed")
+			}
+		} else {
+			span.SetStatus(codes.Ok, "job finished")
+		}
+		span.End()
+		jobSpan.SetStatus(codes.Ok, "ok")
+		jobSpan.End()
 
 		deferredJobIds := make(job.IDs, 0)
 		if nextJob.Defer != nil {

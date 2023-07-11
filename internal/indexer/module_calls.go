@@ -15,7 +15,7 @@ import (
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
+func (idx *Indexer) decodeInstalledModuleCalls(ctx context.Context, modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
 	jobIds := make(job.IDs, 0)
 
 	moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
@@ -44,7 +44,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 
 		refCollectionDeps := make(job.IDs, 0)
 
-		parseId, err := idx.jobStore.EnqueueJob(job.Job{
+		parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, mcPath)
@@ -61,7 +61,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 
 		var metaId job.ID
 		if parseId != "" {
-			metaId, err = idx.jobStore.EnqueueJob(job.Job{
+			metaId, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir:  mcHandle,
 				Type: op.OpTypeLoadModuleMetadata.String(),
 				Func: func(ctx context.Context) error {
@@ -77,7 +77,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 				refCollectionDeps = append(refCollectionDeps, metaId)
 			}
 
-			eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+			eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
 					return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, mcPath)
@@ -95,7 +95,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 		}
 
 		if parseId != "" {
-			ids, err := idx.collectReferences(mcHandle, refCollectionDeps, ignoreState)
+			ids, err := idx.collectReferences(ctx, mcHandle, refCollectionDeps, ignoreState)
 			if err != nil {
 				multierror.Append(errs, err)
 			} else {
@@ -103,7 +103,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 			}
 		}
 
-		varsParseId, err := idx.jobStore.EnqueueJob(job.Job{
+		varsParseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: mcHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseVariables(ctx, idx.fs, idx.modStore, mcPath)
@@ -118,7 +118,7 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 		}
 
 		if varsParseId != "" {
-			varsRefId, err := idx.jobStore.EnqueueJob(job.Job{
+			varsRefId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir: mcHandle,
 				Func: func(ctx context.Context) error {
 					return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, mcPath)
@@ -138,12 +138,12 @@ func (idx *Indexer) decodeInstalledModuleCalls(modHandle document.DirHandle, ign
 	return jobIds, errs.ErrorOrNil()
 }
 
-func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
+func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
 	var errs *multierror.Error
 
-	id, err := idx.jobStore.EnqueueJob(job.Job{
+	id, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -158,7 +158,7 @@ func (idx *Indexer) collectReferences(modHandle document.DirHandle, dependsOn jo
 		ids = append(ids, id)
 	}
 
-	id, err = idx.jobStore.EnqueueJob(job.Job{
+	id, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())

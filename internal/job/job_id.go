@@ -20,3 +20,13 @@ func (ids IDs) Copy() IDs {
 
 	return newIds
 }
+
+func (ids IDs) StringSlice() []string {
+	stringIds := make([]string, len(ids))
+
+	for i, id := range ids {
+		stringIds[i] = id.String()
+	}
+
+	return stringIds
+}

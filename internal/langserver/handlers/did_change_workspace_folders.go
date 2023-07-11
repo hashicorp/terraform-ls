@@ -44,7 +44,7 @@ func (svc *service) DidChangeWorkspaceFolders(ctx context.Context, params lsp.Di
 func (svc *service) indexNewModule(ctx context.Context, modURI string) {
 	modHandle := document.DirHandleFromURI(modURI)
 
-	err := svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+	err := svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
 	if err != nil {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type: lsp.Warning,

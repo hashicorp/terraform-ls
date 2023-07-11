@@ -8,6 +8,6 @@ import (
 )
 
 type JobStore interface {
-	EnqueueJob(newJob Job) (ID, error)
+	EnqueueJob(ctx context.Context, newJob Job) (ID, error)
 	WaitForJobs(ctx context.Context, ids ...ID) error
 }

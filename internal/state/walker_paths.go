@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type WalkerPathStore struct {
@@ -24,9 +25,13 @@ type WalkerPathStore struct {
 }
 
 type WalkerPath struct {
-	Dir       document.DirHandle
-	IsDirOpen bool
-	State     PathState
+	Dir            document.DirHandle
+	IsDirOpen      bool
+	State          PathState
+	EnqueueContext trace.SpanContext
+}
+
+type PathContext struct {
 }
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type=PathState -output=path_state_string.go
@@ -38,9 +43,15 @@ const (
 )
 
 func (wp *WalkerPath) Copy() *WalkerPath {
+	// This may be an awkward way to copy the SpanContext
+	// but the upstream doesn't seem to offer any better way.
+	newCtx := trace.ContextWithSpanContext(context.Background(), wp.EnqueueContext)
+	spanContext := trace.SpanContextFromContext(newCtx)
+
 	return &WalkerPath{
-		Dir:       wp.Dir,
-		IsDirOpen: wp.IsDirOpen,
+		Dir:            wp.Dir,
+		IsDirOpen:      wp.IsDirOpen,
+		EnqueueContext: spanContext,
 	}
 }
 
@@ -49,12 +60,12 @@ type PathAwaiter struct {
 	openDir bool
 }
 
-func (pa *PathAwaiter) AwaitNextDir(ctx context.Context) (document.DirHandle, error) {
+func (pa *PathAwaiter) AwaitNextDir(ctx context.Context) (context.Context, document.DirHandle, error) {
 	wp, err := pa.wps.AwaitNextDir(ctx, pa.openDir)
 	if err != nil {
-		return document.DirHandle{}, err
+		return ctx, document.DirHandle{}, err
 	}
-	return wp.Dir, nil
+	return trace.ContextWithSpanContext(ctx, wp.EnqueueContext), wp.Dir, nil
 }
 
 func (pa *PathAwaiter) RemoveDir(dir document.DirHandle) error {
@@ -68,7 +79,7 @@ func NewPathAwaiter(wps *WalkerPathStore, openDir bool) *PathAwaiter {
 	}
 }
 
-func (wps *WalkerPathStore) EnqueueDir(dir document.DirHandle) error {
+func (wps *WalkerPathStore) EnqueueDir(ctx context.Context, dir document.DirHandle) error {
 	txn := wps.db.Txn(true)
 	defer txn.Abort()
 
@@ -82,9 +93,10 @@ func (wps *WalkerPathStore) EnqueueDir(dir document.DirHandle) error {
 	}
 
 	err = txn.Insert(wps.tableName, &WalkerPath{
-		Dir:       dir,
-		IsDirOpen: false,
-		State:     PathStateQueued,
+		Dir:            dir,
+		IsDirOpen:      false,
+		State:          PathStateQueued,
+		EnqueueContext: trace.SpanContextFromContext(ctx),
 	})
 	if err != nil {
 		return err

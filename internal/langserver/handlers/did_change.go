@@ -54,7 +54,7 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
-	jobIds, err := svc.indexer.DocumentChanged(dh.Dir)
+	jobIds, err := svc.indexer.DocumentChanged(ctx, dh.Dir)
 	if err != nil {
 		return err
 	}
