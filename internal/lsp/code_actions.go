@@ -35,6 +35,8 @@ var (
 	// files to be formatted, but not terraform files (or vice versa).
 	SupportedCodeActions = CodeActions{
 		SourceFormatAllTerraform: true,
+		lsp.QuickFix:             true,
+		lsp.RefactorExtract:      true,
 	}
 )
 
