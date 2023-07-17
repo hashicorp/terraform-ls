@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os/exec"
+	"os"
 	"path/filepath"
 
 	"github.com/creachadair/jrpc2"
@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/uri"
+	tflintcmd "github.com/terraform-linters/tflint/cmd"
 )
 
 type TfLintRange struct {
@@ -80,16 +81,12 @@ func (h *CmdHandler) LintHandler(ctx context.Context, args cmd.CommandArgs) (int
 		return nil, err
 	}
 
-	h.Logger.Printf("MODPATH %s", mod.Path)
-	cmd := exec.Command("/usr/local/bin/tflint", "--format=json", fmt.Sprintf("--chdir=%s", mod.Path))
 	var outBuf = bytes.Buffer{}
-	cmd.Stdout = &outBuf
-
-	cmd.Run()
-	// err = cmd.Run()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	cli, err := tflintcmd.NewCLI(&outBuf, os.Stderr)
+	if err != nil {
+		return nil, err
+	}
+	cli.Run([]string{"--format=json", fmt.Sprintf("--chdir=%s", mod.Path)})
 
 	var ret TfLintOutput
 	jsonErr := json.Unmarshal(outBuf.Bytes(), &ret)
