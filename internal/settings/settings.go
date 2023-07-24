@@ -14,8 +14,9 @@ import (
 )
 
 type ExperimentalFeatures struct {
-	ValidateOnSave        bool `mapstructure:"validateOnSave"`
-	PrefillRequiredFields bool `mapstructure:"prefillRequiredFields"`
+	CodelensReferenceCount bool `mapstructure:"codelensReferenceCount"`
+	ValidateOnSave         bool `mapstructure:"validateOnSave"`
+	PrefillRequiredFields  bool `mapstructure:"prefillRequiredFields"`
 }
 
 type Indexing struct {
