@@ -18,6 +18,7 @@ func cmdHandlers(svc *service) cmd.Handlers {
 	cmdHandler := &command.CmdHandler{
 		StateStore: svc.stateStore,
 		Logger:     svc.logger,
+		Decoder:    svc.decoder,
 	}
 	return cmd.Handlers{
 		cmd.Name("rootmodules"):        removedHandler("use module.callers instead"),

@@ -26,6 +26,25 @@ func documentRangeToLSP(docRng *document.Range) lsp.Range {
 	}
 }
 
+func HCLRangeFromLspRange(rng lsp.Range, doc *document.Document) (hcl.Range, error) {
+	start, err := HCLPositionFromLspPosition(rng.Start, doc)
+	if err != nil {
+		return hcl.Range{}, err
+	}
+
+	end, err := HCLPositionFromLspPosition(rng.End, doc)
+	if err != nil {
+		return hcl.Range{}, err
+	}
+
+	return hcl.Range{
+		Filename: doc.Filename,
+		Start:    start,
+		End:      end,
+	}, nil
+
+}
+
 func lspRangeToDocRange(rng *lsp.Range) *document.Range {
 	if rng == nil {
 		return nil

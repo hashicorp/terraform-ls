@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -58,6 +59,8 @@ func (h *CmdHandler) EarlyValidationHandler(ctx context.Context, args cmd.Comman
 		_, contentDiags := f.Body.Content(configFileSchema)
 		validateDiags[string(filename)] = contentDiags
 	}
+
+	h.StateStore.Modules.UpdateModuleValidationDiagnostics(mod.Path, ast.ModDiagsFromMap(validateDiags))
 
 	diags := diagnostics.NewDiagnostics()
 	diags.EmptyRootDiagnostic()

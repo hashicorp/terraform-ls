@@ -133,8 +133,9 @@ type Module struct {
 	MetaErr   error
 	MetaState op.OpState
 
-	ModuleDiagnostics ast.ModDiags
-	VarsDiagnostics   ast.VarsDiags
+	ModuleDiagnostics           ast.ModDiags
+	VarsDiagnostics             ast.VarsDiags
+	ModuleValidationDiagnostics ast.ModDiags
 }
 
 func (m *Module) Copy() *Module {
@@ -226,6 +227,14 @@ func (m *Module) Copy() *Module {
 				// hcl.Diagnostic is practically immutable once it comes out of parser
 				newMod.VarsDiagnostics[name][i] = diag
 			}
+		}
+	}
+
+	if m.ModuleValidationDiagnostics != nil {
+		newMod.ModuleValidationDiagnostics = make(ast.ModDiags, len(m.ModuleValidationDiagnostics))
+		for name, diags := range m.ModuleValidationDiagnostics {
+			newMod.ModuleValidationDiagnostics[name] = make(hcl.Diagnostics, len(diags))
+			copy(newMod.ModuleValidationDiagnostics[name], diags)
 		}
 	}
 
@@ -980,6 +989,27 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 	}
 
 	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateModuleValidationDiagnostics(path string, diags ast.ModDiags) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	oldMod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod := oldMod.Copy()
+	mod.ModuleValidationDiagnostics = diags
+
+	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}

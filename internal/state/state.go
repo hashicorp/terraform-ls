@@ -20,6 +20,7 @@ import (
 const (
 	documentsTableName      = "documents"
 	jobsTableName           = "jobs"
+	diagnosticsTableName    = "diagnostics"
 	moduleTableName         = "module"
 	moduleIdsTableName      = "module_ids"
 	moduleChangesTableName  = "module_changes"
@@ -126,6 +127,16 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		diagnosticsTableName: {
+			Name: diagnosticsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+				},
+			},
+		},
 		providerSchemaTableName: {
 			Name: providerSchemaTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -223,11 +234,18 @@ type StateStore struct {
 	DocumentStore   *DocumentStore
 	JobStore        *JobStore
 	Modules         *ModuleStore
+	Diagnostics     *DiagnosticsStore
 	ProviderSchemas *ProviderSchemaStore
 	WalkerPaths     *WalkerPathStore
 	RegistryModules *RegistryModuleStore
 
 	db *memdb.MemDB
+}
+
+type DiagnosticsStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
 }
 
 type ModuleStore struct {
@@ -296,6 +314,11 @@ func NewStateStore() (*StateStore, error) {
 			nextJobHighPrioMu: &sync.Mutex{},
 			nextJobLowPrioMu:  &sync.Mutex{},
 		},
+		Diagnostics: &DiagnosticsStore{
+			db:        db,
+			tableName: diagnosticsTableName,
+			logger:    defaultLogger,
+		},
 		Modules: &ModuleStore{
 			db:               db,
 			tableName:        moduleTableName,
@@ -330,6 +353,7 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
+	s.Diagnostics.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
