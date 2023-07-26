@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/handlers"
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	"github.com/hashicorp/terraform-ls/internal/pathtpl"
+	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/mitchellh/cli"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -115,9 +116,13 @@ func (c *ServeCommand) Run(args []string) int {
 	var err error
 	shutdownFunc := func(context.Context) error { return nil }
 
-	// TODO: Currently unused until we decide how/where to export data
-	tp := trace.NewNoopTracerProvider()
-	otel.SetTracerProvider(tp)
+	if apiKey := os.Getenv("HONEYCOMB_API_KEY"); apiKey != "" {
+		logger.Printf("exporting OTEL data to Honeycomb")
+		shutdownFunc, err = telemetry.InitHoneycomb(apiKey, c.otelResourceAttributes())
+	} else {
+		tp := trace.NewNoopTracerProvider()
+		otel.SetTracerProvider(tp)
+	}
 
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("Failed to init telemetry: %s", err))

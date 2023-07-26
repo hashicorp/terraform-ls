@@ -16,6 +16,8 @@ type Telemetry struct {
 	notifier Notifier
 }
 
+type shutdownFunc func(context.Context) error
+
 type Notifier interface {
 	Notify(ctx context.Context, method string, params interface{}) error
 }
