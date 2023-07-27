@@ -124,7 +124,9 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, refOriginsId)
 
-	registryId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+	// This job may make an HTTP request, and we schedule it in
+	// the low-priority queue, so we don't want to wait for it.
+	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.GetModuleDataFromRegistry(ctx, idx.registryClient,
@@ -136,8 +138,6 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	if err != nil {
 		return ids, err
 	}
-
-	ids = append(ids, registryId)
 
 	return ids, nil
 }
