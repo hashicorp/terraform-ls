@@ -17,7 +17,7 @@ import (
 func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
-	modManifestId, err := idx.jobStore.EnqueueJob(job.Job{
+	modManifestId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -25,7 +25,7 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 		Type:        op.OpTypeParseModuleManifest.String(),
 		IgnoreState: true,
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			return idx.decodeInstalledModuleCalls(modHandle, true)
+			return idx.decodeInstalledModuleCalls(ctx, modHandle, true)
 		},
 	})
 	if err != nil {
@@ -41,7 +41,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 	dependsOn := make(job.IDs, 0)
 	var errs *multierror.Error
 
-	pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
+	pSchemaVerId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -56,7 +56,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 		dependsOn = append(dependsOn, pSchemaVerId)
 	}
 
-	pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+	pSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)

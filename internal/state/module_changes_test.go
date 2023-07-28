@@ -95,7 +95,8 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 	modPath := t.TempDir()
 	modHandle := document.DirHandleFromPath(modPath)
 
-	_, err = ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -113,7 +114,7 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 
 	// confirm the method gets cancelled with pending job
 	// and less than maximum timespan to wait
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancelFunc := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancelFunc()
 
 	_, err = ss.Modules.AwaitNextChangeBatch(ctx)

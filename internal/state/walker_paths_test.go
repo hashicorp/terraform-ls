@@ -21,12 +21,12 @@ func TestWalkerPathStore_EnqueueDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	dirHandle := document.DirHandleFromPath(tmpDir)
 
-	err = ss.WalkerPaths.EnqueueDir(dirHandle)
+	ctx := context.Background()
+	err = ss.WalkerPaths.EnqueueDir(ctx, dirHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	wp, err := ss.WalkerPaths.AwaitNextDir(ctx, false)
 	if err != nil {
 		t.Fatal(err)
@@ -46,14 +46,15 @@ func TestWalkerPathStore_DequeueDir_queued(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	alphaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "alpha"))
-	err = ss.WalkerPaths.EnqueueDir(alphaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, alphaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 	betaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "beta"))
-	err = ss.WalkerPaths.EnqueueDir(betaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, betaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +64,7 @@ func TestWalkerPathStore_DequeueDir_queued(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancelFunc()
 
 	wp, err := ss.WalkerPaths.AwaitNextDir(ctx, false)
@@ -95,14 +96,15 @@ func TestWalkerPathStore_DequeueDir_notQueued(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	dirHandle := document.DirHandleFromPath(tmpDir)
-	err = ss.WalkerPaths.EnqueueDir(dirHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, dirHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancelFunc()
 
 	_, err = ss.WalkerPaths.AwaitNextDir(ctx, false)
@@ -123,14 +125,15 @@ func TestWalkerPathStore_RemoveDir(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	alphaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "alpha"))
-	err = ss.WalkerPaths.EnqueueDir(alphaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, alphaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 	betaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "beta"))
-	err = ss.WalkerPaths.EnqueueDir(betaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, betaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,8 +142,6 @@ func TestWalkerPathStore_RemoveDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	ctx := context.Background()
 
 	wp, err := ss.WalkerPaths.AwaitNextDir(ctx, false)
 	if err != nil {
@@ -179,9 +180,10 @@ func TestWalkerPathStore_AwaitNextDir_openOnly(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	alphaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "alpha"))
-	err = ss.WalkerPaths.EnqueueDir(alphaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, alphaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,12 +194,11 @@ func TestWalkerPathStore_AwaitNextDir_openOnly(t *testing.T) {
 	}
 
 	betaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "beta"))
-	err = ss.WalkerPaths.EnqueueDir(betaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, betaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	wp, err := ss.WalkerPaths.AwaitNextDir(ctx, true)
 	if err != nil {
 		t.Fatal(err)
@@ -230,14 +231,15 @@ func TestWalkerPathStore_WaitForDirs(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	alphaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "alpha"))
-	err = ss.WalkerPaths.EnqueueDir(alphaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, alphaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}
 	betaHandle := document.DirHandleFromPath(filepath.Join(tmpDir, "beta"))
-	err = ss.WalkerPaths.EnqueueDir(betaHandle)
+	err = ss.WalkerPaths.EnqueueDir(ctx, betaHandle)
 	if err != nil {
 		t.Fatal(err)
 	}

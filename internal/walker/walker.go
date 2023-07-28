@@ -15,6 +15,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -54,13 +58,15 @@ type Walker struct {
 type WalkFunc func(ctx context.Context, modHandle document.DirHandle) (job.IDs, error)
 
 type PathStore interface {
-	AwaitNextDir(ctx context.Context) (document.DirHandle, error)
+	AwaitNextDir(ctx context.Context) (context.Context, document.DirHandle, error)
 	RemoveDir(dir document.DirHandle) error
 }
 
 type ModuleStore interface {
 	AddIfNotExists(dir string) error
 }
+
+const tracerName = "github.com/hashicorp/terraform-ls/internal/walker"
 
 func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
 	return &Walker{
@@ -105,7 +111,7 @@ func (w *Walker) StartWalking(ctx context.Context) error {
 
 	go func() {
 		for {
-			nextDir, err := w.pathStore.AwaitNextDir(ctx)
+			pathCtx, nextDir, err := w.pathStore.AwaitNextDir(ctx)
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
 					return
@@ -115,19 +121,38 @@ func (w *Walker) StartWalking(ctx context.Context) error {
 				return
 			}
 
+			spanCtx := trace.SpanContextFromContext(pathCtx)
+
+			ctx = trace.ContextWithSpanContext(ctx, spanCtx)
+
+			tracer := otel.Tracer(tracerName)
+			ctx, span := tracer.Start(ctx, "walk-path", trace.WithAttributes(attribute.KeyValue{
+				Key:   attribute.Key("URI"),
+				Value: attribute.StringValue(nextDir.URI),
+			}))
+
 			err = w.walk(ctx, nextDir)
 			if err != nil {
 				w.logger.Printf("walker: walking through %q failed: %s", nextDir, err)
 				w.collectError(err)
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "walking failed")
+				span.End()
 				continue
 			}
+			span.SetStatus(codes.Ok, "walking finished")
+			span.End()
 
 			err = w.pathStore.RemoveDir(nextDir)
 			if err != nil {
 				w.logger.Printf("walker: removing dir %q from queue failed: %s", nextDir, err)
 				w.collectError(err)
+				span.RecordError(err)
+				span.SetStatus(codes.Error, "walking failed")
+				span.End()
 				continue
 			}
+
 			w.logger.Printf("walker: walking through %q finished", nextDir)
 
 			select {

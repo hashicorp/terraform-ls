@@ -126,7 +126,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 		c.logger, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	err = ss.WalkerPaths.EnqueueDir(dir)
+	err = ss.WalkerPaths.EnqueueDir(ctx, dir)
 	if err != nil {
 		return err
 	}

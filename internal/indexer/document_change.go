@@ -13,10 +13,10 @@ import (
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, error) {
+func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
-	parseId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -29,13 +29,13 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	}
 	ids = append(ids, parseId)
 
-	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId}, true)
+	modIds, err := idx.decodeModule(ctx, modHandle, job.IDs{parseId}, true)
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, modIds...)
 
-	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -48,7 +48,7 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	}
 	ids = append(ids, parseVarsId)
 
-	varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
+	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -65,10 +65,10 @@ func (idx *Indexer) DocumentChanged(modHandle document.DirHandle) (job.IDs, erro
 	return ids, nil
 }
 
-func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
+func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHandle, dependsOn job.IDs, ignoreState bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
-	metaId, err := idx.jobStore.EnqueueJob(job.Job{
+	metaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
@@ -82,7 +82,7 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 	}
 	ids = append(ids, metaId)
 
-	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+	eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -96,7 +96,7 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 	}
 	ids = append(ids, eSchemaId)
 
-	refTargetsId, err := idx.jobStore.EnqueueJob(job.Job{
+	refTargetsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -110,7 +110,7 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 	}
 	ids = append(ids, refTargetsId)
 
-	refOriginsId, err := idx.jobStore.EnqueueJob(job.Job{
+	refOriginsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -124,7 +124,7 @@ func (idx *Indexer) decodeModule(modHandle document.DirHandle, dependsOn job.IDs
 	}
 	ids = append(ids, refOriginsId)
 
-	registryId, err := idx.jobStore.EnqueueJob(job.Job{
+	registryId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.GetModuleDataFromRegistry(ctx, idx.registryClient,

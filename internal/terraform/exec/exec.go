@@ -15,9 +15,15 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/logging"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var defaultExecTimeout = 30 * time.Second
+
+const tracerName = "github.com/hashicorp/terraform-ls/internal/terraform/exec"
 
 type ctxKey string
 
@@ -71,6 +77,15 @@ func (e *Executor) contextfulError(ctx context.Context, method string, err error
 	return e.enrichCtxErr(method, err)
 }
 
+func (e *Executor) setSpanStatus(span trace.Span, err error) {
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "execution returned error")
+		return
+	}
+	span.SetStatus(codes.Ok, "execution successful")
+}
+
 func (e *Executor) enrichCtxErr(method string, err error) error {
 	if err == nil {
 		return nil
@@ -99,8 +114,13 @@ func (e *Executor) Init(ctx context.Context, opts ...tfexec.InitOption) error {
 	if err != nil {
 		return err
 	}
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:Init")
+	defer span.End()
 
-	return e.contextfulError(ctx, "Init", e.tf.Init(ctx, opts...))
+	err = e.tf.Init(ctx, opts...)
+	e.setSpanStatus(span, err)
+
+	return e.contextfulError(ctx, "Init", err)
 }
 
 func (e *Executor) Get(ctx context.Context, opts ...tfexec.GetCmdOption) error {
@@ -110,8 +130,13 @@ func (e *Executor) Get(ctx context.Context, opts ...tfexec.GetCmdOption) error {
 	if err != nil {
 		return err
 	}
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:Get")
+	defer span.End()
 
-	return e.contextfulError(ctx, "Get", e.tf.Get(ctx, opts...))
+	err = e.tf.Get(ctx, opts...)
+	e.setSpanStatus(span, err)
+
+	return e.contextfulError(ctx, "Get", err)
 }
 
 func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
@@ -122,10 +147,18 @@ func (e *Executor) Format(ctx context.Context, input []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:Format",
+		trace.WithAttributes(attribute.KeyValue{
+			Key:   attribute.Key("stdinLength"),
+			Value: attribute.IntValue(len(input)),
+		}))
+	defer span.End()
+
 	br := bytes.NewReader(input)
 	buf := bytes.NewBuffer([]byte{})
 
 	err = e.tf.Format(ctx, br, buf)
+	e.setSpanStatus(span, err)
 
 	return buf.Bytes(), e.contextfulError(ctx, "Format", err)
 }
@@ -138,7 +171,11 @@ func (e *Executor) Validate(ctx context.Context) ([]tfjson.Diagnostic, error) {
 		return []tfjson.Diagnostic{}, err
 	}
 
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:Validate")
+	defer span.End()
+
 	validation, err := e.tf.Validate(ctx)
+	e.setSpanStatus(span, err)
 	if err != nil {
 		return []tfjson.Diagnostic{}, e.contextfulError(ctx, "Validate", err)
 	}
@@ -154,7 +191,12 @@ func (e *Executor) Version(ctx context.Context) (*version.Version, map[string]*v
 		return nil, nil, err
 	}
 
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:Version")
+	defer span.End()
+
 	ver, pv, err := e.tf.Version(ctx, true)
+	e.setSpanStatus(span, err)
+
 	return ver, pv, e.contextfulError(ctx, "Version", err)
 }
 
@@ -166,6 +208,11 @@ func (e *Executor) ProviderSchemas(ctx context.Context) (*tfjson.ProviderSchemas
 		return nil, err
 	}
 
+	ctx, span := otel.Tracer(tracerName).Start(ctx, "terraform-exec:ProviderSchemas")
+	defer span.End()
+
 	ps, err := e.tf.ProvidersSchema(ctx)
+	e.setSpanStatus(span, err)
+
 	return ps, e.contextfulError(ctx, "ProviderSchemas", err)
 }

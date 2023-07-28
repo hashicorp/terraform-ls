@@ -34,6 +34,11 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/discovery"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/walker"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type service struct {
@@ -584,13 +589,52 @@ func convertMap(m map[string]rpch.Func) rpch.Map {
 }
 
 const requestCancelled jrpc2.Code = -32800
+const tracerName = "github.com/hashicorp/terraform-ls/internal/langserver/handlers"
 
 // handle calls a jrpc2.Func compatible function
 func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{}, error) {
+	attrs := []attribute.KeyValue{
+		{
+			Key:   semconv.RPCMethodKey,
+			Value: attribute.StringValue(req.Method()),
+		},
+		{
+			Key:   semconv.RPCJsonrpcRequestIDKey,
+			Value: attribute.StringValue(req.ID()),
+		},
+	}
+
+	// We could capture all parameters here but for now we just
+	// opportunistically track the most important ones only.
+	type p struct {
+		URI     string `json:"uri,omitempty"`
+		RootURI string `json:"rootUri,omitempty"`
+	}
+	params := p{}
+	err := req.UnmarshalParams(&params)
+	if err == nil {
+		attrs = append(attrs, attribute.KeyValue{
+			Key:   attribute.Key("URI"),
+			Value: attribute.StringValue(string(params.URI)),
+		})
+	}
+
+	tracer := otel.Tracer(tracerName)
+	ctx, span := tracer.Start(ctx, "rpc:"+req.Method(),
+		trace.WithAttributes(attrs...))
+	defer span.End()
+
 	result, err := rpch.New(fn)(ctx, req)
 	if ctx.Err() != nil && errors.Is(ctx.Err(), context.Canceled) {
 		err = fmt.Errorf("%w: %s", requestCancelled.Err(), err)
 	}
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "request failed")
+	} else {
+		span.SetStatus(codes.Ok, "ok")
+	}
+
 	return result, err
 }
 

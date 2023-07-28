@@ -14,7 +14,7 @@ import (
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error) {
+func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
 	mod, err := idx.modStore.ModuleByPath(modHandle.Path())
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 	var errs *multierror.Error
 
 	if mod.TerraformVersionState == op.OpStateUnknown {
-		_, err := idx.jobStore.EnqueueJob(job.Job{
+		_, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
@@ -40,7 +40,7 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 		// to avoid delays when documents of new modules are open.
 	}
 
-	parseId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -53,13 +53,13 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 	}
 	ids = append(ids, parseId)
 
-	modIds, err := idx.decodeModule(modHandle, job.IDs{parseId}, true)
+	modIds, err := idx.decodeModule(ctx, modHandle, job.IDs{parseId}, true)
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, modIds...)
 
-	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -72,7 +72,7 @@ func (idx *Indexer) DocumentOpened(modHandle document.DirHandle) (job.IDs, error
 	}
 	ids = append(ids, parseVarsId)
 
-	varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
+	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())

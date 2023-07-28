@@ -59,13 +59,13 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
 	modHandle := document.DirHandleFromPath(mod.Path)
-	jobIds, err := svc.indexer.DocumentOpened(modHandle)
+	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
 	if err != nil {
 		return err
 	}
 
 	if svc.singleFileMode {
-		err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+		err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
 		if err != nil {
 			return err
 		}

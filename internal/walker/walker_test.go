@@ -49,12 +49,12 @@ func TestWalker_basic(t *testing.T) {
 	}
 	dir := document.DirHandleFromPath(root)
 
-	err = ss.WalkerPaths.EnqueueDir(dir)
+	ctx := context.Background()
+	err = ss.WalkerPaths.EnqueueDir(ctx, dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	err = w.StartWalking(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -395,7 +395,7 @@ func TestWalker_complexModules(t *testing.T) {
 			w.Collector = NewWalkerCollector()
 			w.SetLogger(testLogger())
 			dir := document.DirHandleFromPath(tc.root)
-			err = ss.WalkerPaths.EnqueueDir(dir)
+			err = ss.WalkerPaths.EnqueueDir(ctx, dir)
 			if err != nil {
 				t.Fatal(err)
 			}

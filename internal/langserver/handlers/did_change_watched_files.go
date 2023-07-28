@@ -136,7 +136,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			// if the parent directory exists, we just need to
 			// reparse the module after a file was deleted from it
 			dirHandle := document.DirHandleFromPath(parentDir)
-			jobIds, err := svc.indexer.DocumentChanged(dirHandle)
+			jobIds, err := svc.indexer.DocumentChanged(ctx, dirHandle)
 			if err != nil {
 				svc.logger.Printf("error parsing module (%q deleted): %s", rawURI, err)
 				continue
@@ -161,7 +161,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 				continue
 			}
 
-			jobIds, err := svc.indexer.DocumentChanged(ph.DirHandle)
+			jobIds, err := svc.indexer.DocumentChanged(ctx, ph.DirHandle)
 			if err != nil {
 				svc.logger.Printf("error parsing module (%q changed): %s", rawURI, err)
 				continue
@@ -181,7 +181,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			}
 
 			if ph.IsDir {
-				err = svc.stateStore.WalkerPaths.EnqueueDir(ph.DirHandle)
+				err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, ph.DirHandle)
 				if err != nil {
 					jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 						Type: lsp.Warning,
@@ -191,7 +191,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 					continue
 				}
 			} else {
-				jobIds, err := svc.indexer.DocumentChanged(ph.DirHandle)
+				jobIds, err := svc.indexer.DocumentChanged(ctx, ph.DirHandle)
 				if err != nil {
 					svc.logger.Printf("error parsing module (%q created): %s", rawURI, err)
 					continue
@@ -214,7 +214,7 @@ func (svc *service) indexModuleIfNotExists(ctx context.Context, modHandle docume
 	_, err := svc.modStore.ModuleByPath(modHandle.Path())
 	if err != nil {
 		if state.IsModuleNotFound(err) {
-			err = svc.stateStore.WalkerPaths.EnqueueDir(modHandle)
+			err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
 			if err != nil {
 				return fmt.Errorf("failed to walk module %q: %w", modHandle, err)
 			}

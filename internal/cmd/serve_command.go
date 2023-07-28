@@ -21,6 +21,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/logging"
 	"github.com/hashicorp/terraform-ls/internal/pathtpl"
 	"github.com/mitchellh/cli"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ServeCommand struct {
@@ -108,6 +112,26 @@ func (c *ServeCommand) Run(args []string) int {
 		ctx = algolia.WithCredentials(ctx, c.AlgoliaAppID, c.AlgoliaAPIKey)
 	}
 
+	var err error
+	shutdownFunc := func(context.Context) error { return nil }
+
+	// TODO: Currently unused until we decide how/where to export data
+	tp := trace.NewNoopTracerProvider()
+	otel.SetTracerProvider(tp)
+
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("Failed to init telemetry: %s", err))
+		return 1
+	}
+	defer func() {
+		ctx := context.Background()
+		err := shutdownFunc(ctx)
+		if err != nil {
+			logger.Printf("failed to shutdown telemetry: %s", err)
+			return
+		}
+	}()
+
 	srv := langserver.NewLangServer(ctx, handlers.NewSession)
 	srv.SetLogger(logger)
 
@@ -120,13 +144,24 @@ func (c *ServeCommand) Run(args []string) int {
 		return 0
 	}
 
-	err := srv.StartAndWait(os.Stdin, os.Stdout)
+	err = srv.StartAndWait(os.Stdin, os.Stdout)
 	if err != nil {
 		c.Ui.Error(fmt.Sprintf("Failed to start server: %s", err))
 		return 1
 	}
 
 	return 0
+}
+
+func (c *ServeCommand) otelResourceAttributes() []attribute.KeyValue {
+	return []attribute.KeyValue{
+		semconv.ServiceName("terraform-ls"),
+		semconv.ServiceVersion(c.Version),
+		attribute.Int("process.pid", os.Getpid()),
+		attribute.Int("runtime.NumCPU", runtime.NumCPU()),
+		attribute.Int("port", c.port),
+		attribute.Int("reqConcurrency", c.reqConcurrency),
+	}
 }
 
 type stopFunc func() error

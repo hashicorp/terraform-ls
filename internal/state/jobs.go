@@ -10,10 +10,15 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type JobStore struct {
@@ -38,9 +43,20 @@ type ScheduledJob struct {
 	// DeferredJobIDs contains IDs of any deferred jobs
 	// set when job finishes (State = StateDone)
 	DeferredJobIDs job.IDs
+
+	// EnqueueTime tracks time when the job was originally put into the queue
+	EnqueueTime time.Time
+	// TraceSpan represents a tracing span for the entire job lifecycle
+	// (from queuing to finishing execution).
+	TraceSpan trace.Span
 }
 
 func (sj *ScheduledJob) Copy() *ScheduledJob {
+	// This may be an awkward way to copy the Span
+	// but the upstream doesn't seem to offer any better way.
+	newCtx := trace.ContextWithSpan(context.Background(), sj.TraceSpan)
+	traceSpan := trace.SpanFromContext(newCtx)
+
 	return &ScheduledJob{
 		ID:             sj.ID,
 		Job:            sj.Job.Copy(),
@@ -48,6 +64,8 @@ func (sj *ScheduledJob) Copy() *ScheduledJob {
 		State:          sj.State,
 		JobErr:         sj.JobErr,
 		DeferredJobIDs: sj.DeferredJobIDs.Copy(),
+		EnqueueTime:    sj.EnqueueTime,
+		TraceSpan:      traceSpan,
 	}
 }
 
@@ -60,7 +78,7 @@ const (
 	StateDone
 )
 
-func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
+func (js *JobStore) EnqueueJob(ctx context.Context, newJob job.Job) (job.ID, error) {
 	txn := js.db.Txn(true)
 	defer txn.Abort()
 
@@ -77,12 +95,36 @@ func (js *JobStore) EnqueueJob(newJob job.Job) (job.ID, error) {
 		}
 	}
 	newJob.DependsOn = dependsOn
+	dirOpen := isDirOpen(txn, newJob.Dir)
+
+	_, jobSpan := otel.Tracer(tracerName).Start(ctx, "job",
+		trace.WithAttributes(attribute.KeyValue{
+			Key:   attribute.Key("JobID"),
+			Value: attribute.StringValue(newJobID.String()),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("JobType"),
+			Value: attribute.StringValue(newJob.Type),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("IsDirOpen"),
+			Value: attribute.BoolValue(dirOpen),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("Priority"),
+			Value: attribute.IntValue(int(newJob.Priority)),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("URI"),
+			Value: attribute.StringValue(newJob.Dir.URI),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("DependsOn"),
+			Value: attribute.StringSliceValue(dependsOn.StringSlice()),
+		}))
 
 	sJob := &ScheduledJob{
-		ID:        newJobID,
-		Job:       newJob,
-		IsDirOpen: isDirOpen(txn, newJob.Dir),
-		State:     StateQueued,
+		ID:          newJobID,
+		Job:         newJob,
+		IsDirOpen:   dirOpen,
+		State:       StateQueued,
+		EnqueueTime: time.Now(),
+		TraceSpan:   jobSpan,
 	}
 
 	err := txn.Insert(js.tableName, sJob)
@@ -139,9 +181,12 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 		if err != nil {
 			return err
 		}
+		sJob.TraceSpan.SetStatus(codes.Ok, "job dequeued")
+		sJob.TraceSpan.End()
 	}
 
 	txn.Commit()
+
 	return nil
 }
 
@@ -210,7 +255,7 @@ func (js *JobStore) jobExists(j job.Job, state State) (job.ID, bool, error) {
 	return "", false, nil
 }
 
-func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
+func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) (context.Context, job.ID, job.Job, error) {
 	// Locking is needed if same query is executed in multiple threads,
 	// i.e. this method is called at the same time from different threads, at
 	// which point txn.FirstWatch would return the same job to more than
@@ -230,20 +275,20 @@ func (js *JobStore) AwaitNextJob(ctx context.Context, priority job.JobPriority) 
 	return js.awaitNextJob(ctx, priority)
 }
 
-func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) (job.ID, job.Job, error) {
+func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) (context.Context, job.ID, job.Job, error) {
 	var sJob *ScheduledJob
 	for {
 		txn := js.db.Txn(false)
 		wCh, obj, err := txn.FirstWatch(js.tableName, "priority_dependecies_state", priority, 0, StateQueued)
 		if err != nil {
-			return "", job.Job{}, err
+			return ctx, "", job.Job{}, err
 		}
 
 		if obj == nil {
 			select {
 			case <-wCh:
 			case <-ctx.Done():
-				return "", job.Job{}, ctx.Err()
+				return ctx, "", job.Job{}, ctx.Err()
 			}
 
 			js.logger.Printf("retrying on obj is nil")
@@ -263,14 +308,38 @@ func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) 
 				js.logger.Printf("retrying next job: %s", err)
 				continue
 			}
-			return "", job.Job{}, err
+			return ctx, "", job.Job{}, err
 		}
 		break
 	}
 
 	js.logger.Printf("JOBS: Dispatching next job %q (scheduler prio: %d, job prio: %d, isDirOpen: %t): %q for %q",
 		sJob.ID, priority, sJob.Priority, sJob.IsDirOpen, sJob.Type, sJob.Dir)
-	return sJob.ID, sJob.Job, nil
+
+	ctx = trace.ContextWithSpan(ctx, sJob.TraceSpan)
+
+	_, span := otel.Tracer(tracerName).Start(ctx, "job-wait",
+		trace.WithTimestamp(sJob.EnqueueTime),
+		trace.WithAttributes(attribute.KeyValue{
+			Key:   attribute.Key("JobID"),
+			Value: attribute.StringValue(sJob.ID.String()),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("JobType"),
+			Value: attribute.StringValue(sJob.Type),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("IsDirOpen"),
+			Value: attribute.BoolValue(sJob.IsDirOpen),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("Priority"),
+			Value: attribute.IntValue(int(sJob.Priority)),
+		}, attribute.KeyValue{
+			Key:   attribute.Key("URI"),
+			Value: attribute.StringValue(sJob.Dir.URI),
+		}),
+	)
+	span.End()
+
+	return ctx, sJob.ID, sJob.Job, nil
 }
 
 func isDirOpen(txn *memdb.Txn, dirHandle document.DirHandle) bool {

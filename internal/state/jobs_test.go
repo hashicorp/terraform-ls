@@ -26,7 +26,8 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -36,7 +37,7 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -79,7 +80,8 @@ func TestJobStore_EnqueueJob_openDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	id, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -91,10 +93,9 @@ func TestJobStore_EnqueueJob_openDir(t *testing.T) {
 	}
 
 	// verify that job for open dir comes is treated as high priority
-	ctx := context.Background()
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,12 +120,13 @@ func BenchmarkJobStore_EnqueueJob_basic(b *testing.B) {
 	}
 
 	tmpDir := b.TempDir()
+	ctx := context.Background()
 
 	for i := 0; i < b.N; i++ {
 		i := i
 		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
 
-		_, err := ss.JobStore.EnqueueJob(job.Job{
+		_, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 			Func: func(c context.Context) error {
 				return nil
 			},
@@ -156,12 +158,13 @@ func TestJobStore_EnqueueJob_verify(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	jobCount := 50
+	ctx := context.Background()
 
 	for i := 0; i < jobCount; i++ {
 		i := i
 		dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", i))
 
-		_, err := ss.JobStore.EnqueueJob(job.Job{
+		_, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 			Func: func(c context.Context) error {
 				return nil
 			},
@@ -213,8 +216,9 @@ func TestJobStore_DequeueJobsForDir(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx := context.Background()
 	firstDir := document.DirHandleFromPath("/test-1")
-	_, err = ss.JobStore.EnqueueJob(job.Job{
+	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -224,7 +228,7 @@ func TestJobStore_DequeueJobsForDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -256,8 +260,9 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx := context.Background()
 	firstDir := document.DirHandleFromPath("/test-1")
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -269,7 +274,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 	}
 
 	secondDir := document.DirHandleFromPath("/test-2")
-	_, err = ss.JobStore.EnqueueJob(job.Job{
+	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -285,8 +290,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
-	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
+	ctx, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +309,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
+	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -319,8 +323,9 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx := context.Background()
 	firstDir := document.DirHandleFromPath("/test-1")
-	_, err = ss.JobStore.EnqueueJob(job.Job{
+	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -332,7 +337,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 	}
 
 	secondDir := document.DirHandleFromPath("/test-2")
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -348,8 +353,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
-	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,7 +372,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -382,8 +386,9 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx := context.Background()
 	firstDir := document.DirHandleFromPath("/test-1")
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -396,7 +401,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 	}
 
 	secondDir := document.DirHandleFromPath("/test-2")
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -412,8 +417,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
-	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +434,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
 	}
 
-	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -449,7 +453,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -463,8 +467,9 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx := context.Background()
 	firstDir := document.DirHandleFromPath("/test-1")
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -476,7 +481,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 	}
 
 	secondDir := document.DirHandleFromPath("/test-2")
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -497,7 +502,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(baseCtx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	_, _, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, _, _, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -506,7 +511,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
-	nextId, j, err := ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
+	_, nextId, j, err := ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -523,7 +528,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 		t.Fatalf("expected next job dir %q, given: %q", "test-type", j.Type)
 	}
 
-	nextId, j, err = ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
+	_, nextId, j, err = ss.JobStore.AwaitNextJob(baseCtx, job.LowPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -542,7 +547,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 
 	ctx, cancelFunc = context.WithTimeout(baseCtx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -558,7 +563,8 @@ func TestJobStore_WaitForJobs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -576,7 +582,6 @@ func TestJobStore_WaitForJobs(t *testing.T) {
 		}
 	}(ss.JobStore)
 
-	ctx := context.Background()
 	err = ss.JobStore.WaitForJobs(ctx, id1)
 	if err != nil {
 		t.Fatal(err)
@@ -599,7 +604,8 @@ func TestJobStore_FinishJob_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -609,7 +615,7 @@ func TestJobStore_FinishJob_basic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id2, err := ss.JobStore.EnqueueJob(job.Job{
+	id2, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -645,7 +651,7 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 		ids := make(job.IDs, 0)
 		jobStore := ss.JobStore
 
-		id, err := jobStore.EnqueueJob(job.Job{
+		id, err := jobStore.EnqueueJob(ctx, job.Job{
 			Func: func(ctx context.Context) error {
 				return nil
 			},
@@ -659,7 +665,8 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 		return ids, err
 	}
 
-	id1, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -671,7 +678,6 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
 	// execute deferred func, which is what scheduler would do
 	deferredIds, err := defer1Func(ctx, nil)
 	if err != nil {
@@ -712,7 +718,8 @@ func TestJobStore_FinishJob_dependsOn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parentId, err := ss.JobStore.EnqueueJob(job.Job{
+	ctx := context.Background()
+	parentId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -723,7 +730,7 @@ func TestJobStore_FinishJob_dependsOn(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	childId, err := ss.JobStore.EnqueueJob(job.Job{
+	childId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
 		},
@@ -760,7 +767,7 @@ func TestJobStore_FinishJob_dependsOn(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
 	t.Cleanup(cancelFunc)
-	nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
+	_, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		t.Fatal(err)
 	}

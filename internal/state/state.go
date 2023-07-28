@@ -27,6 +27,8 @@ const (
 	providerIdsTableName    = "provider_ids"
 	walkerPathsTableName    = "walker_paths"
 	registryModuleTableName = "registry_module"
+
+	tracerName = "github.com/hashicorp/terraform-ls/internal/state"
 )
 
 var dbSchema = &memdb.DBSchema{

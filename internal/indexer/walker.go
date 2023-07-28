@@ -23,7 +23,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	refCollectionDeps := make(job.IDs, 0)
 	providerVersionDeps := make(job.IDs, 0)
 
-	parseId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -40,7 +40,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 
 	var metaId job.ID
 	if parseId != "" {
-		metaId, err = idx.jobStore.EnqueueJob(job.Job{
+		metaId, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir:  modHandle,
 			Type: op.OpTypeLoadModuleMetadata.String(),
 			Func: func(ctx context.Context) error {
@@ -57,7 +57,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		}
 	}
 
-	parseVarsId, err := idx.jobStore.EnqueueJob(job.Job{
+	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -71,7 +71,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	}
 
 	if parseVarsId != "" {
-		varsRefsId, err := idx.jobStore.EnqueueJob(job.Job{
+		varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -94,14 +94,14 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	if dataDir.ModuleManifestPath != "" {
 		// References are collected *after* manifest parsing
 		// so that we reflect any references to submodules.
-		modManifestId, err = idx.jobStore.EnqueueJob(job.Job{
+		modManifestId, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
 			},
 			Type: op.OpTypeParseModuleManifest.String(),
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-				return idx.decodeInstalledModuleCalls(modHandle, false)
+				return idx.decodeInstalledModuleCalls(ctx, modHandle, false)
 			},
 		})
 		if err != nil {
@@ -116,7 +116,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 
 	if dataDir.PluginLockFilePath != "" {
 		dependsOn := make(job.IDs, 0)
-		pSchemaVerId, err := idx.jobStore.EnqueueJob(job.Job{
+		pSchemaVerId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
@@ -132,7 +132,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			refCollectionDeps = append(refCollectionDeps, pSchemaVerId)
 		}
 
-		pSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+		pSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
@@ -149,7 +149,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		}
 	}
 
-	eSchemaId, err := idx.jobStore.EnqueueJob(job.Job{
+	eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -168,7 +168,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	ids = append(ids, eSchemaId)
 
 	if parseId != "" {
-		rIds, err := idx.collectReferences(modHandle, refCollectionDeps, false)
+		rIds, err := idx.collectReferences(ctx, modHandle, refCollectionDeps, false)
 		if err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
