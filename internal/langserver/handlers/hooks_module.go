@@ -15,6 +15,39 @@ import (
 	"github.com/hashicorp/terraform-schema/backend"
 )
 
+func earlyValidation(store *state.StateStore, dNotifier *diagnostics.Notifier) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		if changes.IsRemoval {
+			// we ignore removed modules for now
+			return nil
+		}
+
+		isOpen, err := notifier.ModuleIsOpen(ctx)
+		if err != nil {
+			return err
+		}
+		if !isOpen {
+			// only run validation for open files
+			return nil
+		}
+
+		mod, err := notifier.ModuleFromContext(ctx)
+		if err != nil {
+			return err
+		}
+
+		diags := diagnostics.NewDiagnostics()
+		diags.EmptyRootDiagnostic()
+		// diags.Append("early validation", validateDiags)
+		diags.Append("HCL", mod.ModuleDiagnostics.AutoloadedOnly().AsMap())
+		diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
+
+		dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
+
+		return nil
+	}
+}
+
 func sendModuleTelemetry(store *state.StateStore, telemetrySender telemetry.Sender) notifier.Hook {
 	return func(ctx context.Context, changes state.ModuleChanges) error {
 		if changes.IsRemoval {
