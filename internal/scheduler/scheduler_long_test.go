@@ -51,7 +51,7 @@ func TestScheduler_millionJobsQueued(t *testing.T) {
 			for j := 0; j < 10000; j++ {
 				dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-%d", j))
 
-				newId, err := ss.JobStore.EnqueueJob(job.Job{
+				newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 					Func: func(c context.Context) error {
 						return nil
 					},
