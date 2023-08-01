@@ -2,14 +2,9 @@
 
 ENHANCEMENTS:
 
-* OTEL instrumentation ([#1327](https://github.com/hashicorp/terraform-ls/pull/1327))
-* OTEL: Instrument `PreloadEmbeddedSchema` job ([#1334](https://github.com/hashicorp/terraform-ls/pull/1334))
-* jobs: Don't wait for `GetModuleDataFromRegistry` job ([#1332](https://github.com/hashicorp/terraform-ls/pull/1332))
-* Change `nvim_create_autocmd` callback to a lambda ([#1295](https://github.com/hashicorp/terraform-ls/pull/1295))
+* OTEL instrumentation (currently no-op for end-users) ([#1327](https://github.com/hashicorp/terraform-ls/pull/1327), [#1334](https://github.com/hashicorp/terraform-ls/pull/1334))
+* jobs: Don't wait for `GetModuleDataFromRegistry` job to improve performance ([#1332](https://github.com/hashicorp/terraform-ls/pull/1332))
 
-BUG FIXES:
-
-* fix: Add missing context argument to a test ([#1335](https://github.com/hashicorp/terraform-ls/pull/1335))
 * Fix link in README.md ([#1324](https://github.com/hashicorp/terraform-ls/pull/1324))
 
 INTERNAL:
@@ -25,6 +20,8 @@ INTERNAL:
 * build(deps): Bump github.com/vektra/mockery/v2 from 2.31.1 to 2.31.4 ([#1328](https://github.com/hashicorp/terraform-ls/pull/1328))
 * build(deps): Bump github.com/vektra/mockery/v2 from 2.31.4 to 2.32.0 ([#1329](https://github.com/hashicorp/terraform-ls/pull/1329))
 * build(deps): Bump github.com/creachadair/jrpc2 from 1.0.1 to 1.1.0 ([#1330](https://github.com/hashicorp/terraform-ls/pull/1330))
+* Change `nvim_create_autocmd` callback to a lambda ([#1295](https://github.com/hashicorp/terraform-ls/pull/1295))
+* Fix link in README.md ([#1324](https://github.com/hashicorp/terraform-ls/pull/1324))
 
 ## 0.31.3 (20 June 2023)
 
