@@ -1,3 +1,31 @@
+## 0.31.4 (1 August 2023)
+
+ENHANCEMENTS:
+
+* OTEL instrumentation ([#1327](https://github.com/hashicorp/terraform-ls/pull/1327))
+* OTEL: Instrument `PreloadEmbeddedSchema` job ([#1334](https://github.com/hashicorp/terraform-ls/pull/1334))
+* jobs: Don't wait for `GetModuleDataFromRegistry` job ([#1332](https://github.com/hashicorp/terraform-ls/pull/1332))
+* Change `nvim_create_autocmd` callback to a lambda ([#1295](https://github.com/hashicorp/terraform-ls/pull/1295))
+
+BUG FIXES:
+
+* fix: Add missing context argument to a test ([#1335](https://github.com/hashicorp/terraform-ls/pull/1335))
+* Fix link in README.md ([#1324](https://github.com/hashicorp/terraform-ls/pull/1324))
+
+INTERNAL:
+
+* build(deps): Bump golang.org/x/tools from 0.11.0 to 0.11.1 ([#1342](https://github.com/hashicorp/terraform-ls/pull/1342))
+* deps: Bump terraform-schema to `8234469` ([#1343](https://github.com/hashicorp/terraform-ls/pull/1343))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.30.1 to 2.30.16 ([#1319](https://github.com/hashicorp/terraform-ls/pull/1319))
+* build(deps): Bump github.com/hashicorp/terraform-json from 0.17.0 to 0.17.1 ([#1320](https://github.com/hashicorp/terraform-ls/pull/1320))
+* build(deps): Bump github.com/algolia/algoliasearch-client-go/v3 from 3.30.0 to 3.30.1 ([#1322](https://github.com/hashicorp/terraform-ls/pull/1322))
+* build(deps): Bump golang.org/x/tools from 0.10.0 to 0.11.0 ([#1323](https://github.com/hashicorp/terraform-ls/pull/1323))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.30.16 to 2.30.17 ([#1325](https://github.com/hashicorp/terraform-ls/pull/1325))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.30.17 to 2.31.1 ([#1326](https://github.com/hashicorp/terraform-ls/pull/1326))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.31.1 to 2.31.4 ([#1328](https://github.com/hashicorp/terraform-ls/pull/1328))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.31.4 to 2.32.0 ([#1329](https://github.com/hashicorp/terraform-ls/pull/1329))
+* build(deps): Bump github.com/creachadair/jrpc2 from 1.0.1 to 1.1.0 ([#1330](https://github.com/hashicorp/terraform-ls/pull/1330))
+
 ## 0.31.3 (20 June 2023)
 
 ENHANCEMENTS:
