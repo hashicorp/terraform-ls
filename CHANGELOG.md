@@ -5,8 +5,6 @@ ENHANCEMENTS:
 * OTEL instrumentation (currently no-op for end-users) ([#1327](https://github.com/hashicorp/terraform-ls/pull/1327), [#1334](https://github.com/hashicorp/terraform-ls/pull/1334))
 * jobs: Don't wait for `GetModuleDataFromRegistry` job to improve performance ([#1332](https://github.com/hashicorp/terraform-ls/pull/1332))
 
-* Fix link in README.md ([#1324](https://github.com/hashicorp/terraform-ls/pull/1324))
-
 INTERNAL:
 
 * build(deps): Bump golang.org/x/tools from 0.11.0 to 0.11.1 ([#1342](https://github.com/hashicorp/terraform-ls/pull/1342))
