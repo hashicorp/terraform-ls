@@ -465,7 +465,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.stateStore.SetLogger(svc.logger)
 
 	moduleHooks := []notifier.Hook{
-		updateDiagnostics(svc.diagsNotifier),
+		// updateDiagnostics(svc.diagsNotifier),
 		sendModuleTelemetry(svc.stateStore, svc.telemetry),
 	}
 
