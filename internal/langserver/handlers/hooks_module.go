@@ -7,9 +7,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-schema/backend"
@@ -222,6 +225,53 @@ func refreshSemanticTokens(clientRequester session.ClientCaller) notifier.Hook {
 				return fmt.Errorf("Error refreshing %s: %s", mod.Path, err)
 			}
 		}
+
+		return nil
+	}
+}
+
+func earlyValidation(decoder *decoder.Decoder, dNotifier *diagnostics.Notifier) notifier.Hook {
+	return func(ctx context.Context, changes state.ModuleChanges) error {
+		if changes.IsRemoval {
+			// we ignore removed modules for now
+			return nil
+		}
+
+		isOpen, err := notifier.ModuleIsOpen(ctx)
+		if err != nil {
+			return err
+		}
+		if !isOpen {
+			// only run validation for open files
+			return nil
+		}
+
+		mod, err := notifier.ModuleFromContext(ctx)
+		if err != nil {
+			return err
+		}
+		if mod == nil {
+			return nil
+		}
+		pathCtx, err := decoder.Path(lang.Path{
+			Path:       mod.Path,
+			LanguageID: ilsp.Terraform.String(),
+		})
+		if err != nil {
+			return err
+		}
+
+		validateDiags, err := pathCtx.Validate(ctx)
+		if err != nil {
+			return err
+		}
+
+		diags := diagnostics.NewDiagnostics()
+		diags.EmptyRootDiagnostic()
+		diags.Append("early validation", validateDiags)
+		diags.Append("HCL", mod.ModuleDiagnostics.AutoloadedOnly().AsMap())
+		diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
+		dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
 
 		return nil
 	}

@@ -502,10 +502,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		}
 	}
 
-	svc.notifier = notifier.NewNotifier(svc.stateStore.Modules, moduleHooks)
-	svc.notifier.SetLogger(svc.logger)
-	svc.notifier.Start(svc.sessCtx)
-
 	svc.modStore = svc.stateStore.Modules
 	svc.schemaStore = svc.stateStore.ProviderSchemas
 
@@ -523,6 +519,12 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	decoderContext := idecoder.DecoderContext(ctx)
 	svc.AppendCompletionHooks(decoderContext)
 	svc.decoder.SetContext(decoderContext)
+
+	moduleHooks = append(moduleHooks, earlyValidation(svc.decoder, svc.diagsNotifier))
+
+	svc.notifier = notifier.NewNotifier(svc.stateStore.Modules, moduleHooks)
+	svc.notifier.SetLogger(svc.logger)
+	svc.notifier.Start(svc.sessCtx)
 
 	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
 	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.modStore, svc.indexer.WalkedModule)
