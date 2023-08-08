@@ -18,6 +18,10 @@ type ExperimentalFeatures struct {
 	PrefillRequiredFields bool `mapstructure:"prefillRequiredFields"`
 }
 
+type ValidationOptions struct {
+	EarlyValidation bool `mapstructure:"earlyValidation"`
+}
+
 type Indexing struct {
 	IgnoreDirectoryNames []string `mapstructure:"ignoreDirectoryNames"`
 	IgnorePaths          []string `mapstructure:"ignorePaths"`
@@ -35,6 +39,8 @@ type Options struct {
 
 	// ExperimentalFeatures encapsulates experimental features users can opt into.
 	ExperimentalFeatures ExperimentalFeatures `mapstructure:"experimentalFeatures"`
+
+	Validation ValidationOptions `mapstructure:"validation"`
 
 	IgnoreSingleFileWarning bool `mapstructure:"ignoreSingleFileWarning"`
 
