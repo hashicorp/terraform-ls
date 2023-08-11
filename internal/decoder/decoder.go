@@ -7,10 +7,10 @@ import (
 	"context"
 
 	"github.com/hashicorp/hcl-lang/decoder"
-	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/codelens"
+	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -92,41 +92,8 @@ func DecoderContext(ctx context.Context) decoder.DecoderContext {
 		}
 	}
 
-	// TODO: extract out of this file
-	dCtx.Validations = append(dCtx.Validations, func(ctx context.Context) lang.DiagnosticsMap {
-		// get files from pathContext
-		//iterate over files and validate
-		pathCtx, err := decoder.PathCtx(ctx)
-		if err != nil {
-			// TODO
-		}
-
-		diagsMap := make(lang.DiagnosticsMap)
-
-		for _, origin := range pathCtx.ReferenceOrigins {
-			matchableOrigin, ok := origin.(reference.MatchableOrigin)
-			if !ok {
-				// TODO: add a diag here
-				continue
-			}
-
-			_, ok = pathCtx.ReferenceTargets.Match(matchableOrigin)
-			if !ok {
-				// target not found
-				diagsMap[origin.OriginRange().Filename] = hcl.Diagnostics{
-					&hcl.Diagnostic{
-						Severity: hcl.DiagError,
-						Summary:  "No reference found", // TODO: Is there more we can state here?
-						Subject:  origin.OriginRange().Ptr(),
-					},
-				}
-				continue
-			}
-
-		}
-
-		return diagsMap
-	})
+	validations := validations.ValidationFuncs()
+	dCtx.Validations = append(dCtx.Validations, validations...)
 
 	return dCtx
 }
