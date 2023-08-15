@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/hcl-lang/decoder"
+	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/codelens"
@@ -92,7 +93,9 @@ func DecoderContext(ctx context.Context) decoder.DecoderContext {
 		}
 	}
 
-	validations := validations.ValidationFuncs()
+	validations := []lang.ValidationFunc{
+		validations.UnReferencedOrigin,
+	}
 	dCtx.Validations = append(dCtx.Validations, validations...)
 
 	return dCtx
