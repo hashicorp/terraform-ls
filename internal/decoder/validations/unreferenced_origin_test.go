@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
-func TestUnReferencedOrigin(t *testing.T) {
+func TestUnreferencedOrigins(t *testing.T) {
 	tests := []struct {
 		name    string
 		origins reference.Origins
