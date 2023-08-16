@@ -24,6 +24,11 @@ func UnreferencedOrigins(ctx context.Context) lang.DiagnosticsMap {
 	for _, origin := range pathCtx.ReferenceOrigins {
 		matchableOrigin, ok := origin.(reference.MatchableOrigin)
 		if !ok {
+			// we don't report on other origins to avoid complexity for now
+			// other origins would need to be matched against other
+			// modules/directories and we cannot be sure the targets are
+			// available within the workspace or were parsed/decoded/collected
+			// at the time this event occurs
 			continue
 		}
 
