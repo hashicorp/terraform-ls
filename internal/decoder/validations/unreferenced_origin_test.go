@@ -18,12 +18,12 @@ import (
 func TestUnReferencedOrigin(t *testing.T) {
 	tests := []struct {
 		name string
-		ctx  context.Context
+		origins  reference.Origins
 		want lang.DiagnosticsMap
 	}{
 		{
 			name: "undeclared variable",
-			ctx: buildPathCtx(reference.Origins{
+			origins: reference.Origins{
 				reference.LocalOrigin{
 					Range: hcl.Range{
 						Filename: "test.tf",
@@ -35,7 +35,7 @@ func TestUnReferencedOrigin(t *testing.T) {
 						lang.AttrStep{Name: "foo"},
 					},
 				},
-			}),
+			},
 			want: lang.DiagnosticsMap{
 				"test.tf": hcl.Diagnostics{
 					&hcl.Diagnostic{
@@ -52,12 +52,12 @@ func TestUnReferencedOrigin(t *testing.T) {
 		},
 		{
 			name: "many undeclared variables",
-			ctx: buildPathCtx(reference.Origins{
+			origins: reference.Origins{
 				reference.LocalOrigin{
 					Range: hcl.Range{
 						Filename: "test.tf",
-						Start:    hcl.Pos{ Line: 1, Column: 1, Byte: 0 },
-						End:      hcl.Pos{ Line: 1, Column: 10, Byte: 10 },
+						Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
+						End:      hcl.Pos{Line: 1, Column: 10, Byte: 10},
 					},
 					Addr: lang.Address{
 						lang.RootStep{Name: "var"},
@@ -67,15 +67,15 @@ func TestUnReferencedOrigin(t *testing.T) {
 				reference.LocalOrigin{
 					Range: hcl.Range{
 						Filename: "test.tf",
-						Start:    hcl.Pos{ Line: 2, Column: 1, Byte: 0 },
-						End:      hcl.Pos{ Line: 2, Column: 10, Byte: 10 },
+						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 0},
+						End:      hcl.Pos{Line: 2, Column: 10, Byte: 10},
 					},
 					Addr: lang.Address{
 						lang.RootStep{Name: "var"},
 						lang.AttrStep{Name: "wakka"},
 					},
 				},
-			}),
+			},
 			want: lang.DiagnosticsMap{
 				"test.tf": hcl.Diagnostics{
 					&hcl.Diagnostic{
@@ -83,8 +83,8 @@ func TestUnReferencedOrigin(t *testing.T) {
 						Summary:  "No declaration found for \"var.foo\"",
 						Subject: &hcl.Range{
 							Filename: "test.tf",
-							Start:    hcl.Pos{ Line: 1, Column: 1, Byte: 0 },
-							End:      hcl.Pos{ Line: 1, Column: 10, Byte: 10 },
+							Start:    hcl.Pos{Line: 1, Column: 1, Byte: 0},
+							End:      hcl.Pos{Line: 1, Column: 10, Byte: 10},
 						},
 					},
 					&hcl.Diagnostic{
@@ -92,8 +92,8 @@ func TestUnReferencedOrigin(t *testing.T) {
 						Summary:  "No declaration found for \"var.wakka\"",
 						Subject: &hcl.Range{
 							Filename: "test.tf",
-							Start:    hcl.Pos{ Line: 2, Column: 1, Byte: 0 },
-							End:      hcl.Pos{ Line: 2, Column: 10, Byte: 10 },
+							Start:    hcl.Pos{Line: 2, Column: 1, Byte: 0},
+							End:      hcl.Pos{Line: 2, Column: 10, Byte: 10},
 						},
 					},
 				},
@@ -103,21 +103,18 @@ func TestUnReferencedOrigin(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%2d-%s", i, tt.name), func(t *testing.T) {
-			diags := UnReferencedOrigin(tt.ctx)
+			ctx := context.Background()
+
+			pathCtx := &decoder.PathContext{
+				ReferenceOrigins: tt.origins,
+			}
+
+			ctx = decoder.WithPathContext(ctx, pathCtx)
+
+			diags := UnReferencedOrigin(ctx)
 			if diff := cmp.Diff(tt.want["test.tf"], diags["test.tf"]); diff != "" {
 				t.Fatalf("unexpected diagnostics: %s", diff)
 			}
 		})
 	}
-}
-
-func buildPathCtx(origins reference.Origins) context.Context {
-	ctx := context.Background()
-
-	pathCtx := &decoder.PathContext{
-		ReferenceOrigins: origins,
-	}
-
-	ctx = decoder.WithPathContext(ctx, pathCtx)
-	return ctx
 }
