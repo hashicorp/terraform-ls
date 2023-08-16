@@ -17,9 +17,9 @@ import (
 
 func TestUnReferencedOrigin(t *testing.T) {
 	tests := []struct {
-		name string
-		origins  reference.Origins
-		want lang.DiagnosticsMap
+		name    string
+		origins reference.Origins
+		want    lang.DiagnosticsMap
 	}{
 		{
 			name: "undeclared variable",
