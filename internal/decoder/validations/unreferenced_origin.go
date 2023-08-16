@@ -27,8 +27,11 @@ func UnreferencedOrigins(ctx context.Context) lang.DiagnosticsMap {
 			continue
 		}
 
-		foo := matchableOrigin.Address()[0]
-		if foo.String() != "var" {
+		// we only initially validate variables
+		// resources and data sources can have unknown schema
+		// and will be researched at a later point
+		firstStep := matchableOrigin.Address()[0]
+		if firstStep.String() != "var" {
 			continue
 		}
 
