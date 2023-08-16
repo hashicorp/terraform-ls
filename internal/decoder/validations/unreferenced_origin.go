@@ -5,6 +5,8 @@ package validations
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -23,9 +25,15 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 	for _, origin := range pathCtx.ReferenceOrigins {
 		matchableOrigin, ok := origin.(reference.MatchableOrigin)
 		if !ok {
-			// TODO: add a diag here
 			continue
 		}
+
+		foo := matchableOrigin.Address()[0]
+		if foo.String() != "var" {
+			continue
+		}
+
+		log.Printf("MatchableOrigin: %s", matchableOrigin.Address())
 
 		_, ok = pathCtx.ReferenceTargets.Match(matchableOrigin)
 		if !ok {
@@ -33,7 +41,7 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 			diagsMap[origin.OriginRange().Filename] = hcl.Diagnostics{
 				&hcl.Diagnostic{
 					Severity: hcl.DiagError,
-					Summary:  "No reference found", // TODO: Is there more we can state here?
+					Summary:  fmt.Sprintf("No declaration found for %q", matchableOrigin.Address()),
 					Subject:  origin.OriginRange().Ptr(),
 				},
 			}
@@ -41,6 +49,6 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 		}
 
 	}
-
+	log.Printf("Length: %d Diags produced: %+v", len(pathCtx.ReferenceOrigins) , diagsMap)
 	return diagsMap
 }
