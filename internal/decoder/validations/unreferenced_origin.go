@@ -21,7 +21,6 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 		return diagsMap
 	}
 
-
 	for _, origin := range pathCtx.ReferenceOrigins {
 		matchableOrigin, ok := origin.(reference.MatchableOrigin)
 		if !ok {
@@ -36,13 +35,14 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 		_, ok = pathCtx.ReferenceTargets.Match(matchableOrigin)
 		if !ok {
 			// target not found
-			diagsMap[origin.OriginRange().Filename] = hcl.Diagnostics{
-				&hcl.Diagnostic{
-					Severity: hcl.DiagError,
-					Summary:  fmt.Sprintf("No declaration found for %q", matchableOrigin.Address()),
-					Subject:  origin.OriginRange().Ptr(),
-				},
+			fileName := origin.OriginRange().Filename
+			d := &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  fmt.Sprintf("No declaration found for %q", matchableOrigin.Address()),
+				Subject:  origin.OriginRange().Ptr(),
 			}
+			diagsMap[fileName] = diagsMap[fileName].Append(d)
+
 			continue
 		}
 
