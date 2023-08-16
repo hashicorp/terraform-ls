@@ -6,7 +6,6 @@ package validations
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -15,12 +14,13 @@ import (
 )
 
 func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
+	diagsMap := make(lang.DiagnosticsMap)
+
 	pathCtx, err := decoder.PathCtx(ctx)
 	if err != nil {
-		// TODO
+		return diagsMap
 	}
 
-	diagsMap := make(lang.DiagnosticsMap)
 
 	for _, origin := range pathCtx.ReferenceOrigins {
 		matchableOrigin, ok := origin.(reference.MatchableOrigin)
@@ -32,8 +32,6 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 		if foo.String() != "var" {
 			continue
 		}
-
-		log.Printf("MatchableOrigin: %s", matchableOrigin.Address())
 
 		_, ok = pathCtx.ReferenceTargets.Match(matchableOrigin)
 		if !ok {
@@ -49,6 +47,6 @@ func UnReferencedOrigin(ctx context.Context) lang.DiagnosticsMap {
 		}
 
 	}
-	log.Printf("Length: %d Diags produced: %+v", len(pathCtx.ReferenceOrigins) , diagsMap)
+
 	return diagsMap
 }
