@@ -94,7 +94,7 @@ func DecoderContext(ctx context.Context) decoder.DecoderContext {
 	}
 
 	validations := []lang.ValidationFunc{
-		validations.UnReferencedOrigin,
+		validations.UnreferencedOrigins,
 	}
 	dCtx.Validations = append(dCtx.Validations, validations...)
 

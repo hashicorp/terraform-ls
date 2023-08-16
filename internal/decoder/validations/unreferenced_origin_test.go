@@ -111,7 +111,7 @@ func TestUnreferencedOrigins(t *testing.T) {
 
 			ctx = decoder.WithPathContext(ctx, pathCtx)
 
-			diags := UnReferencedOrigin(ctx)
+			diags := UnreferencedOrigins(ctx)
 			if diff := cmp.Diff(tt.want["test.tf"], diags["test.tf"]); diff != "" {
 				t.Fatalf("unexpected diagnostics: %s", diff)
 			}
