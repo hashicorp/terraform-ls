@@ -96,6 +96,19 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, eSchemaId)
 
+	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.EarlyValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		Type:        op.OpTypeEarlyValidation.String(),
+		DependsOn:   job.IDs{eSchemaId},
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		return ids, err
+	}
+
 	refTargetsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
