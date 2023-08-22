@@ -134,9 +134,11 @@ type Module struct {
 	MetaErr   error
 	MetaState op.OpState
 
-	ModuleDiagnostics     ast.ModDiags
-	ValidationDiagnostics lang.DiagnosticsMap
-	VarsDiagnostics       ast.VarsDiags
+	ModuleDiagnostics ast.ModDiags
+	VarsDiagnostics   ast.VarsDiags
+
+	ValidationDiagnostics      lang.DiagnosticsMap
+	ValidationDiagnosticsState op.OpState
 }
 
 func (m *Module) Copy() *Module {
@@ -179,6 +181,8 @@ func (m *Module) Copy() *Module {
 		VarsParsingErr:     m.VarsParsingErr,
 		ModuleParsingState: m.ModuleParsingState,
 		VarsParsingState:   m.VarsParsingState,
+
+		ValidationDiagnosticsState: m.ValidationDiagnosticsState,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
@@ -247,6 +251,7 @@ func newModule(modPath string) *Module {
 		RefTargetsState:            op.OpStateUnknown,
 		ModuleParsingState:         op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
+		ValidationDiagnosticsState: op.OpStateUnknown,
 	}
 }
 
@@ -992,8 +997,30 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 	return nil
 }
 
+func (s *ModuleStore) SetValidationDiagnosticsState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.ValidationDiagnosticsState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *ModuleStore) UpdateValidateDiagnostics(path string, diags lang.DiagnosticsMap) error {
 	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetValidationDiagnosticsState(path, op.OpStateLoaded)
+	})
 	defer txn.Abort()
 
 	oldMod, err := moduleByPath(txn, path)

@@ -663,8 +663,20 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 }
 
 func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
 
-	// TODO? introduce validation state
+	// Avoid validation if it is already in progress or already known
+	if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
