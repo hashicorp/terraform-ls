@@ -668,7 +668,7 @@ func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaRea
 		return err
 	}
 
-	// Avoid validation if it is already in progress or already known
+	// Avoid validation if it is already in progress or already finished
 	if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
