@@ -156,6 +156,7 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			defer dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
 
 			if mod != nil {
+				diags.Append("early validation", mod.ValidationDiagnostics)
 				diags.Append("HCL", mod.ModuleDiagnostics.AutoloadedOnly().AsMap())
 				diags.Append("HCL", mod.VarsDiagnostics.AutoloadedOnly().AsMap())
 			}
