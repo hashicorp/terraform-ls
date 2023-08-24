@@ -19,12 +19,14 @@ import (
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
+	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
@@ -663,20 +665,21 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 }
 
 func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
-	if err != nil {
-		return err
-	}
+	// mod, err := modStore.ModuleByPath(modPath)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Avoid validation if it is already in progress or already finished
-	if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
-		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
-	}
+	// // Avoid validation if it is already in progress or already finished
+	// if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	// }
 
-	err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
-	if err != nil {
-		return err
-	}
+	// err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
+	// if err != nil {
+	// 	return err
+	// }
+	// TODO! track job state
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
@@ -693,12 +696,47 @@ func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaRea
 	}
 
 	diags, rErr := moduleDecoder.Validate(ctx)
-	sErr := modStore.UpdateValidateDiagnostics(modPath, diags)
+	sErr := modStore.UpdateModuleDiagnostics(modPath, ast.SchemaValidationSource, ast.ModDiagsFromMap(diags))
 	if sErr != nil {
 		return sErr
 	}
 
 	return rErr
+}
+
+func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	// mod, err := modStore.ModuleByPath(modPath)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // Avoid validation if it is already in progress or already known
+	// if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	// }
+
+	// err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
+	// if err != nil {
+	// 	return err
+	// }
+	// TODO! track job state
+
+	pathReader := &idecoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	}
+	pathCtx, err := pathReader.PathContext(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Terraform.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	ctx = decoder.WithPathContext(ctx, pathCtx)
+
+	diags := validations.UnreferencedOrigins(ctx)
+	return modStore.UpdateModuleDiagnostics(modPath, ast.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
 }
 
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {

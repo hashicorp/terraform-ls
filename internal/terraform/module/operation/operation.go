@@ -31,4 +31,5 @@ const (
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
 	OpTypeEarlyValidation
+	OpTypeReferenceValidation
 )
