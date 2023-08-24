@@ -30,4 +30,5 @@ const (
 	OpTypeGetModuleDataFromRegistry
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
+	OpTypeEarlyValidation
 )
