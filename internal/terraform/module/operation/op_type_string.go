@@ -21,11 +21,12 @@ func _() {
 	_ = x[OpTypeGetModuleDataFromRegistry-10]
 	_ = x[OpTypeParseProviderVersions-11]
 	_ = x[OpTypePreloadEmbeddedSchema-12]
+	_ = x[OpTypeEarlyValidation-13]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchema"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeEarlyValidation"
 
-var _OpType_index = [...]uint16{0, 13, 38, 56, 86, 106, 131, 155, 183, 211, 237, 268, 295, 322}
+var _OpType_index = [...]uint16{0, 13, 38, 56, 86, 106, 131, 155, 183, 211, 237, 268, 295, 322, 343}
 
 func (i OpType) String() string {
 	if i >= OpType(len(_OpType_index)-1) {

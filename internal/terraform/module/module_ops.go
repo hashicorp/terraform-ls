@@ -699,6 +699,45 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
+func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	d := decoder.NewDecoder(&idecoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	})
+	d.SetContext(idecoder.DecoderContext(ctx))
+
+	moduleDecoder, err := d.Path(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Terraform.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	diags, rErr := moduleDecoder.Validate(ctx)
+	sErr := modStore.UpdateValidateDiagnostics(modPath, diags)
+	if sErr != nil {
+		return sErr
+	}
+
+	return rErr
+}
+
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
 	// loop over module calls
 	calls, err := modStore.ModuleCalls(modPath)

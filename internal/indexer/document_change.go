@@ -135,6 +135,19 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, refTargetsId)
 
+	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.EarlyValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+		},
+		Type:        op.OpTypeEarlyValidation.String(),
+		DependsOn:   job.IDs{metaId, refTargetsId},
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		return ids, err
+	}
+
 	// This job may make an HTTP request, and we schedule it in
 	// the low-priority queue, so we don't want to wait for it.
 	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
