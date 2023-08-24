@@ -427,37 +427,42 @@ provider "blah" {
   region = "london"
 `), "test.tf")
 
-	err = s.Modules.UpdateModuleDiagnostics(tmpDir, ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateModuleDiagnostics(tmpDir, ast.ModuleParsingSource, ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tf": diags,
 	}))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	mod, err := s.Modules.ModuleByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedDiags := ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
-		"test.tf": {
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Unclosed configuration block",
-				Detail:   "There is no closing brace for this block before the end of the file. This may be caused by incorrect brace nesting elsewhere in this file.",
-				Subject: &hcl.Range{
-					Filename: "test.tf",
-					Start: hcl.Pos{
-						Line:   2,
-						Column: 17,
-						Byte:   17,
-					},
-					End: hcl.Pos{
-						Line:   2,
-						Column: 18,
-						Byte:   18,
+	expectedDiags := ast.SourceModDiags{
+		ast.ModuleParsingSource: ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
+			"test.tf": {
+				{
+					Severity: hcl.DiagError,
+					Summary:  "Unclosed configuration block",
+					Detail:   "There is no closing brace for this block before the end of the file. This may be caused by incorrect brace nesting elsewhere in this file.",
+					Subject: &hcl.Range{
+						Filename: "test.tf",
+						Start: hcl.Pos{
+							Line:   2,
+							Column: 17,
+							Byte:   17,
+						},
+						End: hcl.Pos{
+							Line:   2,
+							Column: 18,
+							Byte:   18,
+						},
 					},
 				},
 			},
-		},
-	})
+		}),
+	}
 	if diff := cmp.Diff(expectedDiags, mod.ModuleDiagnostics, cmpOpts); diff != "" {
 		t.Fatalf("unexpected diagnostics: %s", diff)
 	}
@@ -481,37 +486,42 @@ dev = {
   region = "london"
 `), "test.tfvars")
 
-	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.VarsParsingSource, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tfvars": diags,
 	}))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	mod, err := s.Modules.ModuleByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectedDiags := ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
-		"test.tfvars": {
-			{
-				Severity: hcl.DiagError,
-				Summary:  "Missing expression",
-				Detail:   "Expected the start of an expression, but found the end of the file.",
-				Subject: &hcl.Range{
-					Filename: "test.tfvars",
-					Start: hcl.Pos{
-						Line:   4,
-						Column: 1,
-						Byte:   29,
-					},
-					End: hcl.Pos{
-						Line:   4,
-						Column: 1,
-						Byte:   29,
+	expectedDiags := ast.SourceVarsDiags{
+		ast.VarsParsingSource: ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
+			"test.tfvars": {
+				{
+					Severity: hcl.DiagError,
+					Summary:  "Missing expression",
+					Detail:   "Expected the start of an expression, but found the end of the file.",
+					Subject: &hcl.Range{
+						Filename: "test.tfvars",
+						Start: hcl.Pos{
+							Line:   4,
+							Column: 1,
+							Byte:   29,
+						},
+						End: hcl.Pos{
+							Line:   4,
+							Column: 1,
+							Byte:   29,
+						},
 					},
 				},
 			},
-		},
-	})
+		}),
+	}
 	if diff := cmp.Diff(expectedDiags, mod.VarsDiagnostics, cmpOpts); diff != "" {
 		t.Fatalf("unexpected diagnostics: %s", diff)
 	}
@@ -732,7 +742,7 @@ func BenchmarkModuleByPath(b *testing.B) {
 		b.Fatal(err)
 	}
 	mDiags := ast.ModDiagsFromMap(diags)
-	err = s.Modules.UpdateModuleDiagnostics(modPath, mDiags)
+	err = s.Modules.UpdateModuleDiagnostics(modPath, ast.ModuleParsingSource, mDiags)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -741,7 +751,9 @@ func BenchmarkModuleByPath(b *testing.B) {
 		Path:               modPath,
 		ParsedModuleFiles:  mFiles,
 		ModuleParsingState: operation.OpStateLoaded,
-		ModuleDiagnostics:  mDiags,
+		ModuleDiagnostics: ast.SourceModDiags{
+			ast.ModuleParsingSource: mDiags,
+		},
 	}
 
 	for n := 0; n < b.N; n++ {

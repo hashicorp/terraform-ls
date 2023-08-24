@@ -87,3 +87,5 @@ func (vd VarsDiags) Count() int {
 	}
 	return count
 }
+
+type SourceVarsDiags map[DiagnosticSource]VarsDiags

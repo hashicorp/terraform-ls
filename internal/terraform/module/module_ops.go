@@ -378,7 +378,7 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 		return sErr
 	}
 
-	sErr = modStore.UpdateModuleDiagnostics(modPath, diags)
+	sErr = modStore.UpdateModuleDiagnostics(modPath, ast.ModuleParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -413,7 +413,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		return sErr
 	}
 
-	sErr = modStore.UpdateVarsDiagnostics(modPath, diags)
+	sErr = modStore.UpdateVarsDiagnostics(modPath, ast.VarsParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}

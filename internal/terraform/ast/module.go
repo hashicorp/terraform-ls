@@ -90,3 +90,5 @@ func (md ModDiags) Count() int {
 	}
 	return count
 }
+
+type SourceModDiags map[DiagnosticSource]ModDiags

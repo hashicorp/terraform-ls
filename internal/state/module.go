@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
-	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -134,11 +133,8 @@ type Module struct {
 	MetaErr   error
 	MetaState op.OpState
 
-	ModuleDiagnostics ast.ModDiags
-	VarsDiagnostics   ast.VarsDiags
-
-	ValidationDiagnostics      lang.DiagnosticsMap
-	ValidationDiagnosticsState op.OpState
+	ModuleDiagnostics ast.SourceModDiags
+	VarsDiagnostics   ast.SourceVarsDiags
 }
 
 func (m *Module) Copy() *Module {
@@ -182,8 +178,6 @@ func (m *Module) Copy() *Module {
 		ModuleParsingState: m.ModuleParsingState,
 		VarsParsingState:   m.VarsParsingState,
 
-		ValidationDiagnosticsState: m.ValidationDiagnosticsState,
-
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
@@ -214,26 +208,28 @@ func (m *Module) Copy() *Module {
 	}
 
 	if m.ModuleDiagnostics != nil {
-		newMod.ModuleDiagnostics = make(ast.ModDiags, len(m.ModuleDiagnostics))
-		for name, diags := range m.ModuleDiagnostics {
-			newMod.ModuleDiagnostics[name] = make(hcl.Diagnostics, len(diags))
-			copy(newMod.ModuleDiagnostics[name], diags)
-		}
-	}
+		newMod.ModuleDiagnostics = make(ast.SourceModDiags, len(m.ModuleDiagnostics))
 
-	if m.ValidationDiagnostics != nil {
-		newMod.ValidationDiagnostics = make(lang.DiagnosticsMap, len(m.ValidationDiagnostics))
-		for name, diags := range m.ValidationDiagnostics {
-			newMod.ValidationDiagnostics[name] = make(hcl.Diagnostics, len(diags))
-			copy(newMod.ValidationDiagnostics[name], diags)
+		for source, modDiags := range m.ModuleDiagnostics {
+			newMod.ModuleDiagnostics[source] = make(ast.ModDiags, len(modDiags))
+
+			for name, diags := range modDiags {
+				newMod.ModuleDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
+				copy(newMod.ModuleDiagnostics[source][name], diags)
+			}
 		}
 	}
 
 	if m.VarsDiagnostics != nil {
-		newMod.VarsDiagnostics = make(ast.VarsDiags, len(m.VarsDiagnostics))
-		for name, diags := range m.VarsDiagnostics {
-			newMod.VarsDiagnostics[name] = make(hcl.Diagnostics, len(diags))
-			copy(newMod.VarsDiagnostics[name], diags)
+		newMod.VarsDiagnostics = make(ast.SourceVarsDiags, len(m.VarsDiagnostics))
+
+		for source, varsDiags := range m.VarsDiagnostics {
+			newMod.VarsDiagnostics[source] = make(ast.VarsDiags, len(varsDiags))
+
+			for name, diags := range varsDiags {
+				newMod.VarsDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
+				copy(newMod.VarsDiagnostics[source][name], diags)
+			}
 		}
 	}
 
@@ -251,7 +247,6 @@ func newModule(modPath string) *Module {
 		RefTargetsState:            op.OpStateUnknown,
 		ModuleParsingState:         op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
-		ValidationDiagnosticsState: op.OpStateUnknown,
 	}
 }
 
@@ -971,7 +966,7 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 	return nil
 }
 
-func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) error {
+func (s *ModuleStore) UpdateModuleDiagnostics(path string, source ast.DiagnosticSource, diags ast.ModDiags) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -981,7 +976,10 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 	}
 
 	mod := oldMod.Copy()
-	mod.ModuleDiagnostics = diags
+	if mod.ModuleDiagnostics == nil {
+		mod.ModuleDiagnostics = make(ast.SourceModDiags)
+	}
+	mod.ModuleDiagnostics[source] = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -997,55 +995,7 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, diags ast.ModDiags) e
 	return nil
 }
 
-func (s *ModuleStore) SetValidationDiagnosticsState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.ValidationDiagnosticsState = state
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateValidateDiagnostics(path string, diags lang.DiagnosticsMap) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetValidationDiagnosticsState(path, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldMod, err := moduleByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod := oldMod.Copy()
-	mod.ValidationDiagnostics = diags
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags ast.VarsDiags) error {
+func (s *ModuleStore) UpdateVarsDiagnostics(path string, source ast.DiagnosticSource, diags ast.VarsDiags) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -1055,7 +1005,10 @@ func (s *ModuleStore) UpdateVarsDiagnostics(path string, diags ast.VarsDiags) er
 	}
 
 	mod := oldMod.Copy()
-	mod.VarsDiagnostics = diags
+	if mod.VarsDiagnostics == nil {
+		mod.VarsDiagnostics = make(ast.SourceVarsDiags)
+	}
+	mod.VarsDiagnostics[source] = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
