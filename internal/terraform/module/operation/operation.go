@@ -32,4 +32,5 @@ const (
 	OpTypePreloadEmbeddedSchema
 	OpTypeEarlyValidation
 	OpTypeReferenceValidation
+	OpTypeTerraformValidate
 )

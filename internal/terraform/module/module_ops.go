@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
@@ -32,7 +33,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/earlydecoder"
-	"github.com/hashicorp/terraform-schema/module"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/zclconf/go-cty/cty"
@@ -524,7 +525,7 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 	}
 	meta.ProviderRequirements = providerRequirements
 
-	providerRefs := make(map[module.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
+	providerRefs := make(map[tfmodule.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
 	for localRef, pAddr := range meta.ProviderReferences {
 		// TODO: check pAddr for migrations via Registry API?
 		providerRefs[localRef] = pAddr
@@ -737,6 +738,26 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 
 	diags := validations.UnreferencedOrigins(ctx)
 	return modStore.UpdateModuleDiagnostics(modPath, ast.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
+}
+
+func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
+	if err != nil {
+		return err
+	}
+
+	jsonDiags, err := tfExec.Validate(ctx)
+	if err != nil {
+		return err
+	}
+	validateDiags := diagnostics.HCLDiagsFromJSON(jsonDiags)
+
+	return modStore.UpdateModuleDiagnostics(modPath, ast.TerraformValidateSource, ast.ModDiagsFromMap(validateDiags))
 }
 
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
