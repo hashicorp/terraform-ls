@@ -135,6 +135,8 @@ type Module struct {
 
 	ModuleDiagnostics ast.SourceModDiags
 	VarsDiagnostics   ast.SourceVarsDiags
+
+	DiagnosticsState ast.DiagnosticSourceState
 }
 
 func (m *Module) Copy() *Module {
@@ -181,6 +183,8 @@ func (m *Module) Copy() *Module {
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
+
+		DiagnosticsState: m.DiagnosticsState.Copy(),
 	}
 
 	if m.InstalledProviders != nil {
@@ -247,6 +251,13 @@ func newModule(modPath string) *Module {
 		RefTargetsState:            op.OpStateUnknown,
 		ModuleParsingState:         op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
+		DiagnosticsState: ast.DiagnosticSourceState{
+			ast.ModuleParsingSource:       op.OpStateUnknown,
+			ast.VarsParsingSource:         op.OpStateUnknown,
+			ast.SchemaValidationSource:    op.OpStateUnknown,
+			ast.ReferenceValidationSource: op.OpStateUnknown,
+			ast.TerraformValidateSource:   op.OpStateUnknown,
+		},
 	}
 }
 
@@ -968,6 +979,9 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 
 func (s *ModuleStore) UpdateModuleDiagnostics(path string, source ast.DiagnosticSource, diags ast.ModDiags) error {
 	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetDiagnosticsState(path, source, op.OpStateLoaded)
+	})
 	defer txn.Abort()
 
 	oldMod, err := moduleByPath(txn, path)
@@ -987,6 +1001,25 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, source ast.Diagnostic
 	}
 
 	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetDiagnosticsState(path string, source ast.DiagnosticSource, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+	mod.DiagnosticsState[source] = state
+
+	err = txn.Insert(s.tableName, mod)
 	if err != nil {
 		return err
 	}

@@ -666,21 +666,20 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 }
 
 func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	// mod, err := modStore.ModuleByPath(modPath)
-	// if err != nil {
-	// 	return err
-	// }
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
 
-	// // Avoid validation if it is already in progress or already finished
-	// if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
-	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
-	// }
+	// Avoid validation if it is already in progress or already finished
+	if mod.DiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
 
-	// err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
-	// if err != nil {
-	// 	return err
-	// }
-	// TODO! track job state
+	err = modStore.SetDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
 		ModuleReader: modStore,
@@ -706,21 +705,20 @@ func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaRea
 }
 
 func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	// mod, err := modStore.ModuleByPath(modPath)
-	// if err != nil {
-	// 	return err
-	// }
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
 
-	// // Avoid validation if it is already in progress or already known
-	// if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
-	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
-	// }
+	// Avoid validation if it is already in progress or already finished
+	if mod.DiagnosticsState[ast.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
 
-	// err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
-	// if err != nil {
-	// 	return err
-	// }
-	// TODO! track job state
+	err = modStore.SetDiagnosticsState(modPath, ast.ReferenceValidationSource, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
 	pathReader := &idecoder.PathReader{
 		ModuleReader: modStore,
@@ -742,6 +740,16 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 
 func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if mod.DiagnosticsState[ast.TerraformValidateSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetDiagnosticsState(modPath, ast.TerraformValidateSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}

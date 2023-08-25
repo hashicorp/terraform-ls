@@ -3,7 +3,11 @@
 
 package ast
 
-import "fmt"
+import (
+	"fmt"
+
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+)
 
 // DiagnosticSource differentiates different sources of diagnostics.
 type DiagnosticSource int
@@ -34,3 +38,14 @@ func (d DiagnosticSource) String() string {
 }
 
 // TODO? combine with langserver/diagnostics
+
+type DiagnosticSourceState map[DiagnosticSource]op.OpState
+
+func (dss DiagnosticSourceState) Copy() DiagnosticSourceState {
+	newDiagnosticSourceState := make(DiagnosticSourceState, len(dss))
+	for source, state := range dss {
+		newDiagnosticSourceState[source] = state
+	}
+
+	return newDiagnosticSourceState
+}
