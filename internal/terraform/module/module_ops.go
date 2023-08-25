@@ -665,7 +665,7 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
-func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func SchemaValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
