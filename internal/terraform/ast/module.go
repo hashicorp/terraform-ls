@@ -92,3 +92,11 @@ func (md ModDiags) Count() int {
 }
 
 type SourceModDiags map[DiagnosticSource]ModDiags
+
+func (smd SourceModDiags) Count() int {
+	count := 0
+	for _, diags := range smd {
+		count += diags.Count()
+	}
+	return count
+}

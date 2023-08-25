@@ -153,16 +153,14 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			diags := diagnostics.NewDiagnostics()
 			diags.EmptyRootDiagnostic()
 
-			defer dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
-
-			if mod != nil {
-				for source, dm := range mod.ModuleDiagnostics {
-					diags.Append(source.String(), dm.AutoloadedOnly().AsMap())
-				}
-				for source, dm := range mod.VarsDiagnostics {
-					diags.Append(source.String(), dm.AutoloadedOnly().AsMap())
-				}
+			for source, dm := range mod.ModuleDiagnostics {
+				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
+			for source, dm := range mod.VarsDiagnostics {
+				diags.Append(source, dm.AutoloadedOnly().AsMap())
+			}
+
+			dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
 		}
 		return nil
 	}

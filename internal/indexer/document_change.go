@@ -96,7 +96,8 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, eSchemaId)
 
-	earlyValidationId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+	// TODO! check if early validation setting is enabled
+	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.EarlyValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
@@ -137,13 +138,14 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, refOriginsId)
 
+	// TODO! check if early validation setting is enabled
 	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.ReferenceValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 		},
 		Type:        op.OpTypeReferenceValidation.String(),
-		DependsOn:   job.IDs{earlyValidationId, refTargetsId, refOriginsId},
+		DependsOn:   job.IDs{refTargetsId, refOriginsId},
 		IgnoreState: ignoreState,
 	})
 	if err != nil {

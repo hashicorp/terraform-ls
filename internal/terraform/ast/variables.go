@@ -89,3 +89,11 @@ func (vd VarsDiags) Count() int {
 }
 
 type SourceVarsDiags map[DiagnosticSource]VarsDiags
+
+func (svd SourceVarsDiags) Count() int {
+	count := 0
+	for _, diags := range svd {
+		count += diags.Count()
+	}
+	return count
+}

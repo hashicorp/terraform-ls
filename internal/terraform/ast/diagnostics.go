@@ -13,8 +13,7 @@ import (
 type DiagnosticSource int
 
 const (
-	ModuleParsingSource DiagnosticSource = iota
-	VarsParsingSource
+	HCLParsingSource DiagnosticSource = iota
 	SchemaValidationSource
 	ReferenceValidationSource
 	TerraformValidateSource
@@ -22,22 +21,18 @@ const (
 
 func (d DiagnosticSource) String() string {
 	switch d {
-	case ModuleParsingSource:
+	case HCLParsingSource:
 		return "HCL"
-	case VarsParsingSource:
-		return "HCL Vars"
 	case SchemaValidationSource:
-		return "schema validation"
+		return "early validation"
 	case ReferenceValidationSource:
-		return "reference validation"
+		return "early validation"
 	case TerraformValidateSource:
 		return "terraform validate"
 	default:
 		return fmt.Sprintf("Unknown %d", d)
 	}
 }
-
-// TODO? combine with langserver/diagnostics
 
 type DiagnosticSourceState map[DiagnosticSource]op.OpState
 

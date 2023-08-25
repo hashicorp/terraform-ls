@@ -252,8 +252,7 @@ func newModule(modPath string) *Module {
 		ModuleParsingState:         op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
 		DiagnosticsState: ast.DiagnosticSourceState{
-			ast.ModuleParsingSource:       op.OpStateUnknown,
-			ast.VarsParsingSource:         op.OpStateUnknown,
+			ast.HCLParsingSource:          op.OpStateUnknown,
 			ast.SchemaValidationSource:    op.OpStateUnknown,
 			ast.ReferenceValidationSource: op.OpStateUnknown,
 			ast.TerraformValidateSource:   op.OpStateUnknown,

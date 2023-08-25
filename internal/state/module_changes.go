@@ -142,20 +142,10 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 
 	oldDiags, newDiags := 0, 0
 	if oldMod != nil {
-		for _, diags := range oldMod.ModuleDiagnostics {
-			oldDiags += diags.Count()
-		}
-		for _, diags := range oldMod.VarsDiagnostics {
-			oldDiags += diags.Count()
-		}
+		oldDiags = oldMod.ModuleDiagnostics.Count() + oldMod.VarsDiagnostics.Count()
 	}
 	if newMod != nil {
-		for _, diags := range newMod.ModuleDiagnostics {
-			newDiags += diags.Count()
-		}
-		for _, diags := range newMod.VarsDiagnostics {
-			newDiags += diags.Count()
-		}
+		newDiags = newMod.ModuleDiagnostics.Count() + newMod.VarsDiagnostics.Count()
 	}
 	// Comparing diagnostics accurately could be expensive
 	// so we just treat any non-empty diags as a change
