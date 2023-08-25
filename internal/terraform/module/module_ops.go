@@ -732,9 +732,7 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 		return err
 	}
 
-	ctx = decoder.WithPathContext(ctx, pathCtx)
-
-	diags := validations.UnreferencedOrigins(ctx)
+	diags := validations.UnreferencedOrigins(ctx, pathCtx)
 	return modStore.UpdateModuleDiagnostics(modPath, ast.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
 }
 
