@@ -77,6 +77,18 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 		Path:                  modPath,
 		TerraformVersion:      tfVersion,
 		TerraformVersionState: operation.OpStateLoaded,
+		ModuleDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
+		VarsDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
 	}
 	if diff := cmp.Diff(expectedModule, mod); diff != "" {
 		t.Fatalf("unexpected module: %s", diff)
@@ -184,11 +196,35 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 			Path:             filepath.Join(tmpDir, "alpha"),
 			ModManifest:      alphaManifest,
 			ModManifestState: operation.OpStateLoaded,
+			ModuleDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+			VarsDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
 		},
 		{
 			Path:             filepath.Join(tmpDir, "gamma"),
 			ModManifest:      gammaManifest,
 			ModManifestState: operation.OpStateLoaded,
+			ModuleDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+			VarsDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
 		},
 	}
 
@@ -223,9 +259,51 @@ func TestModuleStore_List(t *testing.T) {
 	}
 
 	expectedModules := []*Module{
-		{Path: filepath.Join(tmpDir, "alpha")},
-		{Path: filepath.Join(tmpDir, "beta")},
-		{Path: filepath.Join(tmpDir, "gamma")},
+		{
+			Path: filepath.Join(tmpDir, "alpha"),
+			ModuleDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+			VarsDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+		},
+		{
+			Path: filepath.Join(tmpDir, "beta"),
+			ModuleDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+			VarsDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+		},
+		{
+			Path: filepath.Join(tmpDir, "gamma"),
+			ModuleDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+			VarsDiagnosticsState: ast.DiagnosticSourceState{
+				ast.HCLParsingSource:          operation.OpStateUnknown,
+				ast.SchemaValidationSource:    operation.OpStateUnknown,
+				ast.ReferenceValidationSource: operation.OpStateUnknown,
+				ast.TerraformValidateSource:   operation.OpStateUnknown,
+			},
+		},
 	}
 
 	if diff := cmp.Diff(expectedModules, modules, cmpOpts); diff != "" {
@@ -283,6 +361,18 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 			},
 		},
 		MetaState: operation.OpStateLoaded,
+		ModuleDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
+		VarsDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
 	}
 
 	if diff := cmp.Diff(expectedModule, mod, cmpOpts); diff != "" {
@@ -319,6 +409,18 @@ func TestModuleStore_UpdateTerraformAndProviderVersions(t *testing.T) {
 		TerraformVersion:      testVersion(t, "0.12.4"),
 		TerraformVersionState: operation.OpStateLoaded,
 		TerraformVersionErr:   vErr,
+		ModuleDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
+		VarsDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          operation.OpStateUnknown,
+			ast.SchemaValidationSource:    operation.OpStateUnknown,
+			ast.ReferenceValidationSource: operation.OpStateUnknown,
+			ast.TerraformValidateSource:   operation.OpStateUnknown,
+		},
 	}
 	if diff := cmp.Diff(expectedModule, mod, cmpOpts); diff != "" {
 		t.Fatalf("unexpected module data: %s", diff)
@@ -427,7 +529,7 @@ provider "blah" {
   region = "london"
 `), "test.tf")
 
-	err = s.Modules.UpdateModuleDiagnostics(tmpDir, ast.ModuleParsingSource, ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateModuleDiagnostics(tmpDir, ast.HCLParsingSource, ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tf": diags,
 	}))
 	if err != nil {
@@ -440,7 +542,7 @@ provider "blah" {
 	}
 
 	expectedDiags := ast.SourceModDiags{
-		ast.ModuleParsingSource: ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
+		ast.HCLParsingSource: ast.ModDiagsFromMap(map[string]hcl.Diagnostics{
 			"test.tf": {
 				{
 					Severity: hcl.DiagError,
@@ -486,7 +588,7 @@ dev = {
   region = "london"
 `), "test.tfvars")
 
-	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.VarsParsingSource, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
+	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.HCLParsingSource, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tfvars": diags,
 	}))
 	if err != nil {
@@ -499,7 +601,7 @@ dev = {
 	}
 
 	expectedDiags := ast.SourceVarsDiags{
-		ast.VarsParsingSource: ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
+		ast.HCLParsingSource: ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 			"test.tfvars": {
 				{
 					Severity: hcl.DiagError,
@@ -742,17 +844,19 @@ func BenchmarkModuleByPath(b *testing.B) {
 		b.Fatal(err)
 	}
 	mDiags := ast.ModDiagsFromMap(diags)
-	err = s.Modules.UpdateModuleDiagnostics(modPath, ast.ModuleParsingSource, mDiags)
+	err = s.Modules.UpdateModuleDiagnostics(modPath, ast.HCLParsingSource, mDiags)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	expectedMod := &Module{
-		Path:               modPath,
-		ParsedModuleFiles:  mFiles,
-		ModuleParsingState: operation.OpStateLoaded,
+		Path:              modPath,
+		ParsedModuleFiles: mFiles,
 		ModuleDiagnostics: ast.SourceModDiags{
-			ast.ModuleParsingSource: mDiags,
+			ast.HCLParsingSource: mDiags,
+		},
+		ModuleDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource: operation.OpStateLoaded,
 		},
 	}
 
