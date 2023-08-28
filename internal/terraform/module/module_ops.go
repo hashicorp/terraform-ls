@@ -365,11 +365,11 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
 
 	// Avoid parsing if it is already in progress or already known
-	if mod.ModuleParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -400,11 +400,11 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
 
 	// Avoid parsing if it is already in progress or already known
-	if mod.VarsParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.VarsDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsParsingState(modPath, op.OpStateLoading)
+	err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -672,11 +672,11 @@ func SchemaValidation(ctx context.Context, modStore *state.ModuleStore, schemaRe
 	}
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.DiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -711,11 +711,11 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 	}
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.DiagnosticsState[ast.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetDiagnosticsState(modPath, ast.ReferenceValidationSource, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.ReferenceValidationSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -743,11 +743,11 @@ func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath
 	}
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.DiagnosticsState[ast.TerraformValidateSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.TerraformValidateSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetDiagnosticsState(modPath, ast.TerraformValidateSource, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.TerraformValidateSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}

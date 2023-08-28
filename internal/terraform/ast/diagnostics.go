@@ -30,7 +30,7 @@ func (d DiagnosticSource) String() string {
 	case TerraformValidateSource:
 		return "terraform validate"
 	default:
-		return fmt.Sprintf("Unknown %d", d)
+		panic(fmt.Sprintf("Unknown diagnostic source %d", d))
 	}
 }
 
