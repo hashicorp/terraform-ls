@@ -30,6 +30,7 @@ var (
 	ctxLsVersion            = &contextKey{"language server version"}
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
+	ctxValidationOptions    = &contextKey{"validation options"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -164,4 +165,26 @@ func ExperimentalFeatures(ctx context.Context) (settings.ExperimentalFeatures, e
 		return settings.ExperimentalFeatures{}, missingContextErr(ctxExperimentalFeatures)
 	}
 	return *expFeatures, nil
+}
+
+func WithValidationOptions(ctx context.Context, validationOptions *settings.ValidationOptions) context.Context {
+	return context.WithValue(ctx, ctxValidationOptions, validationOptions)
+}
+
+func SetValidationOptions(ctx context.Context, validationOptions settings.ValidationOptions) error {
+	e, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return missingContextErr(ctxValidationOptions)
+	}
+
+	*e = validationOptions
+	return nil
+}
+
+func ValidationOptions(ctx context.Context) (settings.ValidationOptions, error) {
+	validationOptions, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return settings.ValidationOptions{}, missingContextErr(ctxValidationOptions)
+	}
+	return *validationOptions, nil
 }
