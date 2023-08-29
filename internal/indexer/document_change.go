@@ -6,6 +6,7 @@ package indexer
 import (
 	"context"
 
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
@@ -121,18 +122,24 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, metaId)
 
-	// TODO! check if early validation setting is enabled
-	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.SchemaValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type:        op.OpTypeSchemaValidation.String(),
-		DependsOn:   job.IDs{metaId},
-		IgnoreState: ignoreState,
-	})
+	validationOptions, err := lsctx.ValidationOptions(ctx)
 	if err != nil {
 		return ids, err
+	}
+
+	if validationOptions.EarlyValidation {
+		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.SchemaValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			},
+			Type:        op.OpTypeSchemaValidation.String(),
+			DependsOn:   job.IDs{metaId},
+			IgnoreState: ignoreState,
+		})
+		if err != nil {
+			return ids, err
+		}
 	}
 
 	refTargetsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
@@ -149,18 +156,19 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 	}
 	ids = append(ids, refTargetsId)
 
-	// TODO! check if early validation setting is enabled
-	_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.ReferenceValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type:        op.OpTypeReferenceValidation.String(),
-		DependsOn:   job.IDs{metaId, refTargetsId},
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
+	if validationOptions.EarlyValidation {
+		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.ReferenceValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			},
+			Type:        op.OpTypeReferenceValidation.String(),
+			DependsOn:   job.IDs{metaId, refTargetsId},
+			IgnoreState: ignoreState,
+		})
+		if err != nil {
+			return ids, err
+		}
 	}
 
 	// This job may make an HTTP request, and we schedule it in
