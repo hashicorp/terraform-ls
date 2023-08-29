@@ -13,13 +13,8 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
-func UnreferencedOrigins(ctx context.Context) lang.DiagnosticsMap {
+func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang.DiagnosticsMap {
 	diagsMap := make(lang.DiagnosticsMap)
-
-	pathCtx, err := decoder.PathCtx(ctx)
-	if err != nil {
-		return diagsMap
-	}
 
 	for _, origin := range pathCtx.ReferenceOrigins {
 		matchableOrigin, ok := origin.(reference.MatchableOrigin)
