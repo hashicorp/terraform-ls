@@ -107,6 +107,8 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 
 	// set experimental feature flags
 	lsctx.SetExperimentalFeatures(ctx, out.Options.ExperimentalFeatures)
+	// set validation options for jobs
+	lsctx.SetValidationOptions(ctx, out.Options.Validation)
 
 	if len(out.UnusedKeys) > 0 {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
@@ -202,6 +204,7 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 		"options.terraform.path":                          false,
 		"options.terraform.timeout":                       "",
 		"options.terraform.logFilePath":                   false,
+		"options.validation.earlyValidation":              false,
 		"root_uri":                                        "dir",
 		"lsVersion":                                       "",
 	}
@@ -217,6 +220,7 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.terraform.path"] = len(out.Options.Terraform.Path) > 0
 	properties["options.terraform.timeout"] = out.Options.Terraform.Timeout
 	properties["options.terraform.logFilePath"] = len(out.Options.Terraform.LogFilePath) > 0
+	properties["options.validation.earlyValidation"] = out.Options.Validation.EarlyValidation
 
 	return properties
 }

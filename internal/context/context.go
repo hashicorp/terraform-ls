@@ -44,6 +44,7 @@ var (
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
 	ctxRPCContext           = &contextKey{"rpc context"}
 	ctxLanguageId           = &contextKey{"language ID"}
+	ctxValidationOptions    = &contextKey{"validation options"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -198,4 +199,26 @@ func IsLanguageId(ctx context.Context, expectedLangId string) bool {
 		return false
 	}
 	return langId == expectedLangId
+}
+
+func WithValidationOptions(ctx context.Context, validationOptions *settings.ValidationOptions) context.Context {
+	return context.WithValue(ctx, ctxValidationOptions, validationOptions)
+}
+
+func SetValidationOptions(ctx context.Context, validationOptions settings.ValidationOptions) error {
+	e, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return missingContextErr(ctxValidationOptions)
+	}
+
+	*e = validationOptions
+	return nil
+}
+
+func ValidationOptions(ctx context.Context) (settings.ValidationOptions, error) {
+	validationOptions, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return settings.ValidationOptions{}, missingContextErr(ctxValidationOptions)
+	}
+	return *validationOptions, nil
 }
