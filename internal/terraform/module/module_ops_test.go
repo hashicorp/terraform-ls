@@ -30,6 +30,7 @@ import (
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
@@ -1008,12 +1009,12 @@ func TestParseModuleConfiguration(t *testing.T) {
 	}
 
 	// examine diags should change for foo.tf
-	if before.ModuleDiagnostics["foo.tf"][0] == after.ModuleDiagnostics["foo.tf"][0] {
+	if before.ModuleDiagnostics[ast.HCLParsingSource]["foo.tf"][0] == after.ModuleDiagnostics[ast.HCLParsingSource]["foo.tf"][0] {
 		t.Fatal("diags should mismatch")
 	}
 
 	// examine diags should change for main.tf
-	if before.ModuleDiagnostics["main.tf"][0] != after.ModuleDiagnostics["main.tf"][0] {
+	if before.ModuleDiagnostics[ast.HCLParsingSource]["main.tf"][0] != after.ModuleDiagnostics[ast.HCLParsingSource]["main.tf"][0] {
 		t.Fatal("diags should match")
 	}
 }
@@ -1082,7 +1083,7 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	}
 
 	// diags should be missing for example.tfvars
-	if _, ok := before.ModuleDiagnostics["example.tfvars"]; ok {
+	if _, ok := before.ModuleDiagnostics[ast.HCLParsingSource]["example.tfvars"]; ok {
 		t.Fatal("there should be no diags for tfvars files right now")
 	}
 }
