@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
 var discardLogger = log.New(ioutil.Discard, "", 0)
@@ -19,8 +20,8 @@ func TestDiags_Closes(t *testing.T) {
 	n := NewNotifier(noopNotifier{}, discardLogger)
 
 	diags := NewDiagnostics()
-	diags.Append("test", map[string]hcl.Diagnostics{
-		"test": {
+	diags.Append(ast.HCLParsingSource, map[string]hcl.Diagnostics{
+		ast.HCLParsingSource.String(): {
 			{
 				Severity: hcl.DiagError,
 			},
@@ -46,8 +47,8 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 	n := NewNotifier(noopNotifier{}, discardLogger)
 
 	diags := NewDiagnostics()
-	diags.Append("test", map[string]hcl.Diagnostics{
-		"test": {
+	diags.Append(ast.TerraformValidateSource, map[string]hcl.Diagnostics{
+		ast.TerraformValidateSource.String(): {
 			{
 				Severity: hcl.DiagError,
 			},
@@ -61,7 +62,7 @@ func TestPublish_DoesNotSendAfterClose(t *testing.T) {
 
 func TestDiagnostics_Append(t *testing.T) {
 	diags := NewDiagnostics()
-	diags.Append("foo", map[string]hcl.Diagnostics{
+	diags.Append(ast.HCLParsingSource, map[string]hcl.Diagnostics{
 		"first.tf": {
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -79,7 +80,7 @@ func TestDiagnostics_Append(t *testing.T) {
 			},
 		},
 	})
-	diags.Append("bar", map[string]hcl.Diagnostics{
+	diags.Append(ast.SchemaValidationSource, map[string]hcl.Diagnostics{
 		"first.tf": {
 			&hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -96,8 +97,8 @@ func TestDiagnostics_Append(t *testing.T) {
 	})
 
 	expectedDiags := Diagnostics{
-		"first.tf": map[DiagnosticSource]hcl.Diagnostics{
-			DiagnosticSource("foo"): {
+		"first.tf": map[ast.DiagnosticSource]hcl.Diagnostics{
+			ast.HCLParsingSource: {
 				&hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Something went wrong",
@@ -113,7 +114,7 @@ func TestDiagnostics_Append(t *testing.T) {
 					},
 				},
 			},
-			DiagnosticSource("bar"): {
+			ast.SchemaValidationSource: {
 				&hcl.Diagnostic{
 					Severity: hcl.DiagError,
 					Summary:  "Something else went wrong",
@@ -121,8 +122,8 @@ func TestDiagnostics_Append(t *testing.T) {
 				},
 			},
 		},
-		"second.tf": map[DiagnosticSource]hcl.Diagnostics{
-			DiagnosticSource("bar"): {
+		"second.tf": map[ast.DiagnosticSource]hcl.Diagnostics{
+			ast.SchemaValidationSource: {
 				&hcl.Diagnostic{
 					Severity: hcl.DiagWarning,
 					Summary:  "Beware",

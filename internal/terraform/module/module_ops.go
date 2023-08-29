@@ -19,18 +19,21 @@ import (
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
+	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/earlydecoder"
-	"github.com/hashicorp/terraform-schema/module"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/zclconf/go-cty/cty"
@@ -362,11 +365,11 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
 
 	// Avoid parsing if it is already in progress or already known
-	if mod.ModuleParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -378,7 +381,7 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 		return sErr
 	}
 
-	sErr = modStore.UpdateModuleDiagnostics(modPath, diags)
+	sErr = modStore.UpdateModuleDiagnostics(modPath, ast.HCLParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -397,11 +400,11 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
 
 	// Avoid parsing if it is already in progress or already known
-	if mod.VarsParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.VarsDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsParsingState(modPath, op.OpStateLoading)
+	err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -413,7 +416,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		return sErr
 	}
 
-	sErr = modStore.UpdateVarsDiagnostics(modPath, diags)
+	sErr = modStore.UpdateVarsDiagnostics(modPath, ast.HCLParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -522,7 +525,7 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 	}
 	meta.ProviderRequirements = providerRequirements
 
-	providerRefs := make(map[module.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
+	providerRefs := make(map[tfmodule.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
 	for localRef, pAddr := range meta.ProviderReferences {
 		// TODO: check pAddr for migrations via Registry API?
 		providerRefs[localRef] = pAddr
@@ -662,18 +665,18 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
-func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func SchemaValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
 	}
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.ValidationDiagnosticsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if mod.ModuleDiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetValidationDiagnosticsState(modPath, op.OpStateLoading)
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -693,12 +696,74 @@ func EarlyValidation(ctx context.Context, modStore *state.ModuleStore, schemaRea
 	}
 
 	diags, rErr := moduleDecoder.Validate(ctx)
-	sErr := modStore.UpdateValidateDiagnostics(modPath, diags)
+	sErr := modStore.UpdateModuleDiagnostics(modPath, ast.SchemaValidationSource, ast.ModDiagsFromMap(diags))
 	if sErr != nil {
 		return sErr
 	}
 
 	return rErr
+}
+
+func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if mod.ModuleDiagnosticsState[ast.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.ReferenceValidationSource, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	pathReader := &idecoder.PathReader{
+		ModuleReader: modStore,
+		SchemaReader: schemaReader,
+	}
+	pathCtx, err := pathReader.PathContext(lang.Path{
+		Path:       modPath,
+		LanguageID: ilsp.Terraform.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	diags := validations.UnreferencedOrigins(ctx, pathCtx)
+	return modStore.UpdateModuleDiagnostics(modPath, ast.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
+}
+
+func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if mod.ModuleDiagnosticsState[ast.TerraformValidateSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetModuleDiagnosticsState(modPath, ast.TerraformValidateSource, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
+	if err != nil {
+		return err
+	}
+
+	jsonDiags, err := tfExec.Validate(ctx)
+	if err != nil {
+		return err
+	}
+	validateDiags := diagnostics.HCLDiagsFromJSON(jsonDiags)
+
+	return modStore.UpdateModuleDiagnostics(modPath, ast.TerraformValidateSource, ast.ModDiagsFromMap(validateDiags))
 }
 
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
