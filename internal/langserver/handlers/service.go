@@ -120,6 +120,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 	commandPrefix := ""
 	clientName := ""
 	var expFeatures settings.ExperimentalFeatures
+	var validationOptions settings.ValidationOptions
 
 	m := map[string]rpch.Func{
 		"initialize": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -133,6 +134,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			ctx = lsctx.WithCommandPrefix(ctx, &commandPrefix)
 			ctx = ilsp.ContextWithClientName(ctx, &clientName)
 			ctx = lsctx.WithExperimentalFeatures(ctx, &expFeatures)
+			ctx = lsctx.WithValidationOptions(ctx, &validationOptions)
 
 			version, ok := lsctx.LanguageServerVersion(svc.srvCtx)
 			if ok {
@@ -156,6 +158,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithValidationOptions(ctx, &validationOptions)
+
 			return handle(ctx, req, svc.TextDocumentDidChange)
 		},
 		"textDocument/didOpen": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -163,6 +167,8 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithValidationOptions(ctx, &validationOptions)
+
 			return handle(ctx, req, svc.TextDocumentDidOpen)
 		},
 		"textDocument/didClose": func(ctx context.Context, req *jrpc2.Request) (interface{}, error) {
@@ -325,6 +331,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 			if err != nil {
 				return nil, err
 			}
+			ctx = lsctx.WithValidationOptions(ctx, &validationOptions)
 
 			return handle(ctx, req, svc.DidChangeWatchedFiles)
 		},

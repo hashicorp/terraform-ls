@@ -43,6 +43,7 @@ var (
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
 	ctxRPCContext           = &contextKey{"rpc context"}
+	ctxValidationOptions    = &contextKey{"validation options"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -185,4 +186,26 @@ func WithRPCContext(ctx context.Context, rpcc RPCContextData) context.Context {
 
 func RPCContext(ctx context.Context) RPCContextData {
 	return ctx.Value(ctxRPCContext).(RPCContextData)
+}
+
+func WithValidationOptions(ctx context.Context, validationOptions *settings.ValidationOptions) context.Context {
+	return context.WithValue(ctx, ctxValidationOptions, validationOptions)
+}
+
+func SetValidationOptions(ctx context.Context, validationOptions settings.ValidationOptions) error {
+	e, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return missingContextErr(ctxValidationOptions)
+	}
+
+	*e = validationOptions
+	return nil
+}
+
+func ValidationOptions(ctx context.Context) (settings.ValidationOptions, error) {
+	validationOptions, ok := ctx.Value(ctxValidationOptions).(*settings.ValidationOptions)
+	if !ok {
+		return settings.ValidationOptions{}, missingContextErr(ctxValidationOptions)
+	}
+	return *validationOptions, nil
 }
