@@ -209,10 +209,35 @@ func (s *ProviderSchemaStore) AllSchemasExist(pvm map[tfaddr.Provider]version.Co
 	return true, nil
 }
 
+// MissingSchemas checks which schemas are missing in order to preload them from the bundled schemas.
+// Since we don't know the version of a schema on disk before loading it, we assume it's
+// good to just load it by address and ignore the version constraints.
 func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Constraints) (map[tfaddr.Provider]version.Constraints, error) {
 	missingSchemas := make(map[tfaddr.Provider]version.Constraints, 0)
+	fakeCons, _ := version.NewConstraint("> 0.0.0")
+
 	for pAddr, pCons := range pvm {
-		exists, err := s.schemaExists(pAddr, pCons)
+		if pAddr.IsLegacy() && pAddr.Type == "terraform" {
+			// The terraform provider is built into Terraform 0.11+
+			// and while it's possible, users typically don't declare
+			// entry in required_providers block for it.
+			pAddr = tfaddr.NewProvider(tfaddr.BuiltInProviderHost, tfaddr.BuiltInProviderNamespace, "terraform")
+		} else if pAddr.IsLegacy() {
+			// Since we use recent version of Terraform to generate
+			// embedded schemas, these will never contain legacy
+			// addresses.
+			//
+			// A legacy namespace may come from missing
+			// required_providers entry & implied requirement
+			// from the provider block or 0.12-style entry,
+			// such as { grafana = "1.0" }.
+			//
+			// Implying "hashicorp" namespace here mimics behaviour
+			// of all recent (0.14+) Terraform versions.
+			pAddr.Namespace = "hashicorp"
+		}
+
+		exists, err := s.schemaExists(pAddr, fakeCons)
 		if err != nil {
 			return nil, err
 		}
