@@ -214,7 +214,6 @@ func (s *ProviderSchemaStore) AllSchemasExist(pvm map[tfaddr.Provider]version.Co
 // good to just load it by address and ignore the version constraints.
 func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Constraints) ([]tfaddr.Provider, error) {
 	missingSchemas := make([]tfaddr.Provider, 0)
-	fakeCons, _ := version.NewConstraint("> 0.0.0")
 
 	for pAddr := range pvm {
 		if pAddr.IsLegacy() && pAddr.Type == "terraform" {
@@ -237,7 +236,7 @@ func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Con
 			pAddr.Namespace = "hashicorp"
 		}
 
-		exists, err := s.schemaExists(pAddr, fakeCons)
+		exists, err := s.schemaExists(pAddr, version.Constraints{})
 		if err != nil {
 			return nil, err
 		}
