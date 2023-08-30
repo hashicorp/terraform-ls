@@ -212,11 +212,11 @@ func (s *ProviderSchemaStore) AllSchemasExist(pvm map[tfaddr.Provider]version.Co
 // MissingSchemas checks which schemas are missing in order to preload them from the bundled schemas.
 // Since we don't know the version of a schema on disk before loading it, we assume it's
 // good to just load it by address and ignore the version constraints.
-func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Constraints) (map[tfaddr.Provider]version.Constraints, error) {
-	missingSchemas := make(map[tfaddr.Provider]version.Constraints, 0)
+func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Constraints) ([]tfaddr.Provider, error) {
+	missingSchemas := make([]tfaddr.Provider, 0)
 	fakeCons, _ := version.NewConstraint("> 0.0.0")
 
-	for pAddr, pCons := range pvm {
+	for pAddr := range pvm {
 		if pAddr.IsLegacy() && pAddr.Type == "terraform" {
 			// The terraform provider is built into Terraform 0.11+
 			// and while it's possible, users typically don't declare
@@ -242,7 +242,7 @@ func (s *ProviderSchemaStore) MissingSchemas(pvm map[tfaddr.Provider]version.Con
 			return nil, err
 		}
 		if !exists {
-			missingSchemas[pAddr] = pCons
+			missingSchemas = append(missingSchemas, pAddr)
 		}
 	}
 	return missingSchemas, nil

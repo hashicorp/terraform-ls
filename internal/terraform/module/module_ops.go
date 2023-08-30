@@ -228,7 +228,7 @@ func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDi
 		return nil
 	}
 
-	for pAddr := range missingReqs {
+	for _, pAddr := range missingReqs {
 		err := preloadSchemaForProviderAddr(ctx, pAddr, fs, schemaStore, logger)
 		if err != nil {
 			return err
