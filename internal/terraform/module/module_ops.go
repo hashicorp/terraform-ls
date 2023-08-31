@@ -11,13 +11,16 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"path"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl/v2"
 	tfjson "github.com/hashicorp/terraform-json"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/document"
@@ -695,10 +698,34 @@ func SchemaValidation(ctx context.Context, modStore *state.ModuleStore, schemaRe
 		return err
 	}
 
-	diags, rErr := moduleDecoder.Validate(ctx)
-	sErr := modStore.UpdateModuleDiagnostics(modPath, ast.SchemaValidationSource, ast.ModDiagsFromMap(diags))
-	if sErr != nil {
-		return sErr
+	var rErr error
+	rpcContext := lsctx.RPCContext(ctx)
+	isSingleFileChange := rpcContext.Method == "textDocument/didChange"
+	if isSingleFileChange {
+		filename := path.Base(rpcContext.URI)
+		// We only revalidate a single file that changed
+		var fileDiags hcl.Diagnostics
+		fileDiags, rErr = moduleDecoder.ValidateFile(ctx, filename)
+
+		modDiags, ok := mod.ModuleDiagnostics[ast.SchemaValidationSource]
+		if !ok {
+			modDiags = make(ast.ModDiags)
+		}
+		modDiags[ast.ModFilename(filename)] = fileDiags
+
+		sErr := modStore.UpdateModuleDiagnostics(modPath, ast.SchemaValidationSource, modDiags)
+		if sErr != nil {
+			return sErr
+		}
+	} else {
+		// We validate the whole module, e.g. on open
+		var diags lang.DiagnosticsMap
+		diags, rErr = moduleDecoder.Validate(ctx)
+
+		sErr := modStore.UpdateModuleDiagnostics(modPath, ast.SchemaValidationSource, ast.ModDiagsFromMap(diags))
+		if sErr != nil {
+			return sErr
+		}
 	}
 
 	return rErr

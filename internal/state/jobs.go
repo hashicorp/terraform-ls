@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-memdb"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"go.opentelemetry.io/otel"
@@ -49,6 +50,8 @@ type ScheduledJob struct {
 	// TraceSpan represents a tracing span for the entire job lifecycle
 	// (from queuing to finishing execution).
 	TraceSpan trace.Span
+	// RPCContext contains information from when & where the job was scheduled from
+	RPCContext lsctx.RPCContextData
 }
 
 func (sj *ScheduledJob) Copy() *ScheduledJob {
@@ -66,6 +69,7 @@ func (sj *ScheduledJob) Copy() *ScheduledJob {
 		DeferredJobIDs: sj.DeferredJobIDs.Copy(),
 		EnqueueTime:    sj.EnqueueTime,
 		TraceSpan:      traceSpan,
+		RPCContext:     sj.RPCContext.Copy(),
 	}
 }
 
@@ -125,6 +129,7 @@ func (js *JobStore) EnqueueJob(ctx context.Context, newJob job.Job) (job.ID, err
 		State:       StateQueued,
 		EnqueueTime: time.Now(),
 		TraceSpan:   jobSpan,
+		RPCContext:  lsctx.RPCContext(ctx),
 	}
 
 	err := txn.Insert(js.tableName, sJob)
@@ -316,6 +321,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) 
 	js.logger.Printf("JOBS: Dispatching next job %q (scheduler prio: %d, job prio: %d, isDirOpen: %t): %q for %q",
 		sJob.ID, priority, sJob.Priority, sJob.IsDirOpen, sJob.Type, sJob.Dir)
 
+	ctx = lsctx.WithRPCContext(ctx, sJob.RPCContext)
 	ctx = trace.ContextWithSpan(ctx, sJob.TraceSpan)
 
 	_, span := otel.Tracer(tracerName).Start(ctx, "job-wait",
