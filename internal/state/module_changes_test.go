@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -96,6 +97,7 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 	modHandle := document.DirHandleFromPath(modPath)
 
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
