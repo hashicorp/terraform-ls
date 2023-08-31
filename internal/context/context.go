@@ -5,6 +5,7 @@ package context
 
 import (
 	"context"
+	"path"
 	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
@@ -20,6 +21,26 @@ func (k *contextKey) String() string {
 	return k.Name
 }
 
+type RPCContextData struct {
+	Method string
+	URI    string
+}
+
+func (rpcc RPCContextData) Copy() RPCContextData {
+	return RPCContextData{
+		Method: rpcc.Method,
+		URI:    rpcc.URI,
+	}
+}
+
+func (rpcc RPCContextData) IsSingleFileChange() (string, bool) {
+	if rpcc.Method == "textDocument/didChange" {
+		return path.Base(rpcc.URI), true
+	}
+
+	return "", false
+}
+
 var (
 	ctxTfExecPath           = &contextKey{"terraform executable path"}
 	ctxTfExecLogPath        = &contextKey{"terraform executor log path"}
@@ -31,6 +52,7 @@ var (
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
 	ctxValidationOptions    = &contextKey{"validation options"}
+	ctxRPCContext           = &contextKey{"rpc context"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -187,4 +209,12 @@ func ValidationOptions(ctx context.Context) (settings.ValidationOptions, error) 
 		return settings.ValidationOptions{}, missingContextErr(ctxValidationOptions)
 	}
 	return *validationOptions, nil
+}
+
+func WithRPCContext(ctx context.Context, rpcc RPCContextData) context.Context {
+	return context.WithValue(ctx, ctxRPCContext, rpcc)
+}
+
+func RPCContext(ctx context.Context) RPCContextData {
+	return ctx.Value(ctxRPCContext).(RPCContextData)
 }
