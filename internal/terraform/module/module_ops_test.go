@@ -1123,3 +1123,91 @@ var randomSchemaJSON = `{
 		}
 	}
 }`
+
+func TestSchemaValidation_FullModule(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "invalid-config")
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didOpen",
+		URI:    "file:///test/variables.tf",
+	})
+	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mod, err := ss.Modules.ModuleByPath(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 5
+	diagsCount := mod.ModuleDiagnostics[ast.SchemaValidationSource].Count()
+	if diagsCount != expectedCount {
+		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
+	}
+}
+
+func TestSchemaValidation_SingleFile(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "invalid-config")
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    "file:///test/variables.tf",
+	})
+	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mod, err := ss.Modules.ModuleByPath(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 3
+	diagsCount := mod.ModuleDiagnostics[ast.SchemaValidationSource].Count()
+	if diagsCount != expectedCount {
+		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
+	}
+}
