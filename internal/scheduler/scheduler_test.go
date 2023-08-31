@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -30,6 +31,7 @@ func TestScheduler_withIgnoreExistingState(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	s := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	s.SetLogger(testLogger())
@@ -92,6 +94,7 @@ func TestScheduler_closedOnly(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
 	s.SetLogger(testLogger())
@@ -154,6 +157,7 @@ func TestScheduler_closedAndOpen(t *testing.T) {
 			dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-x-%d", i))
 
 			ctx := context.Background()
+			ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 			newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 				Func: func(c context.Context) error {
 					atomic.AddInt64(&closedJobsExecuted, 1)
@@ -180,6 +184,7 @@ func TestScheduler_closedAndOpen(t *testing.T) {
 			dirPath := filepath.Join(tmpDir, fmt.Sprintf("folder-y-%d", i))
 
 			ctx := context.Background()
+			ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 			newId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 				Func: func(c context.Context) error {
 					atomic.AddInt64(&openJobsExecuted, 1)
@@ -264,6 +269,7 @@ func BenchmarkScheduler_EnqueueAndWaitForJob_closedOnly(b *testing.B) {
 
 	tmpDir := b.TempDir()
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	s := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	s.Start(ctx)
@@ -305,6 +311,7 @@ func TestScheduler_defer(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
 	s.SetLogger(testLogger())
@@ -394,6 +401,7 @@ func TestScheduler_dependsOn(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	s := NewScheduler(ss.JobStore, 2, job.LowPriority)
 	s.SetLogger(testLogger())
