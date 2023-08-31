@@ -613,23 +613,38 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 
 	// We could capture all parameters here but for now we just
 	// opportunistically track the most important ones only.
+	type t struct {
+		URI string `json:"uri,omitempty"`
+	}
 	type p struct {
-		URI     string `json:"uri,omitempty"`
-		RootURI string `json:"rootUri,omitempty"`
+		TextDocument t      `json:"textDocument,omitempty"`
+		RootURI      string `json:"rootUri,omitempty"`
 	}
 	params := p{}
 	err := req.UnmarshalParams(&params)
-	if err == nil {
-		attrs = append(attrs, attribute.KeyValue{
-			Key:   attribute.Key("URI"),
-			Value: attribute.StringValue(string(params.URI)),
-		})
+	if err != nil {
+		return nil, err
 	}
+
+	uri := params.TextDocument.URI
+	if params.RootURI != "" {
+		uri = params.RootURI
+	}
+
+	attrs = append(attrs, attribute.KeyValue{
+		Key:   attribute.Key("URI"),
+		Value: attribute.StringValue(uri),
+	})
 
 	tracer := otel.Tracer(tracerName)
 	ctx, span := tracer.Start(ctx, "rpc:"+req.Method(),
 		trace.WithAttributes(attrs...))
 	defer span.End()
+
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: req.Method(),
+		URI:    uri,
+	})
 
 	result, err := rpch.New(fn)(ctx, req)
 	if ctx.Err() != nil && errors.Is(ctx.Err(), context.Canceled) {
