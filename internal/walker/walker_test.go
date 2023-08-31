@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
 	tfjson "github.com/hashicorp/terraform-json"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/indexer"
@@ -55,6 +56,7 @@ func TestWalker_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = w.StartWalking(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -399,6 +401,7 @@ func TestWalker_complexModules(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 			err = w.StartWalking(ctx)
 			if err != nil {
 				t.Fatal(err)
