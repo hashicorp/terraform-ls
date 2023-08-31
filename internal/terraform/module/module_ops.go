@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"path"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -699,8 +700,9 @@ func SchemaValidation(ctx context.Context, modStore *state.ModuleStore, schemaRe
 
 	var rErr error
 	rpcContext := lsctx.RPCContext(ctx)
-	filename, isSingleFileChange := rpcContext.IsSingleFileChange()
+	isSingleFileChange := rpcContext.Method == "textDocument/didChange"
 	if isSingleFileChange {
+		filename := path.Base(rpcContext.URI)
 		// We only revalidate a single file that changed
 		var fileDiags hcl.Diagnostics
 		fileDiags, rErr = moduleDecoder.ValidateFile(ctx, filename)

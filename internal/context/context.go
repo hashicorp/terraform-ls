@@ -5,7 +5,6 @@ package context
 
 import (
 	"context"
-	"path"
 	"time"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
@@ -31,14 +30,6 @@ func (rpcc RPCContextData) Copy() RPCContextData {
 		Method: rpcc.Method,
 		URI:    rpcc.URI,
 	}
-}
-
-func (rpcc RPCContextData) IsSingleFileChange() (string, bool) {
-	if rpcc.Method == "textDocument/didChange" {
-		return path.Base(rpcc.URI), true
-	}
-
-	return "", false
 }
 
 var (
