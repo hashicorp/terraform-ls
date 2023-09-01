@@ -146,6 +146,20 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 		}
 
 		if change.Type == protocol.Changed {
+			// Check if document is open and skip running any jobs
+			// as we already did so as part of textDocument/didChange
+			// which clients should always send for *open* documents
+			// even if they change outside of the IDE.
+			docHandle := document.HandleFromURI(rawURI)
+			isOpen, err := svc.stateStore.DocumentStore.IsDocumentOpen(docHandle)
+			if err != nil {
+				svc.logger.Printf("error when checking open document (%q changed): %s", rawURI, err)
+			}
+			if isOpen {
+				svc.logger.Printf("document is open - ignoring event for %q", rawURI)
+				continue
+			}
+
 			ph, err := modHandleFromRawOsPath(ctx, rawPath)
 			if err != nil {
 				if err == ErrorSkip {
