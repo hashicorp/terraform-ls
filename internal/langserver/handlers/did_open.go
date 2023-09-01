@@ -4,8 +4,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
@@ -37,6 +41,14 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		return err
 	}
 
+	// this is performed after we store the document so other parts of the LS can
+	// have the information, but we stop before we reparse what we already know
+	// hasn't changed
+	if isSame := documentSameAsDisk(dh, []byte(params.TextDocument.Text)); isSame {
+		svc.logger.Printf("File %q content is the same, skipping parsing module again", docURI)
+		return nil
+	}
+
 	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
 	if err != nil {
 		if state.IsModuleNotFound(err) {
@@ -55,9 +67,8 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 
 	svc.logger.Printf("opened module: %s", mod.Path)
 
-	// We reparse because the file being opened may not match
+	// We reparse because the file being opened does not match
 	// (originally parsed) content on the disk
-	// TODO: Do this only if we can verify the file differs?
 	modHandle := document.DirHandleFromPath(mod.Path)
 	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
 	if err != nil {
@@ -72,4 +83,28 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+}
+
+// returns true if newText is same as what is saved to disk
+func documentSameAsDisk(dh document.Handle, newText []byte) bool {
+	f, err := os.Open(dh.FullPath())
+	if err != nil {
+		// there's nothing we can do to check if we can't open file here
+		// so return early and let the later methods check why
+		return false
+	}
+
+	oldHash := sha256.New()
+	if _, err := io.Copy(oldHash, f); err != nil {
+		// there's nothing we can do if we can't hash the file here
+		// so return early
+		return false
+	}
+	defer f.Close()
+
+	newHash := sha256.New()
+	newHash.Write(newText)
+
+	// hashes are equal if text is the same
+	return bytes.Equal(oldHash.Sum(nil), newHash.Sum(nil))
 }
