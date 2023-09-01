@@ -3,7 +3,7 @@
 ENHANCEMENTS:
 
 * jobs: Improve `PreloadEmbeddedSchema` performance ([#1369](https://github.com/hashicorp/terraform-ls/pull/1369))
-* langserver: Avoid re-processing open files after file saving ([#1372](https://github.com/hashicorp/terraform-ls/pull/1372))
+* langserver: Avoid re-processing open files after file saving to improve performance ([#1372](https://github.com/hashicorp/terraform-ls/pull/1372))
 
 INTERNAL:
 
