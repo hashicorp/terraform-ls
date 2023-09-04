@@ -34,10 +34,20 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			continue
 		}
 
+		address := matchableOrigin.Address()
+
+		if len(address) > 2 {
+			// We temporarily ignore references with more than 2 segments
+			// as these indicate references to complex types
+			// which we do not fully support yet.
+			// TODO: revisit as part of https://github.com/hashicorp/terraform-ls/issues/653
+			continue
+		}
+
 		// we only initially validate variables
 		// resources and data sources can have unknown schema
 		// and will be researched at a later point
-		firstStep := matchableOrigin.Address()[0]
+		firstStep := address[0]
 		if firstStep.String() != "var" {
 			continue
 		}
@@ -48,7 +58,7 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			fileName := origin.OriginRange().Filename
 			d := &hcl.Diagnostic{
 				Severity: hcl.DiagError,
-				Summary:  fmt.Sprintf("No declaration found for %q", matchableOrigin.Address()),
+				Summary:  fmt.Sprintf("No declaration found for %q", address),
 				Subject:  origin.OriginRange().Ptr(),
 			}
 			diagsMap[fileName] = diagsMap[fileName].Append(d)
