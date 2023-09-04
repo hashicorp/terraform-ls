@@ -6,6 +6,7 @@ package validations
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
