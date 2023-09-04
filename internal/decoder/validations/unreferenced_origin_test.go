@@ -51,6 +51,35 @@ func TestUnreferencedOrigins(t *testing.T) {
 			},
 		},
 		{
+			name: "undeclared local value",
+			origins: reference.Origins{
+				reference.LocalOrigin{
+					Range: hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{},
+						End:      hcl.Pos{},
+					},
+					Addr: lang.Address{
+						lang.RootStep{Name: "local"},
+						lang.AttrStep{Name: "foo"},
+					},
+				},
+			},
+			want: lang.DiagnosticsMap{
+				"test.tf": hcl.Diagnostics{
+					&hcl.Diagnostic{
+						Severity: hcl.DiagError,
+						Summary:  "No declaration found for \"local.foo\"",
+						Subject: &hcl.Range{
+							Filename: "test.tf",
+							Start:    hcl.Pos{},
+							End:      hcl.Pos{},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "unsupported variable of complex type",
 			origins: reference.Origins{
 				reference.LocalOrigin{

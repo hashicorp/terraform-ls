@@ -6,6 +6,7 @@ package validations
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -44,11 +45,12 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			continue
 		}
 
-		// we only initially validate variables
+		// we only initially validate variables & local values
 		// resources and data sources can have unknown schema
 		// and will be researched at a later point
-		firstStep := address[0]
-		if firstStep.String() != "var" {
+		supported := []string{"var", "local"}
+		firstStep := address[0].String()
+		if !slices.Contains(supported, firstStep) {
 			continue
 		}
 
