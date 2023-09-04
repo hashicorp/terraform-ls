@@ -1,3 +1,20 @@
+## 0.31.5 (4 September 2023)
+
+ENHANCEMENTS:
+
+* jobs: Improve `PreloadEmbeddedSchema` performance ([#1369](https://github.com/hashicorp/terraform-ls/pull/1369))
+* langserver: Avoid re-processing open files after file saving to improve performance ([#1372](https://github.com/hashicorp/terraform-ls/pull/1372))
+
+INTERNAL:
+
+* go: Bump version to 1.21 ([#1355](https://github.com/hashicorp/terraform-ls/pull/1355))
+* Bump terraform-schema and hcl-lang ([#1350](https://github.com/hashicorp/terraform-ls/pull/1350), [#1374](https://github.com/hashicorp/terraform-ls/pull/1374))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.32.0 to 2.33.0 ([#1345](https://github.com/hashicorp/terraform-ls/pull/1345), [#1348](https://github.com/hashicorp/terraform-ls/pull/1348), [#1356](https://github.com/hashicorp/terraform-ls/pull/1356), [#1360](https://github.com/hashicorp/terraform-ls/pull/1360))
+* build(deps): Bump golang.org/x/tools from 0.11.1 to 0.12.0 ([#1351](https://github.com/hashicorp/terraform-ls/pull/1351))
+* build(deps): Bump actions/setup-go from 4.0.1 to 4.1.0 ([#1354](https://github.com/hashicorp/terraform-ls/pull/1354))
+* build(deps): Bump github.com/creachadair/jrpc2 from 1.1.0 to 1.1.1 ([#1359](https://github.com/hashicorp/terraform-ls/pull/1359))
+* build(deps): Bump actions/checkout from 3.5.3 to 3.6.0 ([#1362](https://github.com/hashicorp/terraform-ls/pull/1362))
+
 ## 0.31.4 (1 August 2023)
 
 ENHANCEMENTS:
