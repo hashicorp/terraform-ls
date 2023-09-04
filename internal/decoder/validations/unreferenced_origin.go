@@ -47,8 +47,9 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 		// we only initially validate variables & local values
 		// resources and data sources can have unknown schema
 		// and will be researched at a later point
+		supported := []string{"var", "local"}
 		firstStep := address[0].String()
-		if firstStep != "var" && firstStep != "local" {
+		if !slices.Contains(supported, firstStep) {
 			continue
 		}
 
