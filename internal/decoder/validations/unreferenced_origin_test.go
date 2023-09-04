@@ -51,6 +51,24 @@ func TestUnreferencedOrigins(t *testing.T) {
 			},
 		},
 		{
+			name: "unsupported variable of complex type",
+			origins: reference.Origins{
+				reference.LocalOrigin{
+					Range: hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{},
+						End:      hcl.Pos{},
+					},
+					Addr: lang.Address{
+						lang.RootStep{Name: "var"},
+						lang.AttrStep{Name: "obj"},
+						lang.AttrStep{Name: "field"},
+					},
+				},
+			},
+			want: lang.DiagnosticsMap{},
+		},
+		{
 			name: "unsupported path origins (module input)",
 			origins: reference.Origins{
 				reference.PathOrigin{
