@@ -51,6 +51,28 @@ func TestUnreferencedOrigins(t *testing.T) {
 			},
 		},
 		{
+			name: "unsupported path origins (module input)",
+			origins: reference.Origins{
+				reference.PathOrigin{
+					Range: hcl.Range{
+						Filename: "test.tf",
+						Start:    hcl.Pos{},
+						End:      hcl.Pos{},
+					},
+					TargetAddr: lang.Address{
+						lang.RootStep{Name: "var"},
+						lang.AttrStep{Name: "foo"},
+					},
+					TargetPath: lang.Path{
+						Path:       "./submodule",
+						LanguageID: "terraform",
+					},
+					Constraints: reference.OriginConstraints{},
+				},
+			},
+			want: lang.DiagnosticsMap{},
+		},
+		{
 			name: "many undeclared variables",
 			origins: reference.Origins{
 				reference.LocalOrigin{
