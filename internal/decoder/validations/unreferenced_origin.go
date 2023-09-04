@@ -27,6 +27,13 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			continue
 		}
 
+		_, ok = origin.(reference.LocalOrigin)
+		if !ok {
+			// we avoid reporting on origins outside of the current module
+			// for now, to reduce complexity and reduce performance impact
+			continue
+		}
+
 		// we only initially validate variables
 		// resources and data sources can have unknown schema
 		// and will be researched at a later point
