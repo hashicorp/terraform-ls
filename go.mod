@@ -3,7 +3,7 @@ module github.com/hashicorp/terraform-ls
 go 1.21.0
 
 require (
-	github.com/algolia/algoliasearch-client-go/v3 v3.30.1
+	github.com/algolia/algoliasearch-client-go/v3 v3.31.0
 	github.com/apparentlymart/go-textseg v1.0.0
 	github.com/creachadair/jrpc2 v1.1.1
 	github.com/google/go-cmp v0.5.9
