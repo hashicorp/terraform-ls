@@ -76,25 +76,49 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		Type:        op.OpTypeLoadModuleMetadata.String(),
 		DependsOn:   dependsOn,
 		IgnoreState: ignoreState,
+		Defer: func(ctx context.Context, jobErr error) (jobIds job.IDs, err error) {
+			if jobErr != nil {
+				err = jobErr
+				return
+			}
+			modCalls, mcErr := idx.decodeDeclaredModuleCalls(ctx, modHandle, ignoreState)
+			if mcErr != nil {
+				idx.logger.Printf("decoding declared module calls for %q failed: %s", modHandle.URI, mcErr)
+				// We log the error but still continue scheduling other jobs
+				// which are still valuable for the rest of the configuration
+				// even if they may not have the data for module calls.
+			}
+
+			eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+				},
+				DependsOn:   modCalls,
+				Type:        op.OpTypePreloadEmbeddedSchema.String(),
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return ids, err
+			}
+			ids = append(ids, eSchemaId)
+
+			refOriginsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				},
+				Type:        op.OpTypeDecodeReferenceOrigins.String(),
+				DependsOn:   modCalls,
+				IgnoreState: ignoreState,
+			})
+			return job.IDs{refOriginsId}, err
+		},
 	})
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, metaId)
-
-	eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		DependsOn:   job.IDs{metaId},
-		Type:        op.OpTypePreloadEmbeddedSchema.String(),
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, eSchemaId)
 
 	refTargetsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
@@ -109,20 +133,6 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		return ids, err
 	}
 	ids = append(ids, refTargetsId)
-
-	refOriginsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
-		Dir: modHandle,
-		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
-		},
-		Type:        op.OpTypeDecodeReferenceOrigins.String(),
-		DependsOn:   job.IDs{metaId},
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, refOriginsId)
 
 	// This job may make an HTTP request, and we schedule it in
 	// the low-priority queue, so we don't want to wait for it.
