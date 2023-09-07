@@ -5,14 +5,18 @@ package indexer
 
 import (
 	"context"
+	"errors"
 	"os"
+	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
+	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 )
 
 func (idx *Indexer) decodeInstalledModuleCalls(ctx context.Context, modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
@@ -40,6 +44,51 @@ func (idx *Indexer) decodeInstalledModuleCalls(ctx context.Context, modHandle do
 
 		mcHandle := document.DirHandleFromPath(mc.Path)
 		mcJobIds, mcErr := idx.decodeModuleAtPath(ctx, mcHandle, ignoreState)
+		jobIds = append(jobIds, mcJobIds...)
+		multierror.Append(errs, mcErr)
+	}
+
+	return jobIds, errs.ErrorOrNil()
+}
+
+func (idx *Indexer) decodeDeclaredModuleCalls(ctx context.Context, modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
+	jobIds := make(job.IDs, 0)
+
+	moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
+	if err != nil {
+		return jobIds, err
+	}
+
+	var errs *multierror.Error
+
+	idx.logger.Printf("indexing declared module calls for %q: %d", modHandle.URI, len(moduleCalls.Declared))
+	for _, mc := range moduleCalls.Declared {
+		localSource, ok := mc.SourceAddr.(tfmodule.LocalSourceAddr)
+		if !ok {
+			continue
+		}
+		mcPath := filepath.Join(modHandle.Path(), filepath.FromSlash(localSource.String()))
+
+		fi, err := os.Stat(mcPath)
+		if err != nil || !fi.IsDir() {
+			multierror.Append(errs, err)
+			continue
+		}
+
+		mcIgnoreState := ignoreState
+		err = idx.modStore.Add(mcPath)
+		if err != nil {
+			alreadyExistsErr := &state.AlreadyExistsError{}
+			if errors.As(err, &alreadyExistsErr) {
+				mcIgnoreState = false
+			} else {
+				multierror.Append(errs, err)
+				continue
+			}
+		}
+
+		mcHandle := document.DirHandleFromPath(mcPath)
+		mcJobIds, mcErr := idx.decodeModuleAtPath(ctx, mcHandle, mcIgnoreState)
 		jobIds = append(jobIds, mcJobIds...)
 		multierror.Append(errs, mcErr)
 	}
