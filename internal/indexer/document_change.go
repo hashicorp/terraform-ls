@@ -109,7 +109,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 					return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 				},
 				Type:        op.OpTypeDecodeReferenceOrigins.String(),
-				DependsOn:   modCalls,
+				DependsOn:   append(modCalls, eSchemaId),
 				IgnoreState: ignoreState,
 			})
 			jobIds = append(jobIds, refOriginsId)
