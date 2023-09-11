@@ -18,24 +18,24 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 	diagsMap := make(lang.DiagnosticsMap)
 
 	for _, origin := range pathCtx.ReferenceOrigins {
-		matchableOrigin, ok := origin.(reference.MatchableOrigin)
+		localOrigin, ok := origin.(reference.LocalOrigin)
 		if !ok {
-			// we don't report on other origins to avoid complexity for now
-			// other origins would need to be matched against other
-			// modules/directories and we cannot be sure the targets are
-			// available within the workspace or were parsed/decoded/collected
-			// at the time this event occurs
+			// We avoid reporting on other origin types.
+			//
+			// DirectOrigin is represented as module's source
+			// and we already validate existence of the local module
+			// and avoiding linking to a non-existent module in terraform-schema
+			// https://github.com/hashicorp/terraform-schema/blob/b39f3de0/schema/module_schema.go#L212-L232
+			//
+			// PathOrigin is represented as module inputs
+			// and we can validate module inputs more meaningfully
+			// as attributes in body (module block), e.g. raise that
+			// an input is required or unknown, rather than "reference"
+			// lacking a corresponding target.
 			continue
 		}
 
-		_, ok = origin.(reference.LocalOrigin)
-		if !ok {
-			// we avoid reporting on origins outside of the current module
-			// for now, to reduce complexity and reduce performance impact
-			continue
-		}
-
-		address := matchableOrigin.Address()
+		address := localOrigin.Address()
 
 		if len(address) > 2 {
 			// We temporarily ignore references with more than 2 segments
@@ -54,7 +54,7 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			continue
 		}
 
-		_, ok = pathCtx.ReferenceTargets.Match(matchableOrigin)
+		_, ok = pathCtx.ReferenceTargets.Match(localOrigin)
 		if !ok {
 			// target not found
 			fileName := origin.OriginRange().Filename
