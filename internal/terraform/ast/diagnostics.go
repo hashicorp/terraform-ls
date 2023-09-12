@@ -4,8 +4,6 @@
 package ast
 
 import (
-	"fmt"
-
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
@@ -20,18 +18,7 @@ const (
 )
 
 func (d DiagnosticSource) String() string {
-	switch d {
-	case HCLParsingSource:
-		return "HCL"
-	case SchemaValidationSource:
-		return "early validation"
-	case ReferenceValidationSource:
-		return "early validation"
-	case TerraformValidateSource:
-		return "terraform validate"
-	default:
-		panic(fmt.Sprintf("Unknown diagnostic source %d", d))
-	}
+	return "Terraform"
 }
 
 type DiagnosticSourceState map[DiagnosticSource]op.OpState
