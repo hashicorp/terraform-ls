@@ -164,6 +164,8 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	// passing the request context here
 	// Static user-provided paths take precedence over dynamic discovery
 	walkerCtx := context.Background()
+	walkerCtx = lsctx.WithRPCContext(walkerCtx, lsctx.RPCContext(ctx))
+
 	err = svc.closedDirWalker.StartWalking(walkerCtx)
 	if err != nil {
 		return serverCaps, fmt.Errorf("failed to start closedDirWalker: %w", err)
