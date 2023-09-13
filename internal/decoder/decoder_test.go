@@ -18,6 +18,7 @@ import (
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -60,6 +61,7 @@ func TestDecoder_CodeLensesForFile_concurrencyBug(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 		err = module.ParseModuleConfiguration(ctx, mapFs, ss.Modules, dirName)
 		if err != nil {
 			t.Error(err)

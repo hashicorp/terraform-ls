@@ -52,3 +52,26 @@ func ParseModuleFiles(fs FS, modPath string) (ast.ModFiles, ast.ModDiags, error)
 
 	return files, diags, nil
 }
+
+func ParseModuleFile(fs FS, fileName string) (ast.ModFiles, ast.ModDiags, error) {
+	files := make(ast.ModFiles, 0)
+	diags := make(ast.ModDiags, 0)
+
+	src, err := fs.ReadFile(fileName)
+	if err != nil {
+		// If a file isn't accessible, return
+		return nil, nil, err
+	}
+
+	name := filepath.Base((fileName))
+	filename := ast.ModFilename(name)
+
+	f, pDiags := parseFile(src, filename)
+
+	diags[filename] = pDiags
+	if f != nil {
+		files[filename] = f
+	}
+
+	return files, diags, nil
+}

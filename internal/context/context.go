@@ -199,3 +199,7 @@ func IsLanguageId(ctx context.Context, expectedLangId string) bool {
 	}
 	return langId == expectedLangId
 }
+
+func (ctxData RPCContextData) IsDidChangeRequest() bool {
+	return ctxData.Method == "textDocument/didChange"
+}

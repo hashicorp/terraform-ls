@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
@@ -56,6 +57,7 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -128,6 +130,7 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -228,6 +231,7 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -522,6 +526,7 @@ func TestParseProviderVersions_multipleVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPathFirst)
 	if err != nil {
 		t.Fatal(err)
@@ -691,6 +696,7 @@ func TestPreloadEmbeddedSchema_basic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -761,6 +767,7 @@ func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -824,6 +831,7 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -903,6 +911,7 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
