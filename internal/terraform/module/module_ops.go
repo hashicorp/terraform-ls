@@ -374,7 +374,18 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	if mod.ModuleParsingState == op.OpStateLoaded && rpcContext.IsDidChangeRequest() {
 		// the file has already been parsed, so only examine this file and not the whole module
 		fileName, _ := uri.PathFromURI(rpcContext.URI)
-		files, diags, err = parser.ParseModuleFile(fs, fileName)
+
+		f, fDiags, err := parser.ParseModuleFile(fs, fileName)
+		if err != nil {
+			return err
+		}
+		existingFiles := mod.ParsedModuleFiles.Copy()
+		existingFiles[ast.ModFilename(fileName)] = f
+		files = existingFiles
+
+		existingDiags := mod.ModuleDiagnostics.Copy()
+		existingDiags[ast.ModFilename(fileName)] = fDiags
+		diags = existingDiags
 	} else {
 		// this is the first time file is opened so parse the whole module
 		files, diags, err = parser.ParseModuleFiles(fs, modPath)

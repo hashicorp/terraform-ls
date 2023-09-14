@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	"github.com/stretchr/testify/mock"
@@ -938,6 +939,70 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 		}
 	}()
 	wg.Wait()
+}
+
+func TestParseModuleConfiguration(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
+	// say we're coming from did_change request
+	fooURI, _ := filepath.Abs("testdata/single-file-change-module/foo.tf")
+	x := lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	}
+	ctx = lsctx.WithRPCContext(ctx, x)
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// test if foo.tf is not the same as first seen
+	if before.ParsedModuleFiles["foo.tf"] != after.ParsedModuleFiles["foo.tf"] {
+		t.Fatal("linked file mismatch")
+	}
+
+	// test if main.tf is the same as first seen
+	if before.ParsedModuleFiles["main.tf"] == after.ParsedModuleFiles["main.tf"] {
+		t.Fatal("linked file mismatch")
+	}
+
+	// TODO examine diags should change for foo.tf
 }
 
 func gzipCompressBytes(t *testing.T, b []byte) []byte {
