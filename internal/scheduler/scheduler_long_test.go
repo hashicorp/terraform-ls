@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -29,6 +30,7 @@ func TestScheduler_millionJobsQueued(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	ctx, cancelFunc := context.WithCancel(context.Background())
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 
 	lowPrioSched := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	lowPrioSched.Start(ctx)
