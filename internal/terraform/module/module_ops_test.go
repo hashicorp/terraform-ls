@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -972,11 +973,26 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	fmt.Println("--------before---------")
+	fmt.Println(string(before.ParsedModuleFiles["foo.tf"].Bytes))
+	fmt.Println("--------before---------")
+
+
+	f, err := os.OpenFile(filepath.Join(singleFileModulePath, "foo.tf"),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("\n\nvariable \"awesome\" {\n\n}\n"); err != nil {
+		t.Fatal(err)
+	}
+	f.Close()
+
 	// ignore job state
 	ctx = job.WithIgnoreState(ctx, true)
 
 	// say we're coming from did_change request
-	fooURI, _ := filepath.Abs("testdata/single-file-change-module/foo.tf")
+	fooURI, _ := filepath.Abs(filepath.Join(singleFileModulePath, "foo.tf"))
 	x := lsctx.RPCContextData{
 		Method: "textDocument/didChange",
 		URI:    uri.FromPath(fooURI),
@@ -991,18 +1007,31 @@ func TestParseModuleConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println("--------after---------")
+	fmt.Println(string(after.ParsedModuleFiles["foo.tf"].Bytes))
+	fmt.Println("--------after---------")
+
 
 	// test if foo.tf is not the same as first seen
-	if before.ParsedModuleFiles["foo.tf"] != after.ParsedModuleFiles["foo.tf"] {
-		t.Fatal("linked file mismatch")
+	if before.ParsedModuleFiles["foo.tf"] == after.ParsedModuleFiles["foo.tf"] {
+		t.Fatal("file should mismatch")
 	}
 
 	// test if main.tf is the same as first seen
 	if before.ParsedModuleFiles["main.tf"] == after.ParsedModuleFiles["main.tf"] {
-		t.Fatal("linked file mismatch")
+		t.Fatal("file mismatch")
 	}
 
-	// TODO examine diags should change for foo.tf
+	//  examine diags should change for foo.tf
+	diagsBefore := before.ModuleDiagnostics["foo.tf"]
+	diagsAfter := after.ModuleDiagnostics["foo.tf"]
+	// if before.ModuleDiagnostics["foo.tf"] == after.ModuleDiagnostics["foo.tf"] {
+	// 	t.Fatal("diags should mismatch")
+	// }
+
+	if diff := cmp.Diff(diagsBefore, diagsAfter, ctydebug.CmpOptions); diff != "" {
+		t.Fatalf("diags should mismatch: %s", diff)
+	}
 }
 
 func gzipCompressBytes(t *testing.T, b []byte) []byte {

@@ -1,3 +1,8 @@
 variable "gogo" {
 
 }
+
+
+variable "awesome" {
+
+}
