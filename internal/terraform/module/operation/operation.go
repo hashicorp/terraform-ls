@@ -31,6 +31,7 @@ const (
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
 	OpTypeSchemaValidation
+	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation
 	OpTypeTerraformValidate
 )

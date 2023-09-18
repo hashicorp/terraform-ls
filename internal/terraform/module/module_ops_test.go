@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
@@ -996,6 +997,7 @@ func TestSchemaValidation_FullModule(t *testing.T) {
 		Method: "textDocument/didOpen",
 		URI:    "file:///test/variables.tf",
 	})
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
 	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -1040,6 +1042,7 @@ func TestSchemaValidation_SingleFile(t *testing.T) {
 		Method: "textDocument/didChange",
 		URI:    "file:///test/variables.tf",
 	})
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
 	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -1056,3 +1059,5 @@ func TestSchemaValidation_SingleFile(t *testing.T) {
 		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
 	}
 }
+
+// TODO: Test for validation of tfvars

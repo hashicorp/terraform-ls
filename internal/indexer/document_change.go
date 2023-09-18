@@ -49,6 +49,26 @@ func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirH
 	}
 	ids = append(ids, parseVarsId)
 
+	validationOptions, err := lsctx.ValidationOptions(ctx)
+	if err != nil {
+		return ids, err
+	}
+
+	if validationOptions.EarlyValidation {
+		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.SchemaVariablesValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			},
+			Type:        op.OpTypeSchemaVarsValidation.String(),
+			DependsOn:   append(modIds, parseVarsId),
+			IgnoreState: true,
+		})
+		if err != nil {
+			return ids, err
+		}
+	}
+
 	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {

@@ -17,3 +17,8 @@ var moduleValidators = []validator.Validator{
 	validator.UnexpectedAttribute{},
 	validator.UnexpectedBlock{},
 }
+
+var varsValidators = []validator.Validator{
+	validator.UnexpectedAttribute{},
+	validator.UnexpectedBlock{},
+}
