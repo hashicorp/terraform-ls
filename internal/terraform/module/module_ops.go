@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"path/filepath"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -373,9 +374,13 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
 	if mod.ModuleParsingState == op.OpStateLoaded && rpcContext.IsDidChangeRequest() {
 		// the file has already been parsed, so only examine this file and not the whole module
-		fileName, _ := uri.PathFromURI(rpcContext.URI)
+		filePath, err := uri.PathFromURI(rpcContext.URI)
+		if err != nil {
+			return err
+		}
+		fileName := filepath.Base(filePath)
 
-		f, fDiags, err := parser.ParseModuleFile(fs, fileName)
+		f, fDiags, err := parser.ParseModuleFile(fs, filePath)
 		if err != nil {
 			return err
 		}

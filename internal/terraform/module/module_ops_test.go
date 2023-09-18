@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -973,21 +972,6 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println("--------before---------")
-	fmt.Println(string(before.ParsedModuleFiles["foo.tf"].Bytes))
-	fmt.Println("--------before---------")
-
-
-	f, err := os.OpenFile(filepath.Join(singleFileModulePath, "foo.tf"),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.WriteString("\n\nvariable \"awesome\" {\n\n}\n"); err != nil {
-		t.Fatal(err)
-	}
-	f.Close()
-
 	// ignore job state
 	ctx = job.WithIgnoreState(ctx, true)
 
@@ -1007,10 +991,6 @@ func TestParseModuleConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("--------after---------")
-	fmt.Println(string(after.ParsedModuleFiles["foo.tf"].Bytes))
-	fmt.Println("--------after---------")
-
 
 	// test if foo.tf is not the same as first seen
 	if before.ParsedModuleFiles["foo.tf"] == after.ParsedModuleFiles["foo.tf"] {
@@ -1018,19 +998,18 @@ func TestParseModuleConfiguration(t *testing.T) {
 	}
 
 	// test if main.tf is the same as first seen
-	if before.ParsedModuleFiles["main.tf"] == after.ParsedModuleFiles["main.tf"] {
+	if before.ParsedModuleFiles["main.tf"] != after.ParsedModuleFiles["main.tf"] {
 		t.Fatal("file mismatch")
 	}
 
-	//  examine diags should change for foo.tf
-	diagsBefore := before.ModuleDiagnostics["foo.tf"]
-	diagsAfter := after.ModuleDiagnostics["foo.tf"]
-	// if before.ModuleDiagnostics["foo.tf"] == after.ModuleDiagnostics["foo.tf"] {
-	// 	t.Fatal("diags should mismatch")
-	// }
+	// examine diags should change for foo.tf
+	if before.ModuleDiagnostics["foo.tf"][0] == after.ModuleDiagnostics["foo.tf"][0] {
+		t.Fatal("diags should mismatch")
+	}
 
-	if diff := cmp.Diff(diagsBefore, diagsAfter, ctydebug.CmpOptions); diff != "" {
-		t.Fatalf("diags should mismatch: %s", diff)
+	// examine diags should change for main.tf
+	if before.ModuleDiagnostics["main.tf"][0] != after.ModuleDiagnostics["main.tf"][0] {
+		t.Fatal("diags should match")
 	}
 }
 

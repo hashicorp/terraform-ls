@@ -5,4 +5,4 @@ variable "gogo" {
 
 variable "awesome" {
 
-}
+
