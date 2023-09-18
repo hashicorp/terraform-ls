@@ -43,6 +43,7 @@ var (
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
 	ctxRPCContext           = &contextKey{"rpc context"}
+	ctxLanguageId           = &contextKey{"language ID"}
 )
 
 func missingContextErr(ctxKey *contextKey) *MissingContextErr {
@@ -185,4 +186,16 @@ func WithRPCContext(ctx context.Context, rpcc RPCContextData) context.Context {
 
 func RPCContext(ctx context.Context) RPCContextData {
 	return ctx.Value(ctxRPCContext).(RPCContextData)
+}
+
+func WithLanguageId(ctx context.Context, languageId string) context.Context {
+	return context.WithValue(ctx, ctxLanguageId, languageId)
+}
+
+func IsLanguageId(ctx context.Context, expectedLangId string) bool {
+	langId, ok := ctx.Value(ctxLanguageId).(string)
+	if !ok {
+		return false
+	}
+	return langId == expectedLangId
 }
