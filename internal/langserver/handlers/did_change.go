@@ -6,6 +6,7 @@ package handlers
 import (
 	"context"
 
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -27,6 +28,8 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 	if err != nil {
 		return err
 	}
+
+	ctx = lsctx.WithLanguageId(ctx, doc.LanguageID)
 
 	newVersion := int(p.TextDocument.Version)
 
