@@ -970,7 +970,7 @@ var randomSchemaJSON = `{
 	}
 }`
 
-func TestSchemaValidation_FullModule(t *testing.T) {
+func TestSchemaModuleValidation_FullModule(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
 	if err != nil {
@@ -998,7 +998,7 @@ func TestSchemaValidation_FullModule(t *testing.T) {
 		URI:    "file:///test/variables.tf",
 	})
 	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
-	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	err = SchemaModuleValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1015,7 +1015,7 @@ func TestSchemaValidation_FullModule(t *testing.T) {
 	}
 }
 
-func TestSchemaValidation_SingleFile(t *testing.T) {
+func TestSchemaModuleValidation_SingleFile(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
 	if err != nil {
@@ -1043,7 +1043,7 @@ func TestSchemaValidation_SingleFile(t *testing.T) {
 		URI:    "file:///test/variables.tf",
 	})
 	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
-	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	err = SchemaModuleValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}

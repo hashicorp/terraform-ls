@@ -151,9 +151,9 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.SchemaValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.SchemaModuleValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
 			},
-			Type:        op.OpTypeSchemaValidation.String(),
+			Type:        op.OpTypeSchemaModuleValidation.String(),
 			DependsOn:   job.IDs{metaId},
 			IgnoreState: ignoreState,
 		})
