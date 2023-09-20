@@ -372,7 +372,7 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	var diags ast.ModDiags
 	rpcContext := lsctx.RPCContext(ctx)
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if mod.ModuleParsingState == op.OpStateLoaded && rpcContext.IsDidChangeRequest() {
+	if mod.ModuleParsingState == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && lsctx.IsLanguageId(ctx, ilsp.Terraform.String()) {
 		// the file has already been parsed, so only examine this file and not the whole module
 		filePath, err := uri.PathFromURI(rpcContext.URI)
 		if err != nil {
