@@ -410,11 +410,6 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 		return err
 	}
 
-	err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
-	if err != nil {
-		return err
-	}
-
 	sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 	if sErr != nil {
 		return sErr
