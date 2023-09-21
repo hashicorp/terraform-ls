@@ -27,6 +27,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -981,6 +982,7 @@ func TestParseModuleConfiguration(t *testing.T) {
 		Method: "textDocument/didChange",
 		URI:    uri.FromPath(fooURI),
 	}
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
 	ctx = lsctx.WithRPCContext(ctx, x)
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
