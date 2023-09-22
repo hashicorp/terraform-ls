@@ -55,6 +55,14 @@ func (mf ModFiles) AsMap() map[string]*hcl.File {
 	return m
 }
 
+func (mf ModFiles) Copy() ModFiles {
+	m := make(ModFiles, len(mf))
+	for name, file := range mf {
+		m[name] = file
+	}
+	return m
+}
+
 type ModDiags map[ModFilename]hcl.Diagnostics
 
 func ModDiagsFromMap(m map[string]hcl.Diagnostics) ModDiags {
@@ -79,6 +87,14 @@ func (md ModDiags) AsMap() map[string]hcl.Diagnostics {
 	m := make(map[string]hcl.Diagnostics, len(md))
 	for name, diags := range md {
 		m[string(name)] = diags
+	}
+	return m
+}
+
+func (md ModDiags) Copy() ModDiags {
+	m := make(ModDiags, len(md))
+	for name, diags := range md {
+		m[name] = diags
 	}
 	return m
 }

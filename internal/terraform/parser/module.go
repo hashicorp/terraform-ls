@@ -6,6 +6,7 @@ package parser
 import (
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
@@ -51,4 +52,19 @@ func ParseModuleFiles(fs FS, modPath string) (ast.ModFiles, ast.ModDiags, error)
 	}
 
 	return files, diags, nil
+}
+
+func ParseModuleFile(fs FS, filePath string) (*hcl.File, hcl.Diagnostics, error) {
+	src, err := fs.ReadFile(filePath)
+	if err != nil {
+		// If a file isn't accessible, return
+		return nil, nil, err
+	}
+
+	name := filepath.Base(filePath)
+	filename := ast.ModFilename(name)
+
+	f, pDiags := parseFile(src, filename)
+
+	return f, pDiags, nil
 }

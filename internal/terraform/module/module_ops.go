@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"path/filepath"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -18,6 +19,7 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
@@ -25,9 +27,11 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/earlydecoder"
 	"github.com/hashicorp/terraform-schema/module"
@@ -359,19 +363,52 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 
 	// TODO: Avoid parsing if the content matches existing AST
 
-	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
-
 	// Avoid parsing if it is already in progress or already known
 	if mod.ModuleParsingState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+	var files ast.ModFiles
+	var diags ast.ModDiags
+	rpcContext := lsctx.RPCContext(ctx)
+	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
+	if mod.ModuleParsingState == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && lsctx.IsLanguageId(ctx, ilsp.Terraform.String()) {
+		// the file has already been parsed, so only examine this file and not the whole module
+		err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+		if err != nil {
+			return err
+		}
+
+		filePath, err := uri.PathFromURI(rpcContext.URI)
+		if err != nil {
+			return err
+		}
+		fileName := filepath.Base(filePath)
+
+		f, fDiags, err := parser.ParseModuleFile(fs, filePath)
+		if err != nil {
+			return err
+		}
+		existingFiles := mod.ParsedModuleFiles.Copy()
+		existingFiles[ast.ModFilename(fileName)] = f
+		files = existingFiles
+
+		existingDiags := mod.ModuleDiagnostics.Copy()
+		existingDiags[ast.ModFilename(fileName)] = fDiags
+		diags = existingDiags
+	} else {
+		// this is the first time file is opened so parse the whole module
+		err = modStore.SetModuleParsingState(modPath, op.OpStateLoading)
+		if err != nil {
+			return err
+		}
+
+		files, diags, err = parser.ParseModuleFiles(fs, modPath)
+	}
+
 	if err != nil {
 		return err
 	}
-
-	files, diags, err := parser.ParseModuleFiles(fs, modPath)
 
 	sErr := modStore.UpdateParsedModuleFiles(modPath, files, err)
 	if sErr != nil {

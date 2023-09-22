@@ -23,13 +23,16 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
 	tfjson "github.com/hashicorp/terraform-json"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
 	"github.com/stretchr/testify/mock"
@@ -56,6 +59,7 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -128,6 +132,7 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -228,6 +233,7 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -522,6 +528,7 @@ func TestParseProviderVersions_multipleVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPathFirst)
 	if err != nil {
 		t.Fatal(err)
@@ -691,6 +698,7 @@ func TestPreloadEmbeddedSchema_basic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -761,6 +769,7 @@ func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -824,6 +833,7 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -903,6 +913,7 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -929,6 +940,151 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 		}
 	}()
 	wg.Wait()
+}
+
+func TestParseModuleConfiguration(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
+	// say we're coming from did_change request
+	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "foo.tf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	x := lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	}
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
+	ctx = lsctx.WithRPCContext(ctx, x)
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// test if foo.tf is not the same as first seen
+	if before.ParsedModuleFiles["foo.tf"] == after.ParsedModuleFiles["foo.tf"] {
+		t.Fatal("file should mismatch")
+	}
+
+	// test if main.tf is the same as first seen
+	if before.ParsedModuleFiles["main.tf"] != after.ParsedModuleFiles["main.tf"] {
+		t.Fatal("file mismatch")
+	}
+
+	// examine diags should change for foo.tf
+	if before.ModuleDiagnostics["foo.tf"][0] == after.ModuleDiagnostics["foo.tf"][0] {
+		t.Fatal("diags should mismatch")
+	}
+
+	// examine diags should change for main.tf
+	if before.ModuleDiagnostics["main.tf"][0] != after.ModuleDiagnostics["main.tf"][0] {
+		t.Fatal("diags should match")
+	}
+}
+func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
+	// say we're coming from did_change request
+	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// example.tfvars should be missing
+	_, beforeExists := before.ParsedModuleFiles["example.tfvars"]
+	if beforeExists {
+		t.Fatal("example.tfvars file should be missing")
+	}
+	_, afterExists := after.ParsedModuleFiles["example.tfvars"]
+	if afterExists {
+		t.Fatal("example.tfvars file should be missing")
+	}
+
+	// diags should be missing for example.tfvars
+	if _, ok := before.ModuleDiagnostics["example.tfvars"]; ok {
+		t.Fatal("there should be no diags for tfvars files right now")
+	}
 }
 
 func gzipCompressBytes(t *testing.T, b []byte) []byte {
