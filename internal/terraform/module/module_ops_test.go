@@ -977,7 +977,10 @@ func TestParseModuleConfiguration(t *testing.T) {
 	ctx = job.WithIgnoreState(ctx, true)
 
 	// say we're coming from did_change request
-	fooURI, _ := filepath.Abs(filepath.Join(singleFileModulePath, "foo.tf"))
+	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "foo.tf"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	x := lsctx.RPCContextData{
 		Method: "textDocument/didChange",
 		URI:    uri.FromPath(fooURI),
@@ -1049,13 +1052,15 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	ctx = job.WithIgnoreState(ctx, true)
 
 	// say we're coming from did_change request
-	fooURI, _ := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
-	x := lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    uri.FromPath(fooURI),
+	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	if err != nil {
+		t.Fatal(err)
 	}
 	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
-	ctx = lsctx.WithRPCContext(ctx, x)
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	})
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1066,13 +1071,18 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// example.tfvars should be the same
-	if before.ParsedModuleFiles["example.tfvars"] != after.ParsedModuleFiles["example.tfvars"] {
-		t.Fatal("file should match")
+	// example.tfvars should be missing
+	_, beforeExists := before.ParsedModuleFiles["example.tfvars"]
+	if beforeExists {
+		t.Fatal("example.tfvars file should be missing")
+	}
+	_, afterExists := after.ParsedModuleFiles["example.tfvars"]
+	if afterExists {
+		t.Fatal("example.tfvars file should be missing")
 	}
 
-	// diags should not change for example.tfvars
-	if before.ModuleDiagnostics["example.tfvars"] != nil {
+	// diags should be missing for example.tfvars
+	if _, ok := before.ModuleDiagnostics["example.tfvars"]; ok {
 		t.Fatal("there should be no diags for tfvars files right now")
 	}
 }
