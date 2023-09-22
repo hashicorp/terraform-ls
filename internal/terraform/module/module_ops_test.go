@@ -1014,6 +1014,68 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal("diags should match")
 	}
 }
+func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
+	// say we're coming from did_change request
+	fooURI, _ := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	x := lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	}
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	ctx = lsctx.WithRPCContext(ctx, x)
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// example.tfvars should be the same
+	if before.ParsedModuleFiles["example.tfvars"] != after.ParsedModuleFiles["example.tfvars"] {
+		t.Fatal("file should match")
+	}
+
+	// diags should not change for example.tfvars
+	if before.ModuleDiagnostics["example.tfvars"] != nil {
+		t.Fatal("there should be no diags for tfvars files right now")
+	}
+}
 
 func gzipCompressBytes(t *testing.T, b []byte) []byte {
 	var compressedBytes bytes.Buffer
