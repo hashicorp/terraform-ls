@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/go-multierror"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -71,6 +72,26 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 		return ids, err
 	}
 	ids = append(ids, parseVarsId)
+
+	validationOptions, err := lsctx.ValidationOptions(ctx)
+	if err != nil {
+		return ids, err
+	}
+
+	if validationOptions.EarlyValidation {
+		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+			Dir: modHandle,
+			Func: func(ctx context.Context) error {
+				return module.SchemaVariablesValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			},
+			Type:        op.OpTypeSchemaVarsValidation.String(),
+			DependsOn:   append(modIds, parseVarsId),
+			IgnoreState: true,
+		})
+		if err != nil {
+			return ids, err
+		}
+	}
 
 	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,

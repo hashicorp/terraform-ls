@@ -988,7 +988,7 @@ func (s *ModuleStore) SetModuleDiagnosticsState(path string, source ast.Diagnost
 func (s *ModuleStore) UpdateVarsDiagnostics(path string, source ast.DiagnosticSource, diags ast.VarsDiags) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
-		s.SetVarsDiagnosticsState(path, ast.HCLParsingSource, op.OpStateLoaded)
+		s.SetVarsDiagnosticsState(path, source, op.OpStateLoaded)
 	})
 	defer txn.Abort()
 

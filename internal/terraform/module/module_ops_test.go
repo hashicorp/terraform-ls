@@ -1124,7 +1124,7 @@ var randomSchemaJSON = `{
 	}
 }`
 
-func TestSchemaValidation_FullModule(t *testing.T) {
+func TestSchemaModuleValidation_FullModule(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
 	if err != nil {
@@ -1151,7 +1151,8 @@ func TestSchemaValidation_FullModule(t *testing.T) {
 		Method: "textDocument/didOpen",
 		URI:    "file:///test/variables.tf",
 	})
-	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
+	err = SchemaModuleValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1168,7 +1169,7 @@ func TestSchemaValidation_FullModule(t *testing.T) {
 	}
 }
 
-func TestSchemaValidation_SingleFile(t *testing.T) {
+func TestSchemaModuleValidation_SingleFile(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
 	if err != nil {
@@ -1195,7 +1196,8 @@ func TestSchemaValidation_SingleFile(t *testing.T) {
 		Method: "textDocument/didChange",
 		URI:    "file:///test/variables.tf",
 	})
-	err = SchemaValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
+	err = SchemaModuleValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1207,6 +1209,112 @@ func TestSchemaValidation_SingleFile(t *testing.T) {
 
 	expectedCount := 3
 	diagsCount := mod.ModuleDiagnostics[ast.SchemaValidationSource].Count()
+	if diagsCount != expectedCount {
+		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
+	}
+}
+
+func TestSchemaVarsValidation_FullModule(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "invalid-tfvars")
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseVariables(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didOpen",
+		URI:    "file:///test/terraform.tfvars",
+	})
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	err = SchemaVariablesValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mod, err := ss.Modules.ModuleByPath(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 2
+	diagsCount := mod.VarsDiagnostics[ast.SchemaValidationSource].Count()
+	if diagsCount != expectedCount {
+		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
+	}
+}
+
+func TestSchemaVarsValidation_SingleFile(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "invalid-tfvars")
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseVariables(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    "file:///test/terraform.tfvars",
+	})
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	err = SchemaVariablesValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mod, err := ss.Modules.ModuleByPath(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 1
+	diagsCount := mod.VarsDiagnostics[ast.SchemaValidationSource].Count()
 	if diagsCount != expectedCount {
 		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
 	}
