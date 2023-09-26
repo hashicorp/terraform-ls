@@ -206,8 +206,9 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			return module.GetModuleDataFromRegistry(ctx, idx.registryClient,
 				idx.modStore, idx.registryModStore, modHandle.Path())
 		},
-		Priority: job.LowPriority,
-		Type:     op.OpTypeGetModuleDataFromRegistry.String(),
+		Priority:  job.LowPriority,
+		DependsOn: job.IDs{metaId},
+		Type:      op.OpTypeGetModuleDataFromRegistry.String(),
 	})
 	if err != nil {
 		return ids, err
