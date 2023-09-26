@@ -456,19 +456,57 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 
 	// TODO: Avoid parsing if the content matches existing AST
 
-	// TODO: Only parse the file that's being changed/opened, unless this is 1st-time parsing
-
 	// Avoid parsing if it is already in progress or already known
 	if mod.VarsDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+	var files ast.VarsFiles
+	var diags ast.VarsDiags
+	rpcContext := lsctx.RPCContext(ctx)
+	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
+	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && lsctx.IsLanguageId(ctx, ilsp.Tfvars.String()) {
+		// the file has already been parsed, so only examine this file and not the whole module
+		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		if err != nil {
+			return err
+		}
+		filePath, err := uri.PathFromURI(rpcContext.URI)
+		if err != nil {
+			return err
+		}
+		fileName := filepath.Base(filePath)
+
+		f, vdiags, err := parser.ParseVariableFile(fs, filePath)
+		if err != nil {
+			return err
+		}
+
+		existingFiles := mod.ParsedVarsFiles.Copy()
+		existingFiles[ast.VarsFilename(fileName)] = f
+		files = existingFiles
+
+		existingDiags, ok := mod.VarsDiagnostics[ast.HCLParsingSource]
+		if !ok {
+			existingDiags = make(ast.VarsDiags)
+		} else {
+			existingDiags = existingDiags.Copy()
+		}
+		existingDiags[ast.VarsFilename(fileName)] = vdiags
+		diags = existingDiags
+	} else {
+		// this is the first time file is opened so parse the whole module
+		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		if err != nil {
+			return err
+		}
+
+		files, diags, err = parser.ParseVariableFiles(fs, modPath)
+	}
+
 	if err != nil {
 		return err
 	}
-
-	files, diags, err := parser.ParseVariableFiles(fs, modPath)
 
 	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
 	if sErr != nil {

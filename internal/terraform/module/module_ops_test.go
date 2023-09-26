@@ -1018,6 +1018,7 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal("diags should match")
 	}
 }
+
 func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
@@ -1086,6 +1087,84 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	// diags should be missing for example.tfvars
 	if _, ok := before.ModuleDiagnostics[ast.HCLParsingSource]["example.tfvars"]; ok {
 		t.Fatal("there should be no diags for tfvars files right now")
+	}
+}
+
+func TestParseVariables(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// say we're coming from did_change request
+	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	x := lsctx.RPCContextData{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
+	ctx = lsctx.WithRPCContext(ctx, x)
+	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// example.tfvars should not be the same as first seen
+	if before.ParsedVarsFiles["example.tfvars"] == after.ParsedVarsFiles["example.tfvars"] {
+		t.Fatal("file should mismatch")
+	}
+
+	b := before.VarsDiagnostics[ast.HCLParsingSource]
+	ex := b[ast.VarsFilename("example.tfvars")]
+
+	a := after.VarsDiagnostics[ast.HCLParsingSource]
+	exA := a[ast.VarsFilename("example.tfvars")]
+
+	// // diags should change for example.tfvars
+	if ex[0] == exA[0] {
+		// if before.VarsDiagnostics["example.tfvars"][0] == after.VarsDiagnostics["example.tfvars"][0] {
+		t.Fatal("diags should mismatch")
 	}
 }
 
