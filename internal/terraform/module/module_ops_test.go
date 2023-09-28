@@ -1134,6 +1134,7 @@ func TestParseVariables(t *testing.T) {
 	x := lsctx.RPCContextData{
 		Method: "textDocument/didChange",
 		URI:    uri.FromPath(fooURI),
+		// URI:    "file:///test/example.tfvars",
 	}
 
 	// ignore job state
@@ -1366,10 +1367,13 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	fooURI, err := filepath.Abs(filepath.Join(modPath, "terraform.tfvars"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
-		Method:     "textDocument/didChange",
-		LanguageID: ilsp.Tfvars.String(),
-		URI:        "file:///test/terraform.tfvars",
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fooURI),
 	})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
