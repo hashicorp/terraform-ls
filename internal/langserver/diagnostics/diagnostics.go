@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -20,8 +21,6 @@ type diagContext struct {
 	uri   lsp.DocumentURI
 	diags []lsp.Diagnostic
 }
-
-type DiagnosticSource string
 
 type ClientNotifier interface {
 	Notify(ctx context.Context, method string, params interface{}) error
@@ -61,7 +60,7 @@ func (n *Notifier) PublishHCLDiags(ctx context.Context, dirPath string, diags Di
 	for filename, ds := range diags {
 		fileDiags := make([]lsp.Diagnostic, 0)
 		for source, diags := range ds {
-			fileDiags = append(fileDiags, ilsp.HCLDiagsToLSP(diags, string(source))...)
+			fileDiags = append(fileDiags, ilsp.HCLDiagsToLSP(diags, source.String())...)
 		}
 
 		n.diags <- diagContext{
@@ -83,7 +82,7 @@ func (n *Notifier) notify() {
 	}
 }
 
-type Diagnostics map[string]map[DiagnosticSource]hcl.Diagnostics
+type Diagnostics map[string]map[ast.DiagnosticSource]hcl.Diagnostics
 
 func NewDiagnostics() Diagnostics {
 	return make(Diagnostics, 0)
@@ -92,16 +91,16 @@ func NewDiagnostics() Diagnostics {
 // EmptyRootDiagnostic allows emptying any diagnostics for
 // the whole directory which were published previously.
 func (d Diagnostics) EmptyRootDiagnostic() Diagnostics {
-	d[""] = make(map[DiagnosticSource]hcl.Diagnostics, 0)
+	d[""] = make(map[ast.DiagnosticSource]hcl.Diagnostics, 0)
 	return d
 }
 
-func (d Diagnostics) Append(src string, diagsMap map[string]hcl.Diagnostics) Diagnostics {
+func (d Diagnostics) Append(src ast.DiagnosticSource, diagsMap map[string]hcl.Diagnostics) Diagnostics {
 	for uri, uriDiags := range diagsMap {
 		if _, ok := d[uri]; !ok {
-			d[uri] = make(map[DiagnosticSource]hcl.Diagnostics, 0)
+			d[uri] = make(map[ast.DiagnosticSource]hcl.Diagnostics, 0)
 		}
-		d[uri][DiagnosticSource(src)] = uriDiags
+		d[uri][src] = uriDiags
 	}
 
 	return d

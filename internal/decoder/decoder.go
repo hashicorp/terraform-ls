@@ -30,6 +30,7 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Functions:        coreFunctions(mod),
+		Validators:       moduleValidators,
 	}
 
 	for _, origin := range mod.RefOrigins {
@@ -63,6 +64,7 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File),
+		Validators:       varsValidators,
 	}
 
 	for _, origin := range mod.VarsRefOrigins {

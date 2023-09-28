@@ -30,4 +30,8 @@ const (
 	OpTypeGetModuleDataFromRegistry
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
+	OpTypeSchemaModuleValidation
+	OpTypeSchemaVarsValidation
+	OpTypeReferenceValidation
+	OpTypeTerraformValidate
 )
