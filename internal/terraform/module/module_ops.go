@@ -78,6 +78,11 @@ func (mo ModuleOperation) done() <-chan struct{} {
 	return mo.doneCh
 }
 
+// GetTerraformVersion obtains "installed" Terraform version
+// which can inform what version of core schema to pick.
+// Knowing the version is not required though as we can rely on
+// the constraint in `required_version` (as parsed via
+// [LoadModuleMetadata] and compare it against known released versions.
 func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -140,6 +145,9 @@ func providerVersionsFromTfVersion(pv map[string]*version.Version) map[tfaddr.Pr
 	return m
 }
 
+// ObtainSchema obtains provider schemas via Terraform CLI.
+// This is useful if we do not have the schemas available
+// from the embedded FS (i.e. in [PreloadEmbeddedSchema]).
 func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -205,6 +213,10 @@ func ObtainSchema(ctx context.Context, modStore *state.ModuleStore, schemaStore 
 	return nil
 }
 
+// PreloadEmbeddedSchema loads provider schemas based on
+// provider requirements parsed earlier via [LoadModuleMetadata].
+// This is the cheapest way of getting provider schemas in terms
+// of resources, time and complexity/UX.
 func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDirFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -359,6 +371,8 @@ func preloadSchemaForProviderAddr(ctx context.Context, pAddr tfaddr.Provider, fs
 	return nil
 }
 
+// ParseModuleConfiguration parses the module configuration,
+// i.e. turns bytes of `*.tf` files into AST ([*hcl.File]).
 func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -432,6 +446,8 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 	return err
 }
 
+// ParseVariables parses the variables configuration,
+// i.e. turns bytes of `*.tfvars` files into AST ([*hcl.File]).
 func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -467,6 +483,12 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	return err
 }
 
+// ParseModuleManifest parses the "module manifest" which
+// contains records of installed modules, e.g. where they're
+// installed on the filesystem.
+// This is useful for processing any modules which are not local
+// nor hosted in the Registry (which would be handled by
+// [GetModuleDataFromRegistry]).
 func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -511,6 +533,9 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 	return err
 }
 
+// ParseProviderVersions is a job complimentary to [ObtainSchema]
+// in that it obtains versions of providers/schemas from Terraform
+// CLI's lock file.
 func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -537,6 +562,9 @@ func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, modStore *state.M
 	return err
 }
 
+// LoadModuleMetadata loads data about the module in a version-independent
+// way that enables us to decode the rest of the configuration,
+// e.g. by knowing provider versions, Terraform Core constraint etc.
 func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -582,6 +610,14 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 	return mErr
 }
 
+// DecodeReferenceTargets collects reference targets,
+// using previously parsed AST (via [ParseModuleConfiguration]),
+// core schema of appropriate version (as obtained via [GetTerraformVersion])
+// and provider schemas ([PreloadEmbeddedSchema] or [ObtainSchema]).
+//
+// For example it tells us that variable block between certain LOC
+// can be referred to as var.foobar. This is useful e.g. during completion,
+// go-to-definition or go-to-references.
 func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -625,6 +661,14 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 	return rErr
 }
 
+// DecodeReferenceOrigins collects reference origins,
+// using previously parsed AST (via [ParseModuleConfiguration]),
+// core schema of appropriate version (as obtained via [GetTerraformVersion])
+// and provider schemas ([PreloadEmbeddedSchema] or [ObtainSchema]).
+//
+// For example it tells us that there is a reference address var.foobar
+// at a particular LOC. This can be later matched with targets
+// (as obtained via [DecodeReferenceTargets]) during hover or go-to-definition.
 func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -667,6 +711,13 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 	return rErr
 }
 
+// DecodeVarsReferences collects reference origins within
+// variable files (*.tfvars) where each valid attribute
+// (as informed by schema provided via [LoadModuleMetadata])
+// is considered an origin.
+//
+// This is useful in hovering over those variable names,
+// go-to-definition and go-to-references.
 func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -708,6 +759,13 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	return rErr
 }
 
+// SchemaModuleValidation does schema-based validation
+// of module files (*.tf) and produces diagnostics
+// associated with any "invalid" parts of code.
+//
+// It relies on previously parsed AST (via [ParseModuleConfiguration]),
+// core schema of appropriate version (as obtained via [GetTerraformVersion])
+// and provider schemas ([PreloadEmbeddedSchema] or [ObtainSchema]).
 func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -771,6 +829,12 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, sc
 	return rErr
 }
 
+// SchemaVariablesValidation does schema-based validation
+// of variable files (*.tfvars) and produces diagnostics
+// associated with any "invalid" parts of code.
+//
+// It relies on previously parsed AST (via [ParseVariables])
+// and schema, as provided via [LoadModuleMetadata]).
 func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -834,6 +898,11 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 	return rErr
 }
 
+// ReferenceValidation does validation based on (mis)matched
+// reference origins and targets, to flag up "orphaned" references.
+//
+// It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
+// to supply both origins and targets to compare.
 func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -866,6 +935,9 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 	return modStore.UpdateModuleDiagnostics(modPath, ast.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
 }
 
+// TerraformValidate uses Terraform CLI to run validate subcommand
+// and turn the provided (JSON) output into diagnostics associated
+// with "invalid" parts of code.
 func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
@@ -896,6 +968,12 @@ func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath
 	return modStore.UpdateModuleDiagnostics(modPath, ast.TerraformValidateSource, ast.ModDiagsFromMap(validateDiags))
 }
 
+// GetModuleDataFromRegistry obtains data about any modules (inputs & outputs)
+// from the Registry API based on module calls which were previously parsed
+// via [LoadModuleMetadata]. The same data could be obtained via [ParseModuleManifest]
+// but getting it from the API comes with little expectations,
+// specifically the modules do not need to be installed on disk and we don't
+// need to parse and decode all files.
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
 	// loop over module calls
 	calls, err := modStore.ModuleCalls(modPath)
