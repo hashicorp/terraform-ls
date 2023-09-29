@@ -29,7 +29,9 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
-	ctx = lsctx.WithLanguageId(ctx, doc.LanguageID)
+	docCtx := lsctx.DocumentContext(ctx)
+	docCtx.LanguageID = doc.LanguageID
+	ctx = lsctx.WithDocumentContext(ctx, docCtx)
 
 	newVersion := int(p.TextDocument.Version)
 

@@ -50,8 +50,8 @@ type ScheduledJob struct {
 	// TraceSpan represents a tracing span for the entire job lifecycle
 	// (from queuing to finishing execution).
 	TraceSpan trace.Span
-	// RPCContext contains information from when & where the job was scheduled from
-	RPCContext lsctx.RPCContextData
+	// DocumentContext contains information from when & where the job was scheduled from
+	DocumentContext lsctx.Document
 }
 
 func (sj *ScheduledJob) Copy() *ScheduledJob {
@@ -61,15 +61,15 @@ func (sj *ScheduledJob) Copy() *ScheduledJob {
 	traceSpan := trace.SpanFromContext(newCtx)
 
 	return &ScheduledJob{
-		ID:             sj.ID,
-		Job:            sj.Job.Copy(),
-		IsDirOpen:      sj.IsDirOpen,
-		State:          sj.State,
-		JobErr:         sj.JobErr,
-		DeferredJobIDs: sj.DeferredJobIDs.Copy(),
-		EnqueueTime:    sj.EnqueueTime,
-		TraceSpan:      traceSpan,
-		RPCContext:     sj.RPCContext.Copy(),
+		ID:              sj.ID,
+		Job:             sj.Job.Copy(),
+		IsDirOpen:       sj.IsDirOpen,
+		State:           sj.State,
+		JobErr:          sj.JobErr,
+		DeferredJobIDs:  sj.DeferredJobIDs.Copy(),
+		EnqueueTime:     sj.EnqueueTime,
+		TraceSpan:       traceSpan,
+		DocumentContext: sj.DocumentContext.Copy(),
 	}
 }
 
@@ -123,13 +123,13 @@ func (js *JobStore) EnqueueJob(ctx context.Context, newJob job.Job) (job.ID, err
 		}))
 
 	sJob := &ScheduledJob{
-		ID:          newJobID,
-		Job:         newJob,
-		IsDirOpen:   dirOpen,
-		State:       StateQueued,
-		EnqueueTime: time.Now(),
-		TraceSpan:   jobSpan,
-		RPCContext:  lsctx.RPCContext(ctx),
+		ID:              newJobID,
+		Job:             newJob,
+		IsDirOpen:       dirOpen,
+		State:           StateQueued,
+		EnqueueTime:     time.Now(),
+		TraceSpan:       jobSpan,
+		DocumentContext: lsctx.DocumentContext(ctx),
 	}
 
 	err := txn.Insert(js.tableName, sJob)
@@ -321,7 +321,7 @@ func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) 
 	js.logger.Printf("JOBS: Dispatching next job %q (scheduler prio: %d, job prio: %d, isDirOpen: %t): %q for %q",
 		sJob.ID, priority, sJob.Priority, sJob.IsDirOpen, sJob.Type, sJob.Dir)
 
-	ctx = lsctx.WithRPCContext(ctx, sJob.RPCContext)
+	ctx = lsctx.WithDocumentContext(ctx, sJob.DocumentContext)
 	ctx = trace.ContextWithSpan(ctx, sJob.TraceSpan)
 
 	_, span := otel.Tracer(tracerName).Start(ctx, "job-wait",

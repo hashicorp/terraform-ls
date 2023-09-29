@@ -614,7 +614,8 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 	// We could capture all parameters here but for now we just
 	// opportunistically track the most important ones only.
 	type t struct {
-		URI string `json:"uri,omitempty"`
+		URI        string `json:"uri,omitempty"`
+		LanguageID string `json:"languageId,omitempty"`
 	}
 	type p struct {
 		TextDocument t      `json:"textDocument,omitempty"`
@@ -641,9 +642,10 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 		trace.WithAttributes(attrs...))
 	defer span.End()
 
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: req.Method(),
-		URI:    uri,
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     req.Method(),
+		LanguageID: params.TextDocument.LanguageID,
+		URI:        uri,
 	})
 
 	result, err := rpch.New(fn)(ctx, req)

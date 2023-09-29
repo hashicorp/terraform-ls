@@ -60,7 +60,7 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +133,7 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -234,7 +234,7 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -529,7 +529,7 @@ func TestParseProviderVersions_multipleVersions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPathFirst)
 	if err != nil {
 		t.Fatal(err)
@@ -699,7 +699,7 @@ func TestPreloadEmbeddedSchema_basic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -770,7 +770,7 @@ func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -834,7 +834,7 @@ func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -914,7 +914,7 @@ func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, cfgFS, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -963,7 +963,7 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -982,12 +982,12 @@ func TestParseModuleConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	x := lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    uri.FromPath(fooURI),
+	x := lsctx.Document{
+		Method:     "textDocument/didChange",
+		LanguageID: ilsp.Terraform.String(),
+		URI:        uri.FromPath(fooURI),
 	}
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
-	ctx = lsctx.WithRPCContext(ctx, x)
+	ctx = lsctx.WithDocumentContext(ctx, x)
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1038,7 +1038,7 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1057,10 +1057,11 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    uri.FromPath(fooURI),
+
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didChange",
+		LanguageID: ilsp.Tfvars.String(),
+		URI:        uri.FromPath(fooURI),
 	})
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
@@ -1143,11 +1144,11 @@ func TestSchemaModuleValidation_FullModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: "textDocument/didOpen",
-		URI:    "file:///test/variables.tf",
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didOpen",
+		LanguageID: ilsp.Terraform.String(),
+		URI:        "file:///test/variables.tf",
 	})
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -1188,11 +1189,11 @@ func TestSchemaModuleValidation_SingleFile(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    "file:///test/variables.tf",
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didChange",
+		LanguageID: ilsp.Terraform.String(),
+		URI:        "file:///test/variables.tf",
 	})
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Terraform.String())
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -1233,11 +1234,11 @@ func TestSchemaVarsValidation_FullModule(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: "textDocument/didOpen",
-		URI:    "file:///test/terraform.tfvars",
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didOpen",
+		LanguageID: ilsp.Tfvars.String(),
+		URI:        "file:///test/terraform.tfvars",
 	})
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)
@@ -1286,11 +1287,11 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    "file:///test/terraform.tfvars",
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didChange",
+		LanguageID: ilsp.Tfvars.String(),
+		URI:        "file:///test/terraform.tfvars",
 	})
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
 		t.Fatal(err)

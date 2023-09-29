@@ -28,7 +28,7 @@ func TestJobStore_EnqueueJob(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
@@ -83,7 +83,7 @@ func TestJobStore_EnqueueJob_openDir(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	id, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
@@ -162,7 +162,7 @@ func TestJobStore_EnqueueJob_verify(t *testing.T) {
 
 	jobCount := 50
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 
 	for i := 0; i < jobCount; i++ {
 		i := i
@@ -221,7 +221,7 @@ func TestJobStore_DequeueJobsForDir(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	firstDir := document.DirHandleFromPath("/test-1")
 	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
@@ -266,7 +266,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	firstDir := document.DirHandleFromPath("/test-1")
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
@@ -330,7 +330,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	firstDir := document.DirHandleFromPath("/test-1")
 	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
@@ -394,7 +394,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	firstDir := document.DirHandleFromPath("/test-1")
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
@@ -476,7 +476,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	firstDir := document.DirHandleFromPath("/test-1")
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
@@ -573,7 +573,7 @@ func TestJobStore_WaitForJobs(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
@@ -615,7 +615,7 @@ func TestJobStore_FinishJob_basic(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
@@ -677,7 +677,7 @@ func TestJobStore_FinishJob_defer(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	id1, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil
@@ -731,7 +731,7 @@ func TestJobStore_FinishJob_dependsOn(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	parentId, err := ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil

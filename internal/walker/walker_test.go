@@ -56,7 +56,7 @@ func TestWalker_basic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = w.StartWalking(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -401,7 +401,7 @@ func TestWalker_complexModules(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+			ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 			err = w.StartWalking(ctx)
 			if err != nil {
 				t.Fatal(err)

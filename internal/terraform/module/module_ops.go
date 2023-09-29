@@ -388,9 +388,9 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 
 	var files ast.ModFiles
 	var diags ast.ModDiags
-	rpcContext := lsctx.RPCContext(ctx)
+	rpcContext := lsctx.DocumentContext(ctx)
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && lsctx.IsLanguageId(ctx, ilsp.Terraform.String()) {
+	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Terraform.String() {
 		// the file has already been parsed, so only examine this file and not the whole module
 		err = modStore.SetModuleDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
@@ -798,8 +798,8 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, sc
 	}
 
 	var rErr error
-	rpcContext := lsctx.RPCContext(ctx)
-	if rpcContext.Method == "textDocument/didChange" && lsctx.IsLanguageId(ctx, ilsp.Terraform.String()) {
+	rpcContext := lsctx.DocumentContext(ctx)
+	if rpcContext.Method == "textDocument/didChange" && rpcContext.LanguageID == ilsp.Terraform.String() {
 		filename := path.Base(rpcContext.URI)
 		// We only revalidate a single file that changed
 		var fileDiags hcl.Diagnostics
@@ -867,8 +867,8 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 	}
 
 	var rErr error
-	rpcContext := lsctx.RPCContext(ctx)
-	if rpcContext.Method == "textDocument/didChange" && lsctx.IsLanguageId(ctx, ilsp.Tfvars.String()) {
+	rpcContext := lsctx.DocumentContext(ctx)
+	if rpcContext.Method == "textDocument/didChange" && rpcContext.LanguageID == ilsp.Tfvars.String() {
 		filename := path.Base(rpcContext.URI)
 		// We only revalidate a single file that changed
 		var fileDiags hcl.Diagnostics
