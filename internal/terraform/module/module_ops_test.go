@@ -1127,20 +1127,19 @@ func TestParseVariables(t *testing.T) {
 	}
 
 	// say we're coming from did_change request
-	fooURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	fileURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	x := lsctx.RPCContextData{
+	rpcData := lsctx.RPCContextData{
 		Method: "textDocument/didChange",
-		URI:    uri.FromPath(fooURI),
-		// URI:    "file:///test/example.tfvars",
+		URI:    uri.FromPath(fileURI),
 	}
 
 	// ignore job state
 	ctx = job.WithIgnoreState(ctx, true)
 	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
-	ctx = lsctx.WithRPCContext(ctx, x)
+	ctx = lsctx.WithRPCContext(ctx, rpcData)
 	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1156,15 +1155,11 @@ func TestParseVariables(t *testing.T) {
 		t.Fatal("file should mismatch")
 	}
 
-	b := before.VarsDiagnostics[ast.HCLParsingSource]
-	ex := b[ast.VarsFilename("example.tfvars")]
+	beforeDiags := before.VarsDiagnostics[ast.HCLParsingSource]
+	afterDiags := after.VarsDiagnostics[ast.HCLParsingSource]
 
-	a := after.VarsDiagnostics[ast.HCLParsingSource]
-	exA := a[ast.VarsFilename("example.tfvars")]
-
-	// // diags should change for example.tfvars
-	if ex[0] == exA[0] {
-		// if before.VarsDiagnostics["example.tfvars"][0] == after.VarsDiagnostics["example.tfvars"][0] {
+	// diags should change for example.tfvars
+	if beforeDiags[ast.VarsFilename("example.tfvars")][0] == afterDiags[ast.VarsFilename("example.tfvars")][0] {
 		t.Fatal("diags should mismatch")
 	}
 }

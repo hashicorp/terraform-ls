@@ -477,7 +477,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		}
 		fileName := filepath.Base(filePath)
 
-		f, vdiags, err := parser.ParseVariableFile(fs, filePath)
+		f, vDiags, err := parser.ParseVariableFile(fs, filePath)
 		if err != nil {
 			return err
 		}
@@ -492,7 +492,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		} else {
 			existingDiags = existingDiags.Copy()
 		}
-		existingDiags[ast.VarsFilename(fileName)] = vdiags
+		existingDiags[ast.VarsFilename(fileName)] = vDiags
 		diags = existingDiags
 	} else {
 		// this is the first time file is opened so parse the whole module
