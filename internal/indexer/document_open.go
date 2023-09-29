@@ -78,7 +78,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 		return ids, err
 	}
 
-	if validationOptions.EarlyValidation {
+	if validationOptions.EnableEnhancedValidation {
 		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {

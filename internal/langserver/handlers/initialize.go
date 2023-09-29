@@ -220,7 +220,7 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.terraform.path"] = len(out.Options.Terraform.Path) > 0
 	properties["options.terraform.timeout"] = out.Options.Terraform.Timeout
 	properties["options.terraform.logFilePath"] = len(out.Options.Terraform.LogFilePath) > 0
-	properties["options.validation.earlyValidation"] = out.Options.Validation.EarlyValidation
+	properties["options.validation.earlyValidation"] = out.Options.Validation.EnableEnhancedValidation
 
 	return properties
 }
