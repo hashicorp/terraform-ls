@@ -537,6 +537,26 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 						}
 					},
 					{
+						"label": "nullable",
+						"kind": 10,
+						"detail": "optional, bool",
+						"documentation": "Specifies whether null is a valid value for this variable",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "nullable"
+						}
+					},
+					{
 						"label": "sensitive",
 						"kind": 10,
 						"detail": "optional, bool",
