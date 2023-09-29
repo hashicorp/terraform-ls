@@ -1110,8 +1110,7 @@ func TestParseVariables(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
@@ -1131,15 +1130,14 @@ func TestParseVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rpcData := lsctx.RPCContextData{
-		Method: "textDocument/didChange",
-		URI:    uri.FromPath(fileURI),
-	}
 
 	// ignore job state
 	ctx = job.WithIgnoreState(ctx, true)
-	ctx = lsctx.WithLanguageId(ctx, ilsp.Tfvars.String())
-	ctx = lsctx.WithRPCContext(ctx, rpcData)
+
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method: "textDocument/didChange",
+		URI:    uri.FromPath(fileURI),
+	})
 	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)

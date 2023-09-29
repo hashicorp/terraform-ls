@@ -463,9 +463,9 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 
 	var files ast.VarsFiles
 	var diags ast.VarsDiags
-	rpcContext := lsctx.RPCContext(ctx)
+	rpcContext := lsctx.DocumentContext(ctx)
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && lsctx.IsLanguageId(ctx, ilsp.Tfvars.String()) {
+	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Terraform.String() {
 		// the file has already been parsed, so only examine this file and not the whole module
 		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
