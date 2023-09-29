@@ -20,15 +20,17 @@ func (k *contextKey) String() string {
 	return k.Name
 }
 
-type RPCContextData struct {
-	Method string
-	URI    string
+type Document struct {
+	Method     string
+	LanguageID string
+	URI        string
 }
 
-func (rpcc RPCContextData) Copy() RPCContextData {
-	return RPCContextData{
-		Method: rpcc.Method,
-		URI:    rpcc.URI,
+func (rpcc Document) Copy() Document {
+	return Document{
+		Method:     rpcc.Method,
+		LanguageID: rpcc.LanguageID,
+		URI:        rpcc.URI,
 	}
 }
 
@@ -42,8 +44,7 @@ var (
 	ctxLsVersion            = &contextKey{"language server version"}
 	ctxProgressToken        = &contextKey{"progress token"}
 	ctxExperimentalFeatures = &contextKey{"experimental features"}
-	ctxRPCContext           = &contextKey{"rpc context"}
-	ctxLanguageId           = &contextKey{"language ID"}
+	ctxDocumentContext      = &contextKey{"rpc context"}
 	ctxValidationOptions    = &contextKey{"validation options"}
 )
 
@@ -181,28 +182,16 @@ func ExperimentalFeatures(ctx context.Context) (settings.ExperimentalFeatures, e
 	return *expFeatures, nil
 }
 
-func WithRPCContext(ctx context.Context, rpcc RPCContextData) context.Context {
-	return context.WithValue(ctx, ctxRPCContext, rpcc)
+func WithDocumentContext(ctx context.Context, rpcc Document) context.Context {
+	return context.WithValue(ctx, ctxDocumentContext, rpcc)
 }
 
-func RPCContext(ctx context.Context) RPCContextData {
-	return ctx.Value(ctxRPCContext).(RPCContextData)
+func DocumentContext(ctx context.Context) Document {
+	return ctx.Value(ctxDocumentContext).(Document)
 }
 
-func (ctxData RPCContextData) IsDidChangeRequest() bool {
+func (ctxData Document) IsDidChangeRequest() bool {
 	return ctxData.Method == "textDocument/didChange"
-}
-
-func WithLanguageId(ctx context.Context, languageId string) context.Context {
-	return context.WithValue(ctx, ctxLanguageId, languageId)
-}
-
-func IsLanguageId(ctx context.Context, expectedLangId string) bool {
-	langId, ok := ctx.Value(ctxLanguageId).(string)
-	if !ok {
-		return false
-	}
-	return langId == expectedLangId
 }
 
 func WithValidationOptions(ctx context.Context, validationOptions *settings.ValidationOptions) context.Context {

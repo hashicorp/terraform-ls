@@ -97,7 +97,7 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 	modHandle := document.DirHandleFromPath(modPath)
 
 	ctx := context.Background()
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 	_, err = ss.JobStore.EnqueueJob(ctx, job.Job{
 		Func: func(ctx context.Context) error {
 			return nil

@@ -61,7 +61,7 @@ func TestDecoder_CodeLensesForFile_concurrencyBug(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+		ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 		err = module.ParseModuleConfiguration(ctx, mapFs, ss.Modules, dirName)
 		if err != nil {
 			t.Error(err)

@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/creachadair/jrpc2"
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -37,8 +36,6 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	if err != nil {
 		return err
 	}
-
-	ctx = lsctx.WithLanguageId(ctx, params.TextDocument.LanguageID)
 
 	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
 	if err != nil {
