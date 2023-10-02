@@ -20,7 +20,7 @@ type ExperimentalFeatures struct {
 }
 
 type ValidationOptions struct {
-	EnableEnhancedValidation bool `mapstructure:"earlyValidation" default:"true"`
+	EnableEnhancedValidation bool `mapstructure:"enableEarlyValidation" default:"true"`
 }
 
 type Indexing struct {
