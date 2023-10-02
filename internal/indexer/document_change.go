@@ -109,8 +109,9 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 			ids := make(job.IDs, 0)
 			if jobErr != nil {
-				return ids, jobErr
+				idx.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
+
 			modCalls, mcErr := idx.decodeDeclaredModuleCalls(ctx, modHandle, ignoreState)
 			if mcErr != nil {
 				idx.logger.Printf("decoding declared module calls for %q failed: %s", modHandle.URI, mcErr)
