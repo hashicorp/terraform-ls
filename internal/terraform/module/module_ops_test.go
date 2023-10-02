@@ -1365,9 +1365,9 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
-		Method: "textDocument/didChange",
+		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Tfvars.String(),
-		URI:    uri.FromPath(fooURI),
+		URI:        uri.FromPath(fooURI),
 	})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
