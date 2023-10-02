@@ -1135,9 +1135,9 @@ func TestParseVariables(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
-		Method: "textDocument/didChange",
+		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Tfvars.String(),
-		URI:    uri.FromPath(fileURI),
+		URI:        uri.FromPath(fileURI),
 	})
 	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
