@@ -1,20 +1,20 @@
 # Validation
 
-The language server produces various types of diagnostics on type.
+The language server produces various types of diagnostics as you type.
 
 ## HCL syntax
 
-Since `v0.8.0` we report invalid [HCL syntax](https://github.com/hashicorp/hcl/blob/main/spec.md),
+Starting in `v0.8.0` we report diagnostics for invalid [HCL syntax](https://github.com/hashicorp/hcl/blob/main/spec.md),
 for example missing `}`, `"` or other "control characters" out of place.
 
 ![invalid HCL syntax](./images/validation-rule-hcl.png)
 
-HCL syntax alone does _not_ consider the Terraform language with all its (in)valid
-keywords, block or attribute names etc. nor differences between Terraform versions.
+HCL syntax alone does _not_ account for the Terraform language with all its (in)valid
+keywords, block or attribute names etc. nor differences between Terraform versions, that is handled elsewhere.
 
 ## Early Validation
 
-Since `v0.32.0` we additionally report selected invalid Terraform language constructs
+Starting in `v0.32.0` we report additional diagnostics for selected invalid Terraform language constructs
 based on detected Terraform version and provider versions (if available).
 
 This validation is enabled by default but can be controlled via
