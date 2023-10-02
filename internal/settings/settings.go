@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	"github.com/mcuadros/go-defaults"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -19,7 +20,7 @@ type ExperimentalFeatures struct {
 }
 
 type ValidationOptions struct {
-	EarlyValidation bool `mapstructure:"earlyValidation"`
+	EnableEnhancedValidation bool `mapstructure:"earlyValidation" default:"true"`
 }
 
 type Indexing struct {
@@ -91,7 +92,12 @@ type DecodedOptions struct {
 
 func DecodeOptions(input interface{}) (*DecodedOptions, error) {
 	var md mapstructure.Metadata
-	var options Options
+	options := new(Options)
+
+	// We explicitly set the defaults here before decoding the options.
+	// If we were to supply a zero value of a type via our input,
+	// setting the default afterwards would override it.
+	defaults.SetDefaults(options)
 
 	config := &mapstructure.DecoderConfig{
 		Metadata: &md,
@@ -107,7 +113,7 @@ func DecodeOptions(input interface{}) (*DecodedOptions, error) {
 	}
 
 	return &DecodedOptions{
-		Options:    &options,
+		Options:    options,
 		UnusedKeys: md.Unused,
 	}, nil
 }

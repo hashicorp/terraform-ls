@@ -54,7 +54,7 @@ func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirH
 		return ids, err
 	}
 
-	if validationOptions.EarlyValidation {
+	if validationOptions.EnableEnhancedValidation {
 		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
@@ -132,7 +132,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			}
 			ids = append(ids, eSchemaId)
 
-			if validationOptions.EarlyValidation {
+			if validationOptions.EnableEnhancedValidation {
 				_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 					Dir: modHandle,
 					Func: func(ctx context.Context) error {
@@ -175,7 +175,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			}
 			ids = append(ids, refOriginsId)
 
-			if validationOptions.EarlyValidation {
+			if validationOptions.EnableEnhancedValidation {
 				_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 					Dir: modHandle,
 					Func: func(ctx context.Context) error {
