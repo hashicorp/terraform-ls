@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"testing/fstest"
@@ -1125,17 +1126,17 @@ func TestParseVariables(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
 	// say we're coming from did_change request
 	fileURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// ignore job state
-	ctx = job.WithIgnoreState(ctx, true)
-
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method: "textDocument/didChange",
+		LanguageID: ilsp.Tfvars.String(),
 		URI:    uri.FromPath(fileURI),
 	})
 	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
@@ -1159,6 +1160,16 @@ func TestParseVariables(t *testing.T) {
 	// diags should change for example.tfvars
 	if beforeDiags[ast.VarsFilename("example.tfvars")][0] == afterDiags[ast.VarsFilename("example.tfvars")][0] {
 		t.Fatal("diags should mismatch")
+	}
+
+	// diags should change for example.tfvars
+	if diff := cmp.Diff(beforeDiags[ast.VarsFilename("example.tfvars")][0], afterDiags[ast.VarsFilename("example.tfvars")][0], ctydebug.CmpOptions); diff != "" {
+		t.Fatalf("diags should mismatch: %s", diff)
+	}
+
+	// diags should change for example.tfvars
+	if reflect.DeepEqual(beforeDiags[ast.VarsFilename("example.tfvars")][0], afterDiags[ast.VarsFilename("example.tfvars")][0]) == false {
+		t.Fatalf("diags should mismatch")
 	}
 }
 
