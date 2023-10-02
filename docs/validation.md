@@ -12,13 +12,13 @@ for example missing `}`, `"` or other "control characters" out of place.
 HCL syntax alone does _not_ account for the Terraform language with all its (in)valid
 keywords, block or attribute names etc. nor differences between Terraform versions, that is handled elsewhere.
 
-## Early Validation
+## Enhanced Validation
 
 Starting in `v0.32.0` we report additional diagnostics for selected invalid Terraform language constructs
 based on detected Terraform version and provider versions (if available).
 
 This validation is enabled by default but can be controlled via
-[`validation.enableEarlyValidation`](./SETTINGS.md#enableearlyvalidation-bool-defaults-to-true).
+[`validation.enableEnhancedValidation`](./SETTINGS.md#enableenhancedvalidation-bool-defaults-to-true).
 
 All validation rules currently implemented are considered _universally applicable_
 and _not opinionated_. If you believe a diagnostic is incorrect, this may be caused by

@@ -139,9 +139,9 @@ For example, when completing the `aws_appmesh_route` resource the `mesh_name`, `
 This object contains settings related to validation unless it's experimental,
 in which case it's under [`experimentalFeatures`](#experimentalfeatures-object).
 
-### `enableEarlyValidation` (`bool`, defaults to `true`)
+### `enableEnhancedValidation` (`bool`, defaults to `true`)
 
-Enables/disables early validation, as documented under [`validation.md`](validation.md#early-validation).
+Enables/disables enhanced validation, as documented under [`validation.md`](validation.md#enhanced-validation).
 
 ## How to pass settings
 
