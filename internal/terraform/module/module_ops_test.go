@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"reflect"
 	"sync"
 	"testing"
 	"testing/fstest"
@@ -1162,14 +1161,12 @@ func TestParseVariables(t *testing.T) {
 		t.Fatal("diags should mismatch")
 	}
 
-	// diags should change for example.tfvars
-	if diff := cmp.Diff(beforeDiags[ast.VarsFilename("example.tfvars")][0], afterDiags[ast.VarsFilename("example.tfvars")][0], ctydebug.CmpOptions); diff != "" {
-		t.Fatalf("diags should mismatch: %s", diff)
+	if before.ParsedVarsFiles["nochange.tfvars"] != after.ParsedVarsFiles["nochange.tfvars"] {
+		t.Fatal("unchanged file should match")
 	}
 
-	// diags should change for example.tfvars
-	if reflect.DeepEqual(beforeDiags[ast.VarsFilename("example.tfvars")][0], afterDiags[ast.VarsFilename("example.tfvars")][0]) == false {
-		t.Fatalf("diags should mismatch")
+	if beforeDiags[ast.VarsFilename("nochange.tfvars")][0] != afterDiags[ast.VarsFilename("nochange.tfvars")][0] {
+		t.Fatal("diags should match for unchanged file")
 	}
 }
 
