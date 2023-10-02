@@ -134,6 +134,15 @@ When disabled (unset or set to `false`), completion only provides the label name
 
 For example, when completing the `aws_appmesh_route` resource the `mesh_name`, `name`, `virtual_router_name` attributes and the `spec` block will fill and prompt you for appropriate values.
 
+## `validation` (object)
+
+This object contains settings related to validation unless it's experimental,
+in which case it's under [`experimentalFeatures`](#experimentalfeatures-object).
+
+### `enableEarlyValidation` (`bool`, defaults to `true`)
+
+Enables/disables early validation, as documented under [`validation.md`](validation.md#early-validation).
+
 ## How to pass settings
 
 The server expects static settings to be passed as part of LSP `initialize` call,
