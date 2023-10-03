@@ -6,6 +6,7 @@ package parser
 import (
 	"path/filepath"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
@@ -47,4 +48,18 @@ func ParseVariableFiles(fs FS, modPath string) (ast.VarsFiles, ast.VarsDiags, er
 	}
 
 	return files, diags, nil
+}
+
+func ParseVariableFile(fs FS, filePath string) (*hcl.File, hcl.Diagnostics, error) {
+	src, err := fs.ReadFile(filePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	name := filepath.Base(filePath)
+	filename := ast.VarsFilename(name)
+
+	f, pDiags := parseFile(src, filename)
+
+	return f, pDiags, nil
 }

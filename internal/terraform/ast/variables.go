@@ -52,6 +52,14 @@ func VarsFilesFromMap(m map[string]*hcl.File) VarsFiles {
 	return mf
 }
 
+func (vf VarsFiles) Copy() VarsFiles {
+	m := make(VarsFiles, len(vf))
+	for name, file := range vf {
+		m[name] = file
+	}
+	return m
+}
+
 type VarsDiags map[VarsFilename]hcl.Diagnostics
 
 func VarsDiagsFromMap(m map[string]hcl.Diagnostics) VarsDiags {
@@ -60,6 +68,14 @@ func VarsDiagsFromMap(m map[string]hcl.Diagnostics) VarsDiags {
 		mf[VarsFilename(name)] = file
 	}
 	return mf
+}
+
+func (vd VarsDiags) Copy() VarsDiags {
+	m := make(VarsDiags, len(vd))
+	for name, file := range vd {
+		m[name] = file
+	}
+	return m
 }
 
 func (vd VarsDiags) AutoloadedOnly() VarsDiags {

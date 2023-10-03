@@ -1018,6 +1018,7 @@ func TestParseModuleConfiguration(t *testing.T) {
 		t.Fatal("diags should match")
 	}
 }
+
 func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	ctx := context.Background()
 	ss, err := state.NewStateStore()
@@ -1086,6 +1087,86 @@ func TestParseModuleConfiguration_ignore_tfvars(t *testing.T) {
 	// diags should be missing for example.tfvars
 	if _, ok := before.ModuleDiagnostics[ast.HCLParsingSource]["example.tfvars"]; ok {
 		t.Fatal("there should be no diags for tfvars files right now")
+	}
+}
+
+func TestParseVariables(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	testFs := filesystem.NewFilesystem(ss.DocumentStore)
+
+	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
+
+	err = ss.Modules.Add(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
+	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ignore job state
+	ctx = job.WithIgnoreState(ctx, true)
+
+	// say we're coming from did_change request
+	filePath, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
+		Method:     "textDocument/didChange",
+		LanguageID: ilsp.Tfvars.String(),
+		URI:        uri.FromPath(filePath),
+	})
+	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// example.tfvars should not be the same as first seen
+	if before.ParsedVarsFiles["example.tfvars"] == after.ParsedVarsFiles["example.tfvars"] {
+		t.Fatal("file should mismatch")
+	}
+
+	beforeDiags := before.VarsDiagnostics[ast.HCLParsingSource]
+	afterDiags := after.VarsDiagnostics[ast.HCLParsingSource]
+
+	// diags should change for example.tfvars
+	if beforeDiags[ast.VarsFilename("example.tfvars")][0] == afterDiags[ast.VarsFilename("example.tfvars")][0] {
+		t.Fatal("diags should mismatch")
+	}
+
+	if before.ParsedVarsFiles["nochange.tfvars"] != after.ParsedVarsFiles["nochange.tfvars"] {
+		t.Fatal("unchanged file should match")
+	}
+
+	if beforeDiags[ast.VarsFilename("nochange.tfvars")][0] != afterDiags[ast.VarsFilename("nochange.tfvars")][0] {
+		t.Fatal("diags should match for unchanged file")
 	}
 }
 
@@ -1287,10 +1368,14 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	filePath, err := filepath.Abs(filepath.Join(modPath, "terraform.tfvars"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Tfvars.String(),
-		URI:        "file:///test/terraform.tfvars",
+		URI:        uri.FromPath(filePath),
 	})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
