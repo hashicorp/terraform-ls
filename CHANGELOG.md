@@ -2,8 +2,7 @@
 
 ENHANCEMENTS:
 
-* Enhanced validation ([#1368](https://github.com/hashicorp/terraform-ls/pull/1368))
-  * Additional diagnostics for [selected invalid Terraform language constructs](https://github.com/hashicorp/terraform-ls/blob/v0.32.0/docs/validation.md#enhanced-validation) based on detected Terraform version and provider versions are provided.
+* Enhanced validation provides additional diagnostics for [selected invalid Terraform language constructs](https://github.com/hashicorp/terraform-ls/blob/v0.32.0/docs/validation.md#enhanced-validation) based on detected Terraform version and provider versions are provided. ([#1368](https://github.com/hashicorp/terraform-ls/pull/1368))
 * Improve performance by parsing changed `*.tf` file (as opposed to all files in the module) ([#1404](https://github.com/hashicorp/terraform-ls/pull/1404))
 * Improve performance by parsing changed `*.tfvars` file (as opposed to all files in the directory) ([#1422](https://github.com/hashicorp/terraform-ls/pull/1422))
 * Add `project` attribute to workspaces block ([terraform-schema#257](https://github.com/hashicorp/terraform-schema/pull/257))
@@ -11,7 +10,7 @@ ENHANCEMENTS:
 * Add `nullable` to `variable` blocks for `v1.1+` ([terraform-schema#261](https://github.com/hashicorp/terraform-schema/pull/261))
 * Add `endpoint` and `domain` to `cos` backend ([terraform-schema#262](https://github.com/hashicorp/terraform-schema/pull/262))
 * Add `proxy_url` to `kubernetes` backend ([terraform-schema#263](https://github.com/hashicorp/terraform-schema/pull/263))
-* Update `s3` backend w/ `v1.6` changes ([terraform-schema#265](https://github.com/hashicorp/terraform-schema/pull/265))
+* Update `s3` backend with `v1.6` changes ([terraform-schema#265](https://github.com/hashicorp/terraform-schema/pull/265))
 
 BUG FIXES:
 
