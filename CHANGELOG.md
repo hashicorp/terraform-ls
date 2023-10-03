@@ -1,3 +1,37 @@
+## 0.32.0 (4 October 2023)
+
+ENHANCEMENTS:
+
+* Enhanced validation provides additional diagnostics for [selected invalid Terraform language constructs](https://github.com/hashicorp/terraform-ls/blob/v0.32.0/docs/validation.md#enhanced-validation) based on detected Terraform version and provider versions are provided. ([#1368](https://github.com/hashicorp/terraform-ls/pull/1368))
+* Improve performance by parsing changed `*.tf` file (as opposed to all files in the module) ([#1404](https://github.com/hashicorp/terraform-ls/pull/1404))
+* Improve performance by parsing changed `*.tfvars` file (as opposed to all files in the directory) ([#1422](https://github.com/hashicorp/terraform-ls/pull/1422))
+* Add `project` attribute to workspaces block ([terraform-schema#257](https://github.com/hashicorp/terraform-schema/pull/257))
+* Update `import` ID to be interpolatable ([terraform-schema#260](https://github.com/hashicorp/terraform-schema/pull/260))
+* Add `nullable` to `variable` blocks for `v1.1+` ([terraform-schema#261](https://github.com/hashicorp/terraform-schema/pull/261))
+* Add `endpoint` and `domain` to `cos` backend ([terraform-schema#262](https://github.com/hashicorp/terraform-schema/pull/262))
+* Add `proxy_url` to `kubernetes` backend ([terraform-schema#263](https://github.com/hashicorp/terraform-schema/pull/263))
+* Update `s3` backend with `v1.6` changes ([terraform-schema#265](https://github.com/hashicorp/terraform-schema/pull/265))
+
+BUG FIXES:
+
+* Allow `list(any)` to be passed into `dynamic` block's `for_each` ([hcl-lang#313](https://github.com/hashicorp/hcl-lang/pull/313))
+* Make `dynamic` `content` block required ([hcl-lang#314](https://github.com/hashicorp/hcl-lang/pull/314))
+* indexer: Ensure declared module calls get decoded ([#1395](https://github.com/hashicorp/terraform-ls/pull/1395))
+
+INTERNAL:
+
+* go: bump version to `1.21.1` ([#1408](https://github.com/hashicorp/terraform-ls/pull/1408))
+* build(deps): Bump actions/checkout from 3.6.0 to 4.1.0 ([#1382](https://github.com/hashicorp/terraform-ls/pull/1382), [#1420](https://github.com/hashicorp/terraform-ls/pull/1420))
+* build(deps): Bump actions/upload-artifact from 3.1.2 to 3.1.3 ([#1393](https://github.com/hashicorp/terraform-ls/pull/1393))
+* build(deps): Bump github.com/algolia/algoliasearch-client-go/v3 from 3.30.1 to 3.31.0 ([#1387](https://github.com/hashicorp/terraform-ls/pull/1387))
+* build(deps): Bump github.com/otiai10/copy from 1.12.0 to 1.14.0 ([#1432](https://github.com/hashicorp/terraform-ls/pull/1432))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.33.0 to 2.34.2 ([#1388](https://github.com/hashicorp/terraform-ls/pull/1388), [#1411](https://github.com/hashicorp/terraform-ls/pull/1411), [#1419](https://github.com/hashicorp/terraform-ls/pull/1419), [#1421](https://github.com/hashicorp/terraform-ls/pull/1421), [#1423](https://github.com/hashicorp/terraform-ls/pull/1423))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.42.0 to 0.45.0 ([#1390](https://github.com/hashicorp/terraform-ls/pull/1390), [#1405](https://github.com/hashicorp/terraform-ls/pull/1405), [#1430](https://github.com/hashicorp/terraform-ls/pull/1430))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.42.0 to 0.43.0 ([#1385](https://github.com/hashicorp/terraform-ls/pull/1385))
+* build(deps): Bump go.opentelemetry.io/otel from 1.17.0 to 1.19.0 ([#1401](https://github.com/hashicorp/terraform-ls/pull/1401), [#1428](https://github.com/hashicorp/terraform-ls/pull/1428))
+* build(deps): Bump go.opentelemetry.io/otel/trace from 1.16.0 to 1.17.0 ([#1389](https://github.com/hashicorp/terraform-ls/pull/1389))
+* build(deps): Bump golang.org/x/tools from 0.12.0 to 0.13.0 ([#1386](https://github.com/hashicorp/terraform-ls/pull/1386))
+
 ## 0.31.5 (4 September 2023)
 
 ENHANCEMENTS:
