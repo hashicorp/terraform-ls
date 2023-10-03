@@ -1129,14 +1129,14 @@ func TestParseVariables(t *testing.T) {
 	ctx = job.WithIgnoreState(ctx, true)
 
 	// say we're coming from did_change request
-	fileURI, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
+	filePath, err := filepath.Abs(filepath.Join(singleFileModulePath, "example.tfvars"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Tfvars.String(),
-		URI:        uri.FromPath(fileURI),
+		URI:        uri.FromPath(filePath),
 	})
 	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
 	if err != nil {
@@ -1368,14 +1368,14 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
-	fooURI, err := filepath.Abs(filepath.Join(modPath, "terraform.tfvars"))
+	filePath, err := filepath.Abs(filepath.Join(modPath, "terraform.tfvars"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Tfvars.String(),
-		URI:        uri.FromPath(fooURI),
+		URI:        uri.FromPath(filePath),
 	})
 	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
 	if err != nil {
