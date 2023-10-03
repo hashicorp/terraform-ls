@@ -30,7 +30,7 @@ func TestScheduler_millionJobsQueued(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	ctx = lsctx.WithRPCContext(ctx, lsctx.RPCContextData{})
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
 
 	lowPrioSched := NewScheduler(ss.JobStore, 1, job.LowPriority)
 	lowPrioSched.Start(ctx)
