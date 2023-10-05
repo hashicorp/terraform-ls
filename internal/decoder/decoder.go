@@ -64,7 +64,13 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File),
-		Validators:       varsValidators,
+	}
+
+	if len(mod.ParsedModuleFiles) > 0 {
+		// Only validate if this is actually a module
+		// as we may come across standalone tfvars files
+		// for which we have no context.
+		pathCtx.Validators = varsValidators
 	}
 
 	for _, origin := range mod.VarsRefOrigins {
