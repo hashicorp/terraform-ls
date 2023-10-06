@@ -13,8 +13,8 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.6.0
-	github.com/hashicorp/hcl-lang v0.0.0-20231005141915-402c82e5ccb1
-	github.com/hashicorp/hcl/v2 v2.18.0
+	github.com/hashicorp/hcl-lang v0.0.0-20231006123332-e85fd3da0ca4
+	github.com/hashicorp/hcl/v2 v2.18.1
 	github.com/hashicorp/terraform-exec v0.19.0
 	github.com/hashicorp/terraform-json v0.17.1
 	github.com/hashicorp/terraform-registry-address v0.2.2
@@ -28,7 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vektra/mockery/v2 v2.35.1
-	github.com/zclconf/go-cty v1.14.0
+	github.com/zclconf/go-cty v1.14.1
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
 	go.opentelemetry.io/otel/trace v1.19.0
