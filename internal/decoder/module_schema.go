@@ -12,9 +12,10 @@ import (
 )
 
 func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modReader state.ModuleCallReader) (*schema.BodySchema, error) {
-	sm := tfschema.NewSchemaMerger(coreSchema(mod))
+	resolvedVersion := tfschema.ResolveVersion(mod.TerraformVersion, mod.Meta.CoreRequirements)
+	sm := tfschema.NewSchemaMerger(mustCoreSchemaForVersion(resolvedVersion))
 	sm.SetSchemaReader(schemaReader)
-	sm.SetTerraformVersion(mod.TerraformVersion)
+	sm.SetTerraformVersion(resolvedVersion)
 	sm.SetModuleReader(modReader)
 
 	meta := &tfmodule.Meta{
@@ -28,30 +29,6 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modRead
 	}
 
 	return sm.SchemaForModule(meta)
-}
-
-func coreSchema(mod *state.Module) *schema.BodySchema {
-	if mod.TerraformVersion != nil {
-		s, err := tfschema.CoreModuleSchemaForVersion(mod.TerraformVersion)
-		if err == nil {
-			return s
-		}
-		if mod.TerraformVersion.LessThan(tfschema.OldestAvailableVersion) {
-			return mustCoreSchemaForVersion(tfschema.OldestAvailableVersion)
-		}
-
-		return mustCoreSchemaForVersion(tfschema.LatestAvailableVersion)
-	}
-
-	s, err := tfschema.CoreModuleSchemaForConstraint(mod.Meta.CoreRequirements)
-	if err == nil {
-		return s
-	}
-	if mod.Meta.CoreRequirements.Check(tfschema.OldestAvailableVersion) {
-		return mustCoreSchemaForVersion(tfschema.OldestAvailableVersion)
-	}
-
-	return mustCoreSchemaForVersion(tfschema.LatestAvailableVersion)
 }
 
 func mustCoreSchemaForVersion(v *version.Version) *schema.BodySchema {
