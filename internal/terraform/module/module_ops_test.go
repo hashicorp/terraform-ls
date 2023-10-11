@@ -74,11 +74,11 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	regClient := registry.NewClient()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
-			w.Write([]byte(moduleVersionsMockResponse))
+			w.Write([]byte(puppetModuleVersionsMockResponse))
 			return
 		}
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/0.0.8" {
-			w.Write([]byte(moduleDataMockResponse))
+			w.Write([]byte(puppetModuleDataMockResponse))
 			return
 		}
 		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
@@ -147,11 +147,11 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	regClient := registry.NewClient()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
-			w.Write([]byte(moduleVersionsMockResponse))
+			w.Write([]byte(puppetModuleVersionsMockResponse))
 			return
 		}
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/0.0.8" {
-			w.Write([]byte(moduleDataMockResponse))
+			w.Write([]byte(puppetModuleDataMockResponse))
 			return
 		}
 		if r.RequestURI == "/v1/modules/terraform-aws-modules/eks/aws/versions" {
@@ -249,11 +249,11 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	regClient.Timeout = 500 * time.Millisecond
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
-			w.Write([]byte(moduleVersionsMockResponse))
+			w.Write([]byte(puppetModuleVersionsMockResponse))
 			return
 		}
 		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/0.0.8" {
-			w.Write([]byte(moduleDataMockResponse))
+			w.Write([]byte(puppetModuleDataMockResponse))
 			return
 		}
 		if r.RequestURI == "/v1/modules/terraform-aws-modules/eks/aws/versions" {

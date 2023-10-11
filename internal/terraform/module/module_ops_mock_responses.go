@@ -3,8 +3,8 @@
 
 package module
 
-// moduleVersionsMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/versions
-var moduleVersionsMockResponse = `{
+// puppetModuleVersionsMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/versions
+var puppetModuleVersionsMockResponse = `{
   "modules": [
     {
       "source": "puppetlabs/deployment/ec",
@@ -140,8 +140,8 @@ var moduleVersionsMockResponse = `{
   ]
 }`
 
-// moduleDataMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/0.0.8
-var moduleDataMockResponse = `{
+// puppetModuleDataMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/0.0.8
+var puppetModuleDataMockResponse = `{
   "id": "puppetlabs/deployment/ec/0.0.8",
   "owner": "mattkirby",
   "namespace": "puppetlabs",
