@@ -3,6 +3,13 @@
 
 package module
 
+import (
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/lang"
+	tfregistry "github.com/hashicorp/terraform-schema/registry"
+	"github.com/zclconf/go-cty/cty"
+)
+
 // puppetModuleVersionsMockResponse represents response from https://registry.terraform.io/v1/modules/puppetlabs/deployment/ec/versions
 var puppetModuleVersionsMockResponse = `{
   "modules": [
@@ -270,3 +277,215 @@ var puppetModuleDataMockResponse = `{
     "0.0.8"
   ]
 }`
+
+// labelNullModuleVersionsMockResponse represents response for
+// versions of module that suffers from "unreliable" input data, as described in
+// https://github.com/hashicorp/vscode-terraform/issues/1582
+// It is a shortened response from https://registry.terraform.io/v1/modules/cloudposse/label/null/versions
+var labelNullModuleVersionsMockResponse = `{
+  "modules": [
+    {
+      "source": "cloudposse/label/null",
+      "versions": [
+        {
+          "version": "0.25.0",
+          "root": {
+            "providers": [],
+            "dependencies": []
+          },
+          "submodules": []
+        },
+        {
+          "version": "0.26.0",
+          "root": {
+            "providers": [],
+            "dependencies": []
+          },
+          "submodules": []
+        }
+      ]
+    }
+  ]
+}`
+
+// labelNullModuleDataOldMockResponse represents response for
+// a module that suffers from "unreliable" input data, as described in
+// https://github.com/hashicorp/vscode-terraform/issues/1582
+// It is a shortened response from https://registry.terraform.io/v1/modules/cloudposse/label/null/0.25.0
+var labelNullModuleDataOldMockResponse = `{
+  "id": "cloudposse/label/null/0.25.0",
+  "owner": "osterman",
+  "namespace": "cloudposse",
+  "name": "label",
+  "version": "0.25.0",
+  "provider": "null",
+  "provider_logo_url": "/images/providers/generic.svg?2",
+  "description": "Terraform Module to define a consistent naming convention by (namespace, stage, name, [attributes])",
+  "source": "https://github.com/cloudposse/terraform-null-label",
+  "tag": "0.25.0",
+  "published_at": "2021-08-25T17:47:04.039843Z",
+  "downloads": 52863192,
+  "verified": false,
+  "root": {
+    "path": "",
+    "name": "label",
+    "empty": false,
+    "inputs": [
+      {
+        "name": "environment",
+        "type": "string",
+        "default": "",
+        "required": true
+      },
+      {
+        "name": "label_order",
+        "type": "list(string)",
+        "default": "",
+        "required": true
+      },
+      {
+        "name": "descriptor_formats",
+        "type": "any",
+        "default": "{}",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "id"
+      }
+    ],
+    "dependencies": [],
+    "provider_dependencies": [],
+    "resources": []
+  },
+  "submodules": [],
+  "examples": [],
+  "providers": [
+    "null",
+    "terraform"
+  ],
+  "versions": [
+    "0.25.0",
+    "0.26.0"
+  ]
+}`
+
+// labelNullModuleDataOldMockResponse represents response for
+// a module that does NOT suffer from "unreliable" input data,
+// as described in https://github.com/hashicorp/vscode-terraform/issues/1582
+// This is for comparison with the unreliable input data.
+var labelNullModuleDataNewMockResponse = `{
+  "id": "cloudposse/label/null/0.26.0",
+  "owner": "osterman",
+  "namespace": "cloudposse",
+  "name": "label",
+  "version": "0.26.0",
+  "provider": "null",
+  "provider_logo_url": "/images/providers/generic.svg?2",
+  "description": "Terraform Module to define a consistent naming convention by (namespace, stage, name, [attributes])",
+  "source": "https://github.com/cloudposse/terraform-null-label",
+  "tag": "0.26.0",
+  "published_at": "2023-10-11T10:47:04.039843Z",
+  "downloads": 10000,
+  "verified": false,
+  "root": {
+    "path": "",
+    "name": "label",
+    "empty": false,
+    "inputs": [
+      {
+        "name": "environment",
+        "type": "string",
+        "default": "",
+        "required": true
+      },
+      {
+        "name": "label_order",
+        "type": "list(string)",
+        "default": "null",
+        "required": false
+      },
+      {
+        "name": "descriptor_formats",
+        "type": "any",
+        "default": "{}",
+        "required": false
+      }
+    ],
+    "outputs": [
+      {
+        "name": "id"
+      }
+    ],
+    "dependencies": [],
+    "provider_dependencies": [],
+    "resources": []
+  },
+  "submodules": [],
+  "examples": [],
+  "providers": [
+    "null",
+    "terraform"
+  ],
+  "versions": [
+    "0.25.0",
+    "0.26.0"
+  ]
+}`
+
+var labelNullExpectedOldModuleData = &tfregistry.ModuleData{
+	Version: version.Must(version.NewVersion("0.25.0")),
+	Inputs: []tfregistry.Input{
+		{
+			Name:        "environment",
+			Type:        cty.String,
+			Description: lang.Markdown(""),
+		},
+		{
+			Name:        "label_order",
+			Type:        cty.DynamicPseudoType,
+			Description: lang.Markdown(""),
+		},
+		{
+			Name:        "descriptor_formats",
+			Type:        cty.DynamicPseudoType,
+			Description: lang.Markdown(""),
+		},
+	},
+	Outputs: []tfregistry.Output{
+		{
+			Name:        "id",
+			Description: lang.Markdown(""),
+		},
+	},
+}
+
+var labelNullExpectedNewModuleData = &tfregistry.ModuleData{
+	Version: version.Must(version.NewVersion("0.26.0")),
+	Inputs: []tfregistry.Input{
+		{
+			Name:        "environment",
+			Type:        cty.String,
+			Description: lang.Markdown(""),
+			Required:    true,
+		},
+		{
+			Name:        "label_order",
+			Type:        cty.DynamicPseudoType,
+			Description: lang.Markdown(""),
+			Default:     cty.NullVal(cty.DynamicPseudoType),
+		},
+		{
+			Name:        "descriptor_formats",
+			Type:        cty.DynamicPseudoType,
+			Description: lang.Markdown(""),
+		},
+	},
+	Outputs: []tfregistry.Output{
+		{
+			Name:        "id",
+			Description: lang.Markdown(""),
+		},
+	},
+}

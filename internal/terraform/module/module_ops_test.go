@@ -109,7 +109,98 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(expectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
+	if diff := cmp.Diff(puppetExpectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
+		t.Fatalf("metadata mismatch: %s", diff)
+	}
+}
+func TestGetModuleDataFromRegistry_unreliableInputs(t *testing.T) {
+	ctx := context.Background()
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "unreliable-inputs-module")
+
+	err = ss.Modules.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(ss.DocumentStore)
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
+	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	regClient := registry.NewClient()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/v1/modules/cloudposse/label/null/versions" {
+			w.Write([]byte(labelNullModuleVersionsMockResponse))
+			return
+		}
+		if r.RequestURI == "/v1/modules/cloudposse/label/null/0.25.0" {
+			w.Write([]byte(labelNullModuleDataOldMockResponse))
+			return
+		}
+		if r.RequestURI == "/v1/modules/cloudposse/label/null/0.26.0" {
+			w.Write([]byte(labelNullModuleDataNewMockResponse))
+			return
+		}
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+	regClient.BaseURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	err = GetModuleDataFromRegistry(ctx, regClient, ss.Modules, ss.RegistryModules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	addr, err := tfaddr.ParseModuleSource("cloudposse/label/null")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oldCons := version.MustConstraints(version.NewConstraint("0.25.0"))
+	exists, err := ss.RegistryModules.Exists(addr, oldCons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatalf("expected cached metadata to exist for %q %q", addr, oldCons)
+	}
+	meta, err := ss.Modules.RegistryModuleMeta(addr, oldCons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(labelNullExpectedOldModuleData, meta, ctydebug.CmpOptions); diff != "" {
+		t.Fatalf("metadata mismatch: %s", diff)
+	}
+
+	mewCons := version.MustConstraints(version.NewConstraint("0.26.0"))
+	exists, err = ss.RegistryModules.Exists(addr, mewCons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatalf("expected cached metadata to exist for %q %q", addr, mewCons)
+	}
+	meta, err = ss.Modules.RegistryModuleMeta(addr, mewCons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(labelNullExpectedNewModuleData, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}
 }
@@ -188,7 +279,7 @@ func TestGetModuleDataFromRegistry_moduleNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(expectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
+	if diff := cmp.Diff(puppetExpectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}
 
@@ -292,12 +383,12 @@ func TestGetModuleDataFromRegistry_apiTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(expectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
+	if diff := cmp.Diff(puppetExpectedModuleData, meta, ctydebug.CmpOptions); diff != "" {
 		t.Fatalf("metadata mismatch: %s", diff)
 	}
 }
 
-var expectedModuleData = &tfregistry.ModuleData{
+var puppetExpectedModuleData = &tfregistry.ModuleData{
 	Version: version.Must(version.NewVersion("0.0.8")),
 	Inputs: []tfregistry.Input{
 		{
