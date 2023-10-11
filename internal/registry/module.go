@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"sort"
+	"time"
 
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -21,8 +22,9 @@ import (
 )
 
 type ModuleResponse struct {
-	Version string     `json:"version"`
-	Root    ModuleRoot `json:"root"`
+	Version     string     `json:"version"`
+	PublishedAt time.Time  `json:"published_at"`
+	Root        ModuleRoot `json:"root"`
 }
 
 type ModuleRoot struct {
