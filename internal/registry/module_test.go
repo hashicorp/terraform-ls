@@ -47,7 +47,8 @@ func TestGetModuleData(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedData := &ModuleResponse{
-		Version: "0.0.8",
+		Version:     "0.0.8",
+		PublishedAt: time.Date(2021, time.August, 5, 0, 26, 33, 501756000, time.UTC),
 		Root: ModuleRoot{
 			Inputs: []Input{
 				{

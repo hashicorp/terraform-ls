@@ -1063,10 +1063,11 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 
 		inputs := make([]tfregistry.Input, len(metaData.Root.Inputs))
 		for i, input := range metaData.Root.Inputs {
+			isRequired := isRegistryModuleInputRequired(metaData.PublishedAt, input)
 			inputs[i] = tfregistry.Input{
 				Name:        input.Name,
 				Description: lang.Markdown(input.Description),
-				Required:    input.Required,
+				Required:    isRequired,
 			}
 
 			inputType := cty.DynamicPseudoType
@@ -1122,4 +1123,22 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 	}
 
 	return errs.ErrorOrNil()
+}
+
+// isRegistryModuleInputRequired checks whether the module input is required.
+// It reflects the fact that modules ingested into the Registry
+// may have used `default = null` (implying optional variable) which
+// the Registry wasn't able to recognise until ~ 19th August 2022.
+func isRegistryModuleInputRequired(publishTime time.Time, input registry.Input) bool {
+	fixTime := time.Date(2022, time.August, 20, 0, 0, 0, 0, time.UTC)
+	// Modules published after the date have "nullable" inputs
+	// (default = null) ingested as Required=false and Default="null".
+	//
+	// The same inputs ingested prior to the date make it impossible
+	// to distinguish variable with `default = null` and missing default.
+	if input.Required && input.Default == "" && publishTime.Before(fixTime) {
+		// To avoid false diagnostics, we safely assume the input is optional
+		return false
+	}
+	return input.Required
 }
