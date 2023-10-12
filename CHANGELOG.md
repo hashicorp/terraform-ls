@@ -1,3 +1,24 @@
+## 0.32.2 (12 October 2023)
+
+ENHANCEMENTS:
+
+* Add `skip_requesting_account_id` to `s3` backend ([terraform-schema#279](https://github.com/hashicorp/terraform-schema/pull/279))
+
+BUG FIXES:
+
+* Work around 'unreliable' input data for Registry modules ([#1456](https://github.com/hashicorp/terraform-ls/pull/1456))
+* Resolve version correctly for backend schema ([#1453](https://github.com/hashicorp/terraform-ls/pull/1453))
+* Allow objects in `for_each` ([hcl-lang#333](https://github.com/hashicorp/hcl-lang/pull/333))
+* Fix `output` block `precondition` in 1.2 schema ([terraform-schema#282](https://github.com/hashicorp/terraform-schema/pull/282))
+
+INTERNAL:
+
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.35.1 to 2.35.3 ([#1451](https://github.com/hashicorp/terraform-ls/pull/1451), [#1452](https://github.com/hashicorp/terraform-ls/pull/1452))
+* build(deps): Bump golang.org/x/tools from 0.13.0 to 0.14.0 ([#1450](https://github.com/hashicorp/terraform-ls/pull/1450))
+* build(deps): Bump github.com/hashicorp/hc-install from 0.6.0 to 0.6.1 ([#1454](https://github.com/hashicorp/terraform-ls/pull/1454))
+* build(deps): Bump github.com/google/go-cmp from 0.5.9 to 0.6.0 ([#1457](https://github.com/hashicorp/terraform-ls/pull/1457))
+* build(deps): Bump golang.org/x/net from 0.16.0 to 0.17.0 ([#1460](https://github.com/hashicorp/terraform-ls/pull/1460))
+
 ## 0.32.1 (6 October 2023)
 
 ENHANCEMENTS:
@@ -9,7 +30,7 @@ BUG FIXES:
 * Fix incorrect schema for `terraform_remote_state` data source ([terraform-schema#272](https://github.com/hashicorp/terraform-schema/pull/272))
 * Make `cloud` `organization` optional ([terraform-schema#271](https://github.com/hashicorp/terraform-schema/pull/271))
 * Ensure empty objects & tuples still get recognised ([hcl-lang#330](https://github.com/hashicorp/hcl-lang/pull/330))
-* Introduce default value `"ssh"` for `type` under `connection` block to enable recognition of attributes such as `bastion_host` even when `type` is not declared ([hcl-lang#327 ([terraform-schema#270](https://github.com/hashicorp/terraform-schema/pull/270))
+* Introduce default value `"ssh"` for `type` under `connection` block to enable recognition of attributes such as `bastion_host` even when `type` is not declared ([hcl-lang#327](https://github.com/hashicorp/hcl-lang/pull/327), [terraform-schema#270](https://github.com/hashicorp/terraform-schema/pull/270))
 * Introduce v1.3 proxy related fields for provisioner `connection` block ([terraform-schema#269](https://github.com/hashicorp/terraform-schema/pull/269))
 * Ensure `target_platform` is recognised in nested `connection` block ([terraform-schema#268](https://github.com/hashicorp/terraform-schema/pull/268))
 
