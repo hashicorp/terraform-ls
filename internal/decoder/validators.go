@@ -5,6 +5,7 @@ package decoder
 
 import (
 	"github.com/hashicorp/hcl-lang/validator"
+	"github.com/hashicorp/terraform-ls/internal/decoder/validations"
 )
 
 var moduleValidators = []validator.Validator{
@@ -13,7 +14,7 @@ var moduleValidators = []validator.Validator{
 	validator.DeprecatedBlock{},
 	validator.MaxBlocks{},
 	validator.MinBlocks{},
-	validator.MissingRequiredAttribute{},
+	validations.MissingRequiredAttribute{},
 	validator.UnexpectedAttribute{},
 	validator.UnexpectedBlock{},
 }
