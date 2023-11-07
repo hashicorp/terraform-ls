@@ -1,3 +1,25 @@
+## 0.32.3 (7 November 2023)
+
+BUG FIXES:
+
+* Validate required attributes more selectively to relax `provider` validation ([#1485](https://github.com/hashicorp/terraform-ls/pull/1485))
+* Skip inferring variable type from default values ([hcl-lang#338](https://github.com/hashicorp/hcl-lang/pull/338))
+* Ensure partially unknown dependent body is handled ([hcl-lang#339](https://github.com/hashicorp/hcl-lang/pull/339))
+* Fix type-unaware target collection ([hcl-lang#340](https://github.com/hashicorp/hcl-lang/pull/340))
+* Allow variable references in `depends_on` ([terraform-schema#290](https://github.com/hashicorp/terraform-schema/pull/290))
+* Fix provider attribute to block conversion ([terraform-schema#288](https://github.com/hashicorp/terraform-schema/pull/288))
+* Skip inferring module inputs for default values ([terraform-schema#289](https://github.com/hashicorp/terraform-schema/pull/289))
+* Allow local references in `depends_on` ([terraform-schema#292](https://github.com/hashicorp/terraform-schema/pull/292))
+
+INTERNAL:
+
+* go: bump version to 1.21.3 ([#1467](https://github.com/hashicorp/terraform-ls/pull/1467))
+* validations: Add link in comment to open issue ([#1472](https://github.com/hashicorp/terraform-ls/pull/1472))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.35.3 to 2.36.1 ([#1463](https://github.com/hashicorp/terraform-ls/pull/1463), [#1465](https://github.com/hashicorp/terraform-ls/pull/1465), [#1487](https://github.com/hashicorp/terraform-ls/pull/1487))
+* build(deps): Bump github.com/hashicorp/hcl/v2 from 2.18.1 to 2.19.1 ([#1466](https://github.com/hashicorp/terraform-ls/pull/1466), [#1468](https://github.com/hashicorp/terraform-ls/pull/1468))
+* build(deps): Bump actions/checkout from 4.1.0 to 4.1.1 ([#1469](https://github.com/hashicorp/terraform-ls/pull/1469))
+* build(deps): Bump github.com/hashicorp/terraform-registry-address from 0.2.2 to 0.2.3 ([#1482](https://github.com/hashicorp/terraform-ls/pull/1482))
+
 ## 0.32.2 (12 October 2023)
 
 ENHANCEMENTS:
