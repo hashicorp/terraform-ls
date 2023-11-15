@@ -85,6 +85,31 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 	return pathCtx, nil
 }
 
+func testPathContext(mod *state.Module) (*decoder.PathContext, error) {
+	resolvedVersion := tfschema.ResolveVersion(mod.TerraformVersion, mod.Meta.CoreRequirements)
+	schema, err := tfschema.TestSchemaForVersion(resolvedVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	pathCtx := &decoder.PathContext{
+		Schema:           schema,
+		ReferenceOrigins: make(reference.Origins, 0),
+		ReferenceTargets: make(reference.Targets, 0),
+		Files:            make(map[string]*hcl.File),
+	}
+
+	// TODO: validators
+
+	// TODO: origins
+	// TODO: targets
+
+	for name, f := range mod.ParsedTestFiles {
+		pathCtx.Files[name.String()] = f
+	}
+	return pathCtx, nil
+}
+
 func DecoderContext(ctx context.Context) decoder.DecoderContext {
 	dCtx := decoder.NewDecoderContext()
 	dCtx.UtmSource = utm.UtmSource

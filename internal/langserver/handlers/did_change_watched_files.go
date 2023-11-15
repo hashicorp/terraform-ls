@@ -257,7 +257,7 @@ func modHandleFromRawOsPath(ctx context.Context, rawPath string) (*parsedModuleH
 		}, nil
 	}
 
-	if !ast.IsModuleFilename(fi.Name()) && !ast.IsVarsFilename(fi.Name()) {
+	if !ast.IsModuleFilename(fi.Name()) && !ast.IsVarsFilename(fi.Name()) && !ast.IsTestFilename(fi.Name()) {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type: lsp.Warning,
 			Message: fmt.Sprintf("Unable to update %q: filetype not supported. "+

@@ -61,6 +61,12 @@ func (mr *PathReader) Paths(ctx context.Context) []lang.Path {
 				LanguageID: ilsp.Tfvars.String(),
 			})
 		}
+		if len(mod.ParsedTestFiles) > 0 {
+			paths = append(paths, lang.Path{
+				Path:       mod.Path,
+				LanguageID: ilsp.Tftest.String(),
+			})
+		}
 	}
 
 	return paths
@@ -77,6 +83,8 @@ func (mr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 		return modulePathContext(mod, mr.SchemaReader, mr.ModuleReader)
 	case ilsp.Tfvars.String():
 		return varsPathContext(mod)
+	case ilsp.Tftest.String():
+		return testPathContext(mod)
 	}
 
 	return nil, fmt.Errorf("unknown language ID: %q", path.LanguageID)
