@@ -191,6 +191,20 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 		}
 	}
 
+	parseTestId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.ParseTests(ctx, idx.fs, idx.modStore, modHandle.Path())
+		},
+		Type:        op.OpTypeParseTests.String(),
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	} else {
+		jobIds = append(jobIds, parseTestId)
+	}
+
 	return jobIds, errs.ErrorOrNil()
 }
 

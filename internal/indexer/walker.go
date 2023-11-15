@@ -87,6 +87,19 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		}
 	}
 
+	parseTestId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.ParseTests(ctx, idx.fs, idx.modStore, modHandle.Path())
+		},
+		Type: op.OpTypeParseTests.String(),
+	})
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, parseTestId)
+	}
+
 	dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 	idx.logger.Printf("parsed datadir: %#v", dataDir)
 

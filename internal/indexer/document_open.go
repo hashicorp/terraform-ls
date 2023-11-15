@@ -93,6 +93,20 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 		}
 	}
 
+	parseTestId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+		Dir: modHandle,
+		Func: func(ctx context.Context) error {
+			return module.ParseTests(ctx, idx.fs, idx.modStore, modHandle.Path())
+		},
+		Type:        op.OpTypeParseTests.String(),
+		IgnoreState: true,
+	})
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	} else {
+		ids = append(ids, parseTestId)
+	}
+
 	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
