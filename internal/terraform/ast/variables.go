@@ -11,13 +11,6 @@ import (
 
 type VarsFilename string
 
-func NewVarsFilename(name string) (VarsFilename, bool) {
-	if IsVarsFilename(name) {
-		return VarsFilename(name), true
-	}
-	return "", false
-}
-
 func IsVarsFilename(name string) bool {
 	// even files which are normally ignored/hidden,
 	// such as .foo.tfvars (with leading .) are accepted here

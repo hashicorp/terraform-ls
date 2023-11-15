@@ -22,6 +22,7 @@ const (
 	OpTypeObtainSchema
 	OpTypeParseModuleConfiguration
 	OpTypeParseVariables
+	OpTypeParseTests
 	OpTypeParseModuleManifest
 	OpTypeLoadModuleMetadata
 	OpTypeDecodeReferenceTargets

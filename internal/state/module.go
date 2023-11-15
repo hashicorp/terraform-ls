@@ -124,8 +124,10 @@ type Module struct {
 
 	ParsedModuleFiles ast.ModFiles
 	ParsedVarsFiles   ast.VarsFiles
+	ParsedTestFiles   ast.TestFiles
 	ModuleParsingErr  error
 	VarsParsingErr    error
+	TestParsingErr    error
 
 	Meta      ModuleMetadata
 	MetaErr   error
@@ -135,6 +137,8 @@ type Module struct {
 	ModuleDiagnosticsState ast.DiagnosticSourceState
 	VarsDiagnostics        ast.SourceVarsDiags
 	VarsDiagnosticsState   ast.DiagnosticSourceState
+	TestDiagnostics        ast.SourceTestDiags
+	TestDiagnosticsState   ast.DiagnosticSourceState
 }
 
 func (m *Module) Copy() *Module {
@@ -175,6 +179,7 @@ func (m *Module) Copy() *Module {
 
 		ModuleParsingErr: m.ModuleParsingErr,
 		VarsParsingErr:   m.VarsParsingErr,
+		TestParsingErr:   m.TestParsingErr,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
@@ -182,6 +187,7 @@ func (m *Module) Copy() *Module {
 
 		ModuleDiagnosticsState: m.ModuleDiagnosticsState.Copy(),
 		VarsDiagnosticsState:   m.VarsDiagnosticsState.Copy(),
+		TestDiagnosticsState:   m.TestDiagnosticsState.Copy(),
 	}
 
 	if m.InstalledProviders != nil {
@@ -205,6 +211,14 @@ func (m *Module) Copy() *Module {
 		for name, f := range m.ParsedVarsFiles {
 			// hcl.File is practically immutable once it comes out of parser
 			newMod.ParsedVarsFiles[name] = f
+		}
+	}
+
+	if m.ParsedTestFiles != nil {
+		newMod.ParsedTestFiles = make(ast.TestFiles, len(m.ParsedTestFiles))
+		for name, f := range m.ParsedTestFiles {
+			// hcl.File is practically immutable once it comes out of parser
+			newMod.ParsedTestFiles[name] = f
 		}
 	}
 
@@ -234,6 +248,19 @@ func (m *Module) Copy() *Module {
 		}
 	}
 
+	if m.TestDiagnostics != nil {
+		newMod.TestDiagnostics = make(ast.SourceTestDiags, len(m.TestDiagnostics))
+
+		for source, testDiags := range m.TestDiagnostics {
+			newMod.TestDiagnostics[source] = make(ast.TestDiags, len(testDiags))
+
+			for name, diags := range testDiags {
+				newMod.TestDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
+				copy(newMod.TestDiagnostics[source][name], diags)
+			}
+		}
+	}
+
 	return newMod
 }
 
@@ -254,6 +281,12 @@ func newModule(modPath string) *Module {
 			ast.TerraformValidateSource:   op.OpStateUnknown,
 		},
 		VarsDiagnosticsState: ast.DiagnosticSourceState{
+			ast.HCLParsingSource:          op.OpStateUnknown,
+			ast.SchemaValidationSource:    op.OpStateUnknown,
+			ast.ReferenceValidationSource: op.OpStateUnknown,
+			ast.TerraformValidateSource:   op.OpStateUnknown,
+		},
+		TestDiagnosticsState: ast.DiagnosticSourceState{
 			ast.HCLParsingSource:          op.OpStateUnknown,
 			ast.SchemaValidationSource:    op.OpStateUnknown,
 			ast.ReferenceValidationSource: op.OpStateUnknown,
@@ -875,6 +908,28 @@ func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles, v
 	return nil
 }
 
+func (s *ModuleStore) UpdateParsedTestFiles(path string, pFiles ast.TestFiles, pErr error) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.ParsedTestFiles = pFiles
+
+	mod.TestParsingErr = pErr
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *ModuleStore) SetMetaState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -1026,6 +1081,57 @@ func (s *ModuleStore) SetVarsDiagnosticsState(path string, source ast.Diagnostic
 		return err
 	}
 	mod.VarsDiagnosticsState[source] = state
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateTestDiagnostics(path string, source ast.DiagnosticSource, diags ast.TestDiags) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetTestDiagnosticsState(path, source, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	oldMod, err := moduleByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod := oldMod.Copy()
+	if mod.TestDiagnostics == nil {
+		mod.TestDiagnostics = make(ast.SourceTestDiags)
+	}
+	mod.TestDiagnostics[source] = diags
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	err = s.queueModuleChange(txn, oldMod, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) SetTestDiagnosticsState(path string, source ast.DiagnosticSource, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+	mod.TestDiagnosticsState[source] = state
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

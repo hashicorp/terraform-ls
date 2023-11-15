@@ -521,6 +521,45 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	return err
 }
 
+// ParseTests parses the test files,
+// i.e. turns bytes of `*.tftest.hcl` files into AST ([*hcl.File]).
+func ParseTests(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
+	mod, err := modStore.ModuleByPath(modPath)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Avoid parsing if the content matches existing AST
+	// TODO: Only parse a single file change
+
+	// Avoid parsing if it is already in progress or already known
+	if mod.TestDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	}
+
+	err = modStore.SetTestDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	files, diags, err := parser.ParseTestFiles(fs, modPath)
+	if err != nil {
+		return err
+	}
+
+	sErr := modStore.UpdateParsedTestFiles(modPath, files, err)
+	if sErr != nil {
+		return sErr
+	}
+
+	sErr = modStore.UpdateTestDiagnostics(modPath, ast.HCLParsingSource, diags)
+	if sErr != nil {
+		return sErr
+	}
+
+	return err
+}
+
 // ParseModuleManifest parses the "module manifest" which
 // contains records of installed modules, e.g. where they're
 // installed on the filesystem.
