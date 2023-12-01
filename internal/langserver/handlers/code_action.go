@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/hcl-lang/decodercontext"
+	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/langserver/errors"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -37,6 +40,25 @@ func (svc *service) textDocumentCodeAction(ctx context.Context, params lsp.CodeA
 		svc.logger.Printf("Code actions requested: %q", o)
 	}
 
+	dh := document.HandleFromURI(string(params.TextDocument.URI))
+	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
+	if err != nil {
+		return ca, err
+	}
+
+	rng := ilsp.LSPRangeToHCL(params.Range, dh.Filename)
+
+	ctx = decodercontext.WithCodeAction(ctx, decodercontext.CodeActionContext{
+		Diagnostics: ilsp.LSPDiagsToHCL(params.Context.Diagnostics, dh.Filename),
+		Only:        ilsp.LSPCodeActionKindsToHCL(params.Context.Only),
+		TriggerKind: ilsp.LSPCodeActionTriggerKindToHCL(params.Context.TriggerKind),
+	})
+	actions := svc.decoder.CodeActionsForRange(ctx, lang.Path{
+		Path:       dh.Dir.Path(),
+		LanguageID: doc.LanguageID,
+	}, rng)
+	ca = append(ca, ilsp.CodeActionsToLSP(actions, dh.Dir)...)
+
 	wantedCodeActions := ilsp.SupportedCodeActions.Only(params.Context.Only)
 	if len(wantedCodeActions) == 0 {
 		return nil, fmt.Errorf("could not find a supported code action to execute for %s, wanted %v",
@@ -44,13 +66,6 @@ func (svc *service) textDocumentCodeAction(ctx context.Context, params lsp.CodeA
 	}
 
 	svc.logger.Printf("Code actions supported: %v", wantedCodeActions)
-
-	dh := ilsp.HandleFromDocumentURI(params.TextDocument.URI)
-
-	doc, err := svc.stateStore.DocumentStore.GetDocument(dh)
-	if err != nil {
-		return ca, err
-	}
 
 	for action := range wantedCodeActions {
 		switch action {

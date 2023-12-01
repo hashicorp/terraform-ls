@@ -43,6 +43,21 @@ func lspRangeToDocRange(rng *lsp.Range) *document.Range {
 	}
 }
 
+func LSPRangeToHCL(rng lsp.Range, filename string) hcl.Range {
+	return hcl.Range{
+		Filename: filename,
+		Start:    LSPPosToHCL(rng.Start),
+		End:      LSPPosToHCL(rng.End),
+	}
+}
+
+func LSPPosToHCL(pos lsp.Position) hcl.Pos {
+	return hcl.Pos{
+		Line:   int(pos.Line) + 1,
+		Column: int(pos.Character) + 1,
+	}
+}
+
 func HCLRangeToLSP(rng hcl.Range) lsp.Range {
 	return lsp.Range{
 		Start: HCLPosToLSP(rng.Start),

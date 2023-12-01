@@ -6,6 +6,7 @@ package decoder
 import (
 	"context"
 
+	"github.com/hashicorp/hcl-lang/codeaction"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
@@ -98,6 +99,8 @@ func DecoderContext(ctx context.Context) decoder.DecoderContext {
 			dCtx.CodeLenses = append(dCtx.CodeLenses, codelens.ReferenceCount(cmdId))
 		}
 	}
+
+	dCtx.CodeActions = append(dCtx.CodeActions, codeaction.AttributeMissingNewline{})
 
 	return dCtx
 }

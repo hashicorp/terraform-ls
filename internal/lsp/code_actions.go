@@ -4,8 +4,12 @@
 package lsp
 
 import (
+	"fmt"
+	"path"
 	"sort"
 
+	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
 
@@ -35,6 +39,7 @@ var (
 	// files to be formatted, but not terraform files (or vice versa).
 	SupportedCodeActions = CodeActions{
 		SourceFormatAllTerraform: true,
+		lsp.QuickFix:             true,
 	}
 )
 
@@ -60,4 +65,65 @@ func (ca CodeActions) Only(only []lsp.CodeActionKind) CodeActions {
 	}
 
 	return wanted
+}
+
+func CodeActionsToLSP(ca []lang.CodeAction, dirHandle document.DirHandle) []lsp.CodeAction {
+	actions := make([]lsp.CodeAction, 0)
+	for _, action := range ca {
+		actions = append(actions, CodeActionToLSP(action, dirHandle))
+	}
+	return actions
+}
+
+func CodeActionToLSP(ca lang.CodeAction, dirHandle document.DirHandle) lsp.CodeAction {
+	return lsp.CodeAction{
+		Title:       ca.Title,
+		Kind:        lsp.CodeActionKind(ca.Kind),
+		Diagnostics: HCLDiagsToLSP(ca.Diagnostics, "Terraform"),
+		Edit:        EditToLSPWorkspaceEdit(ca.Edit, dirHandle),
+	}
+}
+
+func EditToLSPWorkspaceEdit(edit lang.Edit, dh document.DirHandle) lsp.WorkspaceEdit {
+	fileEdits, ok := edit.(lang.FileEdits)
+	if !ok {
+		return lsp.WorkspaceEdit{}
+	}
+
+	changes := make(map[lsp.DocumentURI][]lsp.TextEdit)
+
+	for _, textEdit := range fileEdits {
+		docUri := lsp.DocumentURI(path.Join(dh.URI, textEdit.Range.Filename))
+
+		_, ok := changes[docUri]
+		if !ok {
+			changes[docUri] = make([]lsp.TextEdit, 0)
+		}
+		changes[docUri] = append(changes[docUri], lsp.TextEdit{
+			Range:   HCLRangeToLSP(textEdit.Range),
+			NewText: textEdit.NewText,
+		})
+	}
+
+	return lsp.WorkspaceEdit{
+		Changes: changes,
+	}
+}
+
+func LSPCodeActionKindsToHCL(kinds []lsp.CodeActionKind) []lang.CodeActionKind {
+	hclKinds := make([]lang.CodeActionKind, len(kinds))
+	for i, kind := range kinds {
+		hclKinds[i] = lang.CodeActionKind(kind)
+	}
+	return hclKinds
+}
+
+func LSPCodeActionTriggerKindToHCL(trigger lsp.CodeActionTriggerKind) lang.CodeActionTriggerKind {
+	switch trigger {
+	case lsp.CodeActionInvoked:
+		return lang.CodeActionTriggerKind("invoked")
+	case lsp.CodeActionAutomatic:
+		return lang.CodeActionTriggerKind("automatic")
+	}
+	panic(fmt.Sprintf("unexpected trigger kind: %q", trigger))
 }
