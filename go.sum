@@ -218,8 +218,8 @@ github.com/hashicorp/hc-install v0.6.2 h1:V1k+Vraqz4olgZ9UzKiAcbman9i9scg9GgSt/U
 github.com/hashicorp/hc-install v0.6.2/go.mod h1:2JBpd+NCFKiHiu/yYCGaPyPHhZLxXTpz8oreHa/a3Ps=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hashicorp/hcl-lang v0.0.0-20231107133629-c89603e93360 h1:qFawtGK8XOEXuzfNkntGk3+yhk7LusTB9kBw3nCyiWw=
-github.com/hashicorp/hcl-lang v0.0.0-20231107133629-c89603e93360/go.mod h1:f8Trmd1qEAs00+y4etS5uTDqYhU3Z/pxJgzsTwWXWM8=
+github.com/hashicorp/hcl-lang v0.0.0-20231130100155-255545969c6e h1:Hiqu/XjMVBc8Etbjr10p6koz5BuF9YVhyQcNQ5w1WU4=
+github.com/hashicorp/hcl-lang v0.0.0-20231130100155-255545969c6e/go.mod h1:hwP+cyrOdujv2bNXUgm+OrVsvOfAltMmbQx+WFu9PWM=
 github.com/hashicorp/hcl/v2 v2.19.1 h1://i05Jqznmb2EXqa39Nsvyan2o5XyMowW5fnCKW5RPI=
 github.com/hashicorp/hcl/v2 v2.19.1/go.mod h1:ThLC89FV4p9MPW804KVbe/cEXoQ8NZEh+JtMeeGErHE=
 github.com/hashicorp/terraform-exec v0.19.0 h1:FpqZ6n50Tk95mItTSS9BjeOVUb4eg81SpgVtZNNtFSM=
