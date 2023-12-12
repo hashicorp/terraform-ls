@@ -1,3 +1,34 @@
+## 0.32.4 (12 December 2023)
+
+ENHANCEMENTS:
+
+* Add support for conditional expression ([hcl-lang#326](https://github.com/hashicorp/hcl-lang/pull/326))
+* Add support for template expressions ([hcl-lang#322](https://github.com/hashicorp/hcl-lang/pull/322))
+* Reflect new SSO endpoint override in S3 backend ([terraform-schema#302](https://github.com/hashicorp/terraform-schema/pull/302))
+* Reflect new proxy settings in S3 backend ([terraform-schema#301](https://github.com/hashicorp/terraform-schema/pull/301))
+* Reflect new `skip_s3_checksum` attribute in S3 backend ([terraform-schema#295](https://github.com/hashicorp/terraform-schema/pull/295))
+
+BUG FIXES:
+
+* Improve traversal completion for lists, tuples, and sets ([hcl-lang#344](https://github.com/hashicorp/hcl-lang/pull/344))
+* Update version resolution for empty constraints ([terraform-schema#296](https://github.com/hashicorp/terraform-schema/pull/296))
+
+INTERNAL:
+
+* Add new performance issue template ([#1499](https://github.com/hashicorp/terraform-ls/pull/1499))
+* go: Bump version to 1.21.4 ([#1511](https://github.com/hashicorp/terraform-ls/pull/1511))
+* github: Disable dependabot for GHA ([#1489](https://github.com/hashicorp/terraform-ls/pull/1489))
+* build(deps): Bump golang.org/x/tools from 0.14.0 to 0.15.0 ([#1491](https://github.com/hashicorp/terraform-ls/pull/1491), [#1513](https://github.com/hashicorp/terraform-ls/pull/1513))
+* build(deps): Bump workflows to latest trusted versions ([#1493](https://github.com/hashicorp/terraform-ls/pull/1493), [#1510](https://github.com/hashicorp/terraform-ls/pull/1510), [#1514](https://github.com/hashicorp/terraform-ls/pull/1514))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.36.1 to 2.38.0 ([#1498](https://github.com/hashicorp/terraform-ls/pull/1498), [#1500](https://github.com/hashicorp/terraform-ls/pull/1500), [#1509](https://github.com/hashicorp/terraform-ls/pull/1509))
+* build(deps): Bump github.com/hashicorp/terraform-json from 0.17.1 to 0.18.0 ([#1492](https://github.com/hashicorp/terraform-ls/pull/1492))
+* build(deps): Bump go.opentelemetry.io/otel from 1.19.0 to 1.20.0 ([#1494](https://github.com/hashicorp/terraform-ls/pull/1494))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.45.0 to 0.46.0 ([#1496](https://github.com/hashicorp/terraform-ls/pull/1496))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.45.0 to 0.46.0 ([#1497](https://github.com/hashicorp/terraform-ls/pull/1497))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.46.0 to 0.46.1 ([#1501](https://github.com/hashicorp/terraform-ls/pull/1501))
+* build(deps): Bump github.com/creachadair/jrpc2 from 1.1.1 to 1.1.2 ([#1504](https://github.com/hashicorp/terraform-ls/pull/1504))
+* build(deps): Bump github.com/hashicorp/hc-install from 0.6.1 to 0.6.2 ([#1516](https://github.com/hashicorp/terraform-ls/pull/1516))
+
 ## 0.32.3 (7 November 2023)
 
 BUG FIXES:
