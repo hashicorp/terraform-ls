@@ -206,5 +206,13 @@ func IsWSLURI(uri string) bool {
 		return false
 	}
 
-	return u.Scheme == "file" && u.Host == "wsl$"
+	if u.Scheme == "file" && u.Host == "wsl$" {
+		return true
+	}
+
+	if u.Scheme == "file" && u.Host == "wsl.localhost" {
+		return true
+	}
+
+	return false
 }
