@@ -208,4 +208,4 @@ Release process:
  1. Run the [Release workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/release.yml) with the appropriate version (matching the one in `version/VERSION`) & SHA (long one).
  1. Wait for `staging` release [is finished](https://github.com/hashicorp/crt-workflows-common/actions/workflows/crt-promote-staging.yml).
  1. Wait for a message in the Slack channel saying that authorisation is needed to promote artifacts to production. Click on the link and approve.
- 1. Once notified that promotion is successful, go to https://github.com/hashicorp/crt-workflows-common/actions/workflows/promote-production-packaging.yml, locate the terraform-ls promote-production-packaging workflow, and approve.
+ 
