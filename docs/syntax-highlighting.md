@@ -18,7 +18,7 @@ There are two main use cases we're targeting with semantic tokens.
 
 ### Improving Accuracy
 
-Regex-based grammars (like TextMate) operate on line-basis, which makes it difficult to accurately highlight certain parts of the syntax, for example nested blocks occuring in the Terraform language (as below).
+Regex-based grammars (like TextMate) operate on line-basis, which makes it difficult to accurately highlight certain parts of the syntax, for example nested blocks occurring in the Terraform language (as below).
 
 ```hcl
 terraform {
