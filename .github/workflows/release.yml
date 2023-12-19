@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+        type: string
+      sha:
+        description: 'SHA'
+        required: true
+        type: string
+      branch:
+        description: 'Branch'
+        type: string
+        default: main
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup bob
+        uses: hashicorp/action-setup-bob@v1
+        with:
+          github-token:
+            ${{ secrets.BOB_GITHUB_TOKEN }}
+      - name: Promote to staging
+        env:
+          BOB_GITHUB_TOKEN: ${{ secrets.BOB_GITHUB_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+          SHA: ${{ github.event.inputs.sha }}
+          BRANCH: main
+          ENVIRONMENT: staging
+        run: |
+          bob trigger-promotion \
+            --product-name=terraform-ls \
+            --environment=terraform-ls-oss \
+            --org=hashicorp \
+            --repo=terraform-ls \
+            --slack-channel=C02AGQXCAF5 \
+            --product-version=$VERSION \
+            --sha=$SHA \
+            --branch=$BRANCH \
+            $ENVIRONMENT
+
+  production:
+    runs-on: ubuntu-latest
+    needs: staging
+    steps:
+      - name: Setup bob
+        uses: hashicorp/action-setup-bob@v1
+        with:
+          github-token:
+            ${{ secrets.BOB_GITHUB_TOKEN }}
+      - name: Promote to production
+        env:
+          BOB_GITHUB_TOKEN: ${{ secrets.BOB_GITHUB_TOKEN }}
+          VERSION: ${{ github.event.inputs.version }}
+          SHA: ${{ github.event.inputs.sha }}
+          BRANCH: main
+          ENVIRONMENT: production
+        run: |
+          bob trigger-promotion \
+            --product-name=terraform-ls \
+            --environment=terraform-ls-oss \
+            --org=hashicorp \
+            --repo=terraform-ls \
+            --slack-channel=C02AGQXCAF5 \
+            --product-version=$VERSION \
+            --sha=$SHA \
+            --branch=$BRANCH \
+            $ENVIRONMENT

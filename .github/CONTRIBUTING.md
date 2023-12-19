@@ -205,31 +205,7 @@ Release process:
 
  1. Update [`version/VERSION`](https://github.com/hashicorp/terraform-ls/blob/main/version/VERSION) to remove `-dev` suffix and set it to the intended version to be released
  1. Wait for [`build` workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/build.yml) and dependent `prepare` workflow to finish
- 1. Ensure you have the appropriate GitHub PAT set in `BOB_GITHUB_TOKEN` variable
- 1. Set `SHA` to the corresponding (long) last commit SHA (after updating `VERSION` file) & `VERSION` to the same version
- 1. Use `bob` to promote artifacts to **staging**
- ```
-bob trigger-promotion \
-  --product-name=terraform-ls \
-  --environment=terraform-ls-oss \
-  --org=hashicorp \
-  --repo=terraform-ls \
-  --slack-channel=C02AGQXCAF5 \
-  --product-version="$VERSION" \
-  --sha="$SHA" \
-  --branch=main \
-  staging
- ```
- 1. Use `bob` to promote artifacts to **production**
- ```
-bob trigger-promotion \
-  --product-name=terraform-ls \
-  --environment=terraform-ls-oss \
-  --org=hashicorp \
-  --repo=terraform-ls \
-  --slack-channel=C02AGQXCAF5 \
-  --product-version="$VERSION" \
-  --sha="$SHA" \
-  --branch=main \
-  production
- ```
+ 1. Run the [Release workflow](https://github.com/hashicorp/terraform-ls/actions/workflows/release.yml) with the appropriate version (matching the one in `version/VERSION`) & SHA (long one).
+ 1. Wait for `staging` release [is finished](https://github.com/hashicorp/crt-workflows-common/actions/workflows/crt-promote-staging.yml).
+ 1. Wait for a message in the Slack channel saying that authorisation is needed to promote artifacts to production. Click on the link and approve.
+ 
