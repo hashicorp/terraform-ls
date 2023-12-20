@@ -194,6 +194,11 @@ func TestIsWSLURI(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "Localhost WSL file path should return true",
+			uri:  `file://wsl.localhost/Ubuntu/home/james/foo`,
+			want: true,
+		},
+		{
 			name: "Regular file path should return false",
 			uri:  `file://C:/foo/james/foo`,
 			want: false,
