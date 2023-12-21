@@ -21,6 +21,7 @@ const (
 	documentsTableName      = "documents"
 	jobsTableName           = "jobs"
 	moduleTableName         = "module"
+	varsTableName           = "vars"
 	moduleIdsTableName      = "module_ids"
 	moduleChangesTableName  = "module_changes"
 	providerSchemaTableName = "provider_schema"
@@ -128,6 +129,16 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		varsTableName: {
+			Name: varsTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+				},
+			},
+		},
 		providerSchemaTableName: {
 			Name: providerSchemaTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -225,6 +236,7 @@ type StateStore struct {
 	DocumentStore   *DocumentStore
 	JobStore        *JobStore
 	Modules         *ModuleStore
+	Vars            *VarsStore
 	ProviderSchemas *ProviderSchemaStore
 	WalkerPaths     *WalkerPathStore
 	RegistryModules *RegistryModuleStore
@@ -244,6 +256,15 @@ type ModuleStore struct {
 	// MaxModuleNesting represents how many nesting levels we'd attempt
 	// to parse provider requirements before returning error.
 	MaxModuleNesting int
+}
+
+type VarsStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+
+	// TimeProvider provides current time (for mocking time.Now in tests)
+	TimeProvider func() time.Time
 }
 
 type ModuleChangeStore struct {
@@ -305,6 +326,12 @@ func NewStateStore() (*StateStore, error) {
 			TimeProvider:     time.Now,
 			MaxModuleNesting: 50,
 		},
+		Vars: &VarsStore{
+			db:           db,
+			tableName:    varsTableName,
+			logger:       defaultLogger,
+			TimeProvider: time.Now,
+		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
 			tableName: providerSchemaTableName,
@@ -329,6 +356,7 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.DocumentStore.logger = logger
 	s.JobStore.logger = logger
 	s.Modules.logger = logger
+	s.Vars.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
