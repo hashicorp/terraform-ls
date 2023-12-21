@@ -13,6 +13,7 @@ import (
 )
 
 type moduleCtxKey struct{}
+type varsCtxKey struct{}
 type moduleIsOpenCtxKey struct{}
 
 type Notifier struct {
@@ -76,6 +77,12 @@ func (n *Notifier) notify(ctx context.Context) error {
 	}
 	ctx = withModule(ctx, mod)
 
+	vars, err := n.varsStore.VarsByPath(changeBatch.DirHandle.Path())
+	if err != nil {
+		return err
+	}
+	ctx = withVars(ctx, vars)
+
 	ctx = withModuleIsOpen(ctx, changeBatch.IsDirOpen)
 
 	for i, h := range n.hooks {
@@ -100,6 +107,22 @@ func ModuleFromContext(ctx context.Context) (*state.Module, error) {
 	}
 
 	return mod, nil
+}
+
+// The next two functions are a bit of a hack to get around the fact that
+// we don't have a way to pass the vars data to the notifier hooks. This
+// is should be addressed in a future notifier refactor.
+func withVars(ctx context.Context, vars *state.Vars) context.Context {
+	return context.WithValue(ctx, varsCtxKey{}, vars)
+}
+
+func VarsFromContext(ctx context.Context) (*state.Vars, error) {
+	vars, ok := ctx.Value(varsCtxKey{}).(*state.Vars)
+	if !ok {
+		return nil, errors.New("vars data not found")
+	}
+
+	return vars, nil
 }
 
 func withModuleIsOpen(ctx context.Context, isOpen bool) context.Context {

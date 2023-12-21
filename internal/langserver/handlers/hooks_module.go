@@ -133,7 +133,7 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 		return nil, false
 	}
 
-	modId, err := store.GetModuleID(mod.Path)
+	modId, err := store.GetModuleID(mod.Path())
 	if err != nil {
 		return nil, false
 	}
@@ -149,6 +149,10 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			if err != nil {
 				return err
 			}
+			vars, err := notifier.VarsFromContext(ctx)
+			if err != nil {
+				return err
+			}
 
 			diags := diagnostics.NewDiagnostics()
 			diags.EmptyRootDiagnostic()
@@ -156,11 +160,11 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			for source, dm := range mod.ModuleDiagnostics {
 				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
-			for source, dm := range mod.VarsDiagnostics {
+			for source, dm := range vars.VarsDiagnostics {
 				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
 
-			dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
+			dNotifier.PublishHCLDiags(ctx, mod.Path(), diags)
 		}
 		return nil
 	}
