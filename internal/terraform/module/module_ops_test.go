@@ -1196,22 +1196,18 @@ func TestParseVariables(t *testing.T) {
 
 	singleFileModulePath := filepath.Join(testData, "single-file-change-module")
 
-	err = ss.Modules.Add(singleFileModulePath)
+	err = ss.Vars.Add(singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
-	err = ParseModuleConfiguration(ctx, testFs, ss.Modules, singleFileModulePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	err = ParseVariables(ctx, testFs, ss.Vars, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	before, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	before, err := ss.Vars.VarsByPath(singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1229,12 +1225,12 @@ func TestParseVariables(t *testing.T) {
 		LanguageID: ilsp.Tfvars.String(),
 		URI:        uri.FromPath(filePath),
 	})
-	err = ParseVariables(ctx, testFs, ss.Modules, singleFileModulePath)
+	err = ParseVariables(ctx, testFs, ss.Vars, singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	after, err := ss.Modules.ModuleByPath(singleFileModulePath)
+	after, err := ss.Vars.VarsByPath(singleFileModulePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1404,6 +1400,10 @@ func TestSchemaVarsValidation_FullModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = ss.Vars.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
@@ -1419,16 +1419,16 @@ func TestSchemaVarsValidation_FullModule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ParseVariables(ctx, fs, ss.Modules, modPath)
+	err = ParseVariables(ctx, fs, ss.Vars, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = SchemaVariablesValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	err = SchemaVariablesValidation(ctx, ss.Modules, ss.Vars, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mod, err := ss.Modules.ModuleByPath(modPath)
+	mod, err := ss.Vars.VarsByPath(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1457,6 +1457,10 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = ss.Vars.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
 	filePath, err := filepath.Abs(filepath.Join(modPath, "terraform.tfvars"))
@@ -1476,16 +1480,16 @@ func TestSchemaVarsValidation_SingleFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ParseVariables(ctx, fs, ss.Modules, modPath)
+	err = ParseVariables(ctx, fs, ss.Vars, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = SchemaVariablesValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	err = SchemaVariablesValidation(ctx, ss.Modules, ss.Vars, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mod, err := ss.Modules.ModuleByPath(modPath)
+	mod, err := ss.Vars.VarsByPath(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1510,31 +1514,23 @@ func TestSchemaVarsValidation_outsideOfModule(t *testing.T) {
 	}
 	modPath := filepath.Join(testData, "standalone-tfvars")
 
-	err = ss.Modules.Add(modPath)
+	err = ss.Vars.Add(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	fs := filesystem.NewFilesystem(ss.DocumentStore)
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
-	err = ParseModuleConfiguration(ctx, fs, ss.Modules, modPath)
+	err = ParseVariables(ctx, fs, ss.Vars, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = LoadModuleMetadata(ctx, ss.Modules, modPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = ParseVariables(ctx, fs, ss.Modules, modPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = SchemaVariablesValidation(ctx, ss.Modules, ss.ProviderSchemas, modPath)
+	err = SchemaVariablesValidation(ctx, ss.Modules, ss.Vars, ss.ProviderSchemas, modPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mod, err := ss.Modules.ModuleByPath(modPath)
+	mod, err := ss.Vars.VarsByPath(modPath)
 	if err != nil {
 		t.Fatal(err)
 	}

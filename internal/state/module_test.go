@@ -83,12 +83,6 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 			ast.ReferenceValidationSource: operation.OpStateUnknown,
 			ast.TerraformValidateSource:   operation.OpStateUnknown,
 		},
-		VarsDiagnosticsState: ast.DiagnosticSourceState{
-			ast.HCLParsingSource:          operation.OpStateUnknown,
-			ast.SchemaValidationSource:    operation.OpStateUnknown,
-			ast.ReferenceValidationSource: operation.OpStateUnknown,
-			ast.TerraformValidateSource:   operation.OpStateUnknown,
-		},
 	}
 	if diff := cmp.Diff(expectedModule, mod); diff != "" {
 		t.Fatalf("unexpected module: %s", diff)
@@ -202,24 +196,12 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 				ast.ReferenceValidationSource: operation.OpStateUnknown,
 				ast.TerraformValidateSource:   operation.OpStateUnknown,
 			},
-			VarsDiagnosticsState: ast.DiagnosticSourceState{
-				ast.HCLParsingSource:          operation.OpStateUnknown,
-				ast.SchemaValidationSource:    operation.OpStateUnknown,
-				ast.ReferenceValidationSource: operation.OpStateUnknown,
-				ast.TerraformValidateSource:   operation.OpStateUnknown,
-			},
 		},
 		{
 			Path:             filepath.Join(tmpDir, "gamma"),
 			ModManifest:      gammaManifest,
 			ModManifestState: operation.OpStateLoaded,
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
-				ast.HCLParsingSource:          operation.OpStateUnknown,
-				ast.SchemaValidationSource:    operation.OpStateUnknown,
-				ast.ReferenceValidationSource: operation.OpStateUnknown,
-				ast.TerraformValidateSource:   operation.OpStateUnknown,
-			},
-			VarsDiagnosticsState: ast.DiagnosticSourceState{
 				ast.HCLParsingSource:          operation.OpStateUnknown,
 				ast.SchemaValidationSource:    operation.OpStateUnknown,
 				ast.ReferenceValidationSource: operation.OpStateUnknown,
@@ -267,12 +249,6 @@ func TestModuleStore_List(t *testing.T) {
 				ast.ReferenceValidationSource: operation.OpStateUnknown,
 				ast.TerraformValidateSource:   operation.OpStateUnknown,
 			},
-			VarsDiagnosticsState: ast.DiagnosticSourceState{
-				ast.HCLParsingSource:          operation.OpStateUnknown,
-				ast.SchemaValidationSource:    operation.OpStateUnknown,
-				ast.ReferenceValidationSource: operation.OpStateUnknown,
-				ast.TerraformValidateSource:   operation.OpStateUnknown,
-			},
 		},
 		{
 			Path: filepath.Join(tmpDir, "beta"),
@@ -282,22 +258,10 @@ func TestModuleStore_List(t *testing.T) {
 				ast.ReferenceValidationSource: operation.OpStateUnknown,
 				ast.TerraformValidateSource:   operation.OpStateUnknown,
 			},
-			VarsDiagnosticsState: ast.DiagnosticSourceState{
-				ast.HCLParsingSource:          operation.OpStateUnknown,
-				ast.SchemaValidationSource:    operation.OpStateUnknown,
-				ast.ReferenceValidationSource: operation.OpStateUnknown,
-				ast.TerraformValidateSource:   operation.OpStateUnknown,
-			},
 		},
 		{
 			Path: filepath.Join(tmpDir, "gamma"),
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
-				ast.HCLParsingSource:          operation.OpStateUnknown,
-				ast.SchemaValidationSource:    operation.OpStateUnknown,
-				ast.ReferenceValidationSource: operation.OpStateUnknown,
-				ast.TerraformValidateSource:   operation.OpStateUnknown,
-			},
-			VarsDiagnosticsState: ast.DiagnosticSourceState{
 				ast.HCLParsingSource:          operation.OpStateUnknown,
 				ast.SchemaValidationSource:    operation.OpStateUnknown,
 				ast.ReferenceValidationSource: operation.OpStateUnknown,
@@ -367,12 +331,6 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 			ast.ReferenceValidationSource: operation.OpStateUnknown,
 			ast.TerraformValidateSource:   operation.OpStateUnknown,
 		},
-		VarsDiagnosticsState: ast.DiagnosticSourceState{
-			ast.HCLParsingSource:          operation.OpStateUnknown,
-			ast.SchemaValidationSource:    operation.OpStateUnknown,
-			ast.ReferenceValidationSource: operation.OpStateUnknown,
-			ast.TerraformValidateSource:   operation.OpStateUnknown,
-		},
 	}
 
 	if diff := cmp.Diff(expectedModule, mod, cmpOpts); diff != "" {
@@ -410,12 +368,6 @@ func TestModuleStore_UpdateTerraformAndProviderVersions(t *testing.T) {
 		TerraformVersionState: operation.OpStateLoaded,
 		TerraformVersionErr:   vErr,
 		ModuleDiagnosticsState: ast.DiagnosticSourceState{
-			ast.HCLParsingSource:          operation.OpStateUnknown,
-			ast.SchemaValidationSource:    operation.OpStateUnknown,
-			ast.ReferenceValidationSource: operation.OpStateUnknown,
-			ast.TerraformValidateSource:   operation.OpStateUnknown,
-		},
-		VarsDiagnosticsState: ast.DiagnosticSourceState{
 			ast.HCLParsingSource:          operation.OpStateUnknown,
 			ast.SchemaValidationSource:    operation.OpStateUnknown,
 			ast.ReferenceValidationSource: operation.OpStateUnknown,
@@ -476,7 +428,7 @@ func TestModuleStore_UpdateParsedVarsFiles(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	err = s.Modules.Add(tmpDir)
+	err = s.Vars.Add(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -491,14 +443,14 @@ dev = {
 		t.Fatal(diags)
 	}
 
-	err = s.Modules.UpdateParsedVarsFiles(tmpDir, ast.VarsFilesFromMap(map[string]*hcl.File{
+	err = s.Vars.UpdateParsedVarsFiles(tmpDir, ast.VarsFilesFromMap(map[string]*hcl.File{
 		"test.tfvars": testFile,
 	}), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mod, err := s.Modules.ModuleByPath(tmpDir)
+	mod, err := s.Vars.VarsByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -577,7 +529,7 @@ func TestModuleStore_UpdateVarsDiagnostics(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	err = s.Modules.Add(tmpDir)
+	err = s.Vars.Add(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -588,14 +540,14 @@ dev = {
   region = "london"
 `), "test.tfvars")
 
-	err = s.Modules.UpdateVarsDiagnostics(tmpDir, ast.HCLParsingSource, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
+	err = s.Vars.UpdateVarsDiagnostics(tmpDir, ast.HCLParsingSource, ast.VarsDiagsFromMap(map[string]hcl.Diagnostics{
 		"test.tfvars": diags,
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mod, err := s.Modules.ModuleByPath(tmpDir)
+	mod, err := s.Vars.VarsByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,14 +588,14 @@ func TestModuleStore_SetVarsReferenceOriginsState(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	err = s.Modules.Add(tmpDir)
+	err = s.Vars.Add(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	s.Modules.SetVarsReferenceOriginsState(tmpDir, operation.OpStateQueued)
+	s.Vars.SetVarsReferenceOriginsState(tmpDir, operation.OpStateQueued)
 
-	mod, err := s.Modules.ModuleByPath(tmpDir)
+	mod, err := s.Vars.VarsByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -660,7 +612,7 @@ func TestModuleStore_UpdateVarsReferenceOrigins(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	err = s.Modules.Add(tmpDir)
+	err = s.Vars.Add(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -696,9 +648,9 @@ func TestModuleStore_UpdateVarsReferenceOrigins(t *testing.T) {
 			},
 		},
 	}
-	s.Modules.UpdateVarsReferenceOrigins(tmpDir, origins, nil)
+	s.Vars.UpdateVarsReferenceOrigins(tmpDir, origins, nil)
 
-	mod, err := s.Modules.ModuleByPath(tmpDir)
+	mod, err := s.Vars.VarsByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

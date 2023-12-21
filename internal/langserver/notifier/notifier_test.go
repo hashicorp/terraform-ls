@@ -27,7 +27,8 @@ func TestNotifier(t *testing.T) {
 		cancelFunc()
 		return nil
 	}
-	notifier := NewNotifier(mockModuleStore{modPath: t.TempDir()}, []Hook{
+	modPath := t.TempDir()
+	notifier := NewNotifier(mockModuleStore{modPath: modPath}, mockVarsStore{modPath: modPath}, []Hook{
 		hookFunc,
 		hookFunc,
 	})
@@ -41,6 +42,10 @@ func TestNotifier(t *testing.T) {
 type mockModuleStore struct {
 	returned bool
 	modPath  string
+}
+
+type mockVarsStore struct {
+	modPath string
 }
 
 func (mms mockModuleStore) AwaitNextChangeBatch(ctx context.Context) (state.ModuleChangeBatch, error) {
@@ -61,6 +66,16 @@ func (mms mockModuleStore) ModuleByPath(path string) (*state.Module, error) {
 	}
 
 	return &state.Module{
+		Path: path,
+	}, nil
+}
+
+func (mvs mockVarsStore) VarsByPath(path string) (*state.Vars, error) {
+	if path != mvs.modPath {
+		return nil, fmt.Errorf("unexpected path: %q", path)
+	}
+
+	return &state.Vars{
 		Path: path,
 	}, nil
 }
