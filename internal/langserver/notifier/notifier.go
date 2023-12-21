@@ -16,9 +16,10 @@ type moduleCtxKey struct{}
 type moduleIsOpenCtxKey struct{}
 
 type Notifier struct {
-	modStore ModuleStore
-	hooks    []Hook
-	logger   *log.Logger
+	modStore  ModuleStore
+	varsStore VarsStore
+	hooks     []Hook
+	logger    *log.Logger
 }
 
 type ModuleStore interface {
@@ -26,13 +27,18 @@ type ModuleStore interface {
 	ModuleByPath(path string) (*state.Module, error)
 }
 
+type VarsStore interface {
+	VarsByPath(path string) (*state.Vars, error)
+}
+
 type Hook func(ctx context.Context, changes state.ModuleChanges) error
 
-func NewNotifier(modStore ModuleStore, hooks []Hook) *Notifier {
+func NewNotifier(modStore ModuleStore, varsStore VarsStore, hooks []Hook) *Notifier {
 	return &Notifier{
-		modStore: modStore,
-		hooks:    hooks,
-		logger:   defaultLogger,
+		modStore:  modStore,
+		varsStore: varsStore,
+		hooks:     hooks,
+		logger:    defaultLogger,
 	}
 }
 

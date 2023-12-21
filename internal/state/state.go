@@ -4,6 +4,7 @@
 package state
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/hashicorp/terraform-schema/registry"
@@ -363,3 +365,41 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
+
+type DirStores struct {
+	Modules *ModuleStore
+	Vars    *VarsStore
+}
+
+type DirStore interface {
+	Path() string
+}
+
+func NewDirStores(modules *ModuleStore, vars *VarsStore) DirStores {
+	return DirStores{
+		Modules: modules,
+		Vars:    vars,
+	}
+}
+
+func (ds *DirStores) ByPath(path string, languageID string) (DirStore, error) {
+	if languageID == ilsp.Terraform.String() {
+		return ds.Modules.ModuleByPath(path)
+	}
+	if languageID == ilsp.Tfvars.String() {
+		return ds.Vars.VarsByPath(path)
+	}
+
+	return nil, fmt.Errorf("unknown language ID: %q", languageID)
+}
+
+func (ds *DirStores) Add(path string, languageID string) error {
+	if languageID == ilsp.Terraform.String() {
+		return ds.Modules.Add(path)
+	}
+	if languageID == ilsp.Tfvars.String() {
+		return ds.Vars.Add(path)
+	}
+
+	return fmt.Errorf("unknown language ID: %q", languageID)
+}

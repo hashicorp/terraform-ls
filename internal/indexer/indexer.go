@@ -17,6 +17,7 @@ type Indexer struct {
 	logger           *log.Logger
 	fs               ReadOnlyFS
 	modStore         *state.ModuleStore
+	varsStore        *state.VarsStore
 	schemaStore      *state.ProviderSchemaStore
 	registryModStore *state.RegistryModuleStore
 	jobStore         job.JobStore
@@ -24,7 +25,7 @@ type Indexer struct {
 	registryClient   registry.Client
 }
 
-func NewIndexer(fs ReadOnlyFS, modStore *state.ModuleStore, schemaStore *state.ProviderSchemaStore,
+func NewIndexer(fs ReadOnlyFS, modStore *state.ModuleStore, varsStore *state.VarsStore, schemaStore *state.ProviderSchemaStore,
 	registryModStore *state.RegistryModuleStore, jobStore job.JobStore,
 	tfExec exec.ExecutorFactory, registryClient registry.Client) *Indexer {
 
@@ -33,6 +34,7 @@ func NewIndexer(fs ReadOnlyFS, modStore *state.ModuleStore, schemaStore *state.P
 	return &Indexer{
 		fs:               fs,
 		modStore:         modStore,
+		varsStore:        varsStore,
 		schemaStore:      schemaStore,
 		registryModStore: registryModStore,
 		jobStore:         jobStore,

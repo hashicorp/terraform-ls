@@ -43,6 +43,7 @@ type Walker struct {
 	fs        fs.ReadDirFS
 	pathStore PathStore
 	modStore  ModuleStore
+	varsStore VarsStore
 
 	logger   *log.Logger
 	walkFunc WalkFunc
@@ -65,14 +66,18 @@ type PathStore interface {
 type ModuleStore interface {
 	AddIfNotExists(dir string) error
 }
+type VarsStore interface {
+	AddIfNotExists(dir string) error
+}
 
 const tracerName = "github.com/hashicorp/terraform-ls/internal/walker"
 
-func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
+func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, varsStore VarsStore, walkFunc WalkFunc) *Walker {
 	return &Walker{
 		fs:                    fs,
 		pathStore:             pathStore,
 		modStore:              modStore,
+		varsStore:             varsStore,
 		walkFunc:              walkFunc,
 		logger:                discardLogger,
 		ignoredDirectoryNames: skipDirNames,
