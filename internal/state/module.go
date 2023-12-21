@@ -118,14 +118,8 @@ type Module struct {
 	RefOriginsErr   error
 	RefOriginsState op.OpState
 
-	VarsRefOrigins      reference.Origins
-	VarsRefOriginsErr   error
-	VarsRefOriginsState op.OpState
-
 	ParsedModuleFiles ast.ModFiles
-	ParsedVarsFiles   ast.VarsFiles
 	ModuleParsingErr  error
-	VarsParsingErr    error
 
 	Meta      ModuleMetadata
 	MetaErr   error
@@ -133,9 +127,8 @@ type Module struct {
 
 	ModuleDiagnostics      ast.SourceModDiags
 	ModuleDiagnosticsState ast.DiagnosticSourceState
-	VarsDiagnostics        ast.SourceVarsDiags
-	VarsDiagnosticsState   ast.DiagnosticSourceState
 }
+
 
 func (m *Module) Copy() *Module {
 	if m == nil {
@@ -169,19 +162,13 @@ func (m *Module) Copy() *Module {
 		RefOriginsErr:   m.RefOriginsErr,
 		RefOriginsState: m.RefOriginsState,
 
-		VarsRefOrigins:      m.VarsRefOrigins.Copy(),
-		VarsRefOriginsErr:   m.VarsRefOriginsErr,
-		VarsRefOriginsState: m.VarsRefOriginsState,
-
 		ModuleParsingErr: m.ModuleParsingErr,
-		VarsParsingErr:   m.VarsParsingErr,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
 
 		ModuleDiagnosticsState: m.ModuleDiagnosticsState.Copy(),
-		VarsDiagnosticsState:   m.VarsDiagnosticsState.Copy(),
 	}
 
 	if m.InstalledProviders != nil {
@@ -200,14 +187,6 @@ func (m *Module) Copy() *Module {
 		}
 	}
 
-	if m.ParsedVarsFiles != nil {
-		newMod.ParsedVarsFiles = make(ast.VarsFiles, len(m.ParsedVarsFiles))
-		for name, f := range m.ParsedVarsFiles {
-			// hcl.File is practically immutable once it comes out of parser
-			newMod.ParsedVarsFiles[name] = f
-		}
-	}
-
 	if m.ModuleDiagnostics != nil {
 		newMod.ModuleDiagnostics = make(ast.SourceModDiags, len(m.ModuleDiagnostics))
 
@@ -217,19 +196,6 @@ func (m *Module) Copy() *Module {
 			for name, diags := range modDiags {
 				newMod.ModuleDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
 				copy(newMod.ModuleDiagnostics[source][name], diags)
-			}
-		}
-	}
-
-	if m.VarsDiagnostics != nil {
-		newMod.VarsDiagnostics = make(ast.SourceVarsDiags, len(m.VarsDiagnostics))
-
-		for source, varsDiags := range m.VarsDiagnostics {
-			newMod.VarsDiagnostics[source] = make(ast.VarsDiags, len(varsDiags))
-
-			for name, diags := range varsDiags {
-				newMod.VarsDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
-				copy(newMod.VarsDiagnostics[source][name], diags)
 			}
 		}
 	}
@@ -248,12 +214,6 @@ func newModule(modPath string) *Module {
 		RefTargetsState:            op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
 		ModuleDiagnosticsState: ast.DiagnosticSourceState{
-			ast.HCLParsingSource:          op.OpStateUnknown,
-			ast.SchemaValidationSource:    op.OpStateUnknown,
-			ast.ReferenceValidationSource: op.OpStateUnknown,
-			ast.TerraformValidateSource:   op.OpStateUnknown,
-		},
-		VarsDiagnosticsState: ast.DiagnosticSourceState{
 			ast.HCLParsingSource:          op.OpStateUnknown,
 			ast.SchemaValidationSource:    op.OpStateUnknown,
 			ast.ReferenceValidationSource: op.OpStateUnknown,
@@ -853,28 +813,6 @@ func (s *ModuleStore) UpdateParsedModuleFiles(path string, pFiles ast.ModFiles, 
 	return nil
 }
 
-func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles, vErr error) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.ParsedVarsFiles = vFiles
-
-	mod.VarsParsingErr = vErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
 func (s *ModuleStore) SetMetaState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -985,57 +923,6 @@ func (s *ModuleStore) SetModuleDiagnosticsState(path string, source ast.Diagnost
 	return nil
 }
 
-func (s *ModuleStore) UpdateVarsDiagnostics(path string, source ast.DiagnosticSource, diags ast.VarsDiags) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetVarsDiagnosticsState(path, source, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldMod, err := moduleByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod := oldMod.Copy()
-	if mod.VarsDiagnostics == nil {
-		mod.VarsDiagnostics = make(ast.SourceVarsDiags)
-	}
-	mod.VarsDiagnostics[source] = diags
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetVarsDiagnosticsState(path string, source ast.DiagnosticSource, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-	mod.VarsDiagnosticsState[source] = state
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
 func (s *ModuleStore) SetReferenceTargetsState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -1112,49 +999,6 @@ func (s *ModuleStore) UpdateReferenceOrigins(path string, origins reference.Orig
 
 	mod.RefOrigins = origins
 	mod.RefOriginsErr = roErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetVarsReferenceOriginsState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.VarsRefOriginsState = state
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateVarsReferenceOrigins(path string, origins reference.Origins, roErr error) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetVarsReferenceOriginsState(path, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.VarsRefOrigins = origins
-	mod.VarsRefOriginsErr = roErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
