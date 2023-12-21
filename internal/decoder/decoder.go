@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/utm"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
@@ -53,8 +54,19 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 	return pathCtx, nil
 }
 
-func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
-	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables, mod.Path)
+type ModuleMetadataReader interface {
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
+}
+
+func varsPathContext(mod *state.Vars, reader ModuleMetadataReader) (*decoder.PathContext, error) {
+	// TODO!
+	// look it up on demand based on the module path
+	// future: delay it even further
+	meta, err := reader.LocalModuleMeta(mod.Path()) // only true for autoloaded tfvars files
+	if err != nil {
+		return nil, err // WIP
+	}
+	schema, err := tfschema.SchemaForVariables(meta.Variables, mod.Path())
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +78,13 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 		Files:            make(map[string]*hcl.File),
 	}
 
-	if len(mod.ParsedModuleFiles) > 0 {
-		// Only validate if this is actually a module
-		// as we may come across standalone tfvars files
-		// for which we have no context.
-		pathCtx.Validators = varsValidators
-	}
+	// TODO! check if line 65 returns early and makes this obsolete
+	// if len(mod.ParsedModuleFiles) > 0 {
+	// 	// Only validate if this is actually a module
+	// 	// as we may come across standalone tfvars files
+	// 	// for which we have no context.
+	// }
+	pathCtx.Validators = varsValidators
 
 	for _, origin := range mod.VarsRefOrigins {
 		if ast.IsVarsFilename(origin.OriginRange().Filename) {

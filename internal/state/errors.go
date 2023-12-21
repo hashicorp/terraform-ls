@@ -48,6 +48,34 @@ func IsModuleNotFound(err error) bool {
 	return ok
 }
 
+type VarsNotFoundError struct {
+	Source string
+}
+
+func (e *VarsNotFoundError) Error() string {
+	msg := "vars not found"
+	if e.Source != "" {
+		return fmt.Sprintf("%s: %s", e.Source, msg)
+	}
+
+	return msg
+}
+
+func IsVarsNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	_, ok := err.(*VarsNotFoundError)
+	return ok
+}
+
+func IsDirNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	return IsModuleNotFound(err) || IsVarsNotFound(err)
+}
+
 type jobAlreadyRunning struct {
 	ID job.ID
 }

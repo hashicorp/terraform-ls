@@ -63,7 +63,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.varsStore, modHandle.Path())
 		},
 		Type:        op.OpTypeParseVariables.String(),
 		IgnoreState: true,
@@ -82,7 +82,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.SchemaVariablesValidation(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.SchemaVariablesValidation(ctx, idx.modStore, idx.varsStore, idx.schemaStore, modHandle.Path())
 			},
 			Type:        op.OpTypeSchemaVarsValidation.String(),
 			DependsOn:   append(modIds, parseVarsId),
@@ -96,7 +96,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.DecodeVarsReferences(ctx, idx.modStore, idx.varsStore, idx.schemaStore, modHandle.Path())
 		},
 		Type:      op.OpTypeDecodeVarsReferences.String(),
 		DependsOn: job.IDs{parseVarsId},

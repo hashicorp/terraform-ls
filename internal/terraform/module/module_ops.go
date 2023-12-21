@@ -448,8 +448,8 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 
 // ParseVariables parses the variables configuration,
 // i.e. turns bytes of `*.tfvars` files into AST ([*hcl.File]).
-func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func ParseVariables(ctx context.Context, fs ReadOnlyFS, varsStore *state.VarsStore, modPath string) error {
+	vars, err := varsStore.VarsByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -457,7 +457,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	// TODO: Avoid parsing if the content matches existing AST
 
 	// Avoid parsing if it is already in progress or already known
-	if mod.VarsDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if vars.VarsDiagnosticsState[ast.HCLParsingSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
@@ -465,9 +465,9 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	var diags ast.VarsDiags
 	rpcContext := lsctx.DocumentContext(ctx)
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Tfvars.String() {
+	if vars.VarsDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Tfvars.String() {
 		// the file has already been parsed, so only examine this file and not the whole module
-		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		err = varsStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
 			return err
 		}
@@ -482,11 +482,11 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 			return err
 		}
 
-		existingFiles := mod.ParsedVarsFiles.Copy()
+		existingFiles := vars.ParsedVarsFiles.Copy()
 		existingFiles[ast.VarsFilename(fileName)] = f
 		files = existingFiles
 
-		existingDiags, ok := mod.VarsDiagnostics[ast.HCLParsingSource]
+		existingDiags, ok := vars.VarsDiagnostics[ast.HCLParsingSource]
 		if !ok {
 			existingDiags = make(ast.VarsDiags)
 		} else {
@@ -496,7 +496,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		diags = existingDiags
 	} else {
 		// this is the first time file is opened so parse the whole module
-		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		err = varsStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
 			return err
 		}
@@ -508,12 +508,12 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		return err
 	}
 
-	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+	sErr := varsStore.UpdateParsedVarsFiles(modPath, files, err)
 	if sErr != nil {
 		return sErr
 	}
 
-	sErr = modStore.UpdateVarsDiagnostics(modPath, ast.HCLParsingSource, diags)
+	sErr = varsStore.UpdateVarsDiagnostics(modPath, ast.HCLParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -756,8 +756,8 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 //
 // This is useful in hovering over those variable names,
 // go-to-definition and go-to-references.
-func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func DecodeVarsReferences(ctx context.Context, moduleStore *state.ModuleStore, varsStore *state.VarsStore, schemaReader state.SchemaReader, modPath string) error {
+	vars, err := varsStore.VarsByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -765,17 +765,18 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	// TODO: Avoid collection if upstream (parsing) job reported no changes
 
 	// Avoid collection if it is already in progress or already done
-	if mod.VarsRefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if vars.VarsRefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
+	err = varsStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
+		ModuleReader: moduleStore,
+		VarsReader:   varsStore,
 		SchemaReader: schemaReader,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
@@ -789,7 +790,7 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	}
 
 	origins, rErr := varsDecoder.CollectReferenceOrigins()
-	sErr := modStore.UpdateVarsReferenceOrigins(modPath, origins, rErr)
+	sErr := varsStore.UpdateVarsReferenceOrigins(modPath, origins, rErr)
 	if sErr != nil {
 		return sErr
 	}
@@ -873,24 +874,25 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, sc
 //
 // It relies on previously parsed AST (via [ParseVariables])
 // and schema, as provided via [LoadModuleMetadata]).
-func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func SchemaVariablesValidation(ctx context.Context, moduleStore *state.ModuleStore, varsStore *state.VarsStore, schemaReader state.SchemaReader, modPath string) error {
+	vars, err := varsStore.VarsByPath(modPath)
 	if err != nil {
 		return err
 	}
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.VarsDiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if vars.VarsDiagnosticsState[ast.SchemaValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
+	err = varsStore.SetVarsDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
+		ModuleReader: moduleStore,
+		VarsReader:   varsStore,
 		SchemaReader: schemaReader,
 	})
 
@@ -900,7 +902,11 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		Path:       modPath,
 		LanguageID: ilsp.Tfvars.String(),
 	})
-	if err != nil {
+	if state.IsModuleNotFound(err) {
+		// We weren't able to get a path decoder for Tfvars inside that path
+		// due to missing module metadata, so we skip validation
+		return nil
+	} else if err != nil {
 		return err
 	}
 
@@ -912,13 +918,13 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		var fileDiags hcl.Diagnostics
 		fileDiags, rErr = moduleDecoder.ValidateFile(ctx, filename)
 
-		varsDiags, ok := mod.VarsDiagnostics[ast.SchemaValidationSource]
+		varsDiags, ok := vars.VarsDiagnostics[ast.SchemaValidationSource]
 		if !ok {
 			varsDiags = make(ast.VarsDiags)
 		}
 		varsDiags[ast.VarsFilename(filename)] = fileDiags
 
-		sErr := modStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, varsDiags)
+		sErr := varsStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, varsDiags)
 		if sErr != nil {
 			return sErr
 		}
@@ -927,7 +933,7 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		var diags lang.DiagnosticsMap
 		diags, rErr = moduleDecoder.Validate(ctx)
 
-		sErr := modStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, ast.VarsDiagsFromMap(diags))
+		sErr := varsStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, ast.VarsDiagsFromMap(diags))
 		if sErr != nil {
 			return sErr
 		}
