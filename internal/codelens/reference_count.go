@@ -57,13 +57,15 @@ func ReferenceCount(showReferencesCmdId string) lang.CodeLensFunc {
 					defRange = refTarget.DefRangePtr
 				}
 
-				paths := pathReader.Paths(ctx)
-				for _, p := range paths {
-					pathCtx, err := pathReader.PathContext(p)
-					if err != nil {
-						continue
+				for _, languageID := range pathReader.LanguageIDs() {
+					paths := pathReader.Paths(ctx, languageID)
+					for _, p := range paths {
+						pathCtx, err := pathReader.PathContext(p)
+						if err != nil {
+							continue
+						}
+						originCount += len(pathCtx.ReferenceOrigins.Match(p, refTarget, path))
 					}
-					originCount += len(pathCtx.ReferenceOrigins.Match(p, refTarget, path))
 				}
 			}
 
