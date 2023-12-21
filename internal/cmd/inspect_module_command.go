@@ -102,11 +102,11 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 	ctx := context.Background()
 
-	indexer := indexer.NewIndexer(fs, ss.Modules, ss.ProviderSchemas, ss.RegistryModules, ss.JobStore,
+	indexer := indexer.NewIndexer(fs, ss.Modules, ss.Vars, ss.ProviderSchemas, ss.RegistryModules, ss.JobStore,
 		exec.NewExecutor, registry.NewClient())
 
 	pa := state.NewPathAwaiter(ss.WalkerPaths, false)
-	w := walker.NewWalker(fs, pa, ss.Modules, indexer.WalkedModule)
+	w := walker.NewWalker(fs, pa, ss.Modules, ss.Vars, indexer.WalkedModule)
 	w.Collector = walker.NewWalkerCollector()
 	w.SetLogger(c.logger)
 	err = ss.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{dir})
@@ -159,9 +159,10 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 			multierror.Append(errs, mod.ModuleParsingErr)
 		}
 
-		if mod.VarsParsingErr != nil {
-			multierror.Append(errs, mod.VarsParsingErr)
-		}
+		// TODO!
+		// if mod.VarsParsingErr != nil {
+		// 	multierror.Append(errs, mod.VarsParsingErr)
+		// }
 
 		errs.ErrorFormat = formatErrors
 
