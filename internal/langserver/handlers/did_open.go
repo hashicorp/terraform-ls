@@ -37,14 +37,14 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		return err
 	}
 
-	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
+	dir, err := svc.dirStores.ByPath(dh.Dir.Path(), params.TextDocument.LanguageID)
 	if err != nil {
-		if state.IsModuleNotFound(err) {
-			err = svc.modStore.Add(dh.Dir.Path())
+		if state.IsDirNotFound(err) {
+			err = svc.dirStores.Add(dh.Dir.Path(), params.TextDocument.LanguageID)
 			if err != nil {
 				return err
 			}
-			mod, err = svc.modStore.ModuleByPath(dh.Dir.Path())
+			dir, err = svc.dirStores.ByPath(dh.Dir.Path(), params.TextDocument.LanguageID)
 			if err != nil {
 				return err
 			}
@@ -53,12 +53,12 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		}
 	}
 
-	svc.logger.Printf("opened module: %s", mod.Path)
+	svc.logger.Printf("opened dir: %s", dir.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	modHandle := document.DirHandleFromPath(mod.Path)
+	modHandle := document.DirHandleFromPath(dir.Path())
 	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
 	if err != nil {
 		return err

@@ -129,7 +129,6 @@ type Module struct {
 	ModuleDiagnosticsState ast.DiagnosticSourceState
 }
 
-
 func (m *Module) Copy() *Module {
 	if m == nil {
 		return nil

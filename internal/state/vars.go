@@ -12,7 +12,7 @@ import (
 )
 
 type Vars struct {
-	path string
+	Path string
 
 	VarsRefOrigins      reference.Origins
 	VarsRefOriginsErr   error
@@ -25,16 +25,12 @@ type Vars struct {
 	VarsDiagnosticsState ast.DiagnosticSourceState
 }
 
-func (v *Vars) Path() string {
-	return v.path
-}
-
 func (v *Vars) Copy() *Vars {
 	if v == nil {
 		return nil
 	}
 	newVar := &Vars{
-		path: v.path,
+		Path: v.Path,
 
 		VarsRefOrigins:      v.VarsRefOrigins.Copy(),
 		VarsRefOriginsErr:   v.VarsRefOriginsErr,
@@ -71,7 +67,7 @@ func (v *Vars) Copy() *Vars {
 
 func newVars(modPath string) *Vars {
 	return &Vars{
-		path: modPath,
+		Path: modPath,
 		VarsDiagnosticsState: ast.DiagnosticSourceState{
 			ast.HCLParsingSource:          op.OpStateUnknown,
 			ast.SchemaValidationSource:    op.OpStateUnknown,

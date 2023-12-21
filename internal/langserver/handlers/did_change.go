@@ -54,7 +54,7 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 	}
 
 	// check existence
-	_, err = svc.modStore.ModuleByPath(dh.Dir.Path())
+	_, err = svc.dirStores.ByPath(dh.Dir.Path(), doc.LanguageID)
 	if err != nil {
 		return err
 	}
