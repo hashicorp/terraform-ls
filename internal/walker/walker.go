@@ -218,21 +218,40 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			continue
 		}
 
-		if !dirIndexed && ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+		// TODO!
+		if !dirIndexed {
 			dirIndexed = true
-			w.logger.Printf("found module %s", dir)
+			if ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+				w.logger.Printf("found module %s", dir)
 
-			err := w.modStore.AddIfNotExists(dir.Path())
-			if err != nil {
-				return err
-			}
+				err := w.modStore.AddIfNotExists(dir.Path())
+				if err != nil {
+					return err
+				}
 
-			ids, err := w.walkFunc(ctx, dir)
-			if err != nil {
-				w.collectError(fmt.Errorf("walkFunc: %w", err))
+				ids, err := w.walkFunc(ctx, dir)
+				if err != nil {
+					w.collectError(fmt.Errorf("walkFunc: %w", err))
+				}
+				w.collectJobIds(ids)
+				continue
 			}
-			w.collectJobIds(ids)
-			continue
+			// TODO check for ignored files?
+			if ast.IsVarsFilename(dirEntry.Name()) {
+				w.logger.Printf("found vars %s", dir)
+
+				err := w.varsStore.AddIfNotExists(dir.Path())
+				if err != nil {
+					return err
+				}
+
+				ids, err := w.walkFunc(ctx, dir)
+				if err != nil {
+					w.collectError(fmt.Errorf("walkFunc: %w", err))
+				}
+				w.collectJobIds(ids)
+				continue
+			}
 		}
 
 		if dirEntry.IsDir() {
