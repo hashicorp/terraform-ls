@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mitchellh/cli"
+	"github.com/hashicorp/cli"
 )
 
 type VersionOutput struct {
