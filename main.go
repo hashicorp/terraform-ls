@@ -6,7 +6,7 @@ package main
 import (
 	"os"
 
-	"github.com/mitchellh/cli"
+	"github.com/hashicorp/cli"
 
 	"github.com/hashicorp/terraform-ls/internal/cmd"
 )

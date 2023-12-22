@@ -15,6 +15,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/hashicorp/cli"
 	"github.com/hashicorp/go-multierror"
 	ictx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
@@ -26,7 +27,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/walker"
-	"github.com/mitchellh/cli"
 )
 
 type InspectModuleCommand struct {
