@@ -886,6 +886,7 @@ var testModuleSchemaOutput = `{
 						"description_kind": "markdown",
 						"attributes": {
 							"deprecated_attr": {
+								"type": "string",
 								"deprecated": true
 							}
 						}
