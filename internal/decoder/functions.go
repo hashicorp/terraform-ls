@@ -7,31 +7,23 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/terraform-ls/internal/state"
+	tfmodule "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func coreFunctions(mod *state.Module) map[string]schema.FunctionSignature {
-	if mod.TerraformVersion != nil {
-		s, err := tfschema.FunctionsForVersion(mod.TerraformVersion)
-		if err == nil {
-			return s
-		}
-		if mod.TerraformVersion.LessThan(tfschema.OldestAvailableVersion) {
-			return mustFunctionsForVersion(tfschema.OldestAvailableVersion)
-		}
+func functionsForModule(mod *state.Module, schemaReader state.SchemaReader) (map[string]schema.FunctionSignature, error) {
+	resolvedVersion := tfschema.ResolveVersion(mod.TerraformVersion, mod.Meta.CoreRequirements)
+	sm := tfschema.NewFunctionsMerger(mustFunctionsForVersion(resolvedVersion))
+	sm.SetSchemaReader(schemaReader)
+	sm.SetTerraformVersion(resolvedVersion)
 
-		return mustFunctionsForVersion(tfschema.LatestAvailableVersion)
+	meta := &tfmodule.Meta{
+		Path:                 mod.Path,
+		ProviderRequirements: mod.Meta.ProviderRequirements,
+		ProviderReferences:   mod.Meta.ProviderReferences,
 	}
 
-	s, err := tfschema.FunctionsForConstraint(mod.Meta.CoreRequirements)
-	if err == nil {
-		return s
-	}
-	if mod.Meta.CoreRequirements.Check(tfschema.OldestAvailableVersion) {
-		return mustFunctionsForVersion(tfschema.OldestAvailableVersion)
-	}
-
-	return mustFunctionsForVersion(tfschema.LatestAvailableVersion)
+	return sm.FunctionsForModule(meta)
 }
 
 func mustFunctionsForVersion(v *version.Version) map[string]schema.FunctionSignature {
