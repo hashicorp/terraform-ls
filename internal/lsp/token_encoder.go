@@ -139,9 +139,9 @@ func (te *TokenEncoder) resolveTokenType(token lang.SemanticToken) (semtok.Token
 	case lang.TokenKeyword:
 		return te.firstSupportedTokenType(
 			semtok.TokenType(lang.TokenKeyword), semtok.TokenTypeVariable)
-	case lang.TokenTraversalStep:
+	case lang.TokenReferenceStep:
 		return te.firstSupportedTokenType(
-			semtok.TokenType(lang.TokenTraversalStep), semtok.TokenTypeVariable)
+			semtok.TokenType(lang.TokenReferenceStep), semtok.TokenTypeVariable)
 	case lang.TokenTypeComplex:
 		return te.firstSupportedTokenType(
 			semtok.TokenType(lang.TokenTypeComplex), semtok.TokenTypeFunction)
