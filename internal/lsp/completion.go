@@ -51,7 +51,7 @@ func toCompletionItem(candidate lang.Candidate, caps lsp.CompletionClientCapabil
 		kind = lsp.EnumCompletion
 	case lang.MapCandidateKind, lang.ObjectCandidateKind:
 		kind = lsp.StructCompletion
-	case lang.TraversalCandidateKind:
+	case lang.ReferenceCandidateKind:
 		kind = lsp.VariableCompletion
 	}
 

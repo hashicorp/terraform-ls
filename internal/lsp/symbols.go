@@ -100,7 +100,7 @@ func exprSymbolKind(symbolKind lang.SymbolExprKind, supported []lsp.SymbolKind) 
 		case cty.Number:
 			return supportedSymbolKind(supported, lsp.Number)
 		}
-	case lang.TraversalExprKind:
+	case lang.ReferenceExprKind:
 		return supportedSymbolKind(supported, lsp.Constant)
 	case lang.TupleConsExprKind:
 		return supportedSymbolKind(supported, lsp.Array)
