@@ -173,3 +173,4 @@ jobs:
       - uses: geekyeggo/delete-artifact@9d15d164b1dcd538ff1b1a2984bc2c0240986c3b # v4.0.0
         with:
           name: provider-schema-data
+          token: ${{ github.token }}
