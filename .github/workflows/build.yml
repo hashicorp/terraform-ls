@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  actions: write
+
 env:
   PKG_NAME: "terraform-ls"
 
