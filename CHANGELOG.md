@@ -19,6 +19,7 @@ INTERNAL:
 * build(deps): Bump github.com/vektra/mockery/v2 from 2.38.0 to 2.40.1 ([#1542](https://github.com/hashicorp/terraform-ls/pull/1542), [#1544](https://github.com/hashicorp/terraform-ls/pull/1544), [#1576](https://github.com/hashicorp/terraform-ls/pull/1576), [#1581](https://github.com/hashicorp/terraform-ls/pull/1581))
 * build(deps): Bump workflows to latest trusted versions ([#1520](https://github.com/hashicorp/terraform-ls/pull/1520), [#1571](https://github.com/hashicorp/terraform-ls/pull/1571), [#1579](https://github.com/hashicorp/terraform-ls/pull/1579))
 * Rename `hcl-typeCapsule` to `hcl-typeComplex` ([#1529](https://github.com/hashicorp/terraform-ls/pull/1529))
+* Rename `hcl-traversalStep` to `hcl-referenceStep` ([#1574](https://github.com/hashicorp/terraform-ls/pull/1574))
 
 ## 0.32.4 (12 December 2023)
 
