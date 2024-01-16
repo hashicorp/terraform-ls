@@ -1,3 +1,26 @@
+## 0.32.5 (16 January 2024)
+
+ENHANCEMENTS:
+
+* Alert on `wsl.localhost` Path ([#1522](https://github.com/hashicorp/terraform-ls/pull/1522))
+* Enable `for_each` for `import` blocks (Terraform 1.7) ([terraform-schema#315](https://github.com/hashicorp/terraform-schema/pull/315))
+* Add `removed` block (Terraform 1.7)  ([terraform-schema#313](https://github.com/hashicorp/terraform-schema/pull/313))
+* Deprecate `use_legacy_workflow` in S3 Backend (Terraform 1.7) ([terraform-schema#314](https://github.com/hashicorp/terraform-schema/pull/314))
+
+INTERNAL:
+
+* docs: update syntax-highlighting.md ([#1528](https://github.com/hashicorp/terraform-ls/pull/1528))
+* go: bump version to 1.21.5 ([#1521](https://github.com/hashicorp/terraform-ls/pull/1521))
+* ci: Automate releasing via bob ([#1167](https://github.com/hashicorp/terraform-ls/pull/1167))
+* build(deps): Bump golang.org/x/tools from 0.16.0 to 0.17.0 ([#1519](https://github.com/hashicorp/terraform-ls/pull/1519), [#1578](https://github.com/hashicorp/terraform-ls/pull/1578))
+* build(deps): Bump golang.org/x/crypto from 0.16.0 to 0.17.0 ([#1524](https://github.com/hashicorp/terraform-ls/pull/1524))
+* build(deps): Bump github.com/hashicorp/terraform-json from 0.18.0 to 0.20.0 ([#1541](https://github.com/hashicorp/terraform-ls/pull/1541), [#1547](https://github.com/hashicorp/terraform-ls/pull/1547))
+* build(deps): Bump github.com/hashicorp/terraform-exec from 0.19.0 to 0.20.0 ([#1543](https://github.com/hashicorp/terraform-ls/pull/1543))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.38.0 to 2.40.1 ([#1542](https://github.com/hashicorp/terraform-ls/pull/1542), [#1544](https://github.com/hashicorp/terraform-ls/pull/1544), [#1576](https://github.com/hashicorp/terraform-ls/pull/1576), [#1581](https://github.com/hashicorp/terraform-ls/pull/1581))
+* build(deps): Bump workflows to latest trusted versions ([#1520](https://github.com/hashicorp/terraform-ls/pull/1520), [#1571](https://github.com/hashicorp/terraform-ls/pull/1571), [#1579](https://github.com/hashicorp/terraform-ls/pull/1579))
+* Rename `hcl-typeCapsule` to `hcl-typeComplex` ([#1529](https://github.com/hashicorp/terraform-ls/pull/1529))
+* Rename `hcl-traversalStep` to `hcl-referenceStep` ([#1574](https://github.com/hashicorp/terraform-ls/pull/1574))
+
 ## 0.32.4 (12 December 2023)
 
 ENHANCEMENTS:
