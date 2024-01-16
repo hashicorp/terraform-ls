@@ -7,12 +7,9 @@ ENHANCEMENTS:
 * Add `removed` block (Terraform 1.7)  ([terraform-schema#313](https://github.com/hashicorp/terraform-schema/pull/313))
 * Deprecate `use_legacy_workflow` in S3 Backend (Terraform 1.7) ([terraform-schema#314](https://github.com/hashicorp/terraform-schema/pull/314))
 
-BUG FIXES:
-
-* docs: update syntax-highlighting.md ([#1528](https://github.com/hashicorp/terraform-ls/pull/1528))
-
 INTERNAL:
 
+* docs: update syntax-highlighting.md ([#1528](https://github.com/hashicorp/terraform-ls/pull/1528))
 * go: bump version to 1.21.5 ([#1521](https://github.com/hashicorp/terraform-ls/pull/1521))
 * ci: Automate releasing via bob ([#1167](https://github.com/hashicorp/terraform-ls/pull/1167))
 * build(deps): Bump golang.org/x/tools from 0.16.0 to 0.17.0 ([#1519](https://github.com/hashicorp/terraform-ls/pull/1519), [#1578](https://github.com/hashicorp/terraform-ls/pull/1578))
@@ -21,9 +18,7 @@ INTERNAL:
 * build(deps): Bump github.com/hashicorp/terraform-exec from 0.19.0 to 0.20.0 ([#1543](https://github.com/hashicorp/terraform-ls/pull/1543))
 * build(deps): Bump github.com/vektra/mockery/v2 from 2.38.0 to 2.40.1 ([#1542](https://github.com/hashicorp/terraform-ls/pull/1542), [#1544](https://github.com/hashicorp/terraform-ls/pull/1544), [#1576](https://github.com/hashicorp/terraform-ls/pull/1576), [#1581](https://github.com/hashicorp/terraform-ls/pull/1581))
 * build(deps): Bump workflows to latest trusted versions ([#1520](https://github.com/hashicorp/terraform-ls/pull/1520), [#1571](https://github.com/hashicorp/terraform-ls/pull/1571), [#1579](https://github.com/hashicorp/terraform-ls/pull/1579))
-* Rename `TokenTypeCapsule` to `TokenTypeComplex` ([#1529](https://github.com/hashicorp/terraform-ls/pull/1529))
-* Rename `CandidatesAtPos` to `CompletionAtPos` ([#1548](https://github.com/hashicorp/terraform-ls/pull/1548))
-* Rename `*Traversal*` to `*Reference*` ([#1574](https://github.com/hashicorp/terraform-ls/pull/1574))
+* Rename `hcl-typeCapsule` to `hcl-typeComplex` ([#1529](https://github.com/hashicorp/terraform-ls/pull/1529))
 
 ## 0.32.4 (12 December 2023)
 
