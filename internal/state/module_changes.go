@@ -48,9 +48,9 @@ const maxTimespan = 1 * time.Second
 func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) error {
 	var modHandle document.DirHandle
 	if oldMod != nil {
-		modHandle = document.DirHandleFromPath(oldMod.Path)
+		modHandle = document.DirHandleFromPath(oldMod.Path())
 	} else {
-		modHandle = document.DirHandleFromPath(newMod.Path)
+		modHandle = document.DirHandleFromPath(newMod.Path())
 	}
 	obj, err := txn.First(moduleChangesTableName, "id", modHandle)
 	if err != nil {

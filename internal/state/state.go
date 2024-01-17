@@ -123,11 +123,12 @@ var dbSchema = &memdb.DBSchema{
 		},
 		moduleTableName: {
 			Name: moduleTableName,
+
 			Indexes: map[string]*memdb.IndexSchema{
 				"id": {
 					Name:    "id",
 					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
 				},
 			},
 		},
@@ -137,7 +138,7 @@ var dbSchema = &memdb.DBSchema{
 				"id": {
 					Name:    "id",
 					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
 				},
 			},
 		},

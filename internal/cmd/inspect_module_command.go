@@ -177,7 +177,7 @@ func (c *InspectModuleCommand) inspect(rootPath string) error {
 
 		c.Ui.Output(fmt.Sprintf(` - %s
    - %s
-   - %s`, mod.Path, errs, subModules))
+   - %s`, mod.Path(), errs, subModules))
 	}
 	c.Ui.Output("")
 

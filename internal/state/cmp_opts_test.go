@@ -13,6 +13,8 @@ import (
 )
 
 var cmpOpts = cmp.Options{
+	cmp.AllowUnexported(Module{}),
+	cmp.AllowUnexported(Vars{}),
 	cmp.AllowUnexported(datadir.ModuleManifest{}),
 	cmp.AllowUnexported(hclsyntax.Body{}),
 	cmp.Comparer(func(x, y version.Constraint) bool {

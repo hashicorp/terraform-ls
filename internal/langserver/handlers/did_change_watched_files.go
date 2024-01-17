@@ -34,7 +34,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			if change.Type == protocol.Deleted {
 				// This is unlikely to happen unless the user manually removed files
 				// See https://github.com/hashicorp/terraform/issues/30005
-				err := svc.modStore.UpdateModManifest(modHandle.Path(), nil, nil)
+				err := svc.dirStores.Modules.UpdateModManifest(modHandle.Path(), nil, nil)
 				if err != nil {
 					svc.logger.Printf("failed to remove module manifest for %q: %s", modHandle, err)
 				}
@@ -72,7 +72,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			if change.Type == protocol.Deleted {
 				// This is unlikely to happen unless the user manually removed files
 				// See https://github.com/hashicorp/terraform/issues/30005
-				err := svc.modStore.UpdateModManifest(modHandle.Path(), nil, nil)
+				err := svc.dirStores.Modules.UpdateModManifest(modHandle.Path(), nil, nil)
 				if err != nil {
 					svc.logger.Printf("failed to remove module manifest for %q: %s", modHandle, err)
 				}
@@ -103,7 +103,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 		if change.Type == protocol.Deleted {
 			// We don't know whether file or dir is being deleted
 			// 1st we just blindly try to look it up as a directory
-			_, err = svc.modStore.ModuleByPath(rawPath)
+			_, err = svc.dirStores.Modules.ModuleByPath(rawPath)
 			if err == nil {
 				svc.removeIndexedModule(ctx, rawURI)
 				continue
@@ -111,7 +111,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 
 			// 2nd we try again assuming it is a file
 			parentDir := filepath.Dir(rawPath)
-			_, err = svc.modStore.ModuleByPath(parentDir)
+			_, err = svc.dirStores.Modules.ModuleByPath(parentDir)
 			if err != nil {
 				svc.logger.Printf("error finding module (%q deleted): %s", parentDir, err)
 				continue
@@ -169,7 +169,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 				continue
 			}
 
-			_, err = svc.modStore.ModuleByPath(ph.DirHandle.Path())
+			_, err = svc.dirStores.Modules.ModuleByPath(ph.DirHandle.Path())
 			if err != nil {
 				svc.logger.Printf("error finding module (%q changed): %s", rawURI, err)
 				continue
@@ -225,7 +225,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 }
 
 func (svc *service) indexModuleIfNotExists(ctx context.Context, modHandle document.DirHandle) error {
-	_, err := svc.modStore.ModuleByPath(modHandle.Path())
+	_, err := svc.dirStores.Modules.ModuleByPath(modHandle.Path())
 	if err != nil {
 		if state.IsModuleNotFound(err) {
 			err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)

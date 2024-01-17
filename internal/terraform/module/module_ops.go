@@ -100,7 +100,7 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	}
 	defer modStore.SetTerraformVersionState(modPath, op.OpStateLoaded)
 
-	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path())
 	if err != nil {
 		sErr := modStore.UpdateTerraformAndProviderVersions(modPath, nil, nil, err)
 		if err != nil {
@@ -622,7 +622,7 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 	}
 
 	var mErr error
-	meta, diags := earlydecoder.LoadModule(mod.Path, mod.ParsedModuleFiles.AsMap())
+	meta, diags := earlydecoder.LoadModule(mod.Path(), mod.ParsedModuleFiles.AsMap())
 	if len(diags) > 0 {
 		mErr = diags
 	}
@@ -998,7 +998,7 @@ func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath
 		return err
 	}
 
-	tfExec, err := TerraformExecutorForModule(ctx, mod.Path)
+	tfExec, err := TerraformExecutorForModule(ctx, mod.Path())
 	if err != nil {
 		return err
 	}

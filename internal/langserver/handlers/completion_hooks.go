@@ -12,7 +12,7 @@ import (
 
 func (s *service) AppendCompletionHooks(decoderContext decoder.DecoderContext) {
 	h := hooks.Hooks{
-		ModStore:       s.modStore,
+		ModStore:       s.dirStores.Modules,
 		RegistryClient: s.registryClient,
 		Logger:         s.logger,
 	}

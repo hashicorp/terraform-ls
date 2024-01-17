@@ -62,11 +62,11 @@ func varsPathContext(mod *state.Vars, reader ModuleMetadataReader) (*decoder.Pat
 	// TODO!
 	// look it up on demand based on the module path
 	// future: delay it even further
-	meta, err := reader.LocalModuleMeta(mod.Path) // only true for autoloaded tfvars files
+	meta, err := reader.LocalModuleMeta(mod.Path()) // only true for autoloaded tfvars files
 	if err != nil {
 		return nil, err // WIP
 	}
-	schema, err := tfschema.SchemaForVariables(meta.Variables, mod.Path)
+	schema, err := tfschema.SchemaForVariables(meta.Variables, mod.Path())
 	if err != nil {
 		return nil, err
 	}

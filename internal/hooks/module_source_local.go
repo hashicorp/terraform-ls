@@ -26,17 +26,17 @@ func (h *Hooks) LocalModuleSources(ctx context.Context, value cty.Value) ([]deco
 
 	for _, mod := range modules {
 		dirName := fmt.Sprintf("%c%s%c", os.PathSeparator, datadir.DataDirName, os.PathSeparator)
-		if strings.Contains(mod.Path, dirName) {
+		if strings.Contains(mod.Path(), dirName) {
 			// Skip installed module copies in cache directories
 			continue
 		}
-		if mod.Path == path.Path {
+		if mod.Path() == path.Path {
 			// Exclude the module we're providing completion in
 			// to avoid cyclic references
 			continue
 		}
 
-		relPath, err := filepath.Rel(path.Path, mod.Path)
+		relPath, err := filepath.Rel(path.Path, mod.Path())
 		if err != nil {
 			continue
 		}

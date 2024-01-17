@@ -19,7 +19,7 @@ func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modRead
 	sm.SetModuleReader(modReader)
 
 	meta := &tfmodule.Meta{
-		Path:                 mod.Path,
+		Path:                 mod.Path(),
 		CoreRequirements:     mod.Meta.CoreRequirements,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		ProviderReferences:   mod.Meta.ProviderReferences,

@@ -12,7 +12,7 @@ import (
 )
 
 type Vars struct {
-	Path string
+	path string
 
 	VarsRefOrigins      reference.Origins
 	VarsRefOriginsErr   error
@@ -25,12 +25,16 @@ type Vars struct {
 	VarsDiagnosticsState ast.DiagnosticSourceState
 }
 
+func (v *Vars) Path() string {
+	return v.path
+}
+
 func (v *Vars) Copy() *Vars {
 	if v == nil {
 		return nil
 	}
 	newVar := &Vars{
-		Path: v.Path,
+		path: v.path,
 
 		VarsRefOrigins:      v.VarsRefOrigins.Copy(),
 		VarsRefOriginsErr:   v.VarsRefOriginsErr,
@@ -67,13 +71,20 @@ func (v *Vars) Copy() *Vars {
 
 func newVars(modPath string) *Vars {
 	return &Vars{
-		Path: modPath,
+		path: modPath,
 		VarsDiagnosticsState: ast.DiagnosticSourceState{
 			ast.HCLParsingSource:          op.OpStateUnknown,
 			ast.SchemaValidationSource:    op.OpStateUnknown,
 			ast.ReferenceValidationSource: op.OpStateUnknown,
 			ast.TerraformValidateSource:   op.OpStateUnknown,
 		},
+	}
+}
+
+// NewVarsTest is a test helper to create a new Vars object
+func NewVarsTest(path string) *Vars {
+	return &Vars{
+		path: path,
 	}
 }
 

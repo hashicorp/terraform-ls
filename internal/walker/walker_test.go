@@ -40,7 +40,7 @@ func TestWalker_basic(t *testing.T) {
 		return job.IDs{}, nil
 	}
 
-	w := NewWalker(fs, pa, ss.Modules, walkFunc)
+	w := NewWalker(fs, pa, ss.Modules, ss.Vars, walkFunc)
 	w.Collector = NewWalkerCollector()
 	w.SetLogger(testLogger())
 
@@ -444,7 +444,7 @@ func modulePaths(modules []*state.Module) []string {
 	paths := make([]string, len(modules))
 
 	for i, mod := range modules {
-		paths[i] = mod.Path
+		paths[i] = mod.Path()
 	}
 
 	return paths

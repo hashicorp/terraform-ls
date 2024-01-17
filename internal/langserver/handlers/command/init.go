@@ -45,7 +45,7 @@ func (h *CmdHandler) TerraformInitHandler(ctx context.Context, args cmd.CommandA
 		}
 	}
 
-	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path)
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path())
 	if err != nil {
 		return nil, errors.EnrichTfExecError(err)
 	}

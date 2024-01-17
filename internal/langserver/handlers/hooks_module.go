@@ -186,7 +186,7 @@ func callRefreshClientCommand(clientRequester session.ClientCaller, commandId st
 
 			_, err = clientRequester.Callback(ctx, commandId, nil)
 			if err != nil {
-				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path, err)
+				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path(), err)
 			}
 		}
 
@@ -225,7 +225,7 @@ func refreshSemanticTokens(clientRequester session.ClientCaller) notifier.Hook {
 
 			_, err = clientRequester.Callback(ctx, "workspace/semanticTokens/refresh", nil)
 			if err != nil {
-				return fmt.Errorf("Error refreshing %s: %s", mod.Path, err)
+				return fmt.Errorf("Error refreshing %s: %s", mod.Path(), err)
 			}
 		}
 
