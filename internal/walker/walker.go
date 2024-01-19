@@ -236,8 +236,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 				w.collectJobIds(ids)
 				continue
 			}
-			// TODO check for ignored files?
-			if ast.IsVarsFilename(dirEntry.Name()) {
+			if ast.IsVarsFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
 				w.logger.Printf("found vars %s", dir)
 
 				err := w.varsStore.AddIfNotExists(dir.Path())

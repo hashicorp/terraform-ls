@@ -52,7 +52,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			}
 
 			modHandle := document.DirHandleFromURI(modUri)
-			err := svc.indexModuleIfNotExists(ctx, modHandle)
+			err := svc.indexDirIfNotExists(ctx, modHandle)
 			if err != nil {
 				svc.logger.Printf("failed to index module %q: %s", modHandle, err)
 				continue
@@ -79,7 +79,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 				continue
 			}
 
-			err := svc.indexModuleIfNotExists(ctx, modHandle)
+			err := svc.indexDirIfNotExists(ctx, modHandle)
 			if err != nil {
 				svc.logger.Printf("failed to index module %q: %s", modHandle, err)
 				continue
@@ -160,7 +160,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 				continue
 			}
 
-			ph, err := modHandleFromRawOsPath(ctx, rawPath)
+			ph, err := handleFromRawOsPath(ctx, rawPath)
 			if err != nil {
 				if err == ErrorSkip {
 					continue
@@ -185,7 +185,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 		}
 
 		if change.Type == protocol.Created {
-			ph, err := modHandleFromRawOsPath(ctx, rawPath)
+			ph, err := handleFromRawOsPath(ctx, rawPath)
 			if err != nil {
 				if err == ErrorSkip {
 					continue
@@ -224,26 +224,26 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 	return nil
 }
 
-func (svc *service) indexModuleIfNotExists(ctx context.Context, modHandle document.DirHandle) error {
-	_, err := svc.dirStores.Modules.ModuleByPath(modHandle.Path())
+func (svc *service) indexDirIfNotExists(ctx context.Context, handle document.DirHandle) error {
+	_, err := svc.dirStores.ByPath(handle.Path(), "terraform")
 	if err != nil {
 		if state.IsModuleNotFound(err) {
-			err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
+			err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, handle)
 			if err != nil {
-				return fmt.Errorf("failed to walk module %q: %w", modHandle, err)
+				return fmt.Errorf("failed to walk module %q: %w", handle, err)
 			}
-			err = svc.stateStore.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{modHandle})
+			err = svc.stateStore.WalkerPaths.WaitForDirs(ctx, []document.DirHandle{handle})
 			if err != nil {
-				return fmt.Errorf("failed to wait for module walk %q: %w", modHandle, err)
+				return fmt.Errorf("failed to wait for module walk %q: %w", handle, err)
 			}
 		} else {
-			return fmt.Errorf("failed to find module %q: %w", modHandle, err)
+			return fmt.Errorf("failed to find module %q: %w", handle, err)
 		}
 	}
 	return nil
 }
 
-func modHandleFromRawOsPath(ctx context.Context, rawPath string) (*parsedModuleHandle, error) {
+func handleFromRawOsPath(ctx context.Context, rawPath string) (*parsedHandle, error) {
 	fi, err := os.Stat(rawPath)
 	if err != nil {
 		return nil, err
@@ -251,13 +251,13 @@ func modHandleFromRawOsPath(ctx context.Context, rawPath string) (*parsedModuleH
 
 	// URI can either be a file or a directory based on the LSP spec.
 	if fi.IsDir() {
-		return &parsedModuleHandle{
+		return &parsedHandle{
 			DirHandle: document.DirHandleFromPath(rawPath),
 			IsDir:     true,
 		}, nil
 	}
 
-	if !ast.IsModuleFilename(fi.Name()) && !ast.IsVarsFilename(fi.Name()) {
+	if !ast.IsSupportedFilename(fi.Name()) {
 		jrpc2.ServerFromContext(ctx).Notify(ctx, "window/showMessage", &lsp.ShowMessageParams{
 			Type: lsp.Warning,
 			Message: fmt.Sprintf("Unable to update %q: filetype not supported. "+
@@ -267,13 +267,13 @@ func modHandleFromRawOsPath(ctx context.Context, rawPath string) (*parsedModuleH
 	}
 
 	docHandle := document.HandleFromPath(rawPath)
-	return &parsedModuleHandle{
+	return &parsedHandle{
 		DirHandle: docHandle.Dir,
 		IsDir:     false,
 	}, nil
 }
 
-type parsedModuleHandle struct {
+type parsedHandle struct {
 	DirHandle document.DirHandle
 	IsDir     bool
 }
