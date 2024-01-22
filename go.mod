@@ -96,7 +96,7 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	go.bobheadxi.dev/streamline v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.46.1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0
 	go.opentelemetry.io/otel v1.22.0
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
