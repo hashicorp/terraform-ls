@@ -54,7 +54,7 @@ jobs:
           version: ${{ needs.set-product-version.outputs.product-version }}
           product: ${{ env.PKG_NAME }}
           repositoryOwner: "hashicorp"
-      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: metadata.json
           path: ${{ steps.generate-metadata-file.outputs.filepath }}
@@ -72,7 +72,7 @@ jobs:
         run: |
           go generate ./internal/schemas
           du -h -s ./internal/schemas/data
-      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         with:
           name: provider-schema-data
           path: ./internal/schemas/data
@@ -155,12 +155,12 @@ jobs:
         run: |
           echo "RPM_PACKAGE=$(basename out/*.rpm)" >> $GITHUB_ENV
           echo "DEB_PACKAGE=$(basename out/*.deb)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         if: ${{ matrix.goos == 'linux' }}
         with:
           name: ${{ env.RPM_PACKAGE }}
           path: out/${{ env.RPM_PACKAGE }}
-      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4.1.0
         if: ${{ matrix.goos == 'linux' }}
         with:
           name: ${{ env.DEB_PACKAGE }}
@@ -170,7 +170,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: geekyeggo/delete-artifact@9d15d164b1dcd538ff1b1a2984bc2c0240986c3b # v4.0.0
+      - uses: geekyeggo/delete-artifact@65041433121f7239077fa20be14c0690f70569de # v4.1.0
         with:
           name: provider-schema-data
           token: ${{ github.token }}
