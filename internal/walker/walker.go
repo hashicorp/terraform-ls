@@ -218,10 +218,13 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			continue
 		}
 
-		// TODO!
-		if !dirIndexed {
+		// TODO! this logic is still flawed, as it will only create a Module OR a Vars
+		// TODO! the walk func could be dependent on the file name
+		if !dirIndexed &&
+			(ast.IsModuleFilename(dirEntry.Name()) || ast.IsVarsFilename(dirEntry.Name())) &&
+			!ast.IsIgnoredFile(dirEntry.Name()) {
 			dirIndexed = true
-			if ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+			if ast.IsModuleFilename(dirEntry.Name()) {
 				w.logger.Printf("found module %s", dir)
 
 				err := w.modStore.AddIfNotExists(dir.Path())
@@ -236,7 +239,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 				w.collectJobIds(ids)
 				continue
 			}
-			if ast.IsVarsFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+			if ast.IsVarsFilename(dirEntry.Name()) {
 				w.logger.Printf("found vars %s", dir)
 
 				err := w.varsStore.AddIfNotExists(dir.Path())

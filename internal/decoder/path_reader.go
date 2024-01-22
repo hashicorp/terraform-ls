@@ -48,6 +48,9 @@ func (mr *PathReader) LanguageIDs() []string {
 func (mr *PathReader) Paths(ctx context.Context, languageID string) []lang.Path {
 	paths := make([]lang.Path, 0)
 
+	// TODO! This logic is flawed. We want to end up with different language id paths
+	// for the SAME directory. This is what allows cross file references to work.
+
 	switch languageID {
 	case ilsp.Terraform.String():
 		modList, err := mr.ModuleReader.List()
