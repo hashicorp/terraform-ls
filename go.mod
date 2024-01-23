@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.6.2
-	github.com/hashicorp/hcl-lang v0.0.0-20240115085034-5e29e753cf66
+	github.com/hashicorp/hcl-lang v0.0.0-20240122101040-f43c27231c10
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/hashicorp/terraform-exec v0.20.0
 	github.com/hashicorp/terraform-json v0.21.0
