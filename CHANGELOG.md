@@ -1,3 +1,24 @@
+## 0.32.6 (23 January 2024)
+
+ENHANCEMENTS:
+* Enable interpolated map keys and object attribute names ([terraform-schema#316](https://github.com/hashicorp/terraform-schema/pull/316))
+* Add support for complex index expressions ([hcl-lang#365](https://github.com/hashicorp/hcl-lang/pull/365))
+* Add support for parenthesis on RHS ([hcl-lang#366](https://github.com/hashicorp/hcl-lang/pull/366))
+* Add support for parenthesis on LHS (map keys & attribute names) ([hcl-lang#367](https://github.com/hashicorp/hcl-lang/pull/367))
+
+BUG FIXES:
+
+* Revert "Alert on `wsl.localhost` Path ([#1522](https://github.com/hashicorp/terraform-ls/pull/1522))" ([#1597](https://github.com/hashicorp/terraform-ls/pull/1597))
+
+INTERNAL:
+
+* build(deps): Bump go.opentelemetry.io/otel from 1.21.0 to 1.22.0 ([#1589](https://github.com/hashicorp/terraform-ls/pull/1589))
+* build(deps): Bump go.opentelemetry.io/otel/trace from 1.21.0 to 1.22.0 ([#1588](https://github.com/hashicorp/terraform-ls/pull/1588))
+* build(deps): Bump github.com/hashicorp/terraform-json from 0.20.0 to 0.21.0 ([#1591](https://github.com/hashicorp/terraform-ls/pull/1591))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.46.1 to 0.47.0 ([#1592](https://github.com/hashicorp/terraform-ls/pull/1592))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.46.1 to 0.47.0 ([#1593](https://github.com/hashicorp/terraform-ls/pull/1593))
+* build(deps): Bump workflows to latest trusted versions ([#1594](https://github.com/hashicorp/terraform-ls/pull/1594))
+
 ## 0.32.5 (16 January 2024)
 
 ENHANCEMENTS:
