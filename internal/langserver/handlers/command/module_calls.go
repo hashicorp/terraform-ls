@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
@@ -141,7 +140,7 @@ func getModuleType(sourceAddr tfmod.ModuleSourceAddr) ModuleType {
 		return TFREGISTRY
 	}
 
-	_, ok = sourceAddr.(module.LocalSourceAddr)
+	_, ok = sourceAddr.(tfmod.LocalSourceAddr)
 	if ok {
 		return LOCAL
 	}

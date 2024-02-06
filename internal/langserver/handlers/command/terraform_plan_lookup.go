@@ -32,7 +32,7 @@ func (h *CmdHandler) TerraformPlanLookupHandler(ctx context.Context, args cmd.Co
 	}
 
 	// NOTE: Do not return errors for this handler as this is
-	// for hyperlinks in a terminal. We would spam the message box
+	// for hyperlinks in a terminal. We would spam message boxes
 	// if a user hovered over things that were not valid
 
 	// Get the module dir, if it exists
@@ -68,10 +68,10 @@ func (h *CmdHandler) TerraformPlanLookupHandler(ctx context.Context, args cmd.Co
 
 			// TODO: these lines are off because of the drift between
 			// what terraform plan shows versus what is in the actual file
-			response.Range.StartLine = target.RangePtr.Start.Line
-			response.Range.StartCharacter = target.RangePtr.Start.Column
-			response.Range.EndLine = target.RangePtr.End.Line
-			response.Range.EndCharacter = target.RangePtr.End.Column
+			response.Range.StartLine = target.RangePtr.Start.Line-1
+			response.Range.StartCharacter = target.RangePtr.Start.Column-1
+			response.Range.EndLine = target.RangePtr.End.Line-1
+			response.Range.EndCharacter = target.RangePtr.End.Column-1
 
 			return response, nil
 		}
