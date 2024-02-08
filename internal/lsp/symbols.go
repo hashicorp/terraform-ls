@@ -13,10 +13,39 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+// defaultSymbols is the list of symbols that were supported by the initial
+// version of the LSP. This list is used as a fallback when the client does
+// not provide a list of supported symbols.
+var defaultSymbols = []lsp.SymbolKind{
+	lsp.File,
+	lsp.Module,
+	lsp.Namespace,
+	lsp.Package,
+	lsp.Class,
+	lsp.Method,
+	lsp.Property,
+	lsp.Field,
+	lsp.Constructor,
+	lsp.Enum,
+	lsp.Interface,
+	lsp.Function,
+	lsp.Variable,
+	lsp.Constant,
+	lsp.String,
+	lsp.Number,
+	lsp.Boolean,
+	lsp.Array,
+}
+
 func WorkspaceSymbols(sbs []decoder.Symbol, caps *lsp.WorkspaceSymbolClientCapabilities) []lsp.SymbolInformation {
 	symbols := make([]lsp.SymbolInformation, len(sbs))
+	supportedSymbols := defaultSymbols
+	if caps != nil && caps.SymbolKind != nil {
+		supportedSymbols = caps.SymbolKind.ValueSet
+	}
+
 	for i, s := range sbs {
-		kind, ok := symbolKind(s, caps.SymbolKind.ValueSet)
+		kind, ok := symbolKind(s, supportedSymbols)
 		if !ok {
 			// skip symbol not supported by client
 			continue
@@ -50,7 +79,12 @@ func DocumentSymbols(sbs []decoder.Symbol, caps lsp.DocumentSymbolClientCapabili
 }
 
 func documentSymbol(symbol decoder.Symbol, caps lsp.DocumentSymbolClientCapabilities) (lsp.DocumentSymbol, bool) {
-	kind, ok := symbolKind(symbol, caps.SymbolKind.ValueSet)
+	supportedSymbols := defaultSymbols
+	if caps.SymbolKind != nil {
+		supportedSymbols = caps.SymbolKind.ValueSet
+	}
+
+	kind, ok := symbolKind(symbol, supportedSymbols)
 	if !ok {
 		return lsp.DocumentSymbol{}, false
 	}
