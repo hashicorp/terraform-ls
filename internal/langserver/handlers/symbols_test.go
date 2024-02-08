@@ -102,3 +102,82 @@ func TestLangServer_symbols_basic(t *testing.T) {
 		]
 	}`)
 }
+
+func TestLangServer_symbols_missing(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): validTfMockCalls(),
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {
+			"textDocument": {
+				"documentSymbol": {
+					"hierarchicalDocumentSymbolSupport": true,
+					"labelSupport": true
+				}
+			}
+		},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "provider \"github\" {}",
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/documentSymbol",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI)}, `{
+		"jsonrpc": "2.0",
+		"id": 3,
+		"result": [
+			{
+				"name": "provider \"github\"",
+				"kind": 5,
+				"range": {
+					"start": {"line": 0, "character": 0},
+					"end": {"line": 0, "character": 20}
+				},
+				"selectionRange": {
+					"start": {"line": 0, "character": 0},
+					"end": {"line": 0, "character": 20}
+				}
+			}
+		]
+	}`)
+}
