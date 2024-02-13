@@ -1,6 +1,31 @@
+## 0.32.7 (13 February 2024)
+
+ENHANCEMENTS:
+
+* Support `for`-`in`-`if` expressions ([hcl-lang#368](https://github.com/hashicorp/hcl-lang/pull/368))
+
+BUG FIXES:
+
+* Fix prefix completion in `TemplateWrapExpr` ([hcl-lang#371](https://github.com/hashicorp/hcl-lang/pull/371))
+* Fix LS panic on prefix completion with leading space ([hcl-lang#373](https://github.com/hashicorp/hcl-lang/pull/373))
+* Fix LS panic on missing symbols in client capabilities ([#1619](https://github.com/hashicorp/terraform-ls/pull/1619))
+
+INTERNAL:
+
+* github: Remove benchmarks workflow ([#1599](https://github.com/hashicorp/terraform-ls/pull/1599))
+* chore: fix typo in comment ([#1612](https://github.com/hashicorp/terraform-ls/pull/1612))
+* build(deps): Bump github.com/zclconf/go-cty from 1.14.1 to 1.14.2 ([#1600](https://github.com/hashicorp/terraform-ls/pull/1600))
+* build(deps): Bump go.opentelemetry.io/otel from 1.22.0 to 1.23.1 ([#1617](https://github.com/hashicorp/terraform-ls/pull/1617), [#1621](https://github.com/hashicorp/terraform-ls/pull/1621))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.47.0 to 0.48.0 ([#1616](https://github.com/hashicorp/terraform-ls/pull/1616))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.47.0 to 0.48.0 ([#1618](https://github.com/hashicorp/terraform-ls/pull/1618))
+* build(deps): Bump github.com/hashicorp/hc-install from 0.6.2 to 0.6.3 ([#1622](https://github.com/hashicorp/terraform-ls/pull/1622))
+* build(deps): Bump workflows to latest trusted versions ([#1624](https://github.com/hashicorp/terraform-ls/pull/1624))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.40.1 to 2.40.3 ([#1625](https://github.com/hashicorp/terraform-ls/pull/1625))
+
 ## 0.32.6 (23 January 2024)
 
 ENHANCEMENTS:
+
 * Enable interpolated map keys and object attribute names ([terraform-schema#316](https://github.com/hashicorp/terraform-schema/pull/316))
 * Add support for complex index expressions ([hcl-lang#365](https://github.com/hashicorp/hcl-lang/pull/365))
 * Add support for parenthesis on RHS ([hcl-lang#366](https://github.com/hashicorp/hcl-lang/pull/366))
