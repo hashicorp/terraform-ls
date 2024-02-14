@@ -31,6 +31,10 @@ is through a client represented by an IDE, or a plugin of an IDE.
 
 Please follow the [relevant guide for your IDE](./docs/USAGE.md).
 
+## Contributing
+
+Please refer to [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information on how to contribute to this project.
+
 ## Credits
 
 - [Martin Atkins](https://github.com/apparentlymart) - particularly the virtual filesystem
