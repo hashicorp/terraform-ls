@@ -456,7 +456,7 @@ func localProviderSchemaPaths(t *testing.T, it *state.ProviderSchemaIterator) []
 	for ps := it.Next(); ps != nil; ps = it.Next() {
 		localSrc, ok := ps.Source.(state.LocalSchemaSource)
 		if !ok {
-			t.Fatalf("expected only local sources, found: %q", ps.Source)
+			t.Fatalf("expected only local sources, found: %q. Please delete generated schemas in ./internal/schemas/data if you generated them", ps.Source)
 		}
 
 		schemas = append(schemas, localSrc.ModulePath)
