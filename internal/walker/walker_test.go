@@ -454,6 +454,13 @@ func localProviderSchemaPaths(t *testing.T, it *state.ProviderSchemaIterator) []
 	schemas := make([]string, 0)
 
 	for ps := it.Next(); ps != nil; ps = it.Next() {
+		_, ok := ps.Source.(state.PreloadedSchemaSource)
+		if ok {
+			// We explicitly ignore preloaded schemas here, as they're not
+			// relevant for the test and are obtained independently of the
+			// local module schemas.
+			continue
+		}
 		localSrc, ok := ps.Source.(state.LocalSchemaSource)
 		if !ok {
 			t.Fatalf("expected only local sources, found: %q", ps.Source)
