@@ -1,6 +1,7 @@
 module github.com/hashicorp/terraform-ls
 
 go 1.21.5
+toolchain go1.22.0
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.0
@@ -27,7 +28,7 @@ require (
 	github.com/otiai10/copy v1.14.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vektra/mockery/v2 v2.40.3
+	github.com/vektra/mockery/v2 v2.41.0
 	github.com/zclconf/go-cty v1.14.2
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
