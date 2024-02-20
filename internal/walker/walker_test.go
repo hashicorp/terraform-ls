@@ -444,7 +444,7 @@ func modulePaths(modules []*state.Module) []string {
 	paths := make([]string, len(modules))
 
 	for i, mod := range modules {
-		paths[i] = mod.Path
+		paths[i] = mod.Path()
 	}
 
 	return paths

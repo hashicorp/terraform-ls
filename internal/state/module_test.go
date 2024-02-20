@@ -74,7 +74,7 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 	}
 
 	expectedModule := &Module{
-		Path:                  modPath,
+		path:                  modPath,
 		TerraformVersion:      tfVersion,
 		TerraformVersionState: operation.OpStateLoaded,
 		ModuleDiagnosticsState: ast.DiagnosticSourceState{
@@ -90,7 +90,7 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 			ast.TerraformValidateSource:   operation.OpStateUnknown,
 		},
 	}
-	if diff := cmp.Diff(expectedModule, mod); diff != "" {
+	if diff := cmp.Diff(expectedModule, mod, cmpOpts); diff != "" {
 		t.Fatalf("unexpected module: %s", diff)
 	}
 }
@@ -193,7 +193,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 
 	expectedModules := []*Module{
 		{
-			Path:             filepath.Join(tmpDir, "alpha"),
+			path:             filepath.Join(tmpDir, "alpha"),
 			ModManifest:      alphaManifest,
 			ModManifestState: operation.OpStateLoaded,
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
@@ -210,7 +210,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 			},
 		},
 		{
-			Path:             filepath.Join(tmpDir, "gamma"),
+			path:             filepath.Join(tmpDir, "gamma"),
 			ModManifest:      gammaManifest,
 			ModManifestState: operation.OpStateLoaded,
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
@@ -260,7 +260,7 @@ func TestModuleStore_List(t *testing.T) {
 
 	expectedModules := []*Module{
 		{
-			Path: filepath.Join(tmpDir, "alpha"),
+			path: filepath.Join(tmpDir, "alpha"),
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
 				ast.HCLParsingSource:          operation.OpStateUnknown,
 				ast.SchemaValidationSource:    operation.OpStateUnknown,
@@ -275,7 +275,7 @@ func TestModuleStore_List(t *testing.T) {
 			},
 		},
 		{
-			Path: filepath.Join(tmpDir, "beta"),
+			path: filepath.Join(tmpDir, "beta"),
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
 				ast.HCLParsingSource:          operation.OpStateUnknown,
 				ast.SchemaValidationSource:    operation.OpStateUnknown,
@@ -290,7 +290,7 @@ func TestModuleStore_List(t *testing.T) {
 			},
 		},
 		{
-			Path: filepath.Join(tmpDir, "gamma"),
+			path: filepath.Join(tmpDir, "gamma"),
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
 				ast.HCLParsingSource:          operation.OpStateUnknown,
 				ast.SchemaValidationSource:    operation.OpStateUnknown,
@@ -348,7 +348,7 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 	}
 
 	expectedModule := &Module{
-		Path: tmpDir,
+		path: tmpDir,
 		Meta: ModuleMetadata{
 			CoreRequirements: testConstraint(t, "~> 0.15"),
 			ProviderRequirements: map[tfaddr.Provider]version.Constraints{
@@ -405,7 +405,7 @@ func TestModuleStore_UpdateTerraformAndProviderVersions(t *testing.T) {
 	}
 
 	expectedModule := &Module{
-		Path:                  tmpDir,
+		path:                  tmpDir,
 		TerraformVersion:      testVersion(t, "0.12.4"),
 		TerraformVersionState: operation.OpStateLoaded,
 		TerraformVersionErr:   vErr,
@@ -850,7 +850,7 @@ func BenchmarkModuleByPath(b *testing.B) {
 	}
 
 	expectedMod := &Module{
-		Path:              modPath,
+		path:              modPath,
 		ParsedModuleFiles: mFiles,
 		ModuleDiagnostics: ast.SourceModDiags{
 			ast.HCLParsingSource: mDiags,

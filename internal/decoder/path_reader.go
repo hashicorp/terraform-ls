@@ -45,19 +45,19 @@ func (mr *PathReader) Paths(ctx context.Context) []lang.Path {
 	for _, mod := range modList {
 		if hasLang {
 			paths = append(paths, lang.Path{
-				Path:       mod.Path,
+				Path:       mod.Path(),
 				LanguageID: langId.String(),
 			})
 			continue
 		}
 
 		paths = append(paths, lang.Path{
-			Path:       mod.Path,
+			Path:       mod.Path(),
 			LanguageID: ilsp.Terraform.String(),
 		})
 		if len(mod.ParsedVarsFiles) > 0 {
 			paths = append(paths, lang.Path{
-				Path:       mod.Path,
+				Path:       mod.Path(),
 				LanguageID: ilsp.Tfvars.String(),
 			})
 		}

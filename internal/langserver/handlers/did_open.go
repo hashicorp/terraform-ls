@@ -53,12 +53,12 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		}
 	}
 
-	svc.logger.Printf("opened module: %s", mod.Path)
+	svc.logger.Printf("opened module: %s", mod.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	modHandle := document.DirHandleFromPath(mod.Path)
+	modHandle := document.DirHandleFromPath(mod.Path())
 	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
 	if err != nil {
 		return err

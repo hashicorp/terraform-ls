@@ -91,7 +91,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 }
 
 type Module struct {
-	Path string
+	path string
 
 	ModManifest      *datadir.ModuleManifest
 	ModManifestErr   error
@@ -142,7 +142,7 @@ func (m *Module) Copy() *Module {
 		return nil
 	}
 	newMod := &Module{
-		Path: m.Path,
+		path: m.path,
 
 		ModManifest:      m.ModManifest.Copy(),
 		ModManifestErr:   m.ModManifestErr,
@@ -237,9 +237,13 @@ func (m *Module) Copy() *Module {
 	return newMod
 }
 
+func (m *Module) Path() string {
+	return m.path
+}
+
 func newModule(modPath string) *Module {
 	return &Module{
-		Path:                       modPath,
+		path:                       modPath,
 		ModManifestState:           op.OpStateUnknown,
 		TerraformVersionState:      op.OpStateUnknown,
 		ProviderSchemaState:        op.OpStateUnknown,
@@ -259,6 +263,13 @@ func newModule(modPath string) *Module {
 			ast.ReferenceValidationSource: op.OpStateUnknown,
 			ast.TerraformValidateSource:   op.OpStateUnknown,
 		},
+	}
+}
+
+// NewModuleTest is a test helper to create a new Module object
+func NewModuleTest(path string) *Module {
+	return &Module{
+		path: path,
 	}
 }
 
@@ -522,7 +533,7 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 		return nil, fmt.Errorf("%s: module data not available", modPath)
 	}
 	return &tfmod.Meta{
-		Path:                 mod.Path,
+		Path:                 mod.path,
 		ProviderReferences:   mod.Meta.ProviderReferences,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		CoreRequirements:     mod.Meta.CoreRequirements,

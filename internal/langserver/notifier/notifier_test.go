@@ -60,9 +60,7 @@ func (mms mockModuleStore) ModuleByPath(path string) (*state.Module, error) {
 		return nil, fmt.Errorf("unexpected path: %q", path)
 	}
 
-	return &state.Module{
-		Path: path,
-	}, nil
+	return state.NewModuleTest(path), nil
 }
 
 func testLogger() *log.Logger {

@@ -133,7 +133,7 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 		return nil, false
 	}
 
-	modId, err := store.GetModuleID(mod.Path)
+	modId, err := store.GetModuleID(mod.Path())
 	if err != nil {
 		return nil, false
 	}
@@ -160,7 +160,7 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
 
-			dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
+			dNotifier.PublishHCLDiags(ctx, mod.Path(), diags)
 		}
 		return nil
 	}
@@ -182,7 +182,7 @@ func callRefreshClientCommand(clientRequester session.ClientCaller, commandId st
 
 			_, err = clientRequester.Callback(ctx, commandId, nil)
 			if err != nil {
-				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path, err)
+				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path(), err)
 			}
 		}
 
@@ -221,7 +221,7 @@ func refreshSemanticTokens(clientRequester session.ClientCaller) notifier.Hook {
 
 			_, err = clientRequester.Callback(ctx, "workspace/semanticTokens/refresh", nil)
 			if err != nil {
-				return fmt.Errorf("Error refreshing %s: %s", mod.Path, err)
+				return fmt.Errorf("Error refreshing %s: %s", mod.Path(), err)
 			}
 		}
 
