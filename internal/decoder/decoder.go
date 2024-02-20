@@ -18,7 +18,7 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
+func modulePathContext(mod *state.ModuleRecord, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
 	schema, err := schemaForModule(mod, schemaReader, modReader)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 	return pathCtx, nil
 }
 
-func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
+func varsPathContext(mod *state.ModuleRecord) (*decoder.PathContext, error) {
 	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables, mod.Path())
 	if err != nil {
 		return nil, err

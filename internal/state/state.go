@@ -251,9 +251,9 @@ type ModuleChangeStore struct {
 }
 
 type ModuleReader interface {
-	CallersOfModule(modPath string) ([]*Module, error)
-	ModuleByPath(modPath string) (*Module, error)
-	List() ([]*Module, error)
+	CallersOfModule(modPath string) ([]*ModuleRecord, error)
+	ModuleByPath(modPath string) (*ModuleRecord, error)
+	List() ([]*ModuleRecord, error)
 }
 
 type ModuleCallReader interface {

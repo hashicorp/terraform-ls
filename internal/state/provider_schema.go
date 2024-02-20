@@ -370,7 +370,7 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 
 	ss := sortableSchemas{
 		schemas: schemas,
-		lookupModule: func(modPath string) (*Module, error) {
+		lookupModule: func(modPath string) (*ModuleRecord, error) {
 			return moduleByPath(txn, modPath)
 		},
 		requiredModPath: modPath,
@@ -382,7 +382,7 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 	return ss.schemas[0].Schema, nil
 }
 
-type ModuleLookupFunc func(string) (*Module, error)
+type ModuleLookupFunc func(string) (*ModuleRecord, error)
 
 func NewDefaultProvider(name string) tfaddr.Provider {
 	return tfaddr.Provider{

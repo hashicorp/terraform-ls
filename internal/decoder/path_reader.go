@@ -18,8 +18,8 @@ import (
 )
 
 type ModuleReader interface {
-	ModuleByPath(modPath string) (*state.Module, error)
-	List() ([]*state.Module, error)
+	ModuleByPath(modPath string) (*state.ModuleRecord, error)
+	List() ([]*state.ModuleRecord, error)
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)

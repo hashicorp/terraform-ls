@@ -10,7 +10,7 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func coreFunctions(mod *state.Module) map[string]schema.FunctionSignature {
+func coreFunctions(mod *state.ModuleRecord) map[string]schema.FunctionSignature {
 	if mod.TerraformVersion != nil {
 		s, err := tfschema.FunctionsForVersion(mod.TerraformVersion)
 		if err == nil {

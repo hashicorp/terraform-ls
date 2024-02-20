@@ -90,7 +90,7 @@ func (mm ModuleMetadata) Copy() ModuleMetadata {
 	return newMm
 }
 
-type Module struct {
+type ModuleRecord struct {
 	path string
 
 	ModManifest      *datadir.ModuleManifest
@@ -137,11 +137,11 @@ type Module struct {
 	VarsDiagnosticsState   ast.DiagnosticSourceState
 }
 
-func (m *Module) Copy() *Module {
+func (m *ModuleRecord) Copy() *ModuleRecord {
 	if m == nil {
 		return nil
 	}
-	newMod := &Module{
+	newMod := &ModuleRecord{
 		path: m.path,
 
 		ModManifest:      m.ModManifest.Copy(),
@@ -237,12 +237,12 @@ func (m *Module) Copy() *Module {
 	return newMod
 }
 
-func (m *Module) Path() string {
+func (m *ModuleRecord) Path() string {
 	return m.path
 }
 
-func newModule(modPath string) *Module {
-	return &Module{
+func newModule(modPath string) *ModuleRecord {
+	return &ModuleRecord{
 		path:                       modPath,
 		ModManifestState:           op.OpStateUnknown,
 		TerraformVersionState:      op.OpStateUnknown,
@@ -267,8 +267,8 @@ func newModule(modPath string) *Module {
 }
 
 // NewModuleTest is a test helper to create a new Module object
-func NewModuleTest(path string) *Module {
-	return &Module{
+func NewModuleTest(path string) *ModuleRecord {
+	return &ModuleRecord{
 		path: path,
 	}
 }
@@ -326,7 +326,7 @@ func (s *ModuleStore) Remove(modPath string) error {
 		return nil
 	}
 
-	oldMod := oldObj.(*Module)
+	oldMod := oldObj.(*ModuleRecord)
 	err = s.queueModuleChange(txn, oldMod, nil)
 	if err != nil {
 		return err
@@ -341,16 +341,16 @@ func (s *ModuleStore) Remove(modPath string) error {
 	return nil
 }
 
-func (s *ModuleStore) CallersOfModule(modPath string) ([]*Module, error) {
+func (s *ModuleStore) CallersOfModule(modPath string) ([]*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 	it, err := txn.Get(s.tableName, "id")
 	if err != nil {
 		return nil, err
 	}
 
-	callers := make([]*Module, 0)
+	callers := make([]*ModuleRecord, 0)
 	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*Module)
+		mod := item.(*ModuleRecord)
 
 		if mod.ModManifest == nil {
 			continue
@@ -363,7 +363,7 @@ func (s *ModuleStore) CallersOfModule(modPath string) ([]*Module, error) {
 	return callers, nil
 }
 
-func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
+func (s *ModuleStore) ModuleByPath(path string) (*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 
 	mod, err := moduleByPath(txn, path)
@@ -573,7 +573,7 @@ func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constr
 	}
 }
 
-func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
+func moduleByPath(txn *memdb.Txn, path string) (*ModuleRecord, error) {
 	obj, err := txn.First(moduleTableName, "id", path)
 	if err != nil {
 		return nil, err
@@ -583,10 +583,10 @@ func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
 			Source: path,
 		}
 	}
-	return obj.(*Module), nil
+	return obj.(*ModuleRecord), nil
 }
 
-func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
+func moduleCopyByPath(txn *memdb.Txn, path string) (*ModuleRecord, error) {
 	mod, err := moduleByPath(txn, path)
 	if err != nil {
 		return nil, err
@@ -650,7 +650,7 @@ func (s *ModuleStore) SetInstalledProvidersState(path string, state op.OpState) 
 	return nil
 }
 
-func (s *ModuleStore) List() ([]*Module, error) {
+func (s *ModuleStore) List() ([]*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 
 	it, err := txn.Get(s.tableName, "id")
@@ -658,9 +658,9 @@ func (s *ModuleStore) List() ([]*Module, error) {
 		return nil, err
 	}
 
-	modules := make([]*Module, 0)
+	modules := make([]*ModuleRecord, 0)
 	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*Module)
+		mod := item.(*ModuleRecord)
 		modules = append(modules, mod)
 	}
 

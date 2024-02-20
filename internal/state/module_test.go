@@ -73,7 +73,7 @@ func TestModuleStore_ModuleByPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedModule := &Module{
+	expectedModule := &ModuleRecord{
 		path:                  modPath,
 		TerraformVersion:      tfVersion,
 		TerraformVersionState: operation.OpStateLoaded,
@@ -191,7 +191,7 @@ func TestModuleStore_CallersOfModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedModules := []*Module{
+	expectedModules := []*ModuleRecord{
 		{
 			path:             filepath.Join(tmpDir, "alpha"),
 			ModManifest:      alphaManifest,
@@ -258,7 +258,7 @@ func TestModuleStore_List(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedModules := []*Module{
+	expectedModules := []*ModuleRecord{
 		{
 			path: filepath.Join(tmpDir, "alpha"),
 			ModuleDiagnosticsState: ast.DiagnosticSourceState{
@@ -347,7 +347,7 @@ func TestModuleStore_UpdateMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedModule := &Module{
+	expectedModule := &ModuleRecord{
 		path: tmpDir,
 		Meta: ModuleMetadata{
 			CoreRequirements: testConstraint(t, "~> 0.15"),
@@ -404,7 +404,7 @@ func TestModuleStore_UpdateTerraformAndProviderVersions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedModule := &Module{
+	expectedModule := &ModuleRecord{
 		path:                  tmpDir,
 		TerraformVersion:      testVersion(t, "0.12.4"),
 		TerraformVersionState: operation.OpStateLoaded,
@@ -849,7 +849,7 @@ func BenchmarkModuleByPath(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	expectedMod := &Module{
+	expectedMod := &ModuleRecord{
 		path:              modPath,
 		ParsedModuleFiles: mFiles,
 		ModuleDiagnostics: ast.SourceModDiags{

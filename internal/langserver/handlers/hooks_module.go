@@ -35,7 +35,7 @@ func sendModuleTelemetry(store *state.StateStore, telemetrySender telemetry.Send
 	}
 }
 
-func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state.StateStore) (map[string]interface{}, bool) {
+func moduleTelemetryData(mod *state.ModuleRecord, ch state.ModuleChanges, store *state.StateStore) (map[string]interface{}, bool) {
 	properties := make(map[string]interface{})
 	hasChanged := ch.CoreRequirements || ch.Backend || ch.ProviderRequirements ||
 		ch.TerraformVersion || ch.InstalledProviders

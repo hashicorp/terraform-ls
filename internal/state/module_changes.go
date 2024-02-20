@@ -45,7 +45,7 @@ type ModuleChanges struct {
 
 const maxTimespan = 1 * time.Second
 
-func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) error {
+func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *ModuleRecord) error {
 	var modHandle document.DirHandle
 	if oldMod != nil {
 		modHandle = document.DirHandleFromPath(oldMod.Path())

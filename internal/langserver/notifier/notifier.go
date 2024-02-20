@@ -23,7 +23,7 @@ type Notifier struct {
 
 type ModuleStore interface {
 	AwaitNextChangeBatch(ctx context.Context) (state.ModuleChangeBatch, error)
-	ModuleByPath(path string) (*state.Module, error)
+	ModuleByPath(path string) (*state.ModuleRecord, error)
 }
 
 type Hook func(ctx context.Context, changes state.ModuleChanges) error
@@ -83,12 +83,12 @@ func (n *Notifier) notify(ctx context.Context) error {
 	return nil
 }
 
-func withModule(ctx context.Context, mod *state.Module) context.Context {
+func withModule(ctx context.Context, mod *state.ModuleRecord) context.Context {
 	return context.WithValue(ctx, moduleCtxKey{}, mod)
 }
 
-func ModuleFromContext(ctx context.Context) (*state.Module, error) {
-	mod, ok := ctx.Value(moduleCtxKey{}).(*state.Module)
+func ModuleFromContext(ctx context.Context) (*state.ModuleRecord, error) {
+	mod, ok := ctx.Value(moduleCtxKey{}).(*state.ModuleRecord)
 	if !ok {
 		return nil, errors.New("module data not found")
 	}
