@@ -303,7 +303,6 @@ func providerAddrEquals(a, b tfaddr.Provider) bool {
 }
 
 func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
-	s.logger.Printf("PSS: getting provider schema (%s, %s, %s)", modPath, addr, vc)
 	txn := s.db.Txn(false)
 
 	it, err := txn.Get(s.tableName, "id_prefix", addr)
