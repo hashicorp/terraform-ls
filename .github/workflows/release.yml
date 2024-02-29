@@ -13,8 +13,12 @@ on:
         type: string
       branch:
         description: 'Branch'
-        type: string
+        required: true
+        type: choice
         default: main
+        options:
+          - main
+          - pre-release
 
 jobs:
   staging:
@@ -30,7 +34,7 @@ jobs:
           BOB_GITHUB_TOKEN: ${{ secrets.BOB_GITHUB_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
           SHA: ${{ github.event.inputs.sha }}
-          BRANCH: main
+          BRANCH: ${{ github.event.inputs.branch }}
           ENVIRONMENT: staging
         run: |
           bob trigger-promotion \
@@ -58,7 +62,7 @@ jobs:
           BOB_GITHUB_TOKEN: ${{ secrets.BOB_GITHUB_TOKEN }}
           VERSION: ${{ github.event.inputs.version }}
           SHA: ${{ github.event.inputs.sha }}
-          BRANCH: main
+          BRANCH: ${{ github.event.inputs.branch }}
           ENVIRONMENT: production
         run: |
           bob trigger-promotion \

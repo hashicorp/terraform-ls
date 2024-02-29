@@ -2,6 +2,8 @@ name: build-pr
 
 on:
   pull_request:
+    branches-ignore:
+      - pre-release
 
 env:
   GOPROXY: https://proxy.golang.org/
