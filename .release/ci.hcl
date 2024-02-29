@@ -13,7 +13,7 @@ project "terraform-ls" {
   github {
     organization = "hashicorp"
     repository = "terraform-ls"
-    release_branches = ["main"]
+    release_branches = ["main", "pre-release"]
   }
 }
 
