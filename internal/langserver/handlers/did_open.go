@@ -37,14 +37,14 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 		return err
 	}
 
-	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
+	mod, err := svc.recordStores.ByPath(dh.Dir.Path(), params.TextDocument.LanguageID)
 	if err != nil {
-		if state.IsModuleNotFound(err) {
-			err = svc.modStore.Add(dh.Dir.Path())
+		if state.IsRecordNotFound(err) {
+			err = svc.recordStores.Add(dh.Dir.Path(), params.TextDocument.LanguageID)
 			if err != nil {
 				return err
 			}
-			mod, err = svc.modStore.ModuleByPath(dh.Dir.Path())
+			mod, err = svc.recordStores.ByPath(dh.Dir.Path(), params.TextDocument.LanguageID)
 			if err != nil {
 				return err
 			}

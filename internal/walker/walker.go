@@ -40,9 +40,9 @@ var (
 type pathToWatch struct{}
 
 type Walker struct {
-	fs        fs.ReadDirFS
-	pathStore PathStore
-	modStore  ModuleStore
+	fs           fs.ReadDirFS
+	pathStore    PathStore
+	recordStores RecordStores
 
 	logger   *log.Logger
 	walkFunc WalkFunc
@@ -62,17 +62,17 @@ type PathStore interface {
 	RemoveDir(dir document.DirHandle) error
 }
 
-type ModuleStore interface {
-	AddIfNotExists(dir string) error
+type RecordStores interface {
+	AddIfNotExists(dir string, languageID string) error
 }
 
 const tracerName = "github.com/hashicorp/terraform-ls/internal/walker"
 
-func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
+func NewWalker(fs fs.ReadDirFS, pathStore PathStore, recordStores RecordStores, walkFunc WalkFunc) *Walker {
 	return &Walker{
 		fs:                    fs,
 		pathStore:             pathStore,
-		modStore:              modStore,
+		recordStores:          recordStores,
 		walkFunc:              walkFunc,
 		logger:                discardLogger,
 		ignoredDirectoryNames: skipDirNames,
@@ -217,7 +217,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			dirIndexed = true
 			w.logger.Printf("found module %s", dir)
 
-			err := w.modStore.AddIfNotExists(dir.Path())
+			err := w.recordStores.AddIfNotExists(dir.Path(), "terraform")
 			if err != nil {
 				return err
 			}

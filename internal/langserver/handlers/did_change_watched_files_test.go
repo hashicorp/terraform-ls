@@ -857,7 +857,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 
 	submodulePath := filepath.Join(testDir, ".terraform", "modules", "azure-hcp-consul")
 	_, err = ss.Modules.ModuleByPath(submodulePath)
-	if err == nil || !state.IsModuleNotFound(err) {
+	if err == nil || !state.IsRecordNotFound(err) {
 		t.Fatalf("expected submodule not to be found: %s", err)
 	}
 

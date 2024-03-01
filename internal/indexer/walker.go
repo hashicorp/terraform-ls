@@ -26,7 +26,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
 		},
 		Type: op.OpTypeParseModuleConfiguration.String(),
 	})
@@ -44,7 +44,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			Dir:  modHandle,
 			Type: op.OpTypeLoadModuleMetadata.String(),
 			Func: func(ctx context.Context) error {
-				return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
+				return module.LoadModuleMetadata(ctx, idx.recordStores.Modules, modHandle.Path())
 			},
 			DependsOn: job.IDs{parseId},
 		})
@@ -60,7 +60,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
 		},
 		Type: op.OpTypeParseVariables.String(),
 	})
@@ -74,7 +74,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.DecodeVarsReferences(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
 			},
 			Type:      op.OpTypeDecodeVarsReferences.String(),
 			DependsOn: job.IDs{parseVarsId},
@@ -97,7 +97,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		modManifestId, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseModuleManifest(ctx, idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseModuleManifest(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
 			},
 			Type: op.OpTypeParseModuleManifest.String(),
 			Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
@@ -119,7 +119,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 		pSchemaVerId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.ParseProviderVersions(ctx, idx.fs, idx.modStore, modHandle.Path())
+				return module.ParseProviderVersions(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
 			},
 			Type:      op.OpTypeParseProviderVersions.String(),
 			DependsOn: providerVersionDeps,
@@ -136,7 +136,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
 				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-				return module.ObtainSchema(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.ObtainSchema(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
 			},
 			Type:      op.OpTypeObtainSchema.String(),
 			DependsOn: dependsOn,
@@ -152,7 +152,7 @@ func (idx *Indexer) WalkedModule(ctx context.Context, modHandle document.DirHand
 	eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
 		},
 		// This could theoretically also depend on ObtainSchema to avoid
 		// attempt to preload the same schema twice but we avoid that dependency

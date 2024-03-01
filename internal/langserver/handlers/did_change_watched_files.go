@@ -227,7 +227,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 func (svc *service) indexModuleIfNotExists(ctx context.Context, modHandle document.DirHandle) error {
 	_, err := svc.modStore.ModuleByPath(modHandle.Path())
 	if err != nil {
-		if state.IsModuleNotFound(err) {
+		if state.IsRecordNotFound(err) {
 			err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
 			if err != nil {
 				return fmt.Errorf("failed to walk module %q: %w", modHandle, err)

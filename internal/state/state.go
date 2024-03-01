@@ -4,6 +4,7 @@
 package state
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"sync"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
+	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/hashicorp/terraform-schema/registry"
@@ -21,6 +23,8 @@ const (
 	documentsTableName      = "documents"
 	jobsTableName           = "jobs"
 	moduleTableName         = "module"
+	variableTableName       = "variable"
+	rootTableName           = "root"
 	moduleIdsTableName      = "module_ids"
 	moduleChangesTableName  = "module_changes"
 	providerSchemaTableName = "provider_schema"
@@ -128,6 +132,26 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		variableTableName: {
+			Name: variableTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
+		rootTableName: {
+			Name: rootTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
 		providerSchemaTableName: {
 			Name: providerSchemaTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -225,6 +249,8 @@ type StateStore struct {
 	DocumentStore   *DocumentStore
 	JobStore        *JobStore
 	Modules         *ModuleStore
+	Variables       *VariableStore
+	Roots           *RootStore
 	ProviderSchemas *ProviderSchemaStore
 	WalkerPaths     *WalkerPathStore
 	RegistryModules *RegistryModuleStore
@@ -244,6 +270,18 @@ type ModuleStore struct {
 	// MaxModuleNesting represents how many nesting levels we'd attempt
 	// to parse provider requirements before returning error.
 	MaxModuleNesting int
+}
+
+type VariableStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+
+type RootStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
 }
 
 type ModuleChangeStore struct {
@@ -305,6 +343,16 @@ func NewStateStore() (*StateStore, error) {
 			TimeProvider:     time.Now,
 			MaxModuleNesting: 50,
 		},
+		Variables: &VariableStore{
+			db:        db,
+			tableName: variableTableName,
+			logger:    defaultLogger,
+		},
+		Roots: &RootStore{
+			db:        db,
+			tableName: variableTableName,
+			logger:    defaultLogger,
+		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
 			tableName: providerSchemaTableName,
@@ -329,9 +377,49 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.DocumentStore.logger = logger
 	s.JobStore.logger = logger
 	s.Modules.logger = logger
+	s.Variables.logger = logger
+	s.Roots.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
+
+type RecordStores struct {
+	Modules *ModuleStore
+}
+
+type RecordStore interface {
+	Path() string
+}
+
+func NewRecordStores(modules *ModuleStore) *RecordStores {
+	return &RecordStores{
+		Modules: modules,
+	}
+}
+
+func (ds *RecordStores) ByPath(path string, languageID string) (RecordStore, error) {
+	if languageID == ilsp.Terraform.String() {
+		return ds.Modules.ModuleByPath(path)
+	}
+
+	return nil, fmt.Errorf("unknown language ID: %q", languageID)
+}
+
+func (ds *RecordStores) Add(path string, languageID string) error {
+	if languageID == ilsp.Terraform.String() {
+		return ds.Modules.Add(path)
+	}
+
+	return fmt.Errorf("unknown language ID: %q", languageID)
+}
+
+func (ds *RecordStores) AddIfNotExists(path string, languageID string) error {
+	if languageID == ilsp.Terraform.String() {
+		return ds.Modules.AddIfNotExists(path)
+	}
+
+	return fmt.Errorf("unknown language ID: %q", languageID)
+}

@@ -57,7 +57,7 @@ type service struct {
 	openDirWalker   *walker.Walker
 
 	fs               *filesystem.Filesystem
-	modStore         *state.ModuleStore
+	recordStores     *state.RecordStores
 	schemaStore      *state.ProviderSchemaStore
 	regMetadataStore *state.RegistryModuleStore
 	tfDiscoFunc      discovery.DiscoveryFunc
@@ -513,18 +513,18 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.notifier.SetLogger(svc.logger)
 	svc.notifier.Start(svc.sessCtx)
 
-	svc.modStore = svc.stateStore.Modules
+	svc.recordStores = state.NewRecordStores(svc.stateStore.Modules)
 	svc.schemaStore = svc.stateStore.ProviderSchemas
 
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)
 
-	svc.indexer = indexer.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.RegistryModules,
+	svc.indexer = indexer.NewIndexer(svc.fs, svc.recordStores, svc.schemaStore, svc.stateStore.RegistryModules,
 		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
 	svc.indexer.SetLogger(svc.logger)
 
 	svc.decoder = decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: svc.modStore,
+		ModuleReader: svc.recordStores.Modules,
 		SchemaReader: svc.schemaStore,
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
@@ -532,12 +532,12 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.decoder.SetContext(decoderContext)
 
 	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
-	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.modStore, svc.indexer.WalkedModule)
+	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.recordStores, svc.indexer.WalkedModule)
 	svc.closedDirWalker.Collector = svc.walkerCollector
 	svc.closedDirWalker.SetLogger(svc.logger)
 
 	opendPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, true)
-	svc.openDirWalker = walker.NewWalker(svc.fs, opendPa, svc.modStore, svc.indexer.WalkedModule)
+	svc.openDirWalker = walker.NewWalker(svc.fs, opendPa, svc.recordStores, svc.indexer.WalkedModule)
 	svc.closedDirWalker.Collector = svc.walkerCollector
 	svc.openDirWalker.SetLogger(svc.logger)
 

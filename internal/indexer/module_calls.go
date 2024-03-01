@@ -202,7 +202,7 @@ func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.Di
 	id, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceTargets(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.DecodeReferenceTargets(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
 		},
 		Type:        op.OpTypeDecodeReferenceTargets.String(),
 		DependsOn:   dependsOn,
@@ -217,7 +217,7 @@ func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.Di
 	id, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceOrigins(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+			return module.DecodeReferenceOrigins(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
 		},
 		Type:        op.OpTypeDecodeReferenceOrigins.String(),
 		DependsOn:   dependsOn,
