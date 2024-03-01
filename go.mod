@@ -28,7 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vektra/mockery/v2 v2.42.0
-	github.com/zclconf/go-cty v1.14.2
+	github.com/zclconf/go-cty v1.14.3
 	github.com/zclconf/go-cty-debug v0.0.0-20191215020915-b22d67c1ba0b
 	go.bobheadxi.dev/gobenchdata v1.3.1
 	go.opentelemetry.io/otel/trace v1.24.0
