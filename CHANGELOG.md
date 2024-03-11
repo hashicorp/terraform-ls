@@ -1,3 +1,31 @@
+## 0.32.8 (11 March 2024)
+
+NOTES / BREAKING CHANGES:
+
+* Remove `inspect-module` command ([#1642](https://github.com/hashicorp/terraform-ls/pull/1642))
+
+BUG FIXES:
+
+* Fix `for` expression collection constraints ([hcl-lang#375](https://github.com/hashicorp/hcl-lang/pull/375))
+
+INTERNAL:
+
+* Remove getting provider schema log line ([#1643](https://github.com/hashicorp/terraform-ls/pull/1643))
+* Ignore preloaded schemas in complex module test ([#1638](https://github.com/hashicorp/terraform-ls/pull/1638))
+* Remove outdated LSP comparison from README ([#1641](https://github.com/hashicorp/terraform-ls/pull/1641))
+* Link to `.github/CONTRIBUTING.md` in README ([#1635](https://github.com/hashicorp/terraform-ls/pull/1635))
+* Bump Go version ([#1649](https://github.com/hashicorp/terraform-ls/pull/1649))
+* Enable pre releases via CRT ([#1651](https://github.com/hashicorp/terraform-ls/pull/1651))
+* build(deps): Bump workflows to latest trusted versions ([#1605](https://github.com/hashicorp/terraform-ls/pull/1605), [#1639](https://github.com/hashicorp/terraform-ls/pull/1639), [#1656](https://github.com/hashicorp/terraform-ls/pull/1656), [#1659](https://github.com/hashicorp/terraform-ls/pull/1659))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.40.3 to 2.42.0 ([#1633](https://github.com/hashicorp/terraform-ls/pull/1633), [#1640](https://github.com/hashicorp/terraform-ls/pull/1640))
+* build(deps): Bump golang.org/x/tools from 0.17.0 to 0.19.0 ([#1634](https://github.com/hashicorp/terraform-ls/pull/1634), [#1658](https://github.com/hashicorp/terraform-ls/pull/1658))
+* build(deps): Bump go.opentelemetry.io/otel from 1.23.1 to 1.24.0 ([#1644](https://github.com/hashicorp/terraform-ls/pull/1644))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.48.0 to 0.49.0 ([#1647](https://github.com/hashicorp/terraform-ls/pull/1647))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.48.0 to 0.49.0 ([#1646](https://github.com/hashicorp/terraform-ls/pull/1646))
+* build(deps): Bump github.com/zclconf/go-cty from 1.14.2 to 1.14.3 ([#1654](https://github.com/hashicorp/terraform-ls/pull/1654))
+* build(deps): Bump github.com/algolia/algoliasearch-client-go/v3 from 3.31.0 to 3.31.1 ([#1657](https://github.com/hashicorp/terraform-ls/pull/1657))
+* build(deps): Bump github.com/stretchr/testify from 1.8.4 to 1.9.0 ([#1653](https://github.com/hashicorp/terraform-ls/pull/1653))
+
 ## 0.32.7 (13 February 2024)
 
 ENHANCEMENTS:
