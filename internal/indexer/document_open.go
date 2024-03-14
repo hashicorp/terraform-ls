@@ -16,29 +16,29 @@ import (
 )
 
 func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
-	rootRecord, err := idx.recordStores.Roots.RootRecordByPath(modHandle.Path()) // TODO! revisit
-	if err != nil {
-		return nil, err
-	}
-
 	ids := make(job.IDs, 0)
 	var errs *multierror.Error
 
-	if rootRecord.TerraformVersionState == op.OpStateUnknown {
-		_, err := idx.jobStore.EnqueueJob(ctx, job.Job{
-			Dir: modHandle,
-			Func: func(ctx context.Context) error {
-				ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-				return module.GetTerraformVersion(ctx, idx.recordStores.Roots, modHandle.Path())
-			},
-			Type: op.OpTypeGetTerraformVersion.String(),
-		})
-		if err != nil {
-			errs = multierror.Append(errs, err)
+	rootRecord, err := idx.recordStores.Roots.RootRecordByPath(modHandle.Path()) // TODO! revisit
+	if err == nil {
+		// Only get the Terraform version if the directory is a module root
+
+		if rootRecord.TerraformVersionState == op.OpStateUnknown {
+			_, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+					return module.GetTerraformVersion(ctx, idx.recordStores.Roots, modHandle.Path())
+				},
+				Type: op.OpTypeGetTerraformVersion.String(),
+			})
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			}
+			// Given that getting version may take time and we only use it to
+			// enhance the UX, we ignore the outcome (job ID) here
+			// to avoid delays when documents of new modules are open.
 		}
-		// Given that getting version may take time and we only use it to
-		// enhance the UX, we ignore the outcome (job ID) here
-		// to avoid delays when documents of new modules are open.
 	}
 
 	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
