@@ -63,7 +63,7 @@ type PathStore interface {
 }
 
 type RecordStores interface {
-	AddIfNotExists(dir string, languageID string) error
+	AddIfNotExists(dir string, recordType ast.RecordType) error
 }
 
 const tracerName = "github.com/hashicorp/terraform-ls/internal/walker"
@@ -198,7 +198,11 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 		// the entries it was able to read before the error, along with the error.
 	}
 
-	dirIndexed := false
+	typeIndexed := map[string]bool{
+		"root":     false,
+		"module":   false,
+		"variable": false,
+	}
 
 	for _, dirEntry := range dirEntries {
 		select {
@@ -213,20 +217,42 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			continue
 		}
 
-		if !dirIndexed && ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
-			dirIndexed = true
-			w.logger.Printf("found module %s", dir)
+		if !typeIndexed["module"] && ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+			typeIndexed["module"] = true
+			w.logger.Printf("found module file in %s", dir)
 
-			err := w.recordStores.AddIfNotExists(dir.Path(), "terraform")
+			err := w.recordStores.AddIfNotExists(dir.Path(), ast.RecordTypeModule)
 			if err != nil {
 				return err
 			}
 
-			ids, err := w.walkFunc(ctx, dir)
+			// Let's not schedule any jobs for now
+			// ids, err := w.walkFunc(ctx, dir)
+			// if err != nil {
+			// 	w.collectError(fmt.Errorf("walkFunc: %w", err))
+			// }
+			// w.collectJobIds(ids)
+			continue
+		}
+		if !typeIndexed["variable"] && ast.IsVarsFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
+			typeIndexed["variable"] = true
+			w.logger.Printf("found variable file in %s", dir)
+
+			err := w.recordStores.AddIfNotExists(dir.Path(), ast.RecordTypeVariable)
 			if err != nil {
-				w.collectError(fmt.Errorf("walkFunc: %w", err))
+				return err
 			}
-			w.collectJobIds(ids)
+			continue
+		}
+		// TODO extract name detection to a separate function
+		if !typeIndexed["root"] && (dirEntry.Name() == ".terraform.lock.hcl" || dirEntry.Name() == ".terraform") {
+			typeIndexed["root"] = true
+			w.logger.Printf("found root module in %s", dir)
+
+			err := w.recordStores.AddIfNotExists(dir.Path(), ast.RecordTypeRoot)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 

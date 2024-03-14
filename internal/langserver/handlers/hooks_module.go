@@ -103,31 +103,32 @@ func moduleTelemetryData(mod *state.ModuleRecord, ch state.ModuleChanges, store 
 		}
 		properties["providerRequirements"] = reqs
 	}
-	if mod.TerraformVersion != nil {
-		properties["tfVersion"] = mod.TerraformVersion.String()
-	}
-	if len(mod.InstalledProviders) > 0 {
-		installedProviders := make(map[string]string, 0)
-		for pAddr, pv := range mod.InstalledProviders {
-			if telemetry.IsPublicProvider(pAddr) {
-				versionString := ""
-				if pv != nil {
-					versionString = pv.String()
-				}
-				installedProviders[pAddr.String()] = versionString
-				continue
-			}
+	// TODO!
+	// if mod.TerraformVersion != nil {
+	// 	properties["tfVersion"] = mod.TerraformVersion.String()
+	// }
+	// if len(mod.InstalledProviders) > 0 {
+	// 	installedProviders := make(map[string]string, 0)
+	// 	for pAddr, pv := range mod.InstalledProviders {
+	// 		if telemetry.IsPublicProvider(pAddr) {
+	// 			versionString := ""
+	// 			if pv != nil {
+	// 				versionString = pv.String()
+	// 			}
+	// 			installedProviders[pAddr.String()] = versionString
+	// 			continue
+	// 		}
 
-			// anonymize any unknown providers or the ones not publicly listed
-			id, err := store.GetProviderID(pAddr)
-			if err != nil {
-				continue
-			}
-			addr := fmt.Sprintf("unlisted/%s", id)
-			installedProviders[addr] = ""
-		}
-		properties["installedProviders"] = installedProviders
-	}
+	// 		// anonymize any unknown providers or the ones not publicly listed
+	// 		id, err := store.GetProviderID(pAddr)
+	// 		if err != nil {
+	// 			continue
+	// 		}
+	// 		addr := fmt.Sprintf("unlisted/%s", id)
+	// 		installedProviders[addr] = ""
+	// 	}
+	// 	properties["installedProviders"] = installedProviders
+	// }
 
 	if !hasChanged {
 		return nil, false
@@ -156,9 +157,10 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			for source, dm := range mod.ModuleDiagnostics {
 				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
-			for source, dm := range mod.VarsDiagnostics {
-				diags.Append(source, dm.AutoloadedOnly().AsMap())
-			}
+			// TODO!
+			// for source, dm := range mod.VarsDiagnostics {
+			// 	diags.Append(source, dm.AutoloadedOnly().AsMap())
+			// }
 
 			dNotifier.PublishHCLDiags(ctx, mod.Path(), diags)
 		}

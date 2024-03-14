@@ -30,8 +30,8 @@ func modulePathContext(mod *state.ModuleRecord, stateReader StateReader) (*decod
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
-		Functions:        coreFunctions(mod),
-		Validators:       moduleValidators,
+		// Functions:        // TODO! readd functions
+		Validators: moduleValidators,
 	}
 
 	for _, origin := range mod.RefOrigins {

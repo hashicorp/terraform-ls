@@ -65,9 +65,10 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 		}
 	}
 
-	for provider, version := range mod.InstalledProviders {
-		response.InstalledProviders[provider.String()] = version.String()
-	}
+	// TODO!
+	// for provider, version := range mod.InstalledProviders {
+	// 	response.InstalledProviders[provider.String()] = version.String()
+	// }
 
 	return response, nil
 }

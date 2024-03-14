@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
-	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/hashicorp/terraform-schema/registry"
@@ -365,7 +366,7 @@ func NewStateStore() (*StateStore, error) {
 		},
 		Roots: &RootStore{
 			db:        db,
-			tableName: variableTableName,
+			tableName: rootTableName,
 			logger:    defaultLogger,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
@@ -428,28 +429,68 @@ func NewRecordStores(modules *ModuleStore, roots *RootStore, variables *Variable
 	}
 }
 
-func (ds *RecordStores) ByPath(path string, languageID string) (RecordStore, error) {
-	if languageID == ilsp.Terraform.String() {
+func (ds *RecordStores) ByPath(path string, recordType ast.RecordType) (RecordStore, error) {
+	if recordType == ast.RecordTypeModule {
 		return ds.Modules.ModuleByPath(path)
 	}
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.VariableRecordByPath(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.RootRecordByPath(path)
+	}
 
-	return nil, fmt.Errorf("unknown language ID: %q", languageID)
+	return nil, fmt.Errorf("unknown record type: %q", recordType)
 }
 
-func (ds *RecordStores) Add(path string, languageID string) error {
-	if languageID == ilsp.Terraform.String() {
+func (ds *RecordStores) Add(path string, recordType ast.RecordType) error {
+	if recordType == ast.RecordTypeModule {
 		return ds.Modules.Add(path)
 	}
-
-	return fmt.Errorf("unknown language ID: %q", languageID)
-}
-
-func (ds *RecordStores) AddIfNotExists(path string, languageID string) error {
-	if languageID == ilsp.Terraform.String() {
-		return ds.Modules.AddIfNotExists(path)
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.Add(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.Add(path)
 	}
 
-	return fmt.Errorf("unknown language ID: %q", languageID)
+	return fmt.Errorf("unknown record type: %q", recordType)
+}
+
+func (ds *RecordStores) AddIfNotExists(path string, recordType ast.RecordType) error {
+	if recordType == ast.RecordTypeModule {
+		return ds.Modules.AddIfNotExists(path)
+	}
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.AddIfNotExists(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.AddIfNotExists(path)
+	}
+
+	return fmt.Errorf("unknown record type: %q", recordType)
+}
+
+func (ds *RecordStores) Remove(path string) error {
+	var errs *multierror.Error
+
+	err := ds.Modules.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	err = ds.Variables.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	err = ds.Roots.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	return errs.ErrorOrNil()
+
 }
 
 func (ds *RecordStores) DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error) {

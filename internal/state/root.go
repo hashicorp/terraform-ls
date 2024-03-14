@@ -80,6 +80,63 @@ func NewRootRecordTest(path string) *RootRecord {
 	}
 }
 
+func (s *RootStore) Add(modPath string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	err := s.add(txn, modPath)
+	if err != nil {
+		return err
+	}
+	txn.Commit()
+
+	return nil
+}
+
+func (s *RootStore) add(txn *memdb.Txn, modPath string) error {
+	// TODO: Introduce Exists method to Txn?
+	obj, err := txn.First(s.tableName, "id", modPath)
+	if err != nil {
+		return err
+	}
+	if obj != nil {
+		return &AlreadyExistsError{
+			Idx: modPath,
+		}
+	}
+
+	mod := newRootRecord(modPath)
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *RootStore) Remove(modPath string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	oldObj, err := txn.First(s.tableName, "id", modPath)
+	if err != nil {
+		return err
+	}
+
+	if oldObj == nil {
+		// already removed
+		return nil
+	}
+
+	_, err = txn.DeleteAll(s.tableName, "id", modPath)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *RootStore) RootRecordByPath(path string) (*RootRecord, error) {
 	txn := s.db.Txn(false)
 
@@ -89,6 +146,27 @@ func (s *RootStore) RootRecordByPath(path string) (*RootRecord, error) {
 	}
 
 	return mod, nil
+}
+
+func (s *RootStore) AddIfNotExists(path string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	_, err := rootRecordByPath(txn, path)
+	if err != nil {
+		if IsRecordNotFound(err) {
+			err := s.add(txn, path)
+			if err != nil {
+				return err
+			}
+			txn.Commit()
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func rootRecordByPath(txn *memdb.Txn, path string) (*RootRecord, error) {

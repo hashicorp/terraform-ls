@@ -127,6 +127,27 @@ func (s *VariableStore) add(txn *memdb.Txn, modPath string) error {
 	return nil
 }
 
+func (s *VariableStore) AddIfNotExists(path string) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	_, err := variableRecordByPath(txn, path)
+	if err != nil {
+		if IsRecordNotFound(err) {
+			err := s.add(txn, path)
+			if err != nil {
+				return err
+			}
+			txn.Commit()
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 func (s *VariableStore) Remove(modPath string) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()

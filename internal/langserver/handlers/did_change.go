@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
 func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidChangeTextDocumentParams) error {
@@ -54,7 +55,7 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 	}
 
 	// check existence
-	_, err = svc.recordStores.ByPath(dh.Dir.Path(), doc.LanguageID)
+	_, err = svc.recordStores.ByPath(dh.Dir.Path(), ast.RecordTypeFromLanguageID(doc.LanguageID))
 	if err != nil {
 		return err
 	}

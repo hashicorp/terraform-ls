@@ -16,7 +16,7 @@ import (
 )
 
 func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHandle) (job.IDs, error) {
-	mod, err := idx.recordStores.Modules.ModuleByPath(modHandle.Path()) // TODO! revisit
+	rootRecord, err := idx.recordStores.Roots.RootRecordByPath(modHandle.Path()) // TODO! revisit
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 	ids := make(job.IDs, 0)
 	var errs *multierror.Error
 
-	if mod.TerraformVersionState == op.OpStateUnknown {
+	if rootRecord.TerraformVersionState == op.OpStateUnknown {
 		_, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
