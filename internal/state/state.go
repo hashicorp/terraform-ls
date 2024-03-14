@@ -300,6 +300,21 @@ type ModuleCallReader interface {
 	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
 }
 
+type StateReader interface {
+	DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error)
+	InstalledModuleCalls(modPath string) (map[string]tfmod.InstalledModuleCall, error)
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
+	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
+	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
+	TerraformVersion(modPath string) *version.Version
+
+	ModuleRecordByPath(modPath string) (*ModuleRecord, error)
+	VariableRecordByPath(modPath string) (*VariableRecord, error)
+
+	ListModuleRecords() ([]*ModuleRecord, error)
+	ListVariableRecords() ([]*VariableRecord, error)
+}
+
 type ProviderSchemaStore struct {
 	db        *memdb.MemDB
 	tableName string
@@ -387,16 +402,29 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
 type RecordStores struct {
-	Modules *ModuleStore
+	Modules         *ModuleStore
+	ProviderSchemas *ProviderSchemaStore
+	RegistryModules *RegistryModuleStore
+	Roots           *RootStore
+	Variables       *VariableStore
 }
+
+var (
+	_ StateReader = &RecordStores{}
+)
 
 type RecordStore interface {
 	Path() string
 }
 
-func NewRecordStores(modules *ModuleStore) *RecordStores {
+func NewRecordStores(modules *ModuleStore, roots *RootStore, variables *VariableStore,
+	registryModules *RegistryModuleStore, providerSchemas *ProviderSchemaStore) *RecordStores {
 	return &RecordStores{
-		Modules: modules,
+		Modules:         modules,
+		ProviderSchemas: providerSchemas,
+		RegistryModules: registryModules,
+		Roots:           roots,
+		Variables:       variables,
 	}
 }
 
@@ -422,4 +450,50 @@ func (ds *RecordStores) AddIfNotExists(path string, languageID string) error {
 	}
 
 	return fmt.Errorf("unknown language ID: %q", languageID)
+}
+
+func (ds *RecordStores) DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error) {
+	return ds.Modules.DeclaredModuleCalls(modPath)
+}
+
+func (ds *RecordStores) InstalledModuleCalls(modPath string) (map[string]tfmod.InstalledModuleCall, error) {
+	return ds.Roots.InstalledModuleCalls(modPath)
+}
+
+func (ds *RecordStores) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
+	return ds.Modules.LocalModuleMeta(modPath)
+}
+
+func (ds *RecordStores) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
+	return ds.RegistryModules.RegistryModuleMeta(addr, cons)
+}
+
+func (ds *RecordStores) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
+	return ds.ProviderSchemas.ProviderSchema(modPath, addr, vc)
+}
+
+func (ds *RecordStores) TerraformVersion(modPath string) *version.Version {
+	// TODO! some path magic
+	root, err := ds.Roots.RootRecordByPath(modPath)
+	if err != nil {
+		return nil
+	}
+
+	return root.TerraformVersion
+}
+
+func (ds *RecordStores) ModuleRecordByPath(modPath string) (*ModuleRecord, error) {
+	return ds.Modules.ModuleByPath(modPath)
+}
+
+func (ds *RecordStores) VariableRecordByPath(modPath string) (*VariableRecord, error) {
+	return ds.Variables.VariableRecordByPath(modPath)
+}
+
+func (ds *RecordStores) ListModuleRecords() ([]*ModuleRecord, error) {
+	return ds.Modules.List()
+}
+
+func (ds *RecordStores) ListVariableRecords() ([]*VariableRecord, error) {
+	return ds.Variables.List()
 }

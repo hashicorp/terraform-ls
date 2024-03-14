@@ -1,11 +1,14 @@
 package state
 
 import (
+	"path/filepath"
+
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 // RootRecord contains all information about a module root path, like
@@ -275,4 +278,50 @@ func (s *RootStore) UpdateTerraformAndProviderVersions(modPath string, tfVer *ve
 
 	txn.Commit()
 	return nil
+}
+
+func (s *RootStore) CallersOfModule(modPath string) ([]*RootRecord, error) {
+	txn := s.db.Txn(false)
+	it, err := txn.Get(s.tableName, "id")
+	if err != nil {
+		return nil, err
+	}
+
+	callers := make([]*RootRecord, 0)
+	for item := it.Next(); item != nil; item = it.Next() {
+		record := item.(*RootRecord)
+
+		if record.ModManifest == nil {
+			continue
+		}
+		if record.ModManifest.ContainsLocalModule(modPath) {
+			callers = append(callers, record)
+		}
+	}
+
+	return callers, nil
+}
+
+func (s *RootStore) InstalledModuleCalls(modPath string) (map[string]tfmod.InstalledModuleCall, error) {
+	mod, err := s.RootRecordByPath(modPath)
+	if err != nil {
+		return map[string]tfmod.InstalledModuleCall{}, err
+	}
+
+	installed := make(map[string]tfmod.InstalledModuleCall)
+	if mod.ModManifest != nil {
+		for _, record := range mod.ModManifest.Records {
+			if record.IsRoot() {
+				continue
+			}
+			installed[record.Key] = tfmod.InstalledModuleCall{
+				LocalName:  record.Key,
+				SourceAddr: record.SourceAddr,
+				Version:    record.Version,
+				Path:       filepath.Join(modPath, record.Dir),
+			}
+		}
+	}
+
+	return installed, err
 }

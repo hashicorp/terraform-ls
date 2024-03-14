@@ -22,21 +22,21 @@ import (
 func (idx *Indexer) decodeInstalledModuleCalls(ctx context.Context, modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
 	jobIds := make(job.IDs, 0)
 
-	moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
+	installed, err := idx.recordStores.InstalledModuleCalls(modHandle.Path())
 	if err != nil {
 		return jobIds, err
 	}
 
 	var errs *multierror.Error
 
-	idx.logger.Printf("indexing installed module calls: %d", len(moduleCalls.Installed))
-	for _, mc := range moduleCalls.Installed {
+	idx.logger.Printf("indexing installed module calls: %d", len(installed))
+	for _, mc := range installed {
 		fi, err := os.Stat(mc.Path)
 		if err != nil || !fi.IsDir() {
 			multierror.Append(errs, err)
 			continue
 		}
-		err = idx.modStore.Add(mc.Path)
+		err = idx.recordStores.Modules.Add(mc.Path) // TODO! revisit for language IDs
 		if err != nil {
 			multierror.Append(errs, err)
 			continue
@@ -54,15 +54,15 @@ func (idx *Indexer) decodeInstalledModuleCalls(ctx context.Context, modHandle do
 func (idx *Indexer) decodeDeclaredModuleCalls(ctx context.Context, modHandle document.DirHandle, ignoreState bool) (job.IDs, error) {
 	jobIds := make(job.IDs, 0)
 
-	moduleCalls, err := idx.modStore.ModuleCalls(modHandle.Path())
+	declared, err := idx.recordStores.DeclaredModuleCalls(modHandle.Path())
 	if err != nil {
 		return jobIds, err
 	}
 
 	var errs *multierror.Error
 
-	idx.logger.Printf("indexing declared module calls for %q: %d", modHandle.URI, len(moduleCalls.Declared))
-	for _, mc := range moduleCalls.Declared {
+	idx.logger.Printf("indexing declared module calls for %q: %d", modHandle.URI, len(declared))
+	for _, mc := range declared {
 		localSource, ok := mc.SourceAddr.(tfmodule.LocalSourceAddr)
 		if !ok {
 			continue
@@ -76,7 +76,7 @@ func (idx *Indexer) decodeDeclaredModuleCalls(ctx context.Context, modHandle doc
 		}
 
 		mcIgnoreState := ignoreState
-		err = idx.modStore.Add(mcPath)
+		err = idx.recordStores.Modules.Add(mcPath) // TODO! revisit for language IDs
 		if err != nil {
 			alreadyExistsErr := &state.AlreadyExistsError{}
 			if errors.As(err, &alreadyExistsErr) {
@@ -104,7 +104,7 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 	parseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleConfiguration(ctx, idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseModuleConfiguration(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
 		},
 		Type:        op.OpTypeParseModuleConfiguration.String(),
 		IgnoreState: ignoreState,
@@ -122,7 +122,7 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 			Dir:  modHandle,
 			Type: op.OpTypeLoadModuleMetadata.String(),
 			Func: func(ctx context.Context) error {
-				return module.LoadModuleMetadata(ctx, idx.modStore, modHandle.Path())
+				return module.LoadModuleMetadata(ctx, idx.recordStores.Modules, modHandle.Path())
 			},
 			DependsOn:   job.IDs{parseId},
 			IgnoreState: ignoreState,
@@ -137,7 +137,7 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 		eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.recordStores.Modules, idx.recordStores.ProviderSchemas, modHandle.Path())
 			},
 			Type:        op.OpTypePreloadEmbeddedSchema.String(),
 			DependsOn:   job.IDs{metaId},
@@ -163,7 +163,7 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 	varsParseId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(ctx, idx.fs, idx.modStore, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.recordStores.Variables, modHandle.Path())
 		},
 		Type:        op.OpTypeParseVariables.String(),
 		IgnoreState: ignoreState,
@@ -178,7 +178,7 @@ func (idx *Indexer) decodeModuleAtPath(ctx context.Context, modHandle document.D
 		varsRefId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.DecodeVarsReferences(ctx, idx.modStore, idx.schemaStore, modHandle.Path())
+				return module.DecodeVarsReferences(ctx, idx.recordStores.Variables, idx.recordStores, modHandle.Path())
 			},
 			Type:        op.OpTypeDecodeVarsReferences.String(),
 			DependsOn:   job.IDs{varsParseId},
@@ -202,7 +202,7 @@ func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.Di
 	id, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceTargets(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+			return module.DecodeReferenceTargets(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 		},
 		Type:        op.OpTypeDecodeReferenceTargets.String(),
 		DependsOn:   dependsOn,
@@ -217,7 +217,7 @@ func (idx *Indexer) collectReferences(ctx context.Context, modHandle document.Di
 	id, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeReferenceOrigins(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+			return module.DecodeReferenceOrigins(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 		},
 		Type:        op.OpTypeDecodeReferenceOrigins.String(),
 		DependsOn:   dependsOn,

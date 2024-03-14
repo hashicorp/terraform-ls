@@ -39,7 +39,7 @@ func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirH
 	parseVarsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseVariables(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
+			return module.ParseVariables(ctx, idx.fs, idx.recordStores.Variables, modHandle.Path())
 		},
 		Type:        op.OpTypeParseVariables.String(),
 		IgnoreState: true,
@@ -58,7 +58,7 @@ func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirH
 		_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
 			Func: func(ctx context.Context) error {
-				return module.SchemaVariablesValidation(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+				return module.SchemaVariablesValidation(ctx, idx.recordStores.Variables, idx.recordStores, modHandle.Path())
 			},
 			Type:        op.OpTypeSchemaVarsValidation.String(),
 			DependsOn:   append(modIds, parseVarsId),
@@ -72,7 +72,7 @@ func (idx *Indexer) DocumentChanged(ctx context.Context, modHandle document.DirH
 	varsRefsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.DecodeVarsReferences(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+			return module.DecodeVarsReferences(ctx, idx.recordStores.Variables, idx.recordStores, modHandle.Path())
 		},
 		Type:        op.OpTypeDecodeVarsReferences.String(),
 		DependsOn:   job.IDs{parseVarsId},
@@ -123,7 +123,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			eSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
-					return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+					return module.PreloadEmbeddedSchema(ctx, idx.logger, schemas.FS, idx.recordStores.Modules, idx.recordStores.ProviderSchemas, modHandle.Path())
 				},
 				Type:        op.OpTypePreloadEmbeddedSchema.String(),
 				IgnoreState: ignoreState,
@@ -137,7 +137,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 				_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 					Dir: modHandle,
 					Func: func(ctx context.Context) error {
-						return module.SchemaModuleValidation(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+						return module.SchemaModuleValidation(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 					},
 					Type:        op.OpTypeSchemaModuleValidation.String(),
 					DependsOn:   append(modCalls, eSchemaId),
@@ -151,7 +151,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			refTargetsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
-					return module.DecodeReferenceTargets(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+					return module.DecodeReferenceTargets(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 				},
 				Type:        op.OpTypeDecodeReferenceTargets.String(),
 				DependsOn:   job.IDs{eSchemaId},
@@ -165,7 +165,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 			refOriginsId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 				Dir: modHandle,
 				Func: func(ctx context.Context) error {
-					return module.DecodeReferenceOrigins(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+					return module.DecodeReferenceOrigins(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 				},
 				Type:        op.OpTypeDecodeReferenceOrigins.String(),
 				DependsOn:   append(modCalls, eSchemaId),
@@ -180,7 +180,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 				_, err = idx.jobStore.EnqueueJob(ctx, job.Job{
 					Dir: modHandle,
 					Func: func(ctx context.Context) error {
-						return module.ReferenceValidation(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+						return module.ReferenceValidation(ctx, idx.recordStores.Modules, idx.recordStores, modHandle.Path())
 					},
 					Type:        op.OpTypeReferenceValidation.String(),
 					DependsOn:   job.IDs{refOriginsId, refTargetsId},
@@ -205,7 +205,7 @@ func (idx *Indexer) decodeModule(ctx context.Context, modHandle document.DirHand
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			return module.GetModuleDataFromRegistry(ctx, idx.registryClient,
-				idx.recordStores.Modules, idx.registryModStore, modHandle.Path())
+				idx.recordStores.Modules, idx.recordStores.RegistryModules, modHandle.Path())
 		},
 		Priority:  job.LowPriority,
 		DependsOn: job.IDs{metaId},

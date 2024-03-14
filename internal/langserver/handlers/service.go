@@ -56,21 +56,19 @@ type service struct {
 	closedDirWalker *walker.Walker
 	openDirWalker   *walker.Walker
 
-	fs               *filesystem.Filesystem
-	recordStores     *state.RecordStores
-	schemaStore      *state.ProviderSchemaStore
-	regMetadataStore *state.RegistryModuleStore
-	tfDiscoFunc      discovery.DiscoveryFunc
-	tfExecFactory    exec.ExecutorFactory
-	tfExecOpts       *exec.ExecutorOpts
-	telemetry        telemetry.Sender
-	decoder          *decoder.Decoder
-	stateStore       *state.StateStore
-	server           session.Server
-	diagsNotifier    *diagnostics.Notifier
-	notifier         *notifier.Notifier
-	indexer          *indexer.Indexer
-	registryClient   registry.Client
+	fs             *filesystem.Filesystem
+	recordStores   *state.RecordStores
+	tfDiscoFunc    discovery.DiscoveryFunc
+	tfExecFactory  exec.ExecutorFactory
+	tfExecOpts     *exec.ExecutorOpts
+	telemetry      telemetry.Sender
+	decoder        *decoder.Decoder
+	stateStore     *state.StateStore
+	server         session.Server
+	diagsNotifier  *diagnostics.Notifier
+	notifier       *notifier.Notifier
+	indexer        *indexer.Indexer
+	registryClient registry.Client
 
 	walkerCollector    *walker.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -513,19 +511,18 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.notifier.SetLogger(svc.logger)
 	svc.notifier.Start(svc.sessCtx)
 
-	svc.recordStores = state.NewRecordStores(svc.stateStore.Modules)
-	svc.schemaStore = svc.stateStore.ProviderSchemas
+	svc.recordStores = state.NewRecordStores(svc.stateStore.Modules, svc.recordStores.Roots, svc.recordStores.Variables,
+		svc.recordStores.RegistryModules, svc.recordStores.ProviderSchemas)
 
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)
 
-	svc.indexer = indexer.NewIndexer(svc.fs, svc.recordStores, svc.schemaStore, svc.stateStore.RegistryModules,
+	svc.indexer = indexer.NewIndexer(svc.fs, svc.recordStores,
 		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
 	svc.indexer.SetLogger(svc.logger)
 
 	svc.decoder = decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: svc.recordStores.Modules,
-		SchemaReader: svc.schemaStore,
+		StateReader: svc.recordStores,
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
 	svc.AppendCompletionHooks(decoderContext)

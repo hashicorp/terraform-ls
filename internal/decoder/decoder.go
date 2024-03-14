@@ -15,11 +15,12 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/utm"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func modulePathContext(mod *state.ModuleRecord, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
-	schema, err := schemaForModule(mod, schemaReader, modReader)
+func modulePathContext(mod *state.ModuleRecord, stateReader StateReader) (*decoder.PathContext, error) {
+	schema, err := schemaForModule(mod, stateReader)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +54,14 @@ func modulePathContext(mod *state.ModuleRecord, schemaReader state.SchemaReader,
 	return pathCtx, nil
 }
 
-func varsPathContext(mod *state.ModuleRecord) (*decoder.PathContext, error) {
-	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables, mod.Path())
+func varsPathContext(mod *state.VariableRecord, stateReader StateReader) (*decoder.PathContext, error) {
+	variables := make(map[string]tfmod.Variable)
+	meta, err := stateReader.LocalModuleMeta(mod.Path())
+	if err == nil {
+		variables = meta.Variables
+	}
+
+	schema, err := tfschema.SchemaForVariables(variables, mod.Path())
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +73,7 @@ func varsPathContext(mod *state.ModuleRecord) (*decoder.PathContext, error) {
 		Files:            make(map[string]*hcl.File),
 	}
 
-	if len(mod.ParsedModuleFiles) > 0 {
+	if len(schema.Attributes) > 0 {
 		// Only validate if this is actually a module
 		// as we may come across standalone tfvars files
 		// for which we have no context.

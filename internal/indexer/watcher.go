@@ -20,7 +20,7 @@ func (idx *Indexer) ModuleManifestChanged(ctx context.Context, modHandle documen
 	modManifestId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseModuleManifest(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
+			return module.ParseModuleManifest(ctx, idx.fs, idx.recordStores.Roots, modHandle.Path())
 		},
 		Type:        op.OpTypeParseModuleManifest.String(),
 		IgnoreState: true,
@@ -44,7 +44,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 	pSchemaVerId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
-			return module.ParseProviderVersions(ctx, idx.fs, idx.recordStores.Modules, modHandle.Path())
+			return module.ParseProviderVersions(ctx, idx.fs, idx.recordStores.Roots, modHandle.Path())
 		},
 		IgnoreState: true,
 		Type:        op.OpTypeParseProviderVersions.String(),
@@ -60,7 +60,7 @@ func (idx *Indexer) PluginLockChanged(ctx context.Context, modHandle document.Di
 		Dir: modHandle,
 		Func: func(ctx context.Context) error {
 			ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
-			return module.ObtainSchema(ctx, idx.recordStores.Modules, idx.schemaStore, modHandle.Path())
+			return module.ObtainSchema(ctx, idx.recordStores.Modules, idx.recordStores.ProviderSchemas, modHandle.Path())
 		},
 		IgnoreState: true,
 		Type:        op.OpTypeObtainSchema.String(),

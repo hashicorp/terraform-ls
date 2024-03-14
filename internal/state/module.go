@@ -11,9 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
-	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
-	"github.com/hashicorp/terraform-schema/registry"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -200,28 +198,6 @@ func (s *ModuleStore) Remove(modPath string) error {
 	return nil
 }
 
-func (s *ModuleStore) CallersOfModule(modPath string) ([]*ModuleRecord, error) {
-	txn := s.db.Txn(false)
-	it, err := txn.Get(s.tableName, "id")
-	if err != nil {
-		return nil, err
-	}
-
-	callers := make([]*ModuleRecord, 0)
-	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*ModuleRecord)
-
-		if mod.ModManifest == nil {
-			continue
-		}
-		if mod.ModManifest.ContainsLocalModule(modPath) {
-			callers = append(callers, mod)
-		}
-	}
-
-	return callers, nil
-}
-
 func (s *ModuleStore) ModuleByPath(path string) (*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 
@@ -254,33 +230,15 @@ func (s *ModuleStore) AddIfNotExists(path string) error {
 	return nil
 }
 
-func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
+func (s *ModuleStore) DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
-		return tfmod.ModuleCalls{}, err
+		return map[string]tfmod.DeclaredModuleCall{}, err
 	}
 
-	modCalls := tfmod.ModuleCalls{
-		Installed: make(map[string]tfmod.InstalledModuleCall),
-		Declared:  make(map[string]tfmod.DeclaredModuleCall),
-	}
-
-	if mod.ModManifest != nil {
-		for _, record := range mod.ModManifest.Records {
-			if record.IsRoot() {
-				continue
-			}
-			modCalls.Installed[record.Key] = tfmod.InstalledModuleCall{
-				LocalName:  record.Key,
-				SourceAddr: record.SourceAddr,
-				Version:    record.Version,
-				Path:       filepath.Join(modPath, record.Dir),
-			}
-		}
-	}
-
+	declared := make(map[string]tfmod.DeclaredModuleCall)
 	for _, mc := range mod.Meta.ModuleCalls {
-		modCalls.Declared[mc.LocalName] = tfmod.DeclaredModuleCall{
+		declared[mc.LocalName] = tfmod.DeclaredModuleCall{
 			LocalName:  mc.LocalName,
 			SourceAddr: mc.SourceAddr,
 			Version:    mc.Version,
@@ -289,7 +247,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 		}
 	}
 
-	return modCalls, err
+	return declared, err
 }
 
 func (s *ModuleStore) ProviderRequirementsForModule(modPath string) (tfmod.ProviderRequirements, error) {
@@ -342,34 +300,35 @@ func (s *ModuleStore) providerRequirementsForModule(modPath string, level int) (
 		}
 	}
 
-	if mod.ModManifest != nil {
-		for _, record := range mod.ModManifest.Records {
-			_, ok := record.SourceAddr.(tfmod.LocalSourceAddr)
-			if ok {
-				continue
-			}
+	// TODO! move into RootStore
+	// if mod.ModManifest != nil {
+	// 	for _, record := range mod.ModManifest.Records {
+	// 		_, ok := record.SourceAddr.(tfmod.LocalSourceAddr)
+	// 		if ok {
+	// 			continue
+	// 		}
 
-			if record.IsRoot() {
-				continue
-			}
+	// 		if record.IsRoot() {
+	// 			continue
+	// 		}
 
-			fullPath := filepath.Join(modPath, record.Dir)
-			pr, err := s.providerRequirementsForModule(fullPath, level)
-			if err != nil {
-				continue
-			}
-			for pAddr, pCons := range pr {
-				if cons, ok := requirements[pAddr]; ok {
-					for _, c := range pCons {
-						if !constraintContains(cons, c) {
-							requirements[pAddr] = append(requirements[pAddr], c)
-						}
-					}
-				}
-				requirements[pAddr] = pCons
-			}
-		}
-	}
+	// 		fullPath := filepath.Join(modPath, record.Dir)
+	// 		pr, err := s.providerRequirementsForModule(fullPath, level)
+	// 		if err != nil {
+	// 			continue
+	// 		}
+	// 		for pAddr, pCons := range pr {
+	// 			if cons, ok := requirements[pAddr]; ok {
+	// 				for _, c := range pCons {
+	// 					if !constraintContains(cons, c) {
+	// 						requirements[pAddr] = append(requirements[pAddr], c)
+	// 					}
+	// 				}
+	// 			}
+	// 			requirements[pAddr] = pCons
+	// 		}
+	// 	}
+	// }
 
 	return requirements, nil
 }
@@ -392,44 +351,18 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 		return nil, fmt.Errorf("%s: module data not available", modPath)
 	}
 	return &tfmod.Meta{
-		Path:                 mod.path,
+		Path:      mod.path,
+		Filenames: mod.Meta.Filenames,
+
+		CoreRequirements:     mod.Meta.CoreRequirements,
+		Backend:              mod.Meta.Backend,
+		Cloud:                mod.Meta.Cloud,
 		ProviderReferences:   mod.Meta.ProviderReferences,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
-		CoreRequirements:     mod.Meta.CoreRequirements,
 		Variables:            mod.Meta.Variables,
 		Outputs:              mod.Meta.Outputs,
-		Filenames:            mod.Meta.Filenames,
 		ModuleCalls:          mod.Meta.ModuleCalls,
 	}, nil
-}
-
-func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
-	txn := s.db.Txn(false)
-
-	it, err := txn.Get(registryModuleTableName, "source_addr", addr)
-	if err != nil {
-		return nil, err
-	}
-
-	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*RegistryModuleData)
-
-		if mod.Error {
-			continue
-		}
-
-		if cons.Check(mod.Version) {
-			return &registry.ModuleData{
-				Version: mod.Version,
-				Inputs:  mod.Inputs,
-				Outputs: mod.Outputs,
-			}, nil
-		}
-	}
-
-	return nil, &RecordNotFoundError{
-		Source: addr.String(),
-	}
 }
 
 func moduleByPath(txn *memdb.Txn, path string) (*ModuleRecord, error) {

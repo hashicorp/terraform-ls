@@ -14,31 +14,26 @@ import (
 )
 
 type Indexer struct {
-	logger           *log.Logger
-	fs               ReadOnlyFS
-	recordStores     *state.RecordStores
-	schemaStore      *state.ProviderSchemaStore
-	registryModStore *state.RegistryModuleStore
-	jobStore         job.JobStore
-	tfExecFactory    exec.ExecutorFactory
-	registryClient   registry.Client
+	logger         *log.Logger
+	fs             ReadOnlyFS
+	recordStores   *state.RecordStores
+	jobStore       job.JobStore
+	tfExecFactory  exec.ExecutorFactory
+	registryClient registry.Client
 }
 
-func NewIndexer(fs ReadOnlyFS, recordStores *state.RecordStores, schemaStore *state.ProviderSchemaStore,
-	registryModStore *state.RegistryModuleStore, jobStore job.JobStore,
+func NewIndexer(fs ReadOnlyFS, recordStores *state.RecordStores, jobStore job.JobStore,
 	tfExec exec.ExecutorFactory, registryClient registry.Client) *Indexer {
 
 	discardLogger := log.New(ioutil.Discard, "", 0)
 
 	return &Indexer{
-		fs:               fs,
-		recordStores:     recordStores,
-		schemaStore:      schemaStore,
-		registryModStore: registryModStore,
-		jobStore:         jobStore,
-		tfExecFactory:    tfExec,
-		registryClient:   registryClient,
-		logger:           discardLogger,
+		fs:             fs,
+		recordStores:   recordStores,
+		jobStore:       jobStore,
+		tfExecFactory:  tfExec,
+		registryClient: registryClient,
+		logger:         discardLogger,
 	}
 }
 

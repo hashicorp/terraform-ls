@@ -83,8 +83,8 @@ func (mo ModuleOperation) done() <-chan struct{} {
 // Knowing the version is not required though as we can rely on
 // the constraint in `required_version` (as parsed via
 // [LoadModuleMetadata] and compare it against known released versions.
-func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func GetTerraformVersion(ctx context.Context, rootStore *state.RootStore, modPath string) error {
+	mod, err := rootStore.RootRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -94,15 +94,15 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetTerraformVersionState(modPath, op.OpStateLoading)
+	err = rootStore.SetTerraformVersionState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
-	defer modStore.SetTerraformVersionState(modPath, op.OpStateLoaded)
+	defer rootStore.SetTerraformVersionState(modPath, op.OpStateLoaded)
 
 	tfExec, err := TerraformExecutorForModule(ctx, mod.Path())
 	if err != nil {
-		sErr := modStore.UpdateTerraformAndProviderVersions(modPath, nil, nil, err)
+		sErr := rootStore.UpdateTerraformAndProviderVersions(modPath, nil, nil, err)
 		if err != nil {
 			return sErr
 		}
@@ -119,7 +119,7 @@ func GetTerraformVersion(ctx context.Context, modStore *state.ModuleStore, modPa
 	// See https://github.com/hashicorp/terraform-ls/issues/24
 	pVersions := providerVersionsFromTfVersion(pv)
 
-	sErr := modStore.UpdateTerraformAndProviderVersions(modPath, v, pVersions, err)
+	sErr := rootStore.UpdateTerraformAndProviderVersions(modPath, v, pVersions, err)
 	if sErr != nil {
 		return sErr
 	}
@@ -448,8 +448,8 @@ func ParseModuleConfiguration(ctx context.Context, fs ReadOnlyFS, modStore *stat
 
 // ParseVariables parses the variables configuration,
 // i.e. turns bytes of `*.tfvars` files into AST ([*hcl.File]).
-func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func ParseVariables(ctx context.Context, fs ReadOnlyFS, varStore *state.VariableStore, modPath string) error {
+	mod, err := varStore.VariableRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -465,9 +465,9 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 	var diags ast.VarsDiags
 	rpcContext := lsctx.DocumentContext(ctx)
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if mod.ModuleDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Tfvars.String() {
+	if mod.VarsDiagnosticsState[ast.HCLParsingSource] == op.OpStateLoaded && rpcContext.IsDidChangeRequest() && rpcContext.LanguageID == ilsp.Tfvars.String() {
 		// the file has already been parsed, so only examine this file and not the whole module
-		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		err = varStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
 			return err
 		}
@@ -496,7 +496,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		diags = existingDiags
 	} else {
 		// this is the first time file is opened so parse the whole module
-		err = modStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
+		err = varStore.SetVarsDiagnosticsState(modPath, ast.HCLParsingSource, op.OpStateLoading)
 		if err != nil {
 			return err
 		}
@@ -508,12 +508,12 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		return err
 	}
 
-	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+	sErr := varStore.UpdateParsedVarsFiles(modPath, files, err)
 	if sErr != nil {
 		return sErr
 	}
 
-	sErr = modStore.UpdateVarsDiagnostics(modPath, ast.HCLParsingSource, diags)
+	sErr = varStore.UpdateVarsDiagnostics(modPath, ast.HCLParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}
@@ -527,8 +527,8 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 // This is useful for processing any modules which are not local
 // nor hosted in the Registry (which would be handled by
 // [GetModuleDataFromRegistry]).
-func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, rootStore *state.RootStore, modPath string) error {
+	mod, err := rootStore.RootRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -538,7 +538,7 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetModManifestState(modPath, op.OpStateLoading)
+	err = rootStore.SetModManifestState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
@@ -546,7 +546,7 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 	manifestPath, ok := datadir.ModuleManifestFilePath(fs, modPath)
 	if !ok {
 		err := fmt.Errorf("%s: manifest file does not exist", modPath)
-		sErr := modStore.UpdateModManifest(modPath, nil, err)
+		sErr := rootStore.UpdateModManifest(modPath, nil, err)
 		if sErr != nil {
 			return sErr
 		}
@@ -556,14 +556,14 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 	mm, err := datadir.ParseModuleManifestFromFile(manifestPath)
 	if err != nil {
 		err := fmt.Errorf("failed to parse manifest: %w", err)
-		sErr := modStore.UpdateModManifest(modPath, nil, err)
+		sErr := rootStore.UpdateModManifest(modPath, nil, err)
 		if sErr != nil {
 			return sErr
 		}
 		return err
 	}
 
-	sErr := modStore.UpdateModManifest(modPath, mm, err)
+	sErr := rootStore.UpdateModManifest(modPath, mm, err)
 
 	if sErr != nil {
 		return sErr
@@ -574,8 +574,8 @@ func ParseModuleManifest(ctx context.Context, fs ReadOnlyFS, modStore *state.Mod
 // ParseProviderVersions is a job complimentary to [ObtainSchema]
 // in that it obtains versions of providers/schemas from Terraform
 // CLI's lock file.
-func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleStore, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, rootStore *state.RootStore, modPath string) error {
+	mod, err := rootStore.RootRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -585,14 +585,14 @@ func ParseProviderVersions(ctx context.Context, fs ReadOnlyFS, modStore *state.M
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetInstalledProvidersState(modPath, op.OpStateLoading)
+	err = rootStore.SetInstalledProvidersState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
 	pvm, err := datadir.ParsePluginVersions(fs, modPath)
 
-	sErr := modStore.UpdateInstalledProviders(modPath, pvm, err)
+	sErr := rootStore.UpdateInstalledProviders(modPath, pvm, err)
 	if sErr != nil {
 		return sErr
 	}
@@ -656,7 +656,7 @@ func LoadModuleMetadata(ctx context.Context, modStore *state.ModuleStore, modPat
 // For example it tells us that variable block between certain LOC
 // can be referred to as var.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
-func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, stateReader state.StateReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -675,8 +675,7 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
@@ -707,7 +706,7 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, sc
 // For example it tells us that there is a reference address var.foobar
 // at a particular LOC. This can be later matched with targets
 // (as obtained via [DecodeReferenceTargets]) during hover or go-to-definition.
-func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, stateReader state.StateReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -726,8 +725,7 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
@@ -756,8 +754,8 @@ func DecodeReferenceOrigins(ctx context.Context, modStore *state.ModuleStore, sc
 //
 // This is useful in hovering over those variable names,
 // go-to-definition and go-to-references.
-func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func DecodeVarsReferences(ctx context.Context, varStore *state.VariableStore, stateReader state.StateReader, modPath string) error {
+	mod, err := varStore.VariableRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -769,14 +767,13 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
+	err = varStore.SetVarsReferenceOriginsState(modPath, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
@@ -789,7 +786,7 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 	}
 
 	origins, rErr := varsDecoder.CollectReferenceOrigins()
-	sErr := modStore.UpdateVarsReferenceOrigins(modPath, origins, rErr)
+	sErr := varStore.UpdateVarsReferenceOrigins(modPath, origins, rErr)
 	if sErr != nil {
 		return sErr
 	}
@@ -804,7 +801,7 @@ func DecodeVarsReferences(ctx context.Context, modStore *state.ModuleStore, sche
 // It relies on previously parsed AST (via [ParseModuleConfiguration]),
 // core schema of appropriate version (as obtained via [GetTerraformVersion])
 // and provider schemas ([PreloadEmbeddedSchema] or [ObtainSchema]).
-func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, stateReader state.StateReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -821,8 +818,7 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, sc
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	})
 
 	d.SetContext(idecoder.DecoderContext(ctx))
@@ -873,8 +869,8 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, sc
 //
 // It relies on previously parsed AST (via [ParseVariables])
 // and schema, as provided via [LoadModuleMetadata]).
-func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
-	mod, err := modStore.ModuleByPath(modPath)
+func SchemaVariablesValidation(ctx context.Context, varStore *state.VariableStore, stateReader state.StateReader, modPath string) error {
+	mod, err := varStore.VariableRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -884,14 +880,13 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
 	}
 
-	err = modStore.SetVarsDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
+	err = varStore.SetVarsDiagnosticsState(modPath, ast.SchemaValidationSource, op.OpStateLoading)
 	if err != nil {
 		return err
 	}
 
 	d := decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	})
 
 	d.SetContext(idecoder.DecoderContext(ctx))
@@ -918,7 +913,7 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		}
 		varsDiags[ast.VarsFilename(filename)] = fileDiags
 
-		sErr := modStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, varsDiags)
+		sErr := varStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, varsDiags)
 		if sErr != nil {
 			return sErr
 		}
@@ -927,7 +922,7 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 		var diags lang.DiagnosticsMap
 		diags, rErr = moduleDecoder.Validate(ctx)
 
-		sErr := modStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, ast.VarsDiagsFromMap(diags))
+		sErr := varStore.UpdateVarsDiagnostics(modPath, ast.SchemaValidationSource, ast.VarsDiagsFromMap(diags))
 		if sErr != nil {
 			return sErr
 		}
@@ -941,7 +936,7 @@ func SchemaVariablesValidation(ctx context.Context, modStore *state.ModuleStore,
 //
 // It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
 // to supply both origins and targets to compare.
-func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schemaReader state.SchemaReader, modPath string) error {
+func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, stateReader state.StateReader, modPath string) error {
 	mod, err := modStore.ModuleByPath(modPath)
 	if err != nil {
 		return err
@@ -958,8 +953,7 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, schem
 	}
 
 	pathReader := &idecoder.PathReader{
-		ModuleReader: modStore,
-		SchemaReader: schemaReader,
+		StateReader: stateReader,
 	}
 	pathCtx, err := pathReader.PathContext(lang.Path{
 		Path:       modPath,
@@ -1014,7 +1008,7 @@ func TerraformValidate(ctx context.Context, modStore *state.ModuleStore, modPath
 // need to parse and decode all files.
 func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, modStore *state.ModuleStore, modRegStore *state.RegistryModuleStore, modPath string) error {
 	// loop over module calls
-	calls, err := modStore.ModuleCalls(modPath)
+	calls, err := modStore.DeclaredModuleCalls(modPath)
 	if err != nil {
 		return err
 	}
@@ -1023,7 +1017,7 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 
 	var errs *multierror.Error
 
-	for _, declaredModule := range calls.Declared {
+	for _, declaredModule := range calls {
 		sourceAddr, ok := declaredModule.SourceAddr.(tfaddr.Module)
 		if !ok {
 			// skip any modules which do not come from the Registry
