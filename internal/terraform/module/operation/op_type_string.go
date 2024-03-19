@@ -10,26 +10,27 @@ func _() {
 	var x [1]struct{}
 	_ = x[OpTypeUnknown-0]
 	_ = x[OpTypeGetTerraformVersion-1]
-	_ = x[OpTypeObtainSchema-2]
-	_ = x[OpTypeParseModuleConfiguration-3]
-	_ = x[OpTypeParseVariables-4]
-	_ = x[OpTypeParseModuleManifest-5]
-	_ = x[OpTypeLoadModuleMetadata-6]
-	_ = x[OpTypeDecodeReferenceTargets-7]
-	_ = x[OpTypeDecodeReferenceOrigins-8]
-	_ = x[OpTypeDecodeVarsReferences-9]
-	_ = x[OpTypeGetModuleDataFromRegistry-10]
-	_ = x[OpTypeParseProviderVersions-11]
-	_ = x[OpTypePreloadEmbeddedSchema-12]
-	_ = x[OpTypeSchemaModuleValidation-13]
-	_ = x[OpTypeSchemaVarsValidation-14]
-	_ = x[OpTypeReferenceValidation-15]
-	_ = x[OpTypeTerraformValidate-16]
+	_ = x[OpTypeGetInstalledTerraformVersion-2]
+	_ = x[OpTypeObtainSchema-3]
+	_ = x[OpTypeParseModuleConfiguration-4]
+	_ = x[OpTypeParseVariables-5]
+	_ = x[OpTypeParseModuleManifest-6]
+	_ = x[OpTypeLoadModuleMetadata-7]
+	_ = x[OpTypeDecodeReferenceTargets-8]
+	_ = x[OpTypeDecodeReferenceOrigins-9]
+	_ = x[OpTypeDecodeVarsReferences-10]
+	_ = x[OpTypeGetModuleDataFromRegistry-11]
+	_ = x[OpTypeParseProviderVersions-12]
+	_ = x[OpTypePreloadEmbeddedSchema-13]
+	_ = x[OpTypeSchemaModuleValidation-14]
+	_ = x[OpTypeSchemaVarsValidation-15]
+	_ = x[OpTypeReferenceValidation-16]
+	_ = x[OpTypeTerraformValidate-17]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidate"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidate"
 
-var _OpType_index = [...]uint16{0, 13, 38, 56, 86, 106, 131, 155, 183, 211, 237, 268, 295, 322, 350, 376, 401, 424}
+var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 384, 410, 435, 458}
 
 func (i OpType) String() string {
 	if i >= OpType(len(_OpType_index)-1) {

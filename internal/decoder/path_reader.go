@@ -24,7 +24,7 @@ type StateReader interface {
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
 	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
-	TerraformVersion(modPath string) *version.Version
+	InstalledTerraformVersion(modPath string) *version.Version
 
 	ModuleRecordByPath(modPath string) (*state.ModuleRecord, error)
 	VariableRecordByPath(modPath string) (*state.VariableRecord, error)

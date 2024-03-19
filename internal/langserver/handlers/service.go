@@ -512,7 +512,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.notifier.Start(svc.sessCtx)
 
 	svc.recordStores = state.NewRecordStores(svc.stateStore.Modules, svc.stateStore.Roots, svc.stateStore.Variables,
-		svc.stateStore.RegistryModules, svc.stateStore.ProviderSchemas)
+		svc.stateStore.RegistryModules, svc.stateStore.ProviderSchemas, svc.stateStore.TerraformVersions)
 
 	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
 	svc.fs.SetLogger(svc.logger)

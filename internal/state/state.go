@@ -21,17 +21,18 @@ import (
 )
 
 const (
-	documentsTableName      = "documents"
-	jobsTableName           = "jobs"
-	moduleTableName         = "module"
-	variableTableName       = "variable"
-	rootTableName           = "root"
-	moduleIdsTableName      = "module_ids"
-	moduleChangesTableName  = "module_changes"
-	providerSchemaTableName = "provider_schema"
-	providerIdsTableName    = "provider_ids"
-	walkerPathsTableName    = "walker_paths"
-	registryModuleTableName = "registry_module"
+	documentsTableName        = "documents"
+	jobsTableName             = "jobs"
+	moduleTableName           = "module"
+	variableTableName         = "variable"
+	rootTableName             = "root"
+	moduleIdsTableName        = "module_ids"
+	moduleChangesTableName    = "module_changes"
+	providerSchemaTableName   = "provider_schema"
+	providerIdsTableName      = "provider_ids"
+	walkerPathsTableName      = "walker_paths"
+	registryModuleTableName   = "registry_module"
+	terraformVersionTableName = "terraform_version"
 
 	tracerName = "github.com/hashicorp/terraform-ls/internal/state"
 )
@@ -243,18 +244,29 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		terraformVersionTableName: {
+			Name: terraformVersionTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
 	},
 }
 
 type StateStore struct {
-	DocumentStore   *DocumentStore
-	JobStore        *JobStore
-	Modules         *ModuleStore
-	Variables       *VariableStore
-	Roots           *RootStore
-	ProviderSchemas *ProviderSchemaStore
-	WalkerPaths     *WalkerPathStore
-	RegistryModules *RegistryModuleStore
+	DocumentStore     *DocumentStore
+	JobStore          *JobStore
+	Modules           *ModuleStore
+	Variables         *VariableStore
+	Roots             *RootStore
+	ProviderSchemas   *ProviderSchemaStore
+	WalkerPaths       *WalkerPathStore
+	RegistryModules   *RegistryModuleStore
+	TerraformVersions *TerraformVersionStore
 
 	db *memdb.MemDB
 }
@@ -285,6 +297,12 @@ type RootStore struct {
 	logger    *log.Logger
 }
 
+type TerraformVersionStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+
 type ModuleChangeStore struct {
 	db *memdb.MemDB
 }
@@ -307,7 +325,7 @@ type StateReader interface {
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
 	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
-	TerraformVersion(modPath string) *version.Version
+	InstalledTerraformVersion(modPath string) *version.Version
 
 	ModuleRecordByPath(modPath string) (*ModuleRecord, error)
 	VariableRecordByPath(modPath string) (*VariableRecord, error)
@@ -386,6 +404,11 @@ func NewStateStore() (*StateStore, error) {
 			nextOpenDirMu:   &sync.Mutex{},
 			nextClosedDirMu: &sync.Mutex{},
 		},
+		TerraformVersions: &TerraformVersionStore{
+			db:        db,
+			tableName: terraformVersionTableName,
+			logger:    defaultLogger,
+		},
 	}, nil
 }
 
@@ -398,16 +421,18 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
+	s.TerraformVersions.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
 
 type RecordStores struct {
-	Modules         *ModuleStore
-	ProviderSchemas *ProviderSchemaStore
-	RegistryModules *RegistryModuleStore
-	Roots           *RootStore
-	Variables       *VariableStore
+	Modules           *ModuleStore
+	ProviderSchemas   *ProviderSchemaStore
+	RegistryModules   *RegistryModuleStore
+	Roots             *RootStore
+	TerraformVersions *TerraformVersionStore
+	Variables         *VariableStore
 }
 
 var (
@@ -419,13 +444,14 @@ type RecordStore interface {
 }
 
 func NewRecordStores(modules *ModuleStore, roots *RootStore, variables *VariableStore,
-	registryModules *RegistryModuleStore, providerSchemas *ProviderSchemaStore) *RecordStores {
+	registryModules *RegistryModuleStore, providerSchemas *ProviderSchemaStore, terraformVersions *TerraformVersionStore) *RecordStores {
 	return &RecordStores{
-		Modules:         modules,
-		ProviderSchemas: providerSchemas,
-		RegistryModules: registryModules,
-		Roots:           roots,
-		Variables:       variables,
+		Modules:           modules,
+		ProviderSchemas:   providerSchemas,
+		RegistryModules:   registryModules,
+		Roots:             roots,
+		TerraformVersions: terraformVersions,
+		Variables:         variables,
 	}
 }
 
@@ -513,14 +539,13 @@ func (ds *RecordStores) ProviderSchema(modPath string, addr tfaddr.Provider, vc 
 	return ds.ProviderSchemas.ProviderSchema(modPath, addr, vc)
 }
 
-func (ds *RecordStores) TerraformVersion(modPath string) *version.Version {
-	// TODO! some path magic
-	root, err := ds.Roots.RootRecordByPath(modPath)
+func (ds *RecordStores) InstalledTerraformVersion(modPath string) *version.Version {
+	record, err := ds.TerraformVersions.TerraformVersionRecord()
 	if err != nil {
 		return nil
 	}
 
-	return root.TerraformVersion
+	return record.TerraformVersion
 }
 
 func (ds *RecordStores) ModuleRecordByPath(modPath string) (*ModuleRecord, error) {

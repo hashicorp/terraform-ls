@@ -244,7 +244,7 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 			}
 			continue
 		}
-		// TODO extract name detection to a separate function
+		// TODO! extract name detection to a separate function
 		if !typeIndexed["root"] && (dirEntry.Name() == ".terraform.lock.hcl" || dirEntry.Name() == ".terraform") {
 			typeIndexed["root"] = true
 			w.logger.Printf("found root module in %s", dir)

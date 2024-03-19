@@ -1136,3 +1136,38 @@ func isRegistryModuleInputRequired(publishTime time.Time, input registry.Input) 
 	}
 	return input.Required
 }
+
+// GetInstalledTerraformVersion obtains "installed" Terraform version
+// which can inform what version of core schema to pick.
+// It relies on Terraform CLI to run version subcommand and ignores all
+// provider related information. We only aim to run this job once.
+func GetInstalledTerraformVersion(ctx context.Context, tfVersionStore *state.TerraformVersionStore, path string) error {
+	record, err := tfVersionStore.TerraformVersionRecord()
+	if err != nil {
+		return err
+	}
+
+	// Avoid getting version if getting is already in progress or already known
+	if record.TerraformVersionState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(path)}
+	}
+
+	err = tfVersionStore.SetTerraformVersionState(op.OpStateLoading)
+	if err != nil {
+		return err
+	}
+	defer tfVersionStore.SetTerraformVersionState(op.OpStateLoaded)
+
+	tfExec, err := TerraformExecutorForModule(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	v, _, err := tfExec.Version(ctx)
+	sErr := tfVersionStore.UpdateTerraformVersion(v, err)
+	if sErr != nil {
+		return sErr
+	}
+
+	return err
+}
