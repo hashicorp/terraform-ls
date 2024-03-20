@@ -14,6 +14,19 @@ const (
 	RecordTypeRoot
 )
 
+func (rt RecordType) String() string {
+	switch rt {
+	case RecordTypeModule:
+		return "module"
+	case RecordTypeVariable:
+		return "variable"
+	case RecordTypeRoot:
+		return "root"
+	default:
+		return "unknown"
+	}
+}
+
 func RecordTypeFromLanguageID(languageID string) RecordType {
 	switch languageID {
 	case "terraform":

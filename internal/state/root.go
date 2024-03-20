@@ -169,6 +169,17 @@ func (s *RootStore) AddIfNotExists(path string) error {
 	return nil
 }
 
+func (s *RootStore) Exists(path string) bool {
+	txn := s.db.Txn(false)
+
+	obj, err := txn.First(s.tableName, "id", path)
+	if err != nil {
+		return false
+	}
+
+	return obj != nil
+}
+
 func rootRecordByPath(txn *memdb.Txn, path string) (*RootRecord, error) {
 	obj, err := txn.First(rootTableName, "id", path)
 	if err != nil {

@@ -404,6 +404,17 @@ func (s *ModuleStore) List() ([]*ModuleRecord, error) {
 	return modules, nil
 }
 
+func (s *ModuleStore) Exists(path string) bool {
+	txn := s.db.Txn(false)
+
+	obj, err := txn.First(s.tableName, "id", path)
+	if err != nil {
+		return false
+	}
+
+	return obj != nil
+}
+
 func (s *ModuleStore) SetProviderSchemaState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()

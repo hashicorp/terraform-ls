@@ -195,6 +195,17 @@ func (s *VariableStore) List() ([]*VariableRecord, error) {
 	return records, nil
 }
 
+func (s *VariableStore) Exists(path string) bool {
+	txn := s.db.Txn(false)
+
+	obj, err := txn.First(s.tableName, "id", path)
+	if err != nil {
+		return false
+	}
+
+	return obj != nil
+}
+
 func (s *VariableStore) VariableRecordByPath(path string) (*VariableRecord, error) {
 	txn := s.db.Txn(false)
 

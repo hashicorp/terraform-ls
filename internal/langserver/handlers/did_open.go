@@ -10,7 +10,6 @@ import (
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
@@ -39,28 +38,17 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	recordType := ast.RecordTypeFromLanguageID(params.TextDocument.LanguageID)
-	mod, err := svc.recordStores.ByPath(dh.Dir.Path(), recordType)
+	err = svc.recordStores.AddIfNotExists(dh.Dir.Path(), recordType)
 	if err != nil {
-		if state.IsRecordNotFound(err) {
-			err = svc.recordStores.Add(dh.Dir.Path(), recordType)
-			if err != nil {
-				return err
-			}
-			mod, err = svc.recordStores.ByPath(dh.Dir.Path(), recordType)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+		return err
 	}
 
-	svc.logger.Printf("opened module: %s", mod.Path())
+	svc.logger.Printf("opened %s: %s", recordType, dh.Dir.Path())
 
 	// We reparse because the file being opened may not match
 	// (originally parsed) content on the disk
 	// TODO: Do this only if we can verify the file differs?
-	modHandle := document.DirHandleFromPath(mod.Path())
+	modHandle := document.DirHandleFromPath(dh.Dir.Path())
 	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
 	if err != nil {
 		return err
