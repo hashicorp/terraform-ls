@@ -10,6 +10,8 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
@@ -20,6 +22,7 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 	var errs *multierror.Error
 
 	hasRootRecord := idx.recordStores.Roots.Exists(modHandle.Path())
+	rootJobIds := make(job.IDs, 0)
 	if hasRootRecord {
 		_, err := idx.jobStore.EnqueueJob(ctx, job.Job{
 			Dir: modHandle,
@@ -39,7 +42,59 @@ func (idx *Indexer) DocumentOpened(ctx context.Context, modHandle document.DirHa
 		dataDir := datadir.WalkDataDirOfModule(idx.fs, modHandle.Path())
 		idx.logger.Printf("parsed datadir: %#v", dataDir)
 
+		var modManifestId job.ID
+		if dataDir.ModuleManifestPath != "" {
+			// References are collected *after* manifest parsing
+			// so that we reflect any references to submodules.
+			modManifestId, err = idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return module.ParseModuleManifest(ctx, idx.fs, idx.recordStores.Roots, modHandle.Path())
+				},
+				Type: op.OpTypeParseModuleManifest.String(),
+				Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+					// TODO!
+					return idx.decodeInstalledModuleCalls(ctx, modHandle, false)
+				},
+			})
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				rootJobIds = append(rootJobIds, modManifestId)
+			}
+		}
+
+		if dataDir.PluginLockFilePath != "" {
+			pSchemaVerId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					return module.ParseProviderVersions(ctx, idx.fs, idx.recordStores.Roots, modHandle.Path())
+				},
+				Type: op.OpTypeParseProviderVersions.String(),
+			})
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				rootJobIds = append(rootJobIds, pSchemaVerId)
+			}
+
+			pSchemaId, err := idx.jobStore.EnqueueJob(ctx, job.Job{
+				Dir: modHandle,
+				Func: func(ctx context.Context) error {
+					ctx = exec.WithExecutorFactory(ctx, idx.tfExecFactory)
+					return module.ObtainSchema(ctx, idx.recordStores.Modules, idx.recordStores.ProviderSchemas, modHandle.Path())
+				},
+				Type:      op.OpTypeObtainSchema.String(),
+				DependsOn: job.IDs{pSchemaVerId},
+			})
+			if err != nil {
+				errs = multierror.Append(errs, err)
+			} else {
+				rootJobIds = append(rootJobIds, pSchemaId)
+			}
+		}
 	}
+	ids = append(ids, rootJobIds...)
 
 	// Work related to module files
 	hasModuleRecord := idx.recordStores.Modules.Exists(modHandle.Path())
