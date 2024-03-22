@@ -24,14 +24,18 @@ func modulePathContext(mod *state.ModuleRecord, stateReader StateReader) (*decod
 	if err != nil {
 		return nil, err
 	}
+	functions, err := functionsForModule(mod, stateReader)
+	if err != nil {
+		return nil, err
+	}
 
 	pathCtx := &decoder.PathContext{
 		Schema:           schema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
-		// Functions:        // TODO! readd functions
-		Validators: moduleValidators,
+		Functions:        functions,
+		Validators:       moduleValidators,
 	}
 
 	for _, origin := range mod.RefOrigins {
