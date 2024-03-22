@@ -15,11 +15,16 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/utm"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modReader ModuleReader) (*decoder.PathContext, error) {
-	schema, err := schemaForModule(mod, schemaReader, modReader)
+func modulePathContext(mod *state.ModuleRecord, stateReader StateReader) (*decoder.PathContext, error) {
+	schema, err := schemaForModule(mod, stateReader)
+	if err != nil {
+		return nil, err
+	}
+	functions, err := functionsForModule(mod, stateReader)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +34,7 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
-		Functions:        coreFunctions(mod),
+		Functions:        functions,
 		Validators:       moduleValidators,
 	}
 
@@ -53,8 +58,14 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 	return pathCtx, nil
 }
 
-func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
-	schema, err := tfschema.SchemaForVariables(mod.Meta.Variables, mod.Path)
+func varsPathContext(mod *state.VariableRecord, stateReader StateReader) (*decoder.PathContext, error) {
+	variables := make(map[string]tfmod.Variable)
+	meta, err := stateReader.LocalModuleMeta(mod.Path())
+	if err == nil {
+		variables = meta.Variables
+	}
+
+	schema, err := tfschema.SchemaForVariables(variables, mod.Path())
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +77,7 @@ func varsPathContext(mod *state.Module) (*decoder.PathContext, error) {
 		Files:            make(map[string]*hcl.File),
 	}
 
-	if len(mod.ParsedModuleFiles) > 0 {
+	if len(schema.Attributes) > 0 {
 		// Only validate if this is actually a module
 		// as we may come across standalone tfvars files
 		// for which we have no context.

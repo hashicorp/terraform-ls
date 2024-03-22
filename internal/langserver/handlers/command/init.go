@@ -31,7 +31,7 @@ func (h *CmdHandler) TerraformInitHandler(ctx context.Context, args cmd.CommandA
 
 	mod, err := h.StateStore.Modules.ModuleByPath(dirHandle.Path())
 	if err != nil {
-		if state.IsModuleNotFound(err) {
+		if state.IsRecordNotFound(err) {
 			err = h.StateStore.Modules.Add(dirHandle.Path())
 			if err != nil {
 				return nil, err
@@ -45,7 +45,7 @@ func (h *CmdHandler) TerraformInitHandler(ctx context.Context, args cmd.CommandA
 		}
 	}
 
-	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path)
+	tfExec, err := module.TerraformExecutorForModule(ctx, mod.Path())
 	if err != nil {
 		return nil, errors.EnrichTfExecError(err)
 	}

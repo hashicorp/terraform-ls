@@ -11,103 +11,24 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
-	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/backend"
 	tfmod "github.com/hashicorp/terraform-schema/module"
-	"github.com/hashicorp/terraform-schema/registry"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
-	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-type ModuleMetadata struct {
-	CoreRequirements     version.Constraints
-	Backend              *tfmod.Backend
-	Cloud                *backend.Cloud
-	ProviderReferences   map[tfmod.ProviderRef]tfaddr.Provider
-	ProviderRequirements tfmod.ProviderRequirements
-	Variables            map[string]tfmod.Variable
-	Outputs              map[string]tfmod.Output
-	Filenames            []string
-	ModuleCalls          map[string]tfmod.DeclaredModuleCall
-}
+// ModuleRecord contains all information about module files
+// we have for a certain path
+type ModuleRecord struct {
+	path string
 
-func (mm ModuleMetadata) Copy() ModuleMetadata {
-	newMm := ModuleMetadata{
-		// version.Constraints is practically immutable once parsed
-		CoreRequirements: mm.CoreRequirements,
-		Filenames:        mm.Filenames,
-	}
-
-	if mm.Cloud != nil {
-		newMm.Cloud = mm.Cloud
-	}
-
-	if mm.Backend != nil {
-		newMm.Backend = &tfmod.Backend{
-			Type: mm.Backend.Type,
-			Data: mm.Backend.Data.Copy(),
-		}
-	}
-
-	if mm.ProviderReferences != nil {
-		newMm.ProviderReferences = make(map[tfmod.ProviderRef]tfaddr.Provider, len(mm.ProviderReferences))
-		for ref, provider := range mm.ProviderReferences {
-			newMm.ProviderReferences[ref] = provider
-		}
-	}
-
-	if mm.ProviderRequirements != nil {
-		newMm.ProviderRequirements = make(tfmod.ProviderRequirements, len(mm.ProviderRequirements))
-		for provider, vc := range mm.ProviderRequirements {
-			// version.Constraints is never mutated in this context
-			newMm.ProviderRequirements[provider] = vc
-		}
-	}
-
-	if mm.Variables != nil {
-		newMm.Variables = make(map[string]tfmod.Variable, len(mm.Variables))
-		for name, variable := range mm.Variables {
-			newMm.Variables[name] = variable
-		}
-	}
-
-	if mm.Outputs != nil {
-		newMm.Outputs = make(map[string]tfmod.Output, len(mm.Outputs))
-		for name, output := range mm.Outputs {
-			newMm.Outputs[name] = output
-		}
-	}
-
-	if mm.ModuleCalls != nil {
-		newMm.ModuleCalls = make(map[string]tfmod.DeclaredModuleCall, len(mm.ModuleCalls))
-		for name, moduleCall := range mm.ModuleCalls {
-			newMm.ModuleCalls[name] = moduleCall.Copy()
-		}
-	}
-
-	return newMm
-}
-
-type Module struct {
-	Path string
-
-	ModManifest      *datadir.ModuleManifest
-	ModManifestErr   error
-	ModManifestState op.OpState
-
-	TerraformVersion      *version.Version
-	TerraformVersionErr   error
-	TerraformVersionState op.OpState
-
-	InstalledProviders      InstalledProviders
-	InstalledProvidersErr   error
-	InstalledProvidersState op.OpState
-
-	ProviderSchemaErr   error
+	// ProviderSchemaState tracks if we tried loading all provider schemas
+	// that this module is using via Terraform CLI
 	ProviderSchemaState op.OpState
+	ProviderSchemaErr   error
 
+	// PreloadEmbeddedSchemaState tracks if we tried loading all provider
+	// schemas from our embedded schema data
 	PreloadEmbeddedSchemaState op.OpState
 
 	RefTargets      reference.Targets
@@ -118,14 +39,8 @@ type Module struct {
 	RefOriginsErr   error
 	RefOriginsState op.OpState
 
-	VarsRefOrigins      reference.Origins
-	VarsRefOriginsErr   error
-	VarsRefOriginsState op.OpState
-
 	ParsedModuleFiles ast.ModFiles
-	ParsedVarsFiles   ast.VarsFiles
 	ModuleParsingErr  error
-	VarsParsingErr    error
 
 	Meta      ModuleMetadata
 	MetaErr   error
@@ -133,33 +48,19 @@ type Module struct {
 
 	ModuleDiagnostics      ast.SourceModDiags
 	ModuleDiagnosticsState ast.DiagnosticSourceState
-	VarsDiagnostics        ast.SourceVarsDiags
-	VarsDiagnosticsState   ast.DiagnosticSourceState
 }
 
-func (m *Module) Copy() *Module {
+func (m *ModuleRecord) Copy() *ModuleRecord {
 	if m == nil {
 		return nil
 	}
-	newMod := &Module{
-		Path: m.Path,
-
-		ModManifest:      m.ModManifest.Copy(),
-		ModManifestErr:   m.ModManifestErr,
-		ModManifestState: m.ModManifestState,
-
-		// version.Version is practically immutable once parsed
-		TerraformVersion:      m.TerraformVersion,
-		TerraformVersionErr:   m.TerraformVersionErr,
-		TerraformVersionState: m.TerraformVersionState,
+	newMod := &ModuleRecord{
+		path: m.path,
 
 		ProviderSchemaErr:   m.ProviderSchemaErr,
 		ProviderSchemaState: m.ProviderSchemaState,
 
 		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
-
-		InstalledProvidersErr:   m.InstalledProvidersErr,
-		InstalledProvidersState: m.InstalledProvidersState,
 
 		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,
@@ -169,27 +70,13 @@ func (m *Module) Copy() *Module {
 		RefOriginsErr:   m.RefOriginsErr,
 		RefOriginsState: m.RefOriginsState,
 
-		VarsRefOrigins:      m.VarsRefOrigins.Copy(),
-		VarsRefOriginsErr:   m.VarsRefOriginsErr,
-		VarsRefOriginsState: m.VarsRefOriginsState,
-
 		ModuleParsingErr: m.ModuleParsingErr,
-		VarsParsingErr:   m.VarsParsingErr,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
 
 		ModuleDiagnosticsState: m.ModuleDiagnosticsState.Copy(),
-		VarsDiagnosticsState:   m.VarsDiagnosticsState.Copy(),
-	}
-
-	if m.InstalledProviders != nil {
-		newMod.InstalledProviders = make(InstalledProviders, 0)
-		for addr, pv := range m.InstalledProviders {
-			// version.Version is practically immutable once parsed
-			newMod.InstalledProviders[addr] = pv
-		}
 	}
 
 	if m.ParsedModuleFiles != nil {
@@ -197,14 +84,6 @@ func (m *Module) Copy() *Module {
 		for name, f := range m.ParsedModuleFiles {
 			// hcl.File is practically immutable once it comes out of parser
 			newMod.ParsedModuleFiles[name] = f
-		}
-	}
-
-	if m.ParsedVarsFiles != nil {
-		newMod.ParsedVarsFiles = make(ast.VarsFiles, len(m.ParsedVarsFiles))
-		for name, f := range m.ParsedVarsFiles {
-			// hcl.File is practically immutable once it comes out of parser
-			newMod.ParsedVarsFiles[name] = f
 		}
 	}
 
@@ -221,30 +100,18 @@ func (m *Module) Copy() *Module {
 		}
 	}
 
-	if m.VarsDiagnostics != nil {
-		newMod.VarsDiagnostics = make(ast.SourceVarsDiags, len(m.VarsDiagnostics))
-
-		for source, varsDiags := range m.VarsDiagnostics {
-			newMod.VarsDiagnostics[source] = make(ast.VarsDiags, len(varsDiags))
-
-			for name, diags := range varsDiags {
-				newMod.VarsDiagnostics[source][name] = make(hcl.Diagnostics, len(diags))
-				copy(newMod.VarsDiagnostics[source][name], diags)
-			}
-		}
-	}
-
 	return newMod
 }
 
-func newModule(modPath string) *Module {
-	return &Module{
-		Path:                       modPath,
-		ModManifestState:           op.OpStateUnknown,
-		TerraformVersionState:      op.OpStateUnknown,
+func (m *ModuleRecord) Path() string {
+	return m.path
+}
+
+func newModule(modPath string) *ModuleRecord {
+	return &ModuleRecord{
+		path:                       modPath,
 		ProviderSchemaState:        op.OpStateUnknown,
 		PreloadEmbeddedSchemaState: op.OpStateUnknown,
-		InstalledProvidersState:    op.OpStateUnknown,
 		RefTargetsState:            op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
 		ModuleDiagnosticsState: ast.DiagnosticSourceState{
@@ -253,12 +120,13 @@ func newModule(modPath string) *Module {
 			ast.ReferenceValidationSource: op.OpStateUnknown,
 			ast.TerraformValidateSource:   op.OpStateUnknown,
 		},
-		VarsDiagnosticsState: ast.DiagnosticSourceState{
-			ast.HCLParsingSource:          op.OpStateUnknown,
-			ast.SchemaValidationSource:    op.OpStateUnknown,
-			ast.ReferenceValidationSource: op.OpStateUnknown,
-			ast.TerraformValidateSource:   op.OpStateUnknown,
-		},
+	}
+}
+
+// NewModuleTest is a test helper to create a new Module object
+func NewModuleTest(path string) *ModuleRecord {
+	return &ModuleRecord{
+		path: path,
 	}
 }
 
@@ -315,7 +183,7 @@ func (s *ModuleStore) Remove(modPath string) error {
 		return nil
 	}
 
-	oldMod := oldObj.(*Module)
+	oldMod := oldObj.(*ModuleRecord)
 	err = s.queueModuleChange(txn, oldMod, nil)
 	if err != nil {
 		return err
@@ -330,29 +198,7 @@ func (s *ModuleStore) Remove(modPath string) error {
 	return nil
 }
 
-func (s *ModuleStore) CallersOfModule(modPath string) ([]*Module, error) {
-	txn := s.db.Txn(false)
-	it, err := txn.Get(s.tableName, "id")
-	if err != nil {
-		return nil, err
-	}
-
-	callers := make([]*Module, 0)
-	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*Module)
-
-		if mod.ModManifest == nil {
-			continue
-		}
-		if mod.ModManifest.ContainsLocalModule(modPath) {
-			callers = append(callers, mod)
-		}
-	}
-
-	return callers, nil
-}
-
-func (s *ModuleStore) ModuleByPath(path string) (*Module, error) {
+func (s *ModuleStore) ModuleByPath(path string) (*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 
 	mod, err := moduleByPath(txn, path)
@@ -369,7 +215,7 @@ func (s *ModuleStore) AddIfNotExists(path string) error {
 
 	_, err := moduleByPath(txn, path)
 	if err != nil {
-		if IsModuleNotFound(err) {
+		if IsRecordNotFound(err) {
 			err := s.add(txn, path)
 			if err != nil {
 				return err
@@ -384,33 +230,15 @@ func (s *ModuleStore) AddIfNotExists(path string) error {
 	return nil
 }
 
-func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
+func (s *ModuleStore) DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error) {
 	mod, err := s.ModuleByPath(modPath)
 	if err != nil {
-		return tfmod.ModuleCalls{}, err
+		return map[string]tfmod.DeclaredModuleCall{}, err
 	}
 
-	modCalls := tfmod.ModuleCalls{
-		Installed: make(map[string]tfmod.InstalledModuleCall),
-		Declared:  make(map[string]tfmod.DeclaredModuleCall),
-	}
-
-	if mod.ModManifest != nil {
-		for _, record := range mod.ModManifest.Records {
-			if record.IsRoot() {
-				continue
-			}
-			modCalls.Installed[record.Key] = tfmod.InstalledModuleCall{
-				LocalName:  record.Key,
-				SourceAddr: record.SourceAddr,
-				Version:    record.Version,
-				Path:       filepath.Join(modPath, record.Dir),
-			}
-		}
-	}
-
+	declared := make(map[string]tfmod.DeclaredModuleCall)
 	for _, mc := range mod.Meta.ModuleCalls {
-		modCalls.Declared[mc.LocalName] = tfmod.DeclaredModuleCall{
+		declared[mc.LocalName] = tfmod.DeclaredModuleCall{
 			LocalName:  mc.LocalName,
 			SourceAddr: mc.SourceAddr,
 			Version:    mc.Version,
@@ -419,7 +247,7 @@ func (s *ModuleStore) ModuleCalls(modPath string) (tfmod.ModuleCalls, error) {
 		}
 	}
 
-	return modCalls, err
+	return declared, err
 }
 
 func (s *ModuleStore) ProviderRequirementsForModule(modPath string) (tfmod.ProviderRequirements, error) {
@@ -472,34 +300,35 @@ func (s *ModuleStore) providerRequirementsForModule(modPath string, level int) (
 		}
 	}
 
-	if mod.ModManifest != nil {
-		for _, record := range mod.ModManifest.Records {
-			_, ok := record.SourceAddr.(tfmod.LocalSourceAddr)
-			if ok {
-				continue
-			}
+	// TODO! move into RootStore
+	// if mod.ModManifest != nil {
+	// 	for _, record := range mod.ModManifest.Records {
+	// 		_, ok := record.SourceAddr.(tfmod.LocalSourceAddr)
+	// 		if ok {
+	// 			continue
+	// 		}
 
-			if record.IsRoot() {
-				continue
-			}
+	// 		if record.IsRoot() {
+	// 			continue
+	// 		}
 
-			fullPath := filepath.Join(modPath, record.Dir)
-			pr, err := s.providerRequirementsForModule(fullPath, level)
-			if err != nil {
-				continue
-			}
-			for pAddr, pCons := range pr {
-				if cons, ok := requirements[pAddr]; ok {
-					for _, c := range pCons {
-						if !constraintContains(cons, c) {
-							requirements[pAddr] = append(requirements[pAddr], c)
-						}
-					}
-				}
-				requirements[pAddr] = pCons
-			}
-		}
-	}
+	// 		fullPath := filepath.Join(modPath, record.Dir)
+	// 		pr, err := s.providerRequirementsForModule(fullPath, level)
+	// 		if err != nil {
+	// 			continue
+	// 		}
+	// 		for pAddr, pCons := range pr {
+	// 			if cons, ok := requirements[pAddr]; ok {
+	// 				for _, c := range pCons {
+	// 					if !constraintContains(cons, c) {
+	// 						requirements[pAddr] = append(requirements[pAddr], c)
+	// 					}
+	// 				}
+	// 			}
+	// 			requirements[pAddr] = pCons
+	// 		}
+	// 	}
+	// }
 
 	return requirements, nil
 }
@@ -522,60 +351,34 @@ func (s *ModuleStore) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
 		return nil, fmt.Errorf("%s: module data not available", modPath)
 	}
 	return &tfmod.Meta{
-		Path:                 mod.Path,
+		Path:      mod.path,
+		Filenames: mod.Meta.Filenames,
+
+		CoreRequirements:     mod.Meta.CoreRequirements,
+		Backend:              mod.Meta.Backend,
+		Cloud:                mod.Meta.Cloud,
 		ProviderReferences:   mod.Meta.ProviderReferences,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
-		CoreRequirements:     mod.Meta.CoreRequirements,
 		Variables:            mod.Meta.Variables,
 		Outputs:              mod.Meta.Outputs,
-		Filenames:            mod.Meta.Filenames,
 		ModuleCalls:          mod.Meta.ModuleCalls,
 	}, nil
 }
 
-func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
-	txn := s.db.Txn(false)
-
-	it, err := txn.Get(registryModuleTableName, "source_addr", addr)
-	if err != nil {
-		return nil, err
-	}
-
-	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*RegistryModuleData)
-
-		if mod.Error {
-			continue
-		}
-
-		if cons.Check(mod.Version) {
-			return &registry.ModuleData{
-				Version: mod.Version,
-				Inputs:  mod.Inputs,
-				Outputs: mod.Outputs,
-			}, nil
-		}
-	}
-
-	return nil, &ModuleNotFoundError{
-		Source: addr.String(),
-	}
-}
-
-func moduleByPath(txn *memdb.Txn, path string) (*Module, error) {
+func moduleByPath(txn *memdb.Txn, path string) (*ModuleRecord, error) {
 	obj, err := txn.First(moduleTableName, "id", path)
 	if err != nil {
 		return nil, err
 	}
 	if obj == nil {
-		return nil, &ModuleNotFoundError{
+		return nil, &RecordNotFoundError{
 			Source: path,
 		}
 	}
-	return obj.(*Module), nil
+	return obj.(*ModuleRecord), nil
 }
 
-func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
+func moduleCopyByPath(txn *memdb.Txn, path string) (*ModuleRecord, error) {
 	mod, err := moduleByPath(txn, path)
 	if err != nil {
 		return nil, err
@@ -584,62 +387,7 @@ func moduleCopyByPath(txn *memdb.Txn, path string) (*Module, error) {
 	return mod.Copy(), nil
 }
 
-func (s *ModuleStore) UpdateInstalledProviders(path string, pvs map[tfaddr.Provider]*version.Version, pvErr error) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetInstalledProvidersState(path, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldMod, err := moduleByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod := oldMod.Copy()
-	mod.InstalledProviders = pvs
-	mod.InstalledProvidersErr = pvErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	err = updateProviderVersions(txn, path, pvs)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetInstalledProvidersState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.InstalledProvidersState = state
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) List() ([]*Module, error) {
+func (s *ModuleStore) List() ([]*ModuleRecord, error) {
 	txn := s.db.Txn(false)
 
 	it, err := txn.Get(s.tableName, "id")
@@ -647,86 +395,24 @@ func (s *ModuleStore) List() ([]*Module, error) {
 		return nil, err
 	}
 
-	modules := make([]*Module, 0)
+	modules := make([]*ModuleRecord, 0)
 	for item := it.Next(); item != nil; item = it.Next() {
-		mod := item.(*Module)
+		mod := item.(*ModuleRecord)
 		modules = append(modules, mod)
 	}
 
 	return modules, nil
 }
 
-func (s *ModuleStore) SetModManifestState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
+func (s *ModuleStore) Exists(path string) bool {
+	txn := s.db.Txn(false)
 
-	mod, err := moduleCopyByPath(txn, path)
+	obj, err := txn.First(s.tableName, "id", path)
 	if err != nil {
-		return err
+		return false
 	}
 
-	mod.ModManifestState = state
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateModManifest(path string, manifest *datadir.ModuleManifest, mErr error) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetModManifestState(path, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.ModManifest = manifest
-	mod.ModManifestErr = mErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, nil, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetTerraformVersionState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.TerraformVersionState = state
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, nil, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
+	return obj != nil
 }
 
 func (s *ModuleStore) SetProviderSchemaState(path string, state op.OpState) error {
@@ -796,41 +482,6 @@ func (s *ModuleStore) FinishProviderSchemaLoading(path string, psErr error) erro
 	return nil
 }
 
-func (s *ModuleStore) UpdateTerraformAndProviderVersions(modPath string, tfVer *version.Version, pv map[tfaddr.Provider]*version.Version, vErr error) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetTerraformVersionState(modPath, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldMod, err := moduleByPath(txn, modPath)
-	if err != nil {
-		return err
-	}
-
-	mod := oldMod.Copy()
-	mod.TerraformVersion = tfVer
-	mod.TerraformVersionErr = vErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	err = updateProviderVersions(txn, modPath, pv)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
 func (s *ModuleStore) UpdateParsedModuleFiles(path string, pFiles ast.ModFiles, pErr error) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -843,28 +494,6 @@ func (s *ModuleStore) UpdateParsedModuleFiles(path string, pFiles ast.ModFiles, 
 	mod.ParsedModuleFiles = pFiles
 
 	mod.ModuleParsingErr = pErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles, vErr error) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.ParsedVarsFiles = vFiles
-
-	mod.VarsParsingErr = vErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -985,57 +614,6 @@ func (s *ModuleStore) SetModuleDiagnosticsState(path string, source ast.Diagnost
 	return nil
 }
 
-func (s *ModuleStore) UpdateVarsDiagnostics(path string, source ast.DiagnosticSource, diags ast.VarsDiags) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetVarsDiagnosticsState(path, source, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldMod, err := moduleByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod := oldMod.Copy()
-	if mod.VarsDiagnostics == nil {
-		mod.VarsDiagnostics = make(ast.SourceVarsDiags)
-	}
-	mod.VarsDiagnostics[source] = diags
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueModuleChange(txn, oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetVarsDiagnosticsState(path string, source ast.DiagnosticSource, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-	mod.VarsDiagnosticsState[source] = state
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
 func (s *ModuleStore) SetReferenceTargetsState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -1112,49 +690,6 @@ func (s *ModuleStore) UpdateReferenceOrigins(path string, origins reference.Orig
 
 	mod.RefOrigins = origins
 	mod.RefOriginsErr = roErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) SetVarsReferenceOriginsState(path string, state op.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.VarsRefOriginsState = state
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *ModuleStore) UpdateVarsReferenceOrigins(path string, origins reference.Origins, roErr error) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetVarsReferenceOriginsState(path, op.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	mod, err := moduleCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.VarsRefOrigins = origins
-	mod.VarsRefOriginsErr = roErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

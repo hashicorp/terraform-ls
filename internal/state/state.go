@@ -4,13 +4,16 @@
 package state
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 	"github.com/hashicorp/terraform-schema/registry"
@@ -18,15 +21,18 @@ import (
 )
 
 const (
-	documentsTableName      = "documents"
-	jobsTableName           = "jobs"
-	moduleTableName         = "module"
-	moduleIdsTableName      = "module_ids"
-	moduleChangesTableName  = "module_changes"
-	providerSchemaTableName = "provider_schema"
-	providerIdsTableName    = "provider_ids"
-	walkerPathsTableName    = "walker_paths"
-	registryModuleTableName = "registry_module"
+	documentsTableName        = "documents"
+	jobsTableName             = "jobs"
+	moduleTableName           = "module"
+	variableTableName         = "variable"
+	rootTableName             = "root"
+	moduleIdsTableName        = "module_ids"
+	moduleChangesTableName    = "module_changes"
+	providerSchemaTableName   = "provider_schema"
+	providerIdsTableName      = "provider_ids"
+	walkerPathsTableName      = "walker_paths"
+	registryModuleTableName   = "registry_module"
+	terraformVersionTableName = "terraform_version"
 
 	tracerName = "github.com/hashicorp/terraform-ls/internal/state"
 )
@@ -124,7 +130,27 @@ var dbSchema = &memdb.DBSchema{
 				"id": {
 					Name:    "id",
 					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "Path"},
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
+		variableTableName: {
+			Name: variableTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
+		rootTableName: {
+			Name: rootTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
 				},
 			},
 		},
@@ -218,16 +244,29 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
+		terraformVersionTableName: {
+			Name: terraformVersionTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &memdb.StringFieldIndex{Field: "path"},
+				},
+			},
+		},
 	},
 }
 
 type StateStore struct {
-	DocumentStore   *DocumentStore
-	JobStore        *JobStore
-	Modules         *ModuleStore
-	ProviderSchemas *ProviderSchemaStore
-	WalkerPaths     *WalkerPathStore
-	RegistryModules *RegistryModuleStore
+	DocumentStore     *DocumentStore
+	JobStore          *JobStore
+	Modules           *ModuleStore
+	Variables         *VariableStore
+	Roots             *RootStore
+	ProviderSchemas   *ProviderSchemaStore
+	WalkerPaths       *WalkerPathStore
+	RegistryModules   *RegistryModuleStore
+	TerraformVersions *TerraformVersionStore
 
 	db *memdb.MemDB
 }
@@ -246,20 +285,53 @@ type ModuleStore struct {
 	MaxModuleNesting int
 }
 
+type VariableStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+
+type RootStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+
+type TerraformVersionStore struct {
+	db        *memdb.MemDB
+	tableName string
+	logger    *log.Logger
+}
+
 type ModuleChangeStore struct {
 	db *memdb.MemDB
 }
 
 type ModuleReader interface {
-	CallersOfModule(modPath string) ([]*Module, error)
-	ModuleByPath(modPath string) (*Module, error)
-	List() ([]*Module, error)
+	CallersOfModule(modPath string) ([]*ModuleRecord, error)
+	ModuleByPath(modPath string) (*ModuleRecord, error)
+	List() ([]*ModuleRecord, error)
 }
 
 type ModuleCallReader interface {
 	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
+}
+
+type StateReader interface {
+	DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error)
+	InstalledModuleCalls(modPath string) (map[string]tfmod.InstalledModuleCall, error)
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
+	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
+	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
+	InstalledTerraformVersion(modPath string) *version.Version
+
+	ModuleRecordByPath(modPath string) (*ModuleRecord, error)
+	VariableRecordByPath(modPath string) (*VariableRecord, error)
+
+	ListModuleRecords() ([]*ModuleRecord, error)
+	ListVariableRecords() ([]*VariableRecord, error)
 }
 
 type ProviderSchemaStore struct {
@@ -305,6 +377,16 @@ func NewStateStore() (*StateStore, error) {
 			TimeProvider:     time.Now,
 			MaxModuleNesting: 50,
 		},
+		Variables: &VariableStore{
+			db:        db,
+			tableName: variableTableName,
+			logger:    defaultLogger,
+		},
+		Roots: &RootStore{
+			db:        db,
+			tableName: rootTableName,
+			logger:    defaultLogger,
+		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
 			tableName: providerSchemaTableName,
@@ -322,6 +404,11 @@ func NewStateStore() (*StateStore, error) {
 			nextOpenDirMu:   &sync.Mutex{},
 			nextClosedDirMu: &sync.Mutex{},
 		},
+		TerraformVersions: &TerraformVersionStore{
+			db:        db,
+			tableName: terraformVersionTableName,
+			logger:    defaultLogger,
+		},
 	}, nil
 }
 
@@ -329,9 +416,150 @@ func (s *StateStore) SetLogger(logger *log.Logger) {
 	s.DocumentStore.logger = logger
 	s.JobStore.logger = logger
 	s.Modules.logger = logger
+	s.Variables.logger = logger
+	s.Roots.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
+	s.TerraformVersions.logger = logger
 }
 
 var defaultLogger = log.New(ioutil.Discard, "", 0)
+
+type RecordStores struct {
+	Modules           *ModuleStore
+	ProviderSchemas   *ProviderSchemaStore
+	RegistryModules   *RegistryModuleStore
+	Roots             *RootStore
+	TerraformVersions *TerraformVersionStore
+	Variables         *VariableStore
+}
+
+var (
+	_ StateReader = &RecordStores{}
+)
+
+type RecordStore interface {
+	Path() string
+}
+
+func NewRecordStores(modules *ModuleStore, roots *RootStore, variables *VariableStore,
+	registryModules *RegistryModuleStore, providerSchemas *ProviderSchemaStore, terraformVersions *TerraformVersionStore) *RecordStores {
+	return &RecordStores{
+		Modules:           modules,
+		ProviderSchemas:   providerSchemas,
+		RegistryModules:   registryModules,
+		Roots:             roots,
+		TerraformVersions: terraformVersions,
+		Variables:         variables,
+	}
+}
+
+func (ds *RecordStores) ByPath(path string, recordType ast.RecordType) (RecordStore, error) {
+	if recordType == ast.RecordTypeModule {
+		return ds.Modules.ModuleByPath(path)
+	}
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.VariableRecordByPath(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.RootRecordByPath(path)
+	}
+
+	return nil, fmt.Errorf("unknown record type: %q", recordType)
+}
+
+func (ds *RecordStores) Add(path string, recordType ast.RecordType) error {
+	if recordType == ast.RecordTypeModule {
+		return ds.Modules.Add(path)
+	}
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.Add(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.Add(path)
+	}
+
+	return fmt.Errorf("unknown record type: %q", recordType)
+}
+
+func (ds *RecordStores) AddIfNotExists(path string, recordType ast.RecordType) error {
+	if recordType == ast.RecordTypeModule {
+		return ds.Modules.AddIfNotExists(path)
+	}
+	if recordType == ast.RecordTypeVariable {
+		return ds.Variables.AddIfNotExists(path)
+	}
+	if recordType == ast.RecordTypeRoot {
+		return ds.Roots.AddIfNotExists(path)
+	}
+
+	return fmt.Errorf("unknown record type: %q", recordType)
+}
+
+func (ds *RecordStores) Remove(path string) error {
+	var errs *multierror.Error
+
+	err := ds.Modules.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	err = ds.Variables.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	err = ds.Roots.Remove(path)
+	if err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	return errs.ErrorOrNil()
+
+}
+
+func (ds *RecordStores) DeclaredModuleCalls(modPath string) (map[string]tfmod.DeclaredModuleCall, error) {
+	return ds.Modules.DeclaredModuleCalls(modPath)
+}
+
+func (ds *RecordStores) InstalledModuleCalls(modPath string) (map[string]tfmod.InstalledModuleCall, error) {
+	return ds.Roots.InstalledModuleCalls(modPath)
+}
+
+func (ds *RecordStores) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
+	return ds.Modules.LocalModuleMeta(modPath)
+}
+
+func (ds *RecordStores) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
+	return ds.RegistryModules.RegistryModuleMeta(addr, cons)
+}
+
+func (ds *RecordStores) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
+	return ds.ProviderSchemas.ProviderSchema(modPath, addr, vc)
+}
+
+func (ds *RecordStores) InstalledTerraformVersion(modPath string) *version.Version {
+	record, err := ds.TerraformVersions.TerraformVersionRecord()
+	if err != nil {
+		return nil
+	}
+
+	return record.TerraformVersion
+}
+
+func (ds *RecordStores) ModuleRecordByPath(modPath string) (*ModuleRecord, error) {
+	return ds.Modules.ModuleByPath(modPath)
+}
+
+func (ds *RecordStores) VariableRecordByPath(modPath string) (*VariableRecord, error) {
+	return ds.Variables.VariableRecordByPath(modPath)
+}
+
+func (ds *RecordStores) ListModuleRecords() ([]*ModuleRecord, error) {
+	return ds.Modules.List()
+}
+
+func (ds *RecordStores) ListVariableRecords() ([]*VariableRecord, error) {
+	return ds.Variables.List()
+}

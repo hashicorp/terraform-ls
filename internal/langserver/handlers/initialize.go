@@ -160,6 +160,9 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 		if err != nil {
 			return serverCaps, err
 		}
+
+		root := document.DirHandleFromURI(rootURI)
+		svc.indexer.Initialize(ctx, root)
 	}
 
 	// Walkers run asynchronously so we're intentionally *not*

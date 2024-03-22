@@ -45,12 +45,12 @@ type ModuleChanges struct {
 
 const maxTimespan = 1 * time.Second
 
-func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) error {
+func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *ModuleRecord) error {
 	var modHandle document.DirHandle
 	if oldMod != nil {
-		modHandle = document.DirHandleFromPath(oldMod.Path)
+		modHandle = document.DirHandleFromPath(oldMod.Path())
 	} else {
-		modHandle = document.DirHandleFromPath(newMod.Path)
+		modHandle = document.DirHandleFromPath(newMod.Path())
 	}
 	obj, err := txn.First(moduleChangesTableName, "id", modHandle)
 	if err != nil {
@@ -90,12 +90,12 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 		if len(newMod.Meta.ProviderRequirements) > 0 {
 			cb.Changes.ProviderRequirements = true
 		}
-		if newMod.TerraformVersion != nil {
-			cb.Changes.TerraformVersion = true
-		}
-		if len(newMod.InstalledProviders) > 0 {
-			cb.Changes.InstalledProviders = true
-		}
+		// if newMod.TerraformVersion != nil {
+		// 	cb.Changes.TerraformVersion = true
+		// }
+		// if len(newMod.InstalledProviders) > 0 {
+		// 	cb.Changes.InstalledProviders = true
+		// }
 	// module removed
 	case oldMod != nil && newMod == nil:
 		cb.Changes.IsRemoval = true
@@ -112,12 +112,12 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 		if len(oldMod.Meta.ProviderRequirements) > 0 {
 			cb.Changes.ProviderRequirements = true
 		}
-		if oldMod.TerraformVersion != nil {
-			cb.Changes.TerraformVersion = true
-		}
-		if len(oldMod.InstalledProviders) > 0 {
-			cb.Changes.InstalledProviders = true
-		}
+		// if oldMod.TerraformVersion != nil {
+		// 	cb.Changes.TerraformVersion = true
+		// }
+		// if len(oldMod.InstalledProviders) > 0 {
+		// 	cb.Changes.InstalledProviders = true
+		// }
 	// module changed
 	default:
 		if !oldMod.Meta.CoreRequirements.Equals(newMod.Meta.CoreRequirements) {
@@ -132,20 +132,20 @@ func (s *ModuleStore) queueModuleChange(txn *memdb.Txn, oldMod, newMod *Module) 
 		if !oldMod.Meta.ProviderRequirements.Equals(newMod.Meta.ProviderRequirements) {
 			cb.Changes.ProviderRequirements = true
 		}
-		if !oldMod.TerraformVersion.Equal(newMod.TerraformVersion) {
-			cb.Changes.TerraformVersion = true
-		}
-		if !oldMod.InstalledProviders.Equals(newMod.InstalledProviders) {
-			cb.Changes.InstalledProviders = true
-		}
+		// if !oldMod.TerraformVersion.Equal(newMod.TerraformVersion) {
+		// 	cb.Changes.TerraformVersion = true
+		// }
+		// if !oldMod.InstalledProviders.Equals(newMod.InstalledProviders) {
+		// 	cb.Changes.InstalledProviders = true
+		// }
 	}
 
 	oldDiags, newDiags := 0, 0
 	if oldMod != nil {
-		oldDiags = oldMod.ModuleDiagnostics.Count() + oldMod.VarsDiagnostics.Count()
+		oldDiags = oldMod.ModuleDiagnostics.Count() //+ oldMod.VarsDiagnostics.Count()
 	}
 	if newMod != nil {
-		newDiags = newMod.ModuleDiagnostics.Count() + newMod.VarsDiagnostics.Count()
+		newDiags = newMod.ModuleDiagnostics.Count() //+ newMod.VarsDiagnostics.Count()
 	}
 	// Comparing diagnostics accurately could be expensive
 	// so we just treat any non-empty diags as a change

@@ -11,15 +11,14 @@ import (
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
-func schemaForModule(mod *state.Module, schemaReader state.SchemaReader, modReader state.ModuleCallReader) (*schema.BodySchema, error) {
-	resolvedVersion := tfschema.ResolveVersion(mod.TerraformVersion, mod.Meta.CoreRequirements)
+func schemaForModule(mod *state.ModuleRecord, stateReader StateReader) (*schema.BodySchema, error) {
+	resolvedVersion := tfschema.ResolveVersion(stateReader.InstalledTerraformVersion(mod.Path()), mod.Meta.CoreRequirements)
 	sm := tfschema.NewSchemaMerger(mustCoreSchemaForVersion(resolvedVersion))
-	sm.SetSchemaReader(schemaReader)
 	sm.SetTerraformVersion(resolvedVersion)
-	sm.SetModuleReader(modReader)
+	sm.SetStateReader(stateReader)
 
 	meta := &tfmodule.Meta{
-		Path:                 mod.Path,
+		Path:                 mod.Path(),
 		CoreRequirements:     mod.Meta.CoreRequirements,
 		ProviderRequirements: mod.Meta.ProviderRequirements,
 		ProviderReferences:   mod.Meta.ProviderReferences,

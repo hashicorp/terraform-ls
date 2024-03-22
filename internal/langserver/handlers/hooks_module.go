@@ -35,7 +35,7 @@ func sendModuleTelemetry(store *state.StateStore, telemetrySender telemetry.Send
 	}
 }
 
-func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state.StateStore) (map[string]interface{}, bool) {
+func moduleTelemetryData(mod *state.ModuleRecord, ch state.ModuleChanges, store *state.StateStore) (map[string]interface{}, bool) {
 	properties := make(map[string]interface{})
 	hasChanged := ch.CoreRequirements || ch.Backend || ch.ProviderRequirements ||
 		ch.TerraformVersion || ch.InstalledProviders
@@ -103,37 +103,38 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 		}
 		properties["providerRequirements"] = reqs
 	}
-	if mod.TerraformVersion != nil {
-		properties["tfVersion"] = mod.TerraformVersion.String()
-	}
-	if len(mod.InstalledProviders) > 0 {
-		installedProviders := make(map[string]string, 0)
-		for pAddr, pv := range mod.InstalledProviders {
-			if telemetry.IsPublicProvider(pAddr) {
-				versionString := ""
-				if pv != nil {
-					versionString = pv.String()
-				}
-				installedProviders[pAddr.String()] = versionString
-				continue
-			}
+	// TODO!
+	// if mod.TerraformVersion != nil {
+	// 	properties["tfVersion"] = mod.TerraformVersion.String()
+	// }
+	// if len(mod.InstalledProviders) > 0 {
+	// 	installedProviders := make(map[string]string, 0)
+	// 	for pAddr, pv := range mod.InstalledProviders {
+	// 		if telemetry.IsPublicProvider(pAddr) {
+	// 			versionString := ""
+	// 			if pv != nil {
+	// 				versionString = pv.String()
+	// 			}
+	// 			installedProviders[pAddr.String()] = versionString
+	// 			continue
+	// 		}
 
-			// anonymize any unknown providers or the ones not publicly listed
-			id, err := store.GetProviderID(pAddr)
-			if err != nil {
-				continue
-			}
-			addr := fmt.Sprintf("unlisted/%s", id)
-			installedProviders[addr] = ""
-		}
-		properties["installedProviders"] = installedProviders
-	}
+	// 		// anonymize any unknown providers or the ones not publicly listed
+	// 		id, err := store.GetProviderID(pAddr)
+	// 		if err != nil {
+	// 			continue
+	// 		}
+	// 		addr := fmt.Sprintf("unlisted/%s", id)
+	// 		installedProviders[addr] = ""
+	// 	}
+	// 	properties["installedProviders"] = installedProviders
+	// }
 
 	if !hasChanged {
 		return nil, false
 	}
 
-	modId, err := store.GetModuleID(mod.Path)
+	modId, err := store.GetModuleID(mod.Path())
 	if err != nil {
 		return nil, false
 	}
@@ -156,11 +157,12 @@ func updateDiagnostics(dNotifier *diagnostics.Notifier) notifier.Hook {
 			for source, dm := range mod.ModuleDiagnostics {
 				diags.Append(source, dm.AutoloadedOnly().AsMap())
 			}
-			for source, dm := range mod.VarsDiagnostics {
-				diags.Append(source, dm.AutoloadedOnly().AsMap())
-			}
+			// TODO!
+			// for source, dm := range mod.VarsDiagnostics {
+			// 	diags.Append(source, dm.AutoloadedOnly().AsMap())
+			// }
 
-			dNotifier.PublishHCLDiags(ctx, mod.Path, diags)
+			dNotifier.PublishHCLDiags(ctx, mod.Path(), diags)
 		}
 		return nil
 	}
@@ -182,7 +184,7 @@ func callRefreshClientCommand(clientRequester session.ClientCaller, commandId st
 
 			_, err = clientRequester.Callback(ctx, commandId, nil)
 			if err != nil {
-				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path, err)
+				return fmt.Errorf("Error calling %s for %s: %s", commandId, mod.Path(), err)
 			}
 		}
 
@@ -221,7 +223,7 @@ func refreshSemanticTokens(clientRequester session.ClientCaller) notifier.Hook {
 
 			_, err = clientRequester.Callback(ctx, "workspace/semanticTokens/refresh", nil)
 			if err != nil {
-				return fmt.Errorf("Error refreshing %s: %s", mod.Path, err)
+				return fmt.Errorf("Error refreshing %s: %s", mod.Path(), err)
 			}
 		}
 

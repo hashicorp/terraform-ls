@@ -39,7 +39,7 @@ func (h *CmdHandler) ModuleCallersHandler(ctx context.Context, args cmd.CommandA
 		return nil, err
 	}
 
-	modCallers, err := h.StateStore.Modules.CallersOfModule(modPath)
+	modCallers, err := h.StateStore.Roots.CallersOfModule(modPath)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (h *CmdHandler) ModuleCallersHandler(ctx context.Context, args cmd.CommandA
 	callers := make([]moduleCaller, 0)
 	for _, caller := range modCallers {
 		callers = append(callers, moduleCaller{
-			URI: uri.FromPath(caller.Path),
+			URI: uri.FromPath(caller.Path()),
 		})
 	}
 	sort.SliceStable(callers, func(i, j int) bool {

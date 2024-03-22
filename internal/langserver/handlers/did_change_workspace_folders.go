@@ -74,14 +74,14 @@ func (svc *service) removeIndexedModule(ctx context.Context, modURI string) {
 		return
 	}
 
-	callers, err := svc.modStore.CallersOfModule(modHandle.Path())
+	callers, err := svc.recordStores.Roots.CallersOfModule(modHandle.Path())
 	if err != nil {
 		svc.logger.Printf("failed to remove module from watcher: %s", err)
 		return
 	}
 
 	if len(callers) == 0 {
-		err = svc.modStore.Remove(modHandle.Path())
-		svc.logger.Printf("failed to remove module: %s", err)
+		err = svc.recordStores.Remove(modHandle.Path())
+		svc.logger.Printf("failed to remove records: %s", err)
 	}
 }

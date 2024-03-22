@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
@@ -32,7 +31,7 @@ func Test_parseModuleRecords(t *testing.T) {
 					},
 					"web_server_sg": {
 						LocalName:  "web_server_sg",
-						SourceAddr: module.UnknownSourceAddr("github.com/terraform-aws-modules/terraform-aws-security-group"),
+						SourceAddr: tfmod.UnknownSourceAddr("github.com/terraform-aws-modules/terraform-aws-security-group"),
 						Version:    nil,
 					},
 					"eks": {
@@ -42,7 +41,7 @@ func Test_parseModuleRecords(t *testing.T) {
 					},
 					"beta": {
 						LocalName:  "beta",
-						SourceAddr: module.LocalSourceAddr("./beta"),
+						SourceAddr: tfmod.LocalSourceAddr("./beta"),
 						Version:    nil,
 					},
 					"empty": {

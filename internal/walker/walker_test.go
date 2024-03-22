@@ -440,11 +440,11 @@ func TestWalker_complexModules(t *testing.T) {
 	}
 }
 
-func modulePaths(modules []*state.Module) []string {
+func modulePaths(modules []*state.ModuleRecord) []string {
 	paths := make([]string, len(modules))
 
 	for i, mod := range modules {
-		paths[i] = mod.Path
+		paths[i] = mod.Path()
 	}
 
 	return paths

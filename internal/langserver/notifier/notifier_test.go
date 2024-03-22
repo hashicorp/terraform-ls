@@ -55,14 +55,12 @@ func (mms mockModuleStore) AwaitNextChangeBatch(ctx context.Context) (state.Modu
 	}, nil
 }
 
-func (mms mockModuleStore) ModuleByPath(path string) (*state.Module, error) {
+func (mms mockModuleStore) ModuleByPath(path string) (*state.ModuleRecord, error) {
 	if path != mms.modPath {
 		return nil, fmt.Errorf("unexpected path: %q", path)
 	}
 
-	return &state.Module{
-		Path: path,
-	}, nil
+	return state.NewModuleTest(path), nil
 }
 
 func testLogger() *log.Logger {

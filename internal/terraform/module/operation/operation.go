@@ -19,6 +19,7 @@ type OpType uint
 const (
 	OpTypeUnknown OpType = iota
 	OpTypeGetTerraformVersion
+	OpTypeGetInstalledTerraformVersion
 	OpTypeObtainSchema
 	OpTypeParseModuleConfiguration
 	OpTypeParseVariables

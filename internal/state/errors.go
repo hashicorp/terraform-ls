@@ -27,12 +27,12 @@ func (e *NoSchemaError) Error() string {
 	return "no schema found"
 }
 
-type ModuleNotFoundError struct {
+type RecordNotFoundError struct {
 	Source string
 }
 
-func (e *ModuleNotFoundError) Error() string {
-	msg := "module not found"
+func (e *RecordNotFoundError) Error() string {
+	msg := "record not found"
 	if e.Source != "" {
 		return fmt.Sprintf("%s: %s", e.Source, msg)
 	}
@@ -40,11 +40,11 @@ func (e *ModuleNotFoundError) Error() string {
 	return msg
 }
 
-func IsModuleNotFound(err error) bool {
+func IsRecordNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	_, ok := err.(*ModuleNotFoundError)
+	_, ok := err.(*RecordNotFoundError)
 	return ok
 }
 
