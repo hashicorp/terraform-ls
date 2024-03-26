@@ -23,13 +23,17 @@ func modulePathContext(mod *state.Module, schemaReader state.SchemaReader, modRe
 	if err != nil {
 		return nil, err
 	}
+	functions, err := functionsForModule(mod, schemaReader)
+	if err != nil {
+		return nil, err
+	}
 
 	pathCtx := &decoder.PathContext{
 		Schema:           schema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
-		Functions:        coreFunctions(mod),
+		Functions:        functions,
 		Validators:       moduleValidators,
 	}
 
