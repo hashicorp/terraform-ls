@@ -1,3 +1,15 @@
+## 0.33.0-beta2 (27 March 2024)
+
+ENHANCEMENTS:
+
+* Support for provider-defined functions ([#1636](https://github.com/hashicorp/terraform-ls/pull/1636))
+
+INTERNAL:
+
+* Use Terraform `1.8.0-rc1` for bundling schemas ([#1669](https://github.com/hashicorp/terraform-ls/pull/1669))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.42.0 to 2.42.1 ([#1662](https://github.com/hashicorp/terraform-ls/pull/1662))
+* build(deps): Bump github.com/zclconf/go-cty from 1.14.3 to 1.14.4 ([#1666](https://github.com/hashicorp/terraform-ls/pull/1666))
+
 ## 0.32.8 (11 March 2024)
 
 NOTES / BREAKING CHANGES:
@@ -25,6 +37,13 @@ INTERNAL:
 * build(deps): Bump github.com/zclconf/go-cty from 1.14.2 to 1.14.3 ([#1654](https://github.com/hashicorp/terraform-ls/pull/1654))
 * build(deps): Bump github.com/algolia/algoliasearch-client-go/v3 from 3.31.0 to 3.31.1 ([#1657](https://github.com/hashicorp/terraform-ls/pull/1657))
 * build(deps): Bump github.com/stretchr/testify from 1.8.4 to 1.9.0 ([#1653](https://github.com/hashicorp/terraform-ls/pull/1653))
+
+## 0.33.0-beta1 (29 February 2024)
+
+BUG FIXES:
+
+* Fix panics on `nil` expressions ([hcl-lang#376](https://github.com/hashicorp/hcl-lang/pull/376))
+* Fix panics on `nil` expressions in early decoder ([terraform-schema#324](https://github.com/hashicorp/terraform-schema/pull/324))
 
 ## 0.32.7 (13 February 2024)
 
