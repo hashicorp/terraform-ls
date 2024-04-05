@@ -15,6 +15,7 @@ func functionsForModule(mod *state.Module, schemaReader state.SchemaReader) (map
 	resolvedVersion := tfschema.ResolveVersion(mod.TerraformVersion, mod.Meta.CoreRequirements)
 	sm := tfschema.NewFunctionsMerger(mustFunctionsForVersion(resolvedVersion))
 	sm.SetSchemaReader(schemaReader)
+	sm.SetTerraformVersion(resolvedVersion)
 
 	meta := &tfmodule.Meta{
 		Path:                 mod.Path,
