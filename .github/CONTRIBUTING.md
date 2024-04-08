@@ -28,7 +28,7 @@ repository and relevant issue tracker for each provider within the
 [Terraform Registry index](https://registry.terraform.io/browse/providers).
 
 This repository also does **not** include the source code for some other parts of
-the Terraform product including Terraform Cloud, Terraform Enterprise, and the
+the Terraform product including HCP Terraform, Terraform Enterprise, and the
 Terraform Registry. Those components are not open source, though if you have
 feedback about them (including bug reports) please do feel free to
 [open a GitHub issue in the core repository](https://github.com/hashicorp/terraform/issues/new/choose).

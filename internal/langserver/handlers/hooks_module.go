@@ -54,7 +54,7 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 
 		// https://developer.hashicorp.com/terraform/language/settings/terraform-cloud#usage-example
 		// Required for Terraform Enterprise;
-		// Defaults to app.terraform.io for Terraform Cloud
+		// Defaults to app.terraform.io for HCP Terraform
 		if hostname == "" {
 			hostname = "app.terraform.io"
 		}
@@ -72,7 +72,7 @@ func moduleTelemetryData(mod *state.Module, ch state.ModuleChanges, store *state
 			hostname := data.Hostname
 
 			// https://developer.hashicorp.com/terraform/language/settings/backends/remote#hostname
-			// Defaults to app.terraform.io for Terraform Cloud
+			// Defaults to app.terraform.io for HCP Terraform
 			if hostname == "" {
 				hostname = "app.terraform.io"
 			}
