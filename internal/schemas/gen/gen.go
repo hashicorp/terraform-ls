@@ -114,11 +114,9 @@ func gen() error {
 	i := hcinstall.NewInstaller()
 	execPath, err := i.Ensure(ctx, []src.Source{
 		&releases.LatestVersion{
-			Product:    product.Terraform,
-			InstallDir: installDir,
-			// TODO! Update after 1.8 GA
-			// Constraints: terraformVersion,
-			IncludePrereleases: true,
+			Product:     product.Terraform,
+			InstallDir:  installDir,
+			Constraints: terraformVersion,
 		},
 	})
 	if err != nil {
