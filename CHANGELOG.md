@@ -1,3 +1,40 @@
+## 0.33.0 (10 April 2024)
+
+ENHANCEMENTS:
+
+* Support for provider-defined functions ([#1636](https://github.com/hashicorp/terraform-ls/pull/1636))
+* Remove `use_legacy_workflow` from S3 backend ([terraform-schema#338](https://github.com/hashicorp/terraform-schema/pull/338))
+* Add `issensitive` function ([terraform-schema#340](https://github.com/hashicorp/terraform-schema/pull/340))
+* Conclude `module_variable_optional_attrs` language experiment ([terraform-schema#337](https://github.com/hashicorp/terraform-schema/pull/337))
+
+BUG FIXES:
+
+* Only merge provider-defined functions for Terraform >= 1.8 ([#1672](https://github.com/hashicorp/terraform-ls/pull/1672), [terraform-schema#336](https://github.com/hashicorp/terraform-schema/pull/336))
+
+INTERNAL:
+
+* Use Terraform `1.8.0-rc1` for bundling schemas ([#1669](https://github.com/hashicorp/terraform-ls/pull/1669))
+* Update net package (updates some more alongside) ([#1677](https://github.com/hashicorp/terraform-ls/pull/1677))
+* build(deps): Bump github.com/vektra/mockery/v2 from 2.42.0 to 2.42.2 ([#1662](https://github.com/hashicorp/terraform-ls/pull/1662), [#1680](https://github.com/hashicorp/terraform-ls/pull/1680))
+* build(deps): Bump github.com/zclconf/go-cty from 1.14.3 to 1.14.4 ([#1666](https://github.com/hashicorp/terraform-ls/pull/1666))
+* build(deps): Bump workflows to latest trusted versions ([#1673](https://github.com/hashicorp/terraform-ls/pull/1673))
+* build(deps): Bump golang.org/x/tools from 0.19.0 to 0.20.0 ([#1679](https://github.com/hashicorp/terraform-ls/pull/1679))
+* build(deps): Bump github.com/creachadair/jrpc2 from 1.1.2 to 1.2.0 ([#1674](https://github.com/hashicorp/terraform-ls/pull/1674))
+* build(deps): Bump github.com/hashicorp/hc-install from 0.6.3 to 0.6.4 ([#1675](https://github.com/hashicorp/terraform-ls/pull/1675))
+* build(deps): Bump go.opentelemetry.io/otel/trace from 1.24.0 to 1.25.0 ([#1678](https://github.com/hashicorp/terraform-ls/pull/1678))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp from 0.49.0 to 0.50.0 ([#1681](https://github.com/hashicorp/terraform-ls/pull/1681))
+* build(deps): Bump go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace from 0.49.0 to 0.50.0 ([#1682](https://github.com/hashicorp/terraform-ls/pull/1682))
+
+## 0.33.0-beta2 (27 March 2024)
+
+ENHANCEMENTS:
+
+* Support for provider-defined functions ([#1636](https://github.com/hashicorp/terraform-ls/pull/1636))
+
+INTERNAL:
+
+* Use Terraform `1.8.0-rc1` for bundling schemas ([#1669](https://github.com/hashicorp/terraform-ls/pull/1669))
+
 ## 0.32.8 (11 March 2024)
 
 NOTES / BREAKING CHANGES:
@@ -25,6 +62,13 @@ INTERNAL:
 * build(deps): Bump github.com/zclconf/go-cty from 1.14.2 to 1.14.3 ([#1654](https://github.com/hashicorp/terraform-ls/pull/1654))
 * build(deps): Bump github.com/algolia/algoliasearch-client-go/v3 from 3.31.0 to 3.31.1 ([#1657](https://github.com/hashicorp/terraform-ls/pull/1657))
 * build(deps): Bump github.com/stretchr/testify from 1.8.4 to 1.9.0 ([#1653](https://github.com/hashicorp/terraform-ls/pull/1653))
+
+## 0.33.0-beta1 (29 February 2024)
+
+BUG FIXES:
+
+* Fix panics on `nil` expressions ([hcl-lang#376](https://github.com/hashicorp/hcl-lang/pull/376))
+* Fix panics on `nil` expressions in early decoder ([terraform-schema#324](https://github.com/hashicorp/terraform-schema/pull/324))
 
 ## 0.32.7 (13 February 2024)
 
