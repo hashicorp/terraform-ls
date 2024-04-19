@@ -1,6 +1,4 @@
-## 0.33.1 (10 April 2024)
-
-## What's Changed
+## 0.33.1 (22 April 2024)
 
 ENHANCEMENTS:
 
