@@ -1,3 +1,15 @@
+## 0.33.1 (22 April 2024)
+
+ENHANCEMENTS:
+
+* Rename TFC to HCP Terraform in documentation ([#1687](https://github.com/hashicorp/terraform-ls/pull/1687))
+* Rename TFC to HCP Terraform in hover documentation ([terraform-schema#1687](https://github.com/hashicorp/terraform-schema/pull/343))
+
+INTERNAL:
+
+* Remove token from delete-artifact action ([#1685](https://github.com/hashicorp/terraform-ls/pull/1685))
+* Revert "Use Terraform 1.8-rc1 for bundling schemas (#1669)" ([#1686](https://github.com/hashicorp/terraform-ls/pull/1686))
+
 ## 0.33.0 (10 April 2024)
 
 ENHANCEMENTS:
@@ -440,7 +452,7 @@ NOTES / BREAKING CHANGES:
 ENHANCEMENTS:
 
  - Parse `optional()` object attribute _default values_ correctly, as introduced in Terraform v1.3 ([terraform-schema#184](https://github.com/hashicorp/terraform-schema/pull/184))
- 
+
 BUG FIXES:
 
  - Ignore inaccessible files (such as emacs backup files) ([terraform-ls#1172](https://github.com/hashicorp/terraform-ls/issues/1067]))
