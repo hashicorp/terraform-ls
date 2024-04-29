@@ -71,7 +71,7 @@ func newExecutor(t *testing.T) TerraformExecutor {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if err := os.Remove(installDir); err != nil {
+		if err := os.RemoveAll(installDir); err != nil {
 			t.Fatal(err)
 		}
 	})
