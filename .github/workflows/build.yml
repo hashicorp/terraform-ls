@@ -114,7 +114,7 @@ jobs:
           path: ./internal/schemas/data
       - name: Check provider schemas
         run: du -h -s ./internal/schemas/data
-      - uses: hashicorp/actions-go-build@v0.1.9
+      - uses: hashicorp/actions-go-build@v1
         env:
           BASE_VERSION: ${{ needs.set-product-version.outputs.product-base-version }}
           PRERELEASE_VERSION: ${{ needs.set-product-version.outputs.product-prerelease-version}}
