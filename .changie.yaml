@@ -1,0 +1,29 @@
+changesDir: .changes
+unreleasedDir: unreleased
+changelogPath: CHANGELOG.md
+versionExt: md
+versionFormat: '## {{.Version}} ({{.Time.Format "02 January 2006"}})'
+kindFormat: '{{.Kind}}:'
+changeFormat: '* {{.Body}} ([{{- if not (eq .Custom.Repository "terraform-ls")}}{{.Custom.Repository}}{{- end}}#{{.Custom.Issue}}](https://github.com/hashicorp/{{.Custom.Repository}}/issues/{{.Custom.Issue}}))'
+custom:
+  - key: Repository
+    label: Repository
+    type: enum
+    enumOptions:
+      - terraform-ls
+      - terraform-schema
+      - hcl-lang
+  - key: Issue
+    label: Issue/PR Number
+    type: int
+    minInt: 1
+kinds:
+- label: ENHANCEMENTS
+- label: BUG FIXES
+- label: INTERNAL
+- label: NOTES / BREAKING CHANGES
+newlines:
+  afterKind: 1
+  beforeKind: 1
+  endOfVersion: 2
+envPrefix: CHANGIE_
