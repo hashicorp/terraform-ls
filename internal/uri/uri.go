@@ -65,11 +65,7 @@ func isWindowsDriveVolume(path string) bool {
 // IsURIValid checks whether uri is a valid URI per RFC 8089
 func IsURIValid(uri string) bool {
 	_, err := parseUri(uri)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // PathFromURI extracts OS-specific path from an RFC 8089 "file" URI Scheme
