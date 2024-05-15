@@ -508,7 +508,7 @@ func ParseVariables(ctx context.Context, fs ReadOnlyFS, modStore *state.ModuleSt
 		return err
 	}
 
-	sErr := modStore.UpdateParsedVarsFiles(modPath, files, err)
+	sErr := modStore.UpdateParsedVarsFiles(modPath, files)
 	if sErr != nil {
 		return sErr
 	}
