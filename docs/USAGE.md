@@ -126,6 +126,27 @@ if executable('terraform-ls')
 endif
 ```
 
+### YouCompleteMe
+ - [Install](https://opensource.com/article/20/2/how-install-vim-plugins) the following plugins:
+   * [YouCompleteMe plugin](https://github.com/ycm-core/YouCompleteMe)
+ - Add the following to your `.vimrc`:
+
+```vim
+" Remove this line if additional custom language servers are set elsewhere
+let g:ycm_language_server = []
+
+if executable('terraform-ls')
+    let g:ycm_language_server += [
+        \   {
+        \     'name': 'terraform',
+        \     'cmdline': [ 'terraform-ls', 'serve' ],
+        \     'filetypes': [ 'terraform' ],
+        \     'project_root_files': [ '*.tf', '*.tfvars' ],
+        \   },
+        \ ]
+endif
+```
+
 ### LanguageClient-neovim
 
  - Install the [LanguageClient-neovim plugin](https://github.com/autozimu/LanguageClient-neovim)
@@ -201,7 +222,7 @@ Make sure to read through to [server_configurations.md#terraformls](https://gith
 
 ## Kate
 
-KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurable. 
+KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurable.
 
 - Install the `terraform-ls` package (or the equivalent package name appropriate to your distro)
 - Open Kate configuration (Settings Menu -> `Configure` Kate or Kate -> `Preferences` on macOS)
@@ -220,4 +241,4 @@ KDE [Kate editor](https://kate-editor.org/) supports LSP and is user configurabl
   }
 }
 ```
-- Restart of the editor should *not* be necessary. 
+- Restart of the editor should *not* be necessary.
