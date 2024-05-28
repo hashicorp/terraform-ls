@@ -321,7 +321,6 @@ func (js *JobStore) awaitNextJob(ctx context.Context, priority job.JobPriority) 
 				return ctx, "", job.Job{}, ctx.Err()
 			}
 
-			js.logger.Printf("retrying on obj is nil")
 			continue
 		}
 
