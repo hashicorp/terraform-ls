@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.22.0
+go 1.22.4
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.1
