@@ -137,6 +137,13 @@ jobs:
                 -X 'main.algoliaAppID=${{ secrets.ALGOLIA_APP_ID }}'
                 -X 'main.algoliaAPIKey=${{ secrets.ALGOLIA_API_KEY }}'
               "
+            cp LICENSE "$TARGET_DIR/LICENSE.txt"
+      - name: Copy license file to config_dir # for Linux packages
+        if: ${{ matrix.goos == 'linux' }}
+        env:
+          LICENSE_DIR: ".release/linux/package/usr/share/doc/${{ env.PKG_NAME }}"
+        run: |
+          mkdir -p "$LICENSE_DIR" && cp LICENSE "$LICENSE_DIR/LICENSE.txt"
       - name: Package
         if: ${{ matrix.goos == 'linux' }}
         uses: hashicorp/actions-packaging-linux@v1
@@ -151,6 +158,7 @@ jobs:
           binary: "dist/${{ env.PKG_NAME }}"
           deb_depends: "openssl"
           rpm_depends: "openssl"
+          config_dir: ".release/linux/package/"
       - name: Set Package Names
         if: ${{ matrix.goos == 'linux' }}
         run: |
