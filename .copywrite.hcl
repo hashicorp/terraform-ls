@@ -10,5 +10,7 @@ project {
     "**/testdata/**",
     ".github/ISSUE_TEMPLATE/**",
     ".changes/**",
+    "internal/schemas/gen-workspace/**",
+    "internal/schemas/tf-plugin-cache/**",
   ]
 }
