@@ -22,7 +22,7 @@ func TestNotifier(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	hookFunc := func(ctx context.Context, changes state.ModuleChanges) error {
+	hookFunc := func(ctx context.Context, changes state.Changes) error {
 		wg.Done()
 		cancelFunc()
 		return nil
@@ -43,25 +43,15 @@ type mockModuleStore struct {
 	modPath  string
 }
 
-func (mms mockModuleStore) AwaitNextChangeBatch(ctx context.Context) (state.ModuleChangeBatch, error) {
+func (mms mockModuleStore) AwaitNextChangeBatch(ctx context.Context) (state.ChangeBatch, error) {
 	if mms.returned {
-		return state.ModuleChangeBatch{}, fmt.Errorf("no more batches")
+		return state.ChangeBatch{}, fmt.Errorf("no more batches")
 	}
 	defer func() { mms.returned = true }()
 
-	return state.ModuleChangeBatch{
+	return state.ChangeBatch{
 		DirHandle:       document.DirHandleFromPath(mms.modPath),
 		FirstChangeTime: time.Date(2022, 5, 26, 0, 0, 0, 0, time.UTC),
-	}, nil
-}
-
-func (mms mockModuleStore) ModuleByPath(path string) (*state.Module, error) {
-	if path != mms.modPath {
-		return nil, fmt.Errorf("unexpected path: %q", path)
-	}
-
-	return &state.Module{
-		Path: path,
 	}, nil
 }
 
