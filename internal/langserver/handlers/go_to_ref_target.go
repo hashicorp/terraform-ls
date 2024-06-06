@@ -52,6 +52,12 @@ func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocu
 		return nil, err
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return nil, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	path := lang.Path{
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
