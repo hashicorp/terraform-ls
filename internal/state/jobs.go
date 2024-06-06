@@ -158,6 +158,31 @@ func (js *JobStore) isJobDone(txn *memdb.Txn, id job.ID) (bool, error) {
 	return sj.State == StateDone, nil
 }
 
+func (js *JobStore) ListIncompleteJobsForDir(dir document.DirHandle) (job.IDs, error) {
+	jobIDs := make(job.IDs, 0)
+	txn := js.db.Txn(false)
+
+	it, err := txn.Get(jobsTableName, "dir_state", dir, StateQueued)
+	if err != nil {
+		return jobIDs, fmt.Errorf("failed to find queued jobs for %q: %w", dir, err)
+	}
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		sj := obj.(*ScheduledJob)
+		jobIDs = append(jobIDs, sj.ID)
+	}
+
+	it, err = txn.Get(jobsTableName, "dir_state", dir, StateRunning)
+	if err != nil {
+		return jobIDs, fmt.Errorf("failed to find running jobs for %q: %w", dir, err)
+	}
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		sj := obj.(*ScheduledJob)
+		jobIDs = append(jobIDs, sj.ID)
+	}
+
+	return jobIDs, nil
+}
+
 func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 	txn := js.db.Txn(true)
 	defer txn.Abort()
@@ -195,7 +220,7 @@ func (js *JobStore) DequeueJobsForDir(dir document.DirHandle) error {
 	return nil
 }
 
-func jobsExistForDirHandle(txn *memdb.Txn, dir document.DirHandle) (<-chan struct{}, bool, error) {
+func JobsExistForDirHandle(txn *memdb.Txn, dir document.DirHandle) (<-chan struct{}, bool, error) {
 	wCh, runningObj, err := txn.FirstWatch(jobsTableName, "dir_state", dir, StateRunning)
 	if err != nil {
 		return nil, false, err
