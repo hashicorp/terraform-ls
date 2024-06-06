@@ -20,6 +20,12 @@ func (svc *service) TextDocumentCodeLens(ctx context.Context, params lsp.CodeLen
 		return list, err
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return list, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	path := lang.Path{
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
