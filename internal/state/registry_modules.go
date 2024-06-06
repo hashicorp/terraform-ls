@@ -103,3 +103,32 @@ func (s *RegistryModuleStore) CacheError(sourceAddr tfaddr.Module) error {
 	txn.Commit()
 	return nil
 }
+
+func (s *RegistryModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
+	txn := s.db.Txn(false)
+
+	it, err := txn.Get(s.tableName, "source_addr", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	for item := it.Next(); item != nil; item = it.Next() {
+		mod := item.(*RegistryModuleData)
+
+		if mod.Error {
+			continue
+		}
+
+		if cons.Check(mod.Version) {
+			return &registry.ModuleData{
+				Version: mod.Version,
+				Inputs:  mod.Inputs,
+				Outputs: mod.Outputs,
+			}, nil
+		}
+	}
+
+	return nil, &RecordNotFoundError{
+		Source: addr.String(),
+	}
+}

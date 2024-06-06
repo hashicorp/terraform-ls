@@ -13,7 +13,7 @@ type ProviderIds struct {
 	ID      string
 }
 
-func (s *StateStore) GetProviderID(addr tfaddr.Provider) (string, error) {
+func (s *ProviderSchemaStore) GetProviderID(addr tfaddr.Provider) (string, error) {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 

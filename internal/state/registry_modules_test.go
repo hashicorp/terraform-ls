@@ -104,7 +104,7 @@ func TestModule_DeclaredModuleMeta(t *testing.T) {
 	}
 
 	cons := version.MustConstraints(version.NewConstraint(">= 3.0"))
-	meta, err := ss.Modules.RegistryModuleMeta(source, cons)
+	meta, err := ss.RegistryModules.RegistryModuleMeta(source, cons)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,25 +4,18 @@
 package state
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/hashicorp/go-memdb"
-	"github.com/hashicorp/go-version"
-	tfaddr "github.com/hashicorp/terraform-registry-address"
-	tfmod "github.com/hashicorp/terraform-schema/module"
-	"github.com/hashicorp/terraform-schema/registry"
-	tfschema "github.com/hashicorp/terraform-schema/schema"
 )
 
 const (
+	changesTableName        = "changes"
 	documentsTableName      = "documents"
 	jobsTableName           = "jobs"
-	moduleTableName         = "module"
-	moduleIdsTableName      = "module_ids"
-	moduleChangesTableName  = "module_changes"
 	providerSchemaTableName = "provider_schema"
 	providerIdsTableName    = "provider_ids"
 	walkerPathsTableName    = "walker_paths"
@@ -33,6 +26,20 @@ const (
 
 var dbSchema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
+		changesTableName: {
+			Name: changesTableName,
+			Indexes: map[string]*memdb.IndexSchema{
+				"id": {
+					Name:    "id",
+					Unique:  true,
+					Indexer: &DirHandleFieldIndexer{Field: "DirHandle"},
+				},
+				"time": {
+					Name:    "time",
+					Indexer: &TimeFieldIndex{Field: "FirstChangeTime"},
+				},
+			},
+		},
 		documentsTableName: {
 			Name: documentsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -118,16 +125,6 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
-		moduleTableName: {
-			Name: moduleTableName,
-			Indexes: map[string]*memdb.IndexSchema{
-				"id": {
-					Name:    "id",
-					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "Path"},
-				},
-			},
-		},
 		providerSchemaTableName: {
 			Name: providerSchemaTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -175,30 +172,6 @@ var dbSchema = &memdb.DBSchema{
 				},
 			},
 		},
-		moduleIdsTableName: {
-			Name: moduleIdsTableName,
-			Indexes: map[string]*memdb.IndexSchema{
-				"id": {
-					Name:    "id",
-					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "Path"},
-				},
-			},
-		},
-		moduleChangesTableName: {
-			Name: moduleChangesTableName,
-			Indexes: map[string]*memdb.IndexSchema{
-				"id": {
-					Name:    "id",
-					Unique:  true,
-					Indexer: &DirHandleFieldIndexer{Field: "DirHandle"},
-				},
-				"time": {
-					Name:    "time",
-					Indexer: &TimeFieldIndex{Field: "FirstChangeTime"},
-				},
-			},
-		},
 		walkerPathsTableName: {
 			Name: walkerPathsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
@@ -222,9 +195,9 @@ var dbSchema = &memdb.DBSchema{
 }
 
 type StateStore struct {
+	ChangeStore     *ChangeStore
 	DocumentStore   *DocumentStore
 	JobStore        *JobStore
-	Modules         *ModuleStore
 	ProviderSchemas *ProviderSchemaStore
 	WalkerPaths     *WalkerPathStore
 	RegistryModules *RegistryModuleStore
@@ -232,36 +205,14 @@ type StateStore struct {
 	db *memdb.MemDB
 }
 
-type ModuleStore struct {
+type ChangeStore struct {
 	db        *memdb.MemDB
-	Changes   *ModuleChangeStore
 	tableName string
 	logger    *log.Logger
 
 	// TimeProvider provides current time (for mocking time.Now in tests)
 	TimeProvider func() time.Time
-
-	// MaxModuleNesting represents how many nesting levels we'd attempt
-	// to parse provider requirements before returning error.
-	MaxModuleNesting int
 }
-
-type ModuleChangeStore struct {
-	db *memdb.MemDB
-}
-
-type ModuleReader interface {
-	CallersOfModule(modPath string) ([]*Module, error)
-	ModuleByPath(modPath string) (*Module, error)
-	List() ([]*Module, error)
-}
-
-type ModuleCallReader interface {
-	ModuleCalls(modPath string) (tfmod.ModuleCalls, error)
-	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
-	RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error)
-}
-
 type ProviderSchemaStore struct {
 	db        *memdb.MemDB
 	tableName string
@@ -273,10 +224,6 @@ type RegistryModuleStore struct {
 	logger    *log.Logger
 }
 
-type SchemaReader interface {
-	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
-}
-
 func NewStateStore() (*StateStore, error) {
 	db, err := memdb.NewMemDB(dbSchema)
 	if err != nil {
@@ -285,6 +232,12 @@ func NewStateStore() (*StateStore, error) {
 
 	return &StateStore{
 		db: db,
+		ChangeStore: &ChangeStore{
+			db:           db,
+			tableName:    changesTableName,
+			logger:       defaultLogger,
+			TimeProvider: time.Now,
+		},
 		DocumentStore: &DocumentStore{
 			db:           db,
 			tableName:    documentsTableName,
@@ -297,13 +250,6 @@ func NewStateStore() (*StateStore, error) {
 			logger:            defaultLogger,
 			nextJobHighPrioMu: &sync.Mutex{},
 			nextJobLowPrioMu:  &sync.Mutex{},
-		},
-		Modules: &ModuleStore{
-			db:               db,
-			tableName:        moduleTableName,
-			logger:           defaultLogger,
-			TimeProvider:     time.Now,
-			MaxModuleNesting: 50,
 		},
 		ProviderSchemas: &ProviderSchemaStore{
 			db:        db,
@@ -326,12 +272,12 @@ func NewStateStore() (*StateStore, error) {
 }
 
 func (s *StateStore) SetLogger(logger *log.Logger) {
+	s.ChangeStore.logger = logger
 	s.DocumentStore.logger = logger
 	s.JobStore.logger = logger
-	s.Modules.logger = logger
 	s.ProviderSchemas.logger = logger
 	s.WalkerPaths.logger = logger
 	s.RegistryModules.logger = logger
 }
 
-var defaultLogger = log.New(ioutil.Discard, "", 0)
+var defaultLogger = log.New(io.Discard, "", 0)

@@ -187,10 +187,10 @@ func (s *DocumentStore) IsDocumentOpen(dh document.Handle) (bool, error) {
 
 func (s *DocumentStore) HasOpenDocuments(dirHandle document.DirHandle) (bool, error) {
 	txn := s.db.Txn(false)
-	return dirHasOpenDocuments(txn, dirHandle)
+	return DirHasOpenDocuments(txn, dirHandle)
 }
 
-func dirHasOpenDocuments(txn *memdb.Txn, dirHandle document.DirHandle) (bool, error) {
+func DirHasOpenDocuments(txn *memdb.Txn, dirHandle document.DirHandle) (bool, error) {
 	obj, err := txn.First(documentsTableName, "dir", dirHandle)
 	if err != nil {
 		return false, err

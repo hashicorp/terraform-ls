@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/go-version"
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/job"
-	tfaddr "github.com/hashicorp/terraform-registry-address"
 )
 
-func TestModuleChanges_dirOpenMark_openBeforeChange(t *testing.T) {
+func TestChanges_dirOpenMark_openBeforeChange(t *testing.T) {
 	ss, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +31,7 @@ func TestModuleChanges_dirOpenMark_openBeforeChange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ss.Modules.Add(modPath)
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +39,7 @@ func TestModuleChanges_dirOpenMark_openBeforeChange(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
-	batch, err := ss.Modules.AwaitNextChangeBatch(ctx)
+	batch, err := ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,20 +49,20 @@ func TestModuleChanges_dirOpenMark_openBeforeChange(t *testing.T) {
 	}
 }
 
-func TestModuleChanges_dirOpenMark_openAfterChange(t *testing.T) {
+func TestChanges_dirOpenMark_openAfterChange(t *testing.T) {
 	ss, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	modPath := t.TempDir()
+	modHandle := document.DirHandleFromPath(modPath)
 
-	err = ss.Modules.Add(modPath)
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	modHandle := document.DirHandleFromPath(modPath)
 	docHandle := document.Handle{
 		Dir:      modHandle,
 		Filename: "main.tf",
@@ -77,7 +75,7 @@ func TestModuleChanges_dirOpenMark_openAfterChange(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
-	batch, err := ss.Modules.AwaitNextChangeBatch(ctx)
+	batch, err := ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +85,7 @@ func TestModuleChanges_dirOpenMark_openAfterChange(t *testing.T) {
 	}
 }
 
-func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
+func TestChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 	ss, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +107,7 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ss.Modules.Add(modPath)
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +117,7 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 	ctx, cancelFunc := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cancelFunc()
 
-	_, err = ss.Modules.AwaitNextChangeBatch(ctx)
+	_, err = ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err == nil {
 		t.Fatal("expected timeout")
 	}
@@ -129,37 +127,38 @@ func TestModuleChanges_AwaitNextChangeBatch_maxTimespan(t *testing.T) {
 
 }
 
-func TestModuleChanges_AwaitNextChangeBatch_multipleChanges(t *testing.T) {
+func TestChanges_AwaitNextChangeBatch_multipleChanges(t *testing.T) {
 	ss, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ss.Modules.TimeProvider = testTimeProvider
+	ss.ChangeStore.TimeProvider = testTimeProvider
 
-	modPath := t.TempDir()
-
-	err = ss.Modules.Add(modPath)
+	modHandle := document.DirHandleFromPath(t.TempDir())
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = ss.Modules.UpdateTerraformAndProviderVersions(modPath, testVersion(t, "1.0.0"), map[tfaddr.Provider]*version.Version{}, nil)
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{
+		TerraformVersion: true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancelFunc()
-	batch, err := ss.Modules.AwaitNextChangeBatch(ctx)
+	batch, err := ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedBatch := ModuleChangeBatch{
-		DirHandle:       document.DirHandleFromPath(modPath),
+	expectedBatch := ChangeBatch{
+		DirHandle:       modHandle,
 		FirstChangeTime: testTimeProvider(),
 		IsDirOpen:       false,
-		Changes: ModuleChanges{
+		Changes: Changes{
 			TerraformVersion: true,
 		},
 	}
@@ -170,7 +169,7 @@ func TestModuleChanges_AwaitNextChangeBatch_multipleChanges(t *testing.T) {
 	// verify that no more batches are available
 	ctx, cancelFunc = context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancelFunc()
-	_, err = ss.Modules.AwaitNextChangeBatch(ctx)
+	_, err = ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err == nil {
 		t.Fatal("expected error on next batch read")
 	}
@@ -179,36 +178,37 @@ func TestModuleChanges_AwaitNextChangeBatch_multipleChanges(t *testing.T) {
 	}
 }
 
-func TestModuleChanges_AwaitNextChangeBatch_removal(t *testing.T) {
+func TestChanges_AwaitNextChangeBatch_removal(t *testing.T) {
 	ss, err := NewStateStore()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ss.Modules.TimeProvider = testTimeProvider
+	ss.ChangeStore.TimeProvider = testTimeProvider
 
-	modPath := t.TempDir()
-
-	err = ss.Modules.Add(modPath)
+	modHandle := document.DirHandleFromPath(t.TempDir())
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ss.Modules.Remove(modPath)
+	err = ss.ChangeStore.QueueChange(modHandle, Changes{
+		IsRemoval: true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancelFunc()
-	batch, err := ss.Modules.AwaitNextChangeBatch(ctx)
+	batch, err := ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedBatch := ModuleChangeBatch{
-		DirHandle:       document.DirHandleFromPath(modPath),
+	expectedBatch := ChangeBatch{
+		DirHandle:       modHandle,
 		FirstChangeTime: testTimeProvider(),
 		IsDirOpen:       false,
-		Changes: ModuleChanges{
+		Changes: Changes{
 			IsRemoval: true,
 		},
 	}
@@ -219,7 +219,7 @@ func TestModuleChanges_AwaitNextChangeBatch_removal(t *testing.T) {
 	// verify that no more batches are available
 	ctx, cancelFunc = context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancelFunc()
-	_, err = ss.Modules.AwaitNextChangeBatch(ctx)
+	_, err = ss.ChangeStore.AwaitNextChangeBatch(ctx)
 	if err == nil {
 		t.Fatal("expected error on next batch read")
 	}
