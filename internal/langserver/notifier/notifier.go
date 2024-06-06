@@ -6,33 +6,32 @@ package notifier
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/state"
 )
 
-type moduleCtxKey struct{}
-type moduleIsOpenCtxKey struct{}
+type recordPathCtxKey struct{}
+type recordIsOpenCtxKey struct{}
 
 type Notifier struct {
-	modStore ModuleStore
-	hooks    []Hook
-	logger   *log.Logger
+	changeStore ChangeStore
+	hooks       []Hook
+	logger      *log.Logger
 }
 
-type ModuleStore interface {
-	AwaitNextChangeBatch(ctx context.Context) (state.ModuleChangeBatch, error)
-	ModuleByPath(path string) (*state.Module, error)
+type ChangeStore interface {
+	AwaitNextChangeBatch(ctx context.Context) (state.ChangeBatch, error)
 }
 
-type Hook func(ctx context.Context, changes state.ModuleChanges) error
+type Hook func(ctx context.Context, changes state.Changes) error
 
-func NewNotifier(modStore ModuleStore, hooks []Hook) *Notifier {
+func NewNotifier(changeStore ChangeStore, hooks []Hook) *Notifier {
 	return &Notifier{
-		modStore: modStore,
-		hooks:    hooks,
-		logger:   defaultLogger,
+		changeStore: changeStore,
+		hooks:       hooks,
+		logger:      defaultLogger,
 	}
 }
 
@@ -59,18 +58,14 @@ func (n *Notifier) Start(ctx context.Context) {
 }
 
 func (n *Notifier) notify(ctx context.Context) error {
-	changeBatch, err := n.modStore.AwaitNextChangeBatch(ctx)
+	changeBatch, err := n.changeStore.AwaitNextChangeBatch(ctx)
 	if err != nil {
 		return err
 	}
 
-	mod, err := n.modStore.ModuleByPath(changeBatch.DirHandle.Path())
-	if err != nil {
-		return err
-	}
-	ctx = withModule(ctx, mod)
+	ctx = withRecordPath(ctx, changeBatch.DirHandle.Path())
 
-	ctx = withModuleIsOpen(ctx, changeBatch.IsDirOpen)
+	ctx = withRecordIsOpen(ctx, changeBatch.IsDirOpen)
 
 	for i, h := range n.hooks {
 		err = h(ctx, changeBatch.Changes)
@@ -83,30 +78,30 @@ func (n *Notifier) notify(ctx context.Context) error {
 	return nil
 }
 
-func withModule(ctx context.Context, mod *state.Module) context.Context {
-	return context.WithValue(ctx, moduleCtxKey{}, mod)
+func withRecordPath(ctx context.Context, path string) context.Context {
+	return context.WithValue(ctx, recordPathCtxKey{}, path)
 }
 
-func ModuleFromContext(ctx context.Context) (*state.Module, error) {
-	mod, ok := ctx.Value(moduleCtxKey{}).(*state.Module)
+func RecordPathFromContext(ctx context.Context) (string, error) {
+	records, ok := ctx.Value(recordPathCtxKey{}).(string)
 	if !ok {
-		return nil, errors.New("module data not found")
+		return "", errors.New("record path not found")
 	}
 
-	return mod, nil
+	return records, nil
 }
 
-func withModuleIsOpen(ctx context.Context, isOpen bool) context.Context {
-	return context.WithValue(ctx, moduleIsOpenCtxKey{}, isOpen)
+func withRecordIsOpen(ctx context.Context, isOpen bool) context.Context {
+	return context.WithValue(ctx, recordIsOpenCtxKey{}, isOpen)
 }
 
-func ModuleIsOpen(ctx context.Context) (bool, error) {
-	isOpen, ok := ctx.Value(moduleIsOpenCtxKey{}).(bool)
+func RecordIsOpen(ctx context.Context) (bool, error) {
+	isOpen, ok := ctx.Value(recordIsOpenCtxKey{}).(bool)
 	if !ok {
-		return false, errors.New("module open state not found")
+		return false, errors.New("record open state not found")
 	}
 
 	return isOpen, nil
 }
 
-var defaultLogger = log.New(ioutil.Discard, "", 0)
+var defaultLogger = log.New(io.Discard, "", 0)
