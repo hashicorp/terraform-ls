@@ -19,6 +19,10 @@ func cmdHandlers(svc *service) cmd.Handlers {
 		StateStore: svc.stateStore,
 		Logger:     svc.logger,
 	}
+	if svc.features != nil {
+		cmdHandler.ModulesFeature = svc.features.Modules
+		cmdHandler.RootModulesFeature = svc.features.RootModules
+	}
 	return cmd.Handlers{
 		cmd.Name("rootmodules"):        removedHandler("use module.callers instead"),
 		cmd.Name("module.callers"):     cmdHandler.ModuleCallersHandler,
@@ -44,10 +48,7 @@ func (svc *service) WorkspaceExecuteCommand(ctx context.Context, params lsp.Exec
 		return nil, fmt.Errorf("%w: command handler not found for %q", jrpc2.MethodNotFound.Err(), params.Command)
 	}
 
-	pt, ok := params.WorkDoneToken.(lsp.ProgressToken)
-	if ok {
-		ctx = lsctx.WithProgressToken(ctx, pt)
-	}
+	ctx = lsctx.WithProgressToken(ctx, params.WorkDoneToken)
 
 	return handler(ctx, cmd.ParseCommandArgs(params.Arguments))
 }
