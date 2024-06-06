@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -49,7 +48,7 @@ func TestModuleCompletion_withValidData_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
 
-	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("provider \"test\" {\n\n}\n"), 0o755)
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("provider \"test\" {\n\n}\n"), 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +259,7 @@ func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
 
-	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,6 +291,17 @@ func TestModuleCompletion_withValidData_tooOldVersion(t *testing.T) {
 						ReturnArguments: []interface{}{
 							version.Must(version.NewVersion("0.10.0")),
 							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
 							nil,
 						},
 					},
@@ -413,7 +423,7 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
 
-	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("variable \"test\" {\n\n}\n"), 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -445,6 +455,17 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 						ReturnArguments: []interface{}{
 							version.Must(version.NewVersion("999.999.999")),
 							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
 							nil,
 						},
 					},
@@ -624,7 +645,7 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 func TestModuleCompletion_withValidDataAndSnippets(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
-	err := ioutil.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("provider \"test\" {\n\n}\n"), 0o755)
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte("provider \"test\" {\n\n}\n"), 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
