@@ -4,7 +4,6 @@
 package datadir
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -54,7 +53,7 @@ func TestParseModuleManifestFromFile(t *testing.T) {
 	}
 
 	path := filepath.Join(manifestDir, "modules.json")
-	err = ioutil.WriteFile(path, []byte(testManifestContent), 0755)
+	err = os.WriteFile(path, []byte(testManifestContent), 0755)
 	if err != nil {
 		t.Fatal(err)
 	}
