@@ -22,7 +22,7 @@ type filename interface {
 	String() string
 }
 
-func parseFile(src []byte, filename filename) (*hcl.File, hcl.Diagnostics) {
+func ParseFile(src []byte, filename filename) (*hcl.File, hcl.Diagnostics) {
 	if filename.IsJSON() {
 		return json.Parse(src, filename.String())
 	}
