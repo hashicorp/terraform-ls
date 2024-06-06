@@ -1,0 +1,8 @@
+variable "gogo" {
+
+}
+
+
+variable "awesome" {
+
+

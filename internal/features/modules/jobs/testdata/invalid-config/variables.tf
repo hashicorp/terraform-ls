@@ -1,0 +1,11 @@
+variable {
+
+}
+
+variable "test" {
+
+}
+
+output {
+
+}
