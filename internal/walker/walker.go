@@ -7,14 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
-	"github.com/hashicorp/terraform-ls/internal/job"
-	"github.com/hashicorp/terraform-ls/internal/terraform/ast"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -22,7 +21,7 @@ import (
 )
 
 var (
-	discardLogger = log.New(ioutil.Discard, "", 0)
+	discardLogger = log.New(io.Discard, "", 0)
 
 	// skipDirNames represent directory names which would never contain
 	// plugin/module cache, so it's safe to skip them during the walk
@@ -37,15 +36,12 @@ var (
 	}
 )
 
-type pathToWatch struct{}
-
 type Walker struct {
 	fs        fs.ReadDirFS
 	pathStore PathStore
-	modStore  ModuleStore
 
 	logger   *log.Logger
-	walkFunc WalkFunc
+	eventBus *eventbus.EventBus
 
 	Collector *WalkerCollector
 
@@ -55,27 +51,20 @@ type Walker struct {
 	ignoredDirectoryNames map[string]bool
 }
 
-type WalkFunc func(ctx context.Context, modHandle document.DirHandle) (job.IDs, error)
-
 type PathStore interface {
 	AwaitNextDir(ctx context.Context) (context.Context, document.DirHandle, error)
 	RemoveDir(dir document.DirHandle) error
 }
 
-type ModuleStore interface {
-	AddIfNotExists(dir string) error
-}
-
 const tracerName = "github.com/hashicorp/terraform-ls/internal/walker"
 
-func NewWalker(fs fs.ReadDirFS, pathStore PathStore, modStore ModuleStore, walkFunc WalkFunc) *Walker {
+func NewWalker(fs fs.ReadDirFS, pathStore PathStore, eventBus *eventbus.EventBus) *Walker {
 	return &Walker{
 		fs:                    fs,
 		pathStore:             pathStore,
-		modStore:              modStore,
-		walkFunc:              walkFunc,
 		logger:                discardLogger,
 		ignoredDirectoryNames: skipDirNames,
+		eventBus:              eventBus,
 	}
 }
 
@@ -172,14 +161,6 @@ func (w *Walker) collectError(err error) {
 	}
 }
 
-func (w *Walker) collectJobIds(jobIds job.IDs) {
-	if w.Collector != nil {
-		for _, id := range jobIds {
-			w.Collector.CollectJobId(id)
-		}
-	}
-}
-
 func (w *Walker) isSkippableDir(dirName string) bool {
 	_, ok := w.ignoredDirectoryNames[dirName]
 	return ok
@@ -198,7 +179,18 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 		// the entries it was able to read before the error, along with the error.
 	}
 
-	dirIndexed := false
+	files := make([]string, 0, len(dirEntries))
+	for _, dirEntry := range dirEntries {
+		if dirEntry.IsDir() {
+			continue
+		}
+		files = append(files, dirEntry.Name())
+	}
+
+	w.eventBus.Discover(eventbus.DiscoverEvent{
+		Path:  dir.Path(),
+		Files: files,
+	})
 
 	for _, dirEntry := range dirEntries {
 		select {
@@ -210,23 +202,6 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 
 		if w.isSkippableDir(dirEntry.Name()) {
 			w.logger.Printf("skipping ignored dir name: %s", dirEntry.Name())
-			continue
-		}
-
-		if !dirIndexed && ast.IsModuleFilename(dirEntry.Name()) && !ast.IsIgnoredFile(dirEntry.Name()) {
-			dirIndexed = true
-			w.logger.Printf("found module %s", dir)
-
-			err := w.modStore.AddIfNotExists(dir.Path())
-			if err != nil {
-				return err
-			}
-
-			ids, err := w.walkFunc(ctx, dir)
-			if err != nil {
-				w.collectError(fmt.Errorf("walkFunc: %w", err))
-			}
-			w.collectJobIds(ids)
 			continue
 		}
 
