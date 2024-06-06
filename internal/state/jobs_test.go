@@ -98,7 +98,7 @@ func TestJobStore_EnqueueJob_openDir(t *testing.T) {
 	// verify that job for open dir comes is treated as high priority
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	ctx, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, nextId, j, err := ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestJobStore_AwaitNextJob_closedOnly(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
+	_, _, j, err = ss.JobStore.AwaitNextJob(ctx, job.LowPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -379,7 +379,7 @@ func TestJobStore_AwaitNextJob_openOnly(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, _, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -461,7 +461,7 @@ func TestJobStore_AwaitNextJob_highPriority(t *testing.T) {
 
 	ctx, cancelFunc := context.WithTimeout(ctx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	ctx, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, _, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)
@@ -556,7 +556,7 @@ func TestJobStore_AwaitNextJob_lowPriority(t *testing.T) {
 
 	ctx, cancelFunc = context.WithTimeout(baseCtx, 250*time.Millisecond)
 	t.Cleanup(cancelFunc)
-	_, nextId, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
+	_, _, j, err = ss.JobStore.AwaitNextJob(ctx, job.HighPriority)
 	if err != nil {
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("%#v", err)

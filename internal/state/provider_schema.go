@@ -46,14 +46,17 @@ func (psi *ProviderSchemaIterator) Next() *ProviderSchema {
 	return item.(*ProviderSchema)
 }
 
-func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provider]*version.Version) error {
+func (s *ProviderSchemaStore) UpdateProviderVersions(modPath string, pv map[tfaddr.Provider]*version.Version) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
 	for pAddr, pVer := range pv {
 		// first check for existing record to avoid duplicates
 		src := LocalSchemaSource{
 			ModulePath: modPath,
 		}
 
-		obj, err := txn.First(providerSchemaTableName, "id_prefix", pAddr, src, pVer)
+		obj, err := txn.First(s.tableName, "id_prefix", pAddr, src, pVer)
 		if err != nil {
 			return fmt.Errorf("unable to find provider schema: %w", err)
 		}
@@ -63,7 +66,7 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 		}
 
 		// add version if schema is already present and version unknown
-		obj, err = txn.First(providerSchemaTableName, "id_prefix", pAddr, src, nil)
+		obj, err = txn.First(s.tableName, "id_prefix", pAddr, src, nil)
 		if err != nil {
 			return fmt.Errorf("unable to find provider schema without version: %w", err)
 		}
@@ -73,7 +76,7 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 			versionedPs := obj.(*ProviderSchema)
 
 			if versionedPs.Schema != nil {
-				_, err = txn.DeleteAll(providerSchemaTableName, "id_prefix", pAddr, src)
+				_, err = txn.DeleteAll(s.tableName, "id_prefix", pAddr, src)
 				if err != nil {
 					return fmt.Errorf("unable to delete provider schema: %w", err)
 				}
@@ -82,7 +85,7 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 				psCopy.Version = pVer
 				psCopy.Schema.SetProviderVersion(psCopy.Address, pVer)
 
-				err = txn.Insert(providerSchemaTableName, psCopy)
+				err = txn.Insert(s.tableName, psCopy)
 				if err != nil {
 					return fmt.Errorf("unable to insert provider schema: %w", err)
 				}
@@ -96,12 +99,13 @@ func updateProviderVersions(txn *memdb.Txn, modPath string, pv map[tfaddr.Provid
 			Version: pVer,
 			Source:  src,
 		}
-		err = txn.Insert(providerSchemaTableName, ps)
+		err = txn.Insert(s.tableName, ps)
 		if err != nil {
 			return fmt.Errorf("unable to insert new provider schema: %w", err)
 		}
 	}
 
+	txn.Commit()
 	return nil
 }
 
@@ -370,9 +374,9 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 
 	ss := sortableSchemas{
 		schemas: schemas,
-		lookupModule: func(modPath string) (*Module, error) {
-			return moduleByPath(txn, modPath)
-		},
+		// lookupModule: func(modPath string) (*RootRecord, error) {
+		// 	return rootRecordByPath(txn, modPath)
+		// },
 		requiredModPath: modPath,
 		requiredVersion: vc,
 	}
@@ -382,7 +386,7 @@ func (s *ProviderSchemaStore) ProviderSchema(modPath string, addr tfaddr.Provide
 	return ss.schemas[0].Schema, nil
 }
 
-type ModuleLookupFunc func(string) (*Module, error)
+// type ModuleLookupFunc func(string) (*RootRecord, error)
 
 func NewDefaultProvider(name string) tfaddr.Provider {
 	return tfaddr.Provider{
@@ -409,8 +413,8 @@ func NewLegacyProvider(name string) tfaddr.Provider {
 }
 
 type sortableSchemas struct {
-	schemas         []*ProviderSchema
-	lookupModule    ModuleLookupFunc
+	schemas []*ProviderSchema
+	// lookupModule    ModuleLookupFunc
 	requiredModPath string
 	requiredVersion version.Constraints
 }
@@ -444,11 +448,11 @@ func (ss sortableSchemas) rankBySource(src SchemaSource) int {
 			return 2
 		}
 
-		mod, err := ss.lookupModule(s.ModulePath)
-		if err == nil && mod.ModManifest != nil &&
-			mod.ModManifest.ContainsLocalModule(ss.requiredModPath) {
-			return 1
-		}
+		// mod, err := ss.lookupModule(s.ModulePath)
+		// if err == nil && mod.ModManifest != nil &&
+		// 	mod.ModManifest.ContainsLocalModule(ss.requiredModPath) {
+		// 	return 1
+		// }
 	}
 
 	return 0
