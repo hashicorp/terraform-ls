@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
@@ -63,9 +62,17 @@ func (h *CmdHandler) ModuleCallsHandler(ctx context.Context, args cmd.CommandArg
 		return response, err
 	}
 
-	moduleCalls, err := h.StateStore.Modules.ModuleCalls(modPath)
+	declared, err := h.ModulesFeature.DeclaredModuleCalls(modPath)
 	if err != nil {
 		return response, err
+	}
+	installed, err := h.RootModulesFeature.InstalledModuleCalls(modPath)
+	if err != nil {
+		return response, err
+	}
+	moduleCalls := tfmod.ModuleCalls{
+		Declared:  declared,
+		Installed: installed,
 	}
 
 	response.ModuleCalls = h.parseModuleRecords(ctx, moduleCalls)
@@ -141,7 +148,7 @@ func getModuleType(sourceAddr tfmod.ModuleSourceAddr) ModuleType {
 		return TFREGISTRY
 	}
 
-	_, ok = sourceAddr.(module.LocalSourceAddr)
+	_, ok = sourceAddr.(tfmod.LocalSourceAddr)
 	if ok {
 		return LOCAL
 	}

@@ -122,7 +122,7 @@ type testOrBench interface {
 	Fatalf(format string, args ...interface{})
 }
 
-func TestInitalizeAndShutdown(t *testing.T) {
+func TestInitializeAndShutdown(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -151,7 +151,7 @@ func TestInitalizeAndShutdown(t *testing.T) {
 	}`)
 }
 
-func TestInitalizeWithCommandPrefix(t *testing.T) {
+func TestInitializeWithCommandPrefix(t *testing.T) {
 	tmpDir := TempDir(t)
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
