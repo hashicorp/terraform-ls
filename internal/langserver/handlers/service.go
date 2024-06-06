@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"time"
 
@@ -18,8 +18,11 @@ import (
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
+	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
+	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
+	fvariables "github.com/hashicorp/terraform-ls/internal/features/variables"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
-	"github.com/hashicorp/terraform-ls/internal/indexer"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
@@ -41,6 +44,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type Features struct {
+	Modules     *fmodules.ModulesFeature
+	RootModules *frootmodules.RootModulesFeature
+	Variables   *fvariables.VariablesFeature
+}
+
 type service struct {
 	logger *log.Logger
 
@@ -56,21 +65,20 @@ type service struct {
 	closedDirWalker *walker.Walker
 	openDirWalker   *walker.Walker
 
-	fs               *filesystem.Filesystem
-	modStore         *state.ModuleStore
-	schemaStore      *state.ProviderSchemaStore
-	regMetadataStore *state.RegistryModuleStore
-	tfDiscoFunc      discovery.DiscoveryFunc
-	tfExecFactory    exec.ExecutorFactory
-	tfExecOpts       *exec.ExecutorOpts
-	telemetry        telemetry.Sender
-	decoder          *decoder.Decoder
-	stateStore       *state.StateStore
-	server           session.Server
-	diagsNotifier    *diagnostics.Notifier
-	notifier         *notifier.Notifier
-	indexer          *indexer.Indexer
-	registryClient   registry.Client
+	fs             *filesystem.Filesystem
+	tfDiscoFunc    discovery.DiscoveryFunc
+	tfExecFactory  exec.ExecutorFactory
+	tfExecOpts     *exec.ExecutorOpts
+	telemetry      telemetry.Sender
+	decoder        *decoder.Decoder
+	stateStore     *state.StateStore
+	server         session.Server
+	diagsNotifier  *diagnostics.Notifier
+	notifier       *notifier.Notifier
+	registryClient registry.Client
+
+	eventBus *eventbus.EventBus
+	features *Features
 
 	walkerCollector    *walker.WalkerCollector
 	additionalHandlers map[string]rpch.Func
@@ -78,7 +86,7 @@ type service struct {
 	singleFileMode bool
 }
 
-var discardLogs = log.New(ioutil.Discard, "", 0)
+var discardLogs = log.New(io.Discard, "", 0)
 
 func NewSession(srvCtx context.Context) session.Session {
 	d := &discovery.Discovery{}
@@ -109,7 +117,7 @@ func (svc *service) Assigner() (jrpc2.Assigner, error) {
 
 	err := session.Prepare()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to prepare session: %w", err)
+		return nil, fmt.Errorf("unable to prepare session: %w", err)
 	}
 
 	svc.telemetry = &telemetry.NoopSender{Logger: svc.logger}
@@ -449,7 +457,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	if len(cfgOpts.Terraform.Timeout) > 0 {
 		d, err := time.ParseDuration(cfgOpts.Terraform.Timeout)
 		if err != nil {
-			return fmt.Errorf("Failed to parse terraform.timeout LSP config option: %s", err)
+			return fmt.Errorf("failed to parse terraform.timeout LSP config option: %s", err)
 		}
 		execOpts.Timeout = d
 	}
@@ -471,11 +479,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 
 	svc.stateStore.SetLogger(svc.logger)
 
-	moduleHooks := []notifier.Hook{
-		updateDiagnostics(svc.diagsNotifier),
-		sendModuleTelemetry(svc.stateStore, svc.telemetry),
-	}
-
 	svc.lowPrioIndexer = scheduler.NewScheduler(svc.stateStore.JobStore, 1, job.LowPriority)
 	svc.lowPrioIndexer.SetLogger(svc.logger)
 	svc.lowPrioIndexer.Start(svc.sessCtx)
@@ -485,6 +488,73 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 	svc.highPrioIndexer.SetLogger(svc.logger)
 	svc.highPrioIndexer.Start(svc.sessCtx)
 	svc.logger.Printf("started high priority scheduler")
+
+	if svc.fs == nil {
+		svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
+	}
+	svc.fs.SetLogger(svc.logger)
+
+	if svc.eventBus == nil {
+		svc.eventBus = eventbus.NewEventBus()
+	}
+	svc.eventBus.SetLogger(svc.logger)
+
+	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
+	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.eventBus)
+	svc.closedDirWalker.Collector = svc.walkerCollector
+	svc.closedDirWalker.SetLogger(svc.logger)
+
+	opendPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, true)
+	svc.openDirWalker = walker.NewWalker(svc.fs, opendPa, svc.eventBus)
+	svc.closedDirWalker.Collector = svc.walkerCollector
+	svc.openDirWalker.SetLogger(svc.logger)
+
+	if svc.features == nil {
+		rootModulesFeature, err := frootmodules.NewRootModulesFeature(svc.eventBus, svc.stateStore, svc.fs,
+			svc.tfExecFactory)
+		if err != nil {
+			return err
+		}
+		rootModulesFeature.SetLogger(svc.logger)
+		rootModulesFeature.Start(svc.sessCtx)
+
+		modulesFeature, err := fmodules.NewModulesFeature(svc.eventBus, svc.stateStore, svc.fs,
+			rootModulesFeature, svc.registryClient)
+		if err != nil {
+			return err
+		}
+		modulesFeature.SetLogger(svc.logger)
+		modulesFeature.Start(svc.sessCtx)
+
+		variablesFeature, err := fvariables.NewVariablesFeature(svc.eventBus, svc.stateStore, svc.fs,
+			modulesFeature)
+		if err != nil {
+			return err
+		}
+		variablesFeature.SetLogger(svc.logger)
+		variablesFeature.Start(svc.sessCtx)
+
+		svc.features = &Features{
+			Modules:     modulesFeature,
+			RootModules: rootModulesFeature,
+			Variables:   variablesFeature,
+		}
+	}
+
+	svc.decoder = decoder.NewDecoder(&idecoder.GlobalPathReader{
+		PathReaderMap: idecoder.PathReaderMap{
+			"terraform":      svc.features.Modules,
+			"terraform-vars": svc.features.Variables,
+		},
+	})
+	decoderContext := idecoder.DecoderContext(ctx)
+	svc.features.Modules.AppendCompletionHooks(svc.srvCtx, decoderContext)
+	svc.decoder.SetContext(decoderContext)
+
+	moduleHooks := []notifier.Hook{
+		updateDiagnostics(svc.features, svc.diagsNotifier),
+		sendModuleTelemetry(svc.features, svc.telemetry),
+	}
 
 	cc, err := ilsp.ClientCapabilities(ctx)
 	if err == nil {
@@ -509,37 +579,9 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		}
 	}
 
-	svc.notifier = notifier.NewNotifier(svc.stateStore.Modules, moduleHooks)
+	svc.notifier = notifier.NewNotifier(svc.stateStore.ChangeStore, moduleHooks)
 	svc.notifier.SetLogger(svc.logger)
 	svc.notifier.Start(svc.sessCtx)
-
-	svc.modStore = svc.stateStore.Modules
-	svc.schemaStore = svc.stateStore.ProviderSchemas
-
-	svc.fs = filesystem.NewFilesystem(svc.stateStore.DocumentStore)
-	svc.fs.SetLogger(svc.logger)
-
-	svc.indexer = indexer.NewIndexer(svc.fs, svc.modStore, svc.schemaStore, svc.stateStore.RegistryModules,
-		svc.stateStore.JobStore, svc.tfExecFactory, svc.registryClient)
-	svc.indexer.SetLogger(svc.logger)
-
-	svc.decoder = decoder.NewDecoder(&idecoder.PathReader{
-		ModuleReader: svc.modStore,
-		SchemaReader: svc.schemaStore,
-	})
-	decoderContext := idecoder.DecoderContext(ctx)
-	svc.AppendCompletionHooks(decoderContext)
-	svc.decoder.SetContext(decoderContext)
-
-	closedPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, false)
-	svc.closedDirWalker = walker.NewWalker(svc.fs, closedPa, svc.modStore, svc.indexer.WalkedModule)
-	svc.closedDirWalker.Collector = svc.walkerCollector
-	svc.closedDirWalker.SetLogger(svc.logger)
-
-	opendPa := state.NewPathAwaiter(svc.stateStore.WalkerPaths, true)
-	svc.openDirWalker = walker.NewWalker(svc.fs, opendPa, svc.modStore, svc.indexer.WalkedModule)
-	svc.closedDirWalker.Collector = svc.walkerCollector
-	svc.openDirWalker.SetLogger(svc.logger)
 
 	return nil
 }
@@ -580,6 +622,18 @@ func (svc *service) shutdown() {
 	}
 	if svc.highPrioIndexer != nil {
 		svc.highPrioIndexer.Stop()
+	}
+
+	if svc.features != nil {
+		if svc.features.Modules != nil {
+			svc.features.Modules.Stop()
+		}
+		if svc.features.RootModules != nil {
+			svc.features.RootModules.Stop()
+		}
+		if svc.features.Variables != nil {
+			svc.features.Variables.Stop()
+		}
 	}
 }
 
@@ -662,7 +716,7 @@ func handle(ctx context.Context, req *jrpc2.Request, fn interface{}) (interface{
 	return result, err
 }
 
-func (svc *service) decoderForDocument(ctx context.Context, doc *document.Document) (*decoder.PathDecoder, error) {
+func (svc *service) decoderForDocument(_ context.Context, doc *document.Document) (*decoder.PathDecoder, error) {
 	return svc.decoder.Path(lang.Path{
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
