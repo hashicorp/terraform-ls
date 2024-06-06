@@ -9,8 +9,8 @@ import (
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
-	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
@@ -30,46 +30,25 @@ func (svc *service) TextDocumentDidOpen(ctx context.Context, params lsp.DidOpenT
 	}
 
 	dh := document.HandleFromURI(docURI)
-
 	err := svc.stateStore.DocumentStore.OpenDocument(dh, params.TextDocument.LanguageID,
 		int(params.TextDocument.Version), []byte(params.TextDocument.Text))
 	if err != nil {
 		return err
 	}
 
-	mod, err := svc.modStore.ModuleByPath(dh.Dir.Path())
-	if err != nil {
-		if state.IsModuleNotFound(err) {
-			err = svc.modStore.Add(dh.Dir.Path())
-			if err != nil {
-				return err
-			}
-			mod, err = svc.modStore.ModuleByPath(dh.Dir.Path())
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-
-	svc.logger.Printf("opened module: %s", mod.Path)
-
-	// We reparse because the file being opened may not match
-	// (originally parsed) content on the disk
-	// TODO: Do this only if we can verify the file differs?
-	modHandle := document.DirHandleFromPath(mod.Path)
-	jobIds, err := svc.indexer.DocumentOpened(ctx, modHandle)
-	if err != nil {
-		return err
-	}
+	svc.eventBus.DidOpen(eventbus.DidOpenEvent{
+		Context:    ctx, // We pass the context for data here
+		Dir:        dh.Dir,
+		LanguageID: params.TextDocument.LanguageID,
+	})
 
 	if svc.singleFileMode {
-		err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, modHandle)
+		// TODO
+		err = svc.stateStore.WalkerPaths.EnqueueDir(ctx, dh.Dir)
 		if err != nil {
 			return err
 		}
 	}
 
-	return svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+	return nil
 }

@@ -26,6 +26,12 @@ func (svc *service) TextDocumentLink(ctx context.Context, params lsp.DocumentLin
 		return nil, nil
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return nil, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return nil, err

@@ -36,6 +36,12 @@ func (svc *service) TextDocumentSemanticTokensFull(ctx context.Context, params l
 		return tks, err
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return tks, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return tks, err

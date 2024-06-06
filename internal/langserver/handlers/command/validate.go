@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/langserver/progress"
-	"github.com/hashicorp/terraform-ls/internal/terraform/module"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
@@ -38,7 +37,7 @@ func (h *CmdHandler) TerraformValidateHandler(ctx context.Context, args cmd.Comm
 	id, err := h.StateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dirHandle,
 		Func: func(ctx context.Context) error {
-			return module.TerraformValidate(ctx, h.StateStore.Modules, dirHandle.Path())
+			return nil //module.TerraformValidate(ctx, h.StateStore.Modules, dirHandle.Path())
 		},
 		Type:        op.OpTypeTerraformValidate.String(),
 		IgnoreState: true,

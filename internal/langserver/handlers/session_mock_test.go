@@ -14,6 +14,11 @@ import (
 	"testing"
 
 	"github.com/creachadair/jrpc2/handler"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
+	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
+	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
+	fvariables "github.com/hashicorp/terraform-ls/internal/features/variables"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
 	"github.com/hashicorp/terraform-ls/internal/registry"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -28,6 +33,9 @@ type MockSessionInput struct {
 	StateStore         *state.StateStore
 	WalkerCollector    *walker.WalkerCollector
 	RegistryServer     *httptest.Server
+	Features           *Features
+	FileSystem         *filesystem.Filesystem
+	EventBus           *eventbus.EventBus
 }
 
 type mockSession struct {
@@ -45,12 +53,18 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 
 	var handlers map[string]handler.Func
 	var stateStore *state.StateStore
+	var features *Features
 	var walkerCollector *walker.WalkerCollector
+	var fileSystem *filesystem.Filesystem
+	var eventBus *eventbus.EventBus
 	if ms.mockInput != nil {
 		stateStore = ms.mockInput.StateStore
 		walkerCollector = ms.mockInput.WalkerCollector
 		handlers = ms.mockInput.AdditionalHandlers
 		ms.registryServer = ms.mockInput.RegistryServer
+		features = ms.mockInput.Features
+		fileSystem = ms.mockInput.FileSystem
+		eventBus = ms.mockInput.EventBus
 	}
 
 	var tfCalls *exec.TerraformMockCalls
@@ -81,6 +95,9 @@ func (ms *mockSession) new(srvCtx context.Context) session.Session {
 		stateStore:         stateStore,
 		walkerCollector:    walkerCollector,
 		registryClient:     regClient,
+		features:           features,
+		fs:                 fileSystem,
+		eventBus:           eventBus,
 	}
 
 	return svc
@@ -126,4 +143,27 @@ func newMockSession(input *MockSessionInput) *mockSession {
 
 func NewMockSession(input *MockSessionInput) session.SessionFactory {
 	return newMockSession(input).new
+}
+
+func NewTestFeatures(eventBus *eventbus.EventBus, s *state.StateStore, fs *filesystem.Filesystem, tfCalls *exec.TerraformMockCalls) (*Features, error) {
+	rootModulesFeature, err := frootmodules.NewRootModulesFeature(eventBus, s, fs, exec.NewMockExecutor(tfCalls))
+	if err != nil {
+		return nil, err
+	}
+
+	modulesFeature, err := fmodules.NewModulesFeature(eventBus, s, fs, rootModulesFeature, registry.Client{})
+	if err != nil {
+		return nil, err
+	}
+
+	variablesFeature, err := fvariables.NewVariablesFeature(eventBus, s, fs, modulesFeature)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Features{
+		Modules:     modulesFeature,
+		RootModules: rootModulesFeature,
+		Variables:   variablesFeature,
+	}, nil
 }

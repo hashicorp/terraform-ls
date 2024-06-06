@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
+	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -29,7 +31,23 @@ func TestLangServer_workspaceExecuteCommand_terraformVersion_basic(t *testing.T)
 		t.Fatal(err)
 	}
 
-	err = s.Modules.Add(modDir)
+	eventBus := eventbus.NewEventBus()
+	mockCalls := &exec.TerraformMockCalls{
+		PerWorkDir: map[string][]*mock.Call{
+			modDir: validTfMockCalls(),
+		},
+	}
+	fs := filesystem.NewFilesystem(s.DocumentStore)
+	features, err := NewTestFeatures(eventBus, s, fs, mockCalls)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = features.Modules.Store.Add(modDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = features.RootModules.Store.Add(modDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +57,7 @@ func TestLangServer_workspaceExecuteCommand_terraformVersion_basic(t *testing.T)
 		CoreRequirements: testConstraint(t, "~> 0.15"),
 	}
 
-	err = s.Modules.UpdateMetadata(modDir, metadata, nil)
+	err = features.Modules.Store.UpdateMetadata(modDir, metadata, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +67,7 @@ func TestLangServer_workspaceExecuteCommand_terraformVersion_basic(t *testing.T)
 		t.Fatal(err)
 	}
 
-	err = s.Modules.UpdateTerraformAndProviderVersions(modDir, ver, map[tfaddr.Provider]*version.Version{}, nil)
+	err = features.RootModules.Store.UpdateTerraformAndProviderVersions(modDir, ver, map[tfaddr.Provider]*version.Version{}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,13 +75,12 @@ func TestLangServer_workspaceExecuteCommand_terraformVersion_basic(t *testing.T)
 	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
-		TerraformCalls: &exec.TerraformMockCalls{
-			PerWorkDir: map[string][]*mock.Call{
-				modDir: validTfMockCalls(),
-			},
-		},
+		TerraformCalls:  mockCalls,
 		StateStore:      s,
 		WalkerCollector: wc,
+		Features:        features,
+		EventBus:        eventBus,
+		FileSystem:      fs,
 	}))
 	stop := ls.Start(t)
 	defer stop()

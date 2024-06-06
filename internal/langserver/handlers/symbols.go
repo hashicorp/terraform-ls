@@ -24,6 +24,12 @@ func (svc *service) TextDocumentSymbol(ctx context.Context, params lsp.DocumentS
 		return symbols, err
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return symbols, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	d, err := svc.decoderForDocument(ctx, doc)
 	if err != nil {
 		return symbols, err

@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -237,5 +236,5 @@ func testLogger(w io.Writer, prefix string) *log.Logger {
 }
 
 func discardLogger() *log.Logger {
-	return log.New(ioutil.Discard, "", 0)
+	return log.New(io.Discard, "", 0)
 }

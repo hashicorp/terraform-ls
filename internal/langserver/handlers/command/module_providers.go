@@ -48,12 +48,11 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 		return response, err
 	}
 
-	mod, _ := h.StateStore.Modules.ModuleByPath(modPath)
-	if mod == nil {
-		return response, nil
+	providerRequirements, err := h.ModulesFeature.ProviderRequirements(modPath)
+	if err != nil {
+		return response, err
 	}
-
-	for provider, version := range mod.Meta.ProviderRequirements {
+	for provider, version := range providerRequirements {
 		docsLink, err := getProviderDocumentationLink(ctx, provider)
 		if err != nil {
 			return response, err
@@ -65,7 +64,11 @@ func (h *CmdHandler) ModuleProvidersHandler(ctx context.Context, args cmd.Comman
 		}
 	}
 
-	for provider, version := range mod.InstalledProviders {
+	installedProviders, err := h.RootModulesFeature.InstalledProviders(modPath)
+	if err != nil {
+		return response, err
+	}
+	for provider, version := range installedProviders {
 		response.InstalledProviders[provider.String()] = version.String()
 	}
 

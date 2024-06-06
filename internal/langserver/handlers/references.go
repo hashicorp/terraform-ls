@@ -20,6 +20,12 @@ func (svc *service) References(ctx context.Context, params lsp.ReferenceParams) 
 		return list, err
 	}
 
+	jobIds, err := svc.stateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return nil, err
+	}
+	svc.stateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	pos, err := ilsp.HCLPositionFromLspPosition(params.TextDocumentPositionParams.Position, doc)
 	if err != nil {
 		return list, err
@@ -29,7 +35,7 @@ func (svc *service) References(ctx context.Context, params lsp.ReferenceParams) 
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
 	}
-
+	// TODO? maybe kick off indexing of the whole workspace here
 	origins := svc.decoder.ReferenceOriginsTargetingPos(path, doc.Filename, pos)
 
 	return ilsp.RefOriginsToLocations(origins), nil

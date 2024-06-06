@@ -180,7 +180,7 @@ func (svc *service) Initialize(ctx context.Context, params lsp.InitializeParams)
 	return serverCaps, err
 }
 
-func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, ctx context.Context, properties map[string]interface{}) {
+func setupTelemetry(expClientCaps lsp.ExpClientCapabilities, svc *service, _ context.Context, _ map[string]interface{}) {
 	if tv, ok := expClientCaps.TelemetryVersion(); ok {
 		svc.logger.Printf("enabling telemetry (version: %d)", tv)
 		err := svc.setupTelemetry(tv, svc.server)
