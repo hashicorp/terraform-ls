@@ -1,0 +1,88 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package state
+
+import (
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
+	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+)
+
+// RootRecord contains all information about a module root path, like
+// anything related to .terraform/ or .terraform.lock.hcl.
+type RootRecord struct {
+	path string
+
+	// ProviderSchemaState tracks if we tried loading all provider schemas
+	// that this module is using via Terraform CLI
+	ProviderSchemaState op.OpState
+	ProviderSchemaErr   error
+
+	ModManifest      *datadir.ModuleManifest
+	ModManifestErr   error
+	ModManifestState op.OpState
+
+	TerraformVersion      *version.Version
+	TerraformVersionErr   error
+	TerraformVersionState op.OpState
+
+	InstalledProviders      InstalledProviders
+	InstalledProvidersErr   error
+	InstalledProvidersState op.OpState
+}
+
+func (m *RootRecord) Copy() *RootRecord {
+	if m == nil {
+		return nil
+	}
+	newRecord := &RootRecord{
+		path: m.path,
+
+		ProviderSchemaErr:   m.ProviderSchemaErr,
+		ProviderSchemaState: m.ProviderSchemaState,
+
+		ModManifest:      m.ModManifest.Copy(),
+		ModManifestErr:   m.ModManifestErr,
+		ModManifestState: m.ModManifestState,
+
+		// version.Version is practically immutable once parsed
+		TerraformVersion:      m.TerraformVersion,
+		TerraformVersionErr:   m.TerraformVersionErr,
+		TerraformVersionState: m.TerraformVersionState,
+
+		InstalledProvidersErr:   m.InstalledProvidersErr,
+		InstalledProvidersState: m.InstalledProvidersState,
+	}
+
+	if m.InstalledProviders != nil {
+		newRecord.InstalledProviders = make(InstalledProviders, 0)
+		for addr, pv := range m.InstalledProviders {
+			// version.Version is practically immutable once parsed
+			newRecord.InstalledProviders[addr] = pv
+		}
+	}
+
+	return newRecord
+}
+
+func (m *RootRecord) Path() string {
+	return m.path
+}
+
+func newRootRecord(path string) *RootRecord {
+	return &RootRecord{
+		path:                    path,
+		ProviderSchemaState:     op.OpStateUnknown,
+		ModManifestState:        op.OpStateUnknown,
+		TerraformVersionState:   op.OpStateUnknown,
+		InstalledProvidersState: op.OpStateUnknown,
+	}
+}
+
+// NewRootRecordTest is a test helper to create a new Module object
+func NewRootRecordTest(path string) *RootRecord {
+	return &RootRecord{
+		path: path,
+	}
+}
