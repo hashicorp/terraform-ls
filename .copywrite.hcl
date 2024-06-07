@@ -9,5 +9,6 @@ project {
   header_ignore = [
     "**/testdata/**",
     ".github/ISSUE_TEMPLATE/**",
+    ".changes/**",
   ]
 }
