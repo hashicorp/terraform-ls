@@ -1,0 +1,3 @@
+variable "meal" {
+  default = "delicious"
+}
