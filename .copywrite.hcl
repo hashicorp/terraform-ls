@@ -8,6 +8,7 @@ project {
   # files or folders should be ignored
   header_ignore = [
     "**/testdata/**",
+    "**/testdata-initialize/**",
     ".github/ISSUE_TEMPLATE/**",
     ".changes/**",
     "internal/schemas/gen-workspace/**",
