@@ -1,3 +1,18 @@
+## 0.34.0-alpha20240611 (11 June 2024)
+
+ENHANCEMENTS:
+
+* Add documentation for using vim with YouCompleteMe ([#1718](https://github.com/hashicorp/terraform-ls/issues/1718))
+* Re-architect the language server for improved performance and resource utilization ([#1667](https://github.com/hashicorp/terraform-ls/issues/1667))
+
+This marks the completion of a major refactoring effort. The language server will now start up much faster and use less resources, especially on larger workspaces. We achieve this by doing less work during the initial walk of a workspace. Instead, we only parse modules with open files. Whenever a file of a module is opened, we schedule all the jobs needed to understand the contents of that directory (and the referenced modules).
+
+We have tested this with workspaces and configurations of different sizes, but still expect some bugs. Please give this preview a try and let us know how it works for you.
+
+INTERNAL:
+
+* Split internal modules state into separate features ([#1667](https://github.com/hashicorp/terraform-ls/issues/1667))
+
 ## 0.33.2 (06 June 2024)
 
 BUG FIXES:
