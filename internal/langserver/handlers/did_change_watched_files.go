@@ -99,7 +99,7 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			}
 			if isOpen {
 				svc.logger.Printf("document is open - ignoring event for %q", rawURI)
-				continue
+				// continue
 			}
 
 			fi, err := os.Stat(rawPath)
