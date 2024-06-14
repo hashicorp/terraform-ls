@@ -85,6 +85,18 @@ go test ./internal/terraform/exec/...
 go test ./langserver
 ```
 
+### Bundled schemas
+
+The language server ships with bundled provider schemas of all official HashiCorp and partner providers to allow completions for common providers without the need to initialize a Terraform project first.
+These schemas are not checked into version control and are automatically fetched and bundled when the language server is built in CI.
+
+To generate these locally, run
+```bash
+go generate ./internal/schemas
+```
+
+The generated schemas can then be found in `internal/schemas/data`.
+
 ## External Dependencies
 
 Terraform uses [Go Modules]((https://blog.golang.org/using-go-modules))
