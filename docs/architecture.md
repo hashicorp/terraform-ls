@@ -90,6 +90,17 @@ The `jobs` package of each feature contains all the different indexing jobs need
 - `ObtainSchema` - obtains provider schemas via `terraform providers schema -json`
 - `ParseProviderVersions` is a job complimentary to `ObtainSchema` in that it obtains versions of providers/schemas from Terraform CLI's lock file
 
+### Adding a new feature / "language"
+
+The existing `variables` feature is a good starting point when introducing a new language. Usually you need roughly follow these steps to get a minimal working example:
+
+1. Create a new feature with the same folder structure as existing ones
+1. Model the internal state representation
+1. Subscribe to some events of the event bus
+1. Add a parsing job that gets triggered from an event
+1. Add a decoder that makes use of some kind of schema
+1. Register the new feature in `internal/langserver/handlers/service.go`
+
 ## Job Scheduler
 
 All jobs end up in the `jobs` memdb table, from where they're picked up from by any of the two schedulers described below.
