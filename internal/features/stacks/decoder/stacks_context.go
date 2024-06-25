@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
@@ -32,10 +33,15 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 	// TODO: This only provides tfstacks schema. There is also tfdeploy schema
 	// TODO: this should only work for terraform 1.8 and above
-	schema := stackschema.CoreStackSchema(stackschema.LatestAvailableVersion)
+	var schema *schema.BodySchema
+	switch path.LanguageID {
+	case lsp.Stacks.String():
+		schema = stackschema.CoreStackSchema(stackschema.LatestAvailableVersion)
+	case lsp.Deploy.String():
+		schema = stackschema.CoreDeploySchema(stackschema.LatestAvailableVersion)
+	}
 
 	pathCtx := &decoder.PathContext{
-		// Path:             path,
 		Schema:           schema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
@@ -57,6 +63,10 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	// }
 
 	for name, f := range record.ParsedStackFiles {
+		pathCtx.Files[name.String()] = f
+	}
+	
+	for name, f := range record.ParsedDeployFiles {
 		pathCtx.Files[name.String()] = f
 	}
 

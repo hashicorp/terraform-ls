@@ -8,9 +8,9 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/parser"
 )
 
-func ParseStackFiles(fs parser.FS, stacksPath string) (ast.StackFiles, ast.StackDiags, error) {
-	files := make(ast.StackFiles, 0)
-	diags := make(ast.StackDiags, 0)
+func ParseDeployFiles(fs parser.FS, stacksPath string) (ast.DeployFiles, ast.DeployDiags, error) {
+	files := make(ast.DeployFiles, 0)
+	diags := make(ast.DeployDiags, 0)
 
 	infos, err := fs.ReadDir(stacksPath)
 	if err != nil {
@@ -24,7 +24,7 @@ func ParseStackFiles(fs parser.FS, stacksPath string) (ast.StackFiles, ast.Stack
 		}
 
 		name := info.Name()
-		if !ast.IsStackFilename(name) {
+		if !ast.IsDeployFilename(name) {
 			continue
 		}
 
@@ -39,7 +39,7 @@ func ParseStackFiles(fs parser.FS, stacksPath string) (ast.StackFiles, ast.Stack
 			continue
 		}
 
-		filename := ast.StackFilename(name)
+		filename := ast.DeployFilename(name)
 
 		f, pDiags := parser.ParseFile(src, filename)
 
@@ -52,7 +52,7 @@ func ParseStackFiles(fs parser.FS, stacksPath string) (ast.StackFiles, ast.Stack
 	return files, diags, nil
 }
 
-func ParseStackFile(fs parser.FS, filePath string) (*hcl.File, hcl.Diagnostics, error) {
+func ParseDeployFile(fs parser.FS, filePath string) (*hcl.File, hcl.Diagnostics, error) {
 	src, err := fs.ReadFile(filePath)
 	if err != nil {
 		// If a file isn't accessible, return
@@ -60,7 +60,7 @@ func ParseStackFile(fs parser.FS, filePath string) (*hcl.File, hcl.Diagnostics, 
 	}
 
 	name := filepath.Base(filePath)
-	filename := ast.StackFilename(name)
+	filename := ast.DeployFilename(name)
 
 	f, pDiags := parser.ParseFile(src, filename)
 

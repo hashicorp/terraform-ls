@@ -13,3 +13,13 @@ type StackMetadata struct {
 	CoreRequirements version.Constraints
 	Filenames        []string
 }
+
+func (sm StackMetadata) Copy() StackMetadata {
+	newSm := StackMetadata{
+		// version.Constraints is practically immutable once parsed
+		CoreRequirements: sm.CoreRequirements,
+		Filenames:        sm.Filenames,
+	}
+
+	return newSm
+}

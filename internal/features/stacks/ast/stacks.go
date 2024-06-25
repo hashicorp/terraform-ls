@@ -24,7 +24,7 @@ func (mf StackFilename) IsIgnored() bool {
 	return globalAst.IsIgnoredFile(string(mf))
 }
 
-func IsStacksFilename(name string) bool {
+func IsStackFilename(name string) bool {
 	return strings.HasSuffix(name, ".tfstack.hcl") ||
 		strings.HasSuffix(name, ".tfstack.json")
 }

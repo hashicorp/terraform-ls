@@ -49,7 +49,7 @@ type Features struct {
 	Modules     *fmodules.ModulesFeature
 	RootModules *frootmodules.RootModulesFeature
 	Variables   *fvariables.VariablesFeature
-	Stacks			*stacks.StacksFeature
+	Stacks      *stacks.StacksFeature
 }
 
 type service struct {
@@ -536,7 +536,6 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		variablesFeature.SetLogger(svc.logger)
 		variablesFeature.Start(svc.sessCtx)
 
-
 		stacksFeature, err := stacks.NewStacksFeature(svc.eventBus, svc.stateStore, svc.fs)
 		if err != nil {
 			return err
@@ -548,15 +547,16 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 			Modules:     modulesFeature,
 			RootModules: rootModulesFeature,
 			Variables:   variablesFeature,
-			Stacks:			stacksFeature,
+			Stacks:      stacksFeature,
 		}
 	}
 
 	svc.decoder = decoder.NewDecoder(&idecoder.GlobalPathReader{
 		PathReaderMap: idecoder.PathReaderMap{
-			"terraform":      svc.features.Modules,
-			"terraform-vars": svc.features.Variables,
-			"terraform-stack": svc.features.Stacks,
+			"terraform":        svc.features.Modules,
+			"terraform-vars":   svc.features.Variables,
+			"terraform-stack":  svc.features.Stacks,
+			"terraform-deploy": svc.features.Stacks,
 		},
 	})
 	decoderContext := idecoder.DecoderContext(ctx)

@@ -16,9 +16,9 @@ import (
 
 type StacksFeature struct {
 	Store      *state.StackStore
+	stateStore *globalState.StateStore
 	bus        *eventbus.EventBus
 	fs         jobs.ReadOnlyFS
-	stateStore *globalState.StateStore
 	logger     *log.Logger
 	stopFunc   context.CancelFunc
 }

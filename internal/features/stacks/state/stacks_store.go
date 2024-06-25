@@ -197,6 +197,79 @@ func (s *StackStore) UpdateStackDiagnostics(path string, source globalAst.Diagno
 	return nil
 }
 
+func (s *StackStore) SetDeployDiagnosticsState(path string, source globalAst.DiagnosticSource, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	record, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+	record.DeployDiagnosticsState[source] = state
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) UpdateParsedDeployFiles(path string, pFiles ast.DeployFiles, pErr error) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.ParsedDeployFiles = pFiles
+
+	mod.DeployParsingErr = pErr
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) UpdateDeployDiagnostics(path string, source globalAst.DiagnosticSource, diags ast.DeployDiags) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetStackDiagnosticsState(path, source, operation.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	oldStack, err := stackByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack := oldStack.Copy()
+	if stack.DeployDiagnostics == nil {
+		stack.DeployDiagnostics = make(ast.SourceDeployDiags)
+	}
+	stack.DeployDiagnostics[source] = diags
+
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	// err = s.queueStacksChange(oldMod, mod)
+	// if err != nil {
+	// 	return err
+	// }
+
+	txn.Commit()
+	return nil
+}
+
 func (s *StackStore) add(txn *memdb.Txn, stackPath string) error {
 	// TODO: Introduce Exists method to Txn?
 	obj, err := txn.First(s.tableName, "id", stackPath)

@@ -37,4 +37,5 @@ const (
 	OpTypeTerraformValidate
 	OpTypeParseStacks
 	OpTypeParseStacksConfiguration
+	OpTypeParseDeployConfiguration
 )

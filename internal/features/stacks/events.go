@@ -17,8 +17,13 @@ import (
 
 func (f *StacksFeature) discover(path string, files []string) error {
 	for _, file := range files {
-		if ast.IsStacksFilename(file) && !globalAst.IsIgnoredFile(file) {
-			f.logger.Printf("discovered module file in %s", path)
+
+		if globalAst.IsIgnoredFile(file) {
+			continue
+		}
+
+		if ast.IsStackFilename(file) || ast.IsDeployFilename(file) {
+			f.logger.Printf("discovered stack file in %s", path)
 
 			err := f.Store.AddIfNotExists(path)
 			if err != nil {
@@ -38,12 +43,12 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 	f.logger.Printf("did open %q %q", path, languageID)
 
 	// We need to decide if the path is relevant to us
-	if languageID != lsp.Stacks.String() {
+	if languageID != lsp.Stacks.String() && languageID != lsp.Deploy.String() {
 		return nil, nil
 	}
 
 	// Add to state if language ID matches
-	if languageID == lsp.Stacks.String() {
+	if languageID == lsp.Stacks.String() || languageID == lsp.Deploy.String() {
 		err := f.Store.AddIfNotExists(path)
 		if err != nil {
 			return ids, err
@@ -60,8 +65,8 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 }
 
 func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
-	hasModuleRecord := f.Store.Exists(dir.Path())
-	if !hasModuleRecord {
+	hasStackRecord := f.Store.Exists(dir.Path())
+	if !hasStackRecord {
 		return job.IDs{}, nil
 	}
 
@@ -162,6 +167,23 @@ func (f *StacksFeature) decodeStacks(ctx context.Context, dir document.DirHandle
 			return jobs.ParseStackConfiguration(ctx, f.fs, f.Store, path)
 		},
 		Type: operation.OpTypeParseStacksConfiguration.String(),
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			deferIds := make(job.IDs, 0)
+
+			parseId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.ParseDeployConfiguration(ctx, f.fs, f.Store, path)
+				},
+				Type: operation.OpTypeParseDeployConfiguration.String(),
+			})
+			if err != nil {
+				return deferIds, err
+			}
+			deferIds = append(deferIds, parseId)
+
+			return deferIds, nil
+		},
 	})
 	if err != nil {
 		return ids, err
