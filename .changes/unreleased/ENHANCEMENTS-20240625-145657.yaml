@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Introduce provisioners to `removed` blocks in Terraform 1.9
+time: 2024-06-25T14:56:57.220442+02:00
+custom:
+    Issue: "358"
+    Repository: terraform-schema
