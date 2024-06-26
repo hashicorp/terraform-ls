@@ -10,6 +10,8 @@ type LanguageID string
 const (
 	Terraform LanguageID = "terraform"
 	Tfvars    LanguageID = "terraform-vars"
+	Stacks    LanguageID = "terraform-stack"
+	Deploy    LanguageID = "terraform-deploy"
 )
 
 func (l LanguageID) String() string {
