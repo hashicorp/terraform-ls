@@ -1,3 +1,14 @@
+## 0.33.3 (27 June 2024)
+
+ENHANCEMENTS:
+
+* Add support for the new `templatestring` functions in Terraform 1.9 ([terraform-schema#357](https://github.com/hashicorp/terraform-schema/issues/357))
+* Introduce provisioners to `removed` blocks in Terraform 1.9 ([terraform-schema#358](https://github.com/hashicorp/terraform-schema/issues/358))
+
+INTERNAL:
+
+* Document schema bundling in CONTRIBUTING.md ([#1736](https://github.com/hashicorp/terraform-ls/issues/1736))
+
 ## 0.33.2 (06 June 2024)
 
 BUG FIXES:
