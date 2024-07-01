@@ -125,7 +125,6 @@ type Module struct {
 	ParsedModuleFiles ast.ModFiles
 	ParsedVarsFiles   ast.VarsFiles
 	ModuleParsingErr  error
-	VarsParsingErr    error
 
 	Meta      ModuleMetadata
 	MetaErr   error
@@ -174,7 +173,6 @@ func (m *Module) Copy() *Module {
 		VarsRefOriginsState: m.VarsRefOriginsState,
 
 		ModuleParsingErr: m.ModuleParsingErr,
-		VarsParsingErr:   m.VarsParsingErr,
 
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
@@ -853,7 +851,7 @@ func (s *ModuleStore) UpdateParsedModuleFiles(path string, pFiles ast.ModFiles, 
 	return nil
 }
 
-func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles, vErr error) error {
+func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -863,8 +861,6 @@ func (s *ModuleStore) UpdateParsedVarsFiles(path string, vFiles ast.VarsFiles, v
 	}
 
 	mod.ParsedVarsFiles = vFiles
-
-	mod.VarsParsingErr = vErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
