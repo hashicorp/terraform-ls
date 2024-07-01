@@ -38,6 +38,7 @@ func HCLDiagsToLSP(hclDiags hcl.Diagnostics, source string) []lsp.Diagnostic {
 			Severity: HCLSeverityToLSP(hclDiag.Severity),
 			Source:   source,
 			Message:  msg,
+			Data:     hclDiag.Extra,
 		})
 
 	}
