@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
@@ -17,6 +18,11 @@ type StackStore struct {
 	db        *memdb.MemDB
 	tableName string
 	logger    *log.Logger
+
+	// MaxStackNesting represents how many nesting levels we'd attempt
+	// to parse provider requirements before returning error.
+	MaxStackNesting int
+	changeStore     *globalState.ChangeStore
 }
 
 func (s *StackStore) SetLogger(logger *log.Logger) {
@@ -268,6 +274,61 @@ func (s *StackStore) UpdateDeployDiagnostics(path string, source globalAst.Diagn
 	// if err != nil {
 	// 	return err
 	// }
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) setTerraformVersionWithChangeNotification(path string, version *version.Version, vErr error, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	oldStack, err := stackByPath(txn, path)
+	if err != nil {
+		return err
+	}
+	stack := oldStack.Copy()
+
+	stack.TerraformVersion = version
+	stack.TerraformVersionErr = vErr
+	stack.TerraformVersionState = state
+
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	// err = s.queueStacksChange(oldStack, stack)
+	// if err != nil {
+	// 	return err
+	// }
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetTerraformVersion(path string, version *version.Version) error {
+	return s.setTerraformVersionWithChangeNotification(path, version, nil, operation.OpStateLoaded)
+}
+
+func (s *StackStore) SetTerraformVersionError(path string, vErr error) error {
+	return s.setTerraformVersionWithChangeNotification(path, nil, vErr, operation.OpStateLoaded)
+}
+
+func (s *StackStore) SetTerraformVersionState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	stack, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack.TerraformVersionState = state
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil

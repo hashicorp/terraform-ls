@@ -33,6 +33,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	}
 
 	// get terrafom version from statereader and use that to get the schema
+	// -> record.TerraformVersion is available now (if already set hehe)
 
 	// TODO: This only provides tfstacks schema. There is also tfdeploy schema
 	// TODO: this should only work for terraform 1.8 and above
@@ -68,7 +69,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	for name, f := range record.ParsedStackFiles {
 		pathCtx.Files[name.String()] = f
 	}
-	
+
 	for name, f := range record.ParsedDeployFiles {
 		pathCtx.Files[name.String()] = f
 	}
