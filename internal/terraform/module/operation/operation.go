@@ -38,4 +38,5 @@ const (
 	OpTypeParseStacks
 	OpTypeParseStacksConfiguration
 	OpTypeParseDeployConfiguration
+	OpTypeLoadTerraformVersion
 )
