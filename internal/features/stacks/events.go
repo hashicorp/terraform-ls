@@ -27,9 +27,8 @@ func (f *StacksFeature) discover(path string, files []string) error {
 
 		if ast.IsStackFilename(file) || ast.IsDeployFilename(file) {
 			f.logger.Printf("discovered stack file in %s", path)
-			f.logger.Printf("discovered module file in %s", path)
 
-			err := f.Store.AddIfNotExists(path)
+			err := f.store.AddIfNotExists(path)
 			if err != nil {
 				return err
 			}
@@ -53,14 +52,14 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 
 	// Add to state if language ID matches
 	if languageID == lsp.Stacks.String() || languageID == lsp.Deploy.String() {
-		err := f.Store.AddIfNotExists(path)
+		err := f.store.AddIfNotExists(path)
 		if err != nil {
 			return ids, err
 		}
 	}
 
 	// Schedule jobs if state entry exists
-	hasStacksRecord := f.Store.Exists(path)
+	hasStacksRecord := f.store.Exists(path)
 	if !hasStacksRecord {
 		return ids, nil
 	}
@@ -76,12 +75,12 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 }
 
 func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
-	hasStackRecord := f.Store.Exists(dir.Path())
+	hasStackRecord := f.store.Exists(dir.Path())
 	if !hasStackRecord {
 		return job.IDs{}, nil
 	}
+	
 	rpcContext := lsctx.DocumentContext(ctx)
-
 	switch rpcContext.LanguageID {
 	case lsp.Stacks.String():
 		return f.decodeStacks(ctx, dir, true, true)
@@ -100,7 +99,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 	case protocol.Deleted:
 		// We don't know whether file or dir is being deleted
 		// 1st we just blindly try to look it up as a directory
-		hasStackRecord := f.Store.Exists(rawPath)
+		hasStackRecord := f.store.Exists(rawPath)
 		if hasStackRecord {
 			f.removeIndexedStack(rawPath)
 			return ids, nil
@@ -108,7 +107,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 
 		// 2nd we try again assuming it is a file
 		parentDir := filepath.Dir(rawPath)
-		hasStackRecord = f.Store.Exists(parentDir)
+		hasStackRecord = f.store.Exists(parentDir)
 		if !hasStackRecord {
 			// Nothing relevant found in the feature state
 			return ids, nil
@@ -171,7 +170,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		hasModuleRecord := f.Store.Exists(dir.Path())
+		hasModuleRecord := f.store.Exists(dir.Path())
 		if !hasModuleRecord {
 			return ids, nil
 		}
@@ -194,7 +193,7 @@ func (f *StacksFeature) decodeStacks(ctx context.Context, dir document.DirHandle
 	parseId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
-			return jobs.ParseStackConfiguration(ctx, f.fs, f.Store, path)
+			return jobs.ParseStackConfiguration(ctx, f.fs, f.store, path)
 		},
 		Type:        operation.OpTypeParseStacksConfiguration.String(),
 		IgnoreState: ignoreState,
@@ -221,7 +220,7 @@ func (f *StacksFeature) decodeDeploy(ctx context.Context, dir document.DirHandle
 	parseId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
-			return jobs.ParseDeployConfiguration(ctx, f.fs, f.Store, path)
+			return jobs.ParseDeployConfiguration(ctx, f.fs, f.store, path)
 		},
 		Type:        operation.OpTypeParseDeployConfiguration.String(),
 		IgnoreState: ignoreState,
@@ -250,7 +249,7 @@ func (f *StacksFeature) removeIndexedStack(rawPath string) {
 		return
 	}
 
-	err = f.Store.Remove(rawPath)
+	err = f.store.Remove(rawPath)
 	if err != nil {
 		f.logger.Printf("failed to remove stack from state: %s", err)
 		return

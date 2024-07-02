@@ -47,3 +47,29 @@ func (sd StackDiags) Copy() StackDiags {
 	}
 	return m
 }
+
+func (sd StackDiags) AutoloadedOnly() StackDiags {
+	diags := make(StackDiags)
+	for name, f := range sd {
+		if !name.IsIgnored() {
+			diags[name] = f
+		}
+	}
+	return diags
+}
+
+func (sd StackDiags) AsMap() map[string]hcl.Diagnostics {
+	m := make(map[string]hcl.Diagnostics, len(sd))
+	for name, diags := range sd {
+		m[string(name)] = diags
+	}
+	return m
+}
+
+func (sd StackDiags) Count() int {
+	count := 0
+	for _, diags := range sd {
+		count += len(diags)
+	}
+	return count
+}

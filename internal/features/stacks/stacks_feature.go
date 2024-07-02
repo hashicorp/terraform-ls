@@ -14,11 +14,12 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/features/modules/jobs"
 	stackDecoder "github.com/hashicorp/terraform-ls/internal/features/stacks/decoder"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
+	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 )
 
 type StacksFeature struct {
-	Store      *state.StackStore
+	store      *state.StackStore
 	stateStore *globalState.StateStore
 	bus        *eventbus.EventBus
 	fs         jobs.ReadOnlyFS
@@ -34,7 +35,7 @@ func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore
 	discardLogger := log.New(io.Discard, "", 0)
 
 	return &StacksFeature{
-		Store:      store,
+		store:      store,
 		bus:        bus,
 		fs:         fs,
 		stateStore: stateStore,
@@ -45,6 +46,7 @@ func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore
 
 func (f *StacksFeature) SetLogger(logger *log.Logger) {
 	f.logger = logger
+	f.store.SetLogger(logger)
 }
 
 // Start starts the features separate goroutine.
@@ -54,15 +56,14 @@ func (f *StacksFeature) Start(ctx context.Context) {
 	f.stopFunc = cancelFunc
 
 	topic := "feature.stacks"
-	discover := f.bus.OnDiscover(topic, nil)
 
 	didOpenDone := make(chan struct{}, 10)
-	didOpen := f.bus.OnDidOpen(topic, didOpenDone)
-
 	didChangeDone := make(chan struct{}, 10)
-	didChange := f.bus.OnDidChange(topic, didChangeDone)
-
 	didChangeWatchedDone := make(chan struct{}, 10)
+
+	discover := f.bus.OnDiscover(topic, nil)
+	didOpen := f.bus.OnDidOpen(topic, didOpenDone)
+	didChange := f.bus.OnDidChange(topic, didChangeDone)
 	didChangeWatched := f.bus.OnDidChangeWatched(topic, didChangeWatchedDone)
 
 	go func() {
@@ -98,7 +99,7 @@ func (f *StacksFeature) Stop() {
 
 func (f *StacksFeature) PathContext(path lang.Path) (*decoder.PathContext, error) {
 	pathReader := &stackDecoder.PathReader{
-		StateReader: f.Store,
+		StateReader: f.store,
 	}
 
 	return pathReader.PathContext(path)
@@ -106,8 +107,28 @@ func (f *StacksFeature) PathContext(path lang.Path) (*decoder.PathContext, error
 
 func (f *StacksFeature) Paths(ctx context.Context) []lang.Path {
 	pathReader := &stackDecoder.PathReader{
-		StateReader: f.Store,
+		StateReader: f.store,
 	}
 
 	return pathReader.Paths(ctx)
+}
+
+func (f *StacksFeature) Diagnostics(path string) diagnostics.Diagnostics {
+	// TODO: This is not hooked up to the change diagnostics system yet
+	diags := diagnostics.NewDiagnostics()
+
+	mod, err := f.store.StackRecordByPath(path)
+	if err != nil {
+		return diags
+	}
+
+	for source, dm := range mod.StackDiagnostics {
+		diags.Append(source, dm.AutoloadedOnly().AsMap())
+	}
+
+	for source, dm := range mod.DeployDiagnostics {
+		diags.Append(source, dm.AutoloadedOnly().AsMap())
+	}
+
+	return diags
 }

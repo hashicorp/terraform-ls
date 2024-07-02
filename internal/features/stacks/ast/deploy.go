@@ -15,16 +15,16 @@ type DeployFiles map[DeployFilename]*hcl.File
 type DeployDiags map[DeployFilename]hcl.Diagnostics
 type SourceDeployDiags map[globalAst.DiagnosticSource]DeployDiags
 
-func (mf DeployFilename) String() string {
-	return string(mf)
+func (df DeployFilename) String() string {
+	return string(df)
 }
 
-func (mf DeployFilename) IsJSON() bool {
-	return strings.HasSuffix(string(mf), ".json")
+func (df DeployFilename) IsJSON() bool {
+	return strings.HasSuffix(string(df), ".json")
 }
 
-func (mf DeployFilename) IsIgnored() bool {
-	return globalAst.IsIgnoredFile(string(mf))
+func (df DeployFilename) IsIgnored() bool {
+	return globalAst.IsIgnoredFile(string(df))
 }
 
 func IsDeployFilename(name string) bool {
@@ -32,18 +32,44 @@ func IsDeployFilename(name string) bool {
 		strings.HasSuffix(name, ".tfdeploy.json")
 }
 
-func (sf DeployFiles) Copy() DeployFiles {
-	m := make(DeployFiles, len(sf))
-	for name, file := range sf {
+func (df DeployFiles) Copy() DeployFiles {
+	m := make(DeployFiles, len(df))
+	for name, file := range df {
 		m[name] = file
 	}
 	return m
 }
 
-func (sd DeployDiags) Copy() DeployDiags {
-	m := make(DeployDiags, len(sd))
-	for name, diags := range sd {
+func (dd DeployDiags) Copy() DeployDiags {
+	m := make(DeployDiags, len(dd))
+	for name, diags := range dd {
 		m[name] = diags
 	}
 	return m
+}
+
+func (dd DeployDiags) AutoloadedOnly() DeployDiags {
+	diags := make(DeployDiags)
+	for name, f := range dd {
+		if !name.IsIgnored() {
+			diags[name] = f
+		}
+	}
+	return diags
+}
+
+func (dd DeployDiags) AsMap() map[string]hcl.Diagnostics {
+	m := make(map[string]hcl.Diagnostics, len(dd))
+	for name, diags := range dd {
+		m[string(name)] = diags
+	}
+	return m
+}
+
+func (dd DeployDiags) Count() int {
+	count := 0
+	for _, diags := range dd {
+		count += len(diags)
+	}
+	return count
 }
