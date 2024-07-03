@@ -28,7 +28,7 @@ type StacksFeature struct {
 }
 
 func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore, fs jobs.ReadOnlyFS) (*StacksFeature, error) {
-	store, err := state.NewStackStore()
+	store, err := state.NewStackStore(stateStore.ChangeStore)
 	if err != nil {
 		return nil, err
 	}

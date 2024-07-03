@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
@@ -17,6 +18,8 @@ type StackStore struct {
 	db        *memdb.MemDB
 	tableName string
 	logger    *log.Logger
+
+	changeStore *globalState.ChangeStore
 }
 
 func (s *StackStore) SetLogger(logger *log.Logger) {
@@ -191,10 +194,10 @@ func (s *StackStore) UpdateStackDiagnostics(path string, source globalAst.Diagno
 		return err
 	}
 
-	// err = s.queueStacksChange(oldMod, mod)
-	// if err != nil {
-	// 	return err
-	// }
+	err = s.queueRecordChange(oldMod, mod)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -264,10 +267,10 @@ func (s *StackStore) UpdateDeployDiagnostics(path string, source globalAst.Diagn
 		return err
 	}
 
-	// err = s.queueStacksChange(oldMod, mod)
-	// if err != nil {
-	// 	return err
-	// }
+	err = s.queueRecordChange(oldStack, stack)
+	if err != nil {
+		return err
+	}
 
 	txn.Commit()
 	return nil
@@ -320,4 +323,30 @@ func stackCopyByPath(txn *memdb.Txn, path string) (*StackRecord, error) {
 	}
 
 	return record.Copy(), nil
+}
+
+func (s *StackStore) queueRecordChange(oldRecord, newRecord *StackRecord) error {
+	changes := globalState.Changes{}
+
+	oldDiags, newDiags := 0, 0
+	if oldRecord != nil {
+		oldDiags = oldRecord.StackDiagnostics.Count() + oldRecord.DeployDiagnostics.Count()
+	}
+	if newRecord != nil {
+		newDiags = newRecord.StackDiagnostics.Count() + newRecord.DeployDiagnostics.Count()
+	}
+	// Comparing diagnostics accurately could be expensive
+	// so we just treat any non-empty diags as a change
+	if oldDiags > 0 || newDiags > 0 {
+		changes.Diagnostics = true
+	}
+
+	var dir document.DirHandle
+	if oldRecord != nil {
+		dir = document.DirHandleFromPath(oldRecord.Path())
+	} else {
+		dir = document.DirHandleFromPath(newRecord.Path())
+	}
+
+	return s.changeStore.QueueChange(dir, changes)
 }
