@@ -13,7 +13,6 @@ import (
 type DeployFilename string
 type DeployFiles map[DeployFilename]*hcl.File
 type DeployDiags map[DeployFilename]hcl.Diagnostics
-type SourceDeployDiags map[globalAst.DiagnosticSource]DeployDiags
 
 func (df DeployFilename) String() string {
 	return string(df)
@@ -70,6 +69,16 @@ func (dd DeployDiags) Count() int {
 	count := 0
 	for _, diags := range dd {
 		count += len(diags)
+	}
+	return count
+}
+
+type SourceDeployDiags map[globalAst.DiagnosticSource]DeployDiags
+
+func (svd SourceDeployDiags) Count() int {
+	count := 0
+	for _, diags := range svd {
+		count += diags.Count()
 	}
 	return count
 }
