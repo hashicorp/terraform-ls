@@ -13,7 +13,6 @@ import (
 type StackFilename string
 type StackFiles map[StackFilename]*hcl.File
 type StackDiags map[StackFilename]hcl.Diagnostics
-type SourceStackDiags map[globalAst.DiagnosticSource]StackDiags
 
 func (mf StackFilename) String() string {
 	return string(mf)
@@ -70,6 +69,16 @@ func (sd StackDiags) Count() int {
 	count := 0
 	for _, diags := range sd {
 		count += len(diags)
+	}
+	return count
+}
+
+type SourceStackDiags map[globalAst.DiagnosticSource]StackDiags
+
+func (svd SourceStackDiags) Count() int {
+	count := 0
+	for _, diags := range svd {
+		count += diags.Count()
 	}
 	return count
 }
