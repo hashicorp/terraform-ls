@@ -60,6 +60,7 @@ func updateDiagnostics(features *Features, dNotifier *diagnostics.Notifier) noti
 
 			diags.Extend(features.Modules.Diagnostics(path))
 			diags.Extend(features.Variables.Diagnostics(path))
+			diags.Extend(features.Stacks.Diagnostics(path))
 
 			dNotifier.PublishHCLDiags(ctx, path, diags)
 		}

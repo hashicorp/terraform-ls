@@ -114,7 +114,6 @@ func (f *StacksFeature) Paths(ctx context.Context) []lang.Path {
 }
 
 func (f *StacksFeature) Diagnostics(path string) diagnostics.Diagnostics {
-	// TODO: This is not hooked up to the change diagnostics system yet
 	diags := diagnostics.NewDiagnostics()
 
 	mod, err := f.store.StackRecordByPath(path)
