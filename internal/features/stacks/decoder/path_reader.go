@@ -39,9 +39,9 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	var schema *schema.BodySchema
 	switch path.LanguageID {
 	case lsp.Stacks.String():
-		schema = stackschema.CoreStackSchema(stackschema.LatestAvailableVersion)
+		schema, _ = stackschema.CoreStackSchemaForVersion(stackschema.LatestAvailableVersion)
 	case lsp.Deploy.String():
-		schema = stackschema.CoreDeploySchema(stackschema.LatestAvailableVersion)
+		schema, _ = stackschema.CoreStackSchemaForVersion(stackschema.LatestAvailableVersion)
 	}
 
 	pathCtx := &decoder.PathContext{
