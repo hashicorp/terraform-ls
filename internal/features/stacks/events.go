@@ -79,7 +79,7 @@ func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (
 	if !hasStackRecord {
 		return job.IDs{}, nil
 	}
-	
+
 	rpcContext := lsctx.DocumentContext(ctx)
 	switch rpcContext.LanguageID {
 	case lsp.Stacks.String():
