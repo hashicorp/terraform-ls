@@ -47,21 +47,13 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 
 	// We need to decide if the path is relevant to us
 	if languageID != lsp.Stacks.String() && languageID != lsp.Deploy.String() {
-		return nil, nil
-	}
-
-	// Add to state if language ID matches
-	if languageID == lsp.Stacks.String() || languageID == lsp.Deploy.String() {
-		err := f.store.AddIfNotExists(path)
-		if err != nil {
-			return ids, err
-		}
-	}
-
-	// Schedule jobs if state entry exists
-	hasStacksRecord := f.store.Exists(path)
-	if !hasStacksRecord {
 		return ids, nil
+	}
+
+	// Add to state as path is relevant
+	err := f.store.AddIfNotExists(path)
+	if err != nil {
+		return ids, err
 	}
 
 	switch languageID {
