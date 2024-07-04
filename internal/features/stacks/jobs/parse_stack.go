@@ -91,9 +91,5 @@ func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *sta
 		return sErr
 	}
 
-	if err != nil {
-		return err
-	}
-
 	return err
 }
