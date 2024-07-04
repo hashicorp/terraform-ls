@@ -92,7 +92,7 @@ The `jobs` package of each feature contains all the different indexing jobs need
 
 ### Adding a new feature / "language"
 
-The existing `variables` feature is a good starting point when introducing a new language. Usually you need roughly follow these steps to get a minimal working example:
+The existing `variables` feature is a good starting point when introducing a new language. Usually you need to roughly follow these steps to get a minimal working example:
 
 1. Create a new feature with the same folder structure as existing ones
 1. Model the internal state representation
@@ -100,6 +100,9 @@ The existing `variables` feature is a good starting point when introducing a new
 1. Add a parsing job that gets triggered from an event
 1. Add a decoder that makes use of some kind of schema
 1. Register the new feature in `internal/langserver/handlers/service.go`
+    - Start the feature as part of `configureSessionDependencies()`
+    - Make sure to call the `Stop()` function in `shutdown()` as well
+1. If the feature reports diagnostics, add a call to collect them in `updateDiagnostics()` in `internal/langserver/handlers/hooks_module.go`
 
 ## Job Scheduler
 
