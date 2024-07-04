@@ -56,12 +56,17 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, err
 	}
 
-	switch languageID {
-	case lsp.Stacks.String():
-		return f.decodeStacks(ctx, dir, false, true)
-	case lsp.Deploy.String():
-		return f.decodeDeploy(ctx, dir, false, true)
+	sIds, err := f.decodeStacks(ctx, dir, false, true)
+	if err != nil {
+		return ids, err
 	}
+	ids = append(ids, sIds...)
+
+	dIds, err := f.decodeDeploy(ctx, dir, false, true)
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, dIds...)
 
 	return ids, nil
 }
