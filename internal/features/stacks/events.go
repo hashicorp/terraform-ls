@@ -90,7 +90,6 @@ func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (
 
 func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, changeType protocol.FileChangeType, isDir bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
-	rpcContext := lsctx.DocumentContext(ctx)
 
 	switch changeType {
 	case protocol.Deleted:
@@ -139,12 +138,19 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		switch rpcContext.LanguageID {
-		case lsp.Stacks.String():
-			return f.decodeStacks(ctx, dir, false, true)
-		case lsp.Deploy.String():
-			return f.decodeDeploy(ctx, dir, false, true)
+		sIds, err := f.decodeStacks(ctx, dir, false, true)
+		if err != nil {
+			return ids, err
 		}
+		ids = append(ids, sIds...)
+
+		dIds, err := f.decodeDeploy(ctx, dir, false, true)
+		if err != nil {
+			return ids, err
+		}
+		ids = append(ids, dIds...)
+
+		return ids, nil
 
 	case protocol.Changed:
 		fallthrough
@@ -172,12 +178,19 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		switch rpcContext.LanguageID {
-		case lsp.Stacks.String():
-			return f.decodeStacks(ctx, dir, false, true)
-		case lsp.Deploy.String():
-			return f.decodeDeploy(ctx, dir, false, true)
+		sIds, err := f.decodeStacks(ctx, dir, false, true)
+		if err != nil {
+			return ids, err
 		}
+		ids = append(ids, sIds...)
+
+		dIds, err := f.decodeDeploy(ctx, dir, false, true)
+		if err != nil {
+			return ids, err
+		}
+		ids = append(ids, dIds...)
+
+		return ids, nil
 	}
 
 	return nil, nil
