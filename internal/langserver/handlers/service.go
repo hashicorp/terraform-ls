@@ -646,6 +646,9 @@ func (svc *service) shutdown() {
 		if svc.features.Variables != nil {
 			svc.features.Variables.Stop()
 		}
+		if svc.features.Stacks != nil {
+			svc.features.Stacks.Stop()
+		}
 	}
 }
 
