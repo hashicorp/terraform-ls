@@ -12,25 +12,13 @@ import (
 )
 
 const (
-	stackTableName    = "stacks"
-	stackIdsTableName = "stack_ids"
+	stackTableName = "stacks"
 )
 
 var dbSchema = &memdb.DBSchema{
 	Tables: map[string]*memdb.TableSchema{
 		stackTableName: {
 			Name: stackTableName,
-			Indexes: map[string]*memdb.IndexSchema{
-				"id": {
-					Name:    "id",
-					Unique:  true,
-					Indexer: &memdb.StringFieldIndex{Field: "path"},
-				},
-			},
-		},
-		// TODO: do we need stack ids?
-		stackIdsTableName: {
-			Name: stackIdsTableName,
 			Indexes: map[string]*memdb.IndexSchema{
 				"id": {
 					Name:    "id",
