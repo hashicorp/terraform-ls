@@ -121,11 +121,7 @@ func (f *StacksFeature) Diagnostics(path string) diagnostics.Diagnostics {
 		return diags
 	}
 
-	for source, dm := range mod.StackDiagnostics {
-		diags.Append(source, dm.AutoloadedOnly().AsMap())
-	}
-
-	for source, dm := range mod.DeployDiagnostics {
+	for source, dm := range mod.Diagnostics {
 		diags.Append(source, dm.AutoloadedOnly().AsMap())
 	}
 

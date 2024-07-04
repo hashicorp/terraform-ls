@@ -19,8 +19,8 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-// ParseModuleConfiguration parses the Stack configuration,
-// i.e. turns bytes of `*.tfstack.hcl` files into AST ([*hcl.File]).
+// ParseStackConfiguration parses the whole Stack configuration,
+// i.e. turns bytes of `*.tfstack.hcl` & `*.tfdeploy.hcl` files into AST ([*hcl.File]).
 func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *state.StackStore, stackPath string) error {
 	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
@@ -30,20 +30,20 @@ func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *sta
 	// TODO: Avoid parsing if the content matches existing AST
 
 	// Avoid parsing if it is already in progress or already known
-	if record.StackDiagnosticsState[globalAst.HCLParsingSource] != operation.OpStateUnknown && !job.IgnoreState(ctx) {
+	if record.DiagnosticsState[globalAst.HCLParsingSource] != operation.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(stackPath)}
 	}
 
-	var files ast.StackFiles
-	var diags ast.StackDiags
+	var files ast.Files
+	var diags ast.Diagnostics
 	rpcContext := lsctx.DocumentContext(ctx)
 
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
-	if record.StackDiagnosticsState[globalAst.HCLParsingSource] == operation.OpStateLoaded &&
+	if record.DiagnosticsState[globalAst.HCLParsingSource] == operation.OpStateLoaded &&
 		rpcContext.IsDidChangeRequest() &&
-		rpcContext.LanguageID == lsp.Stacks.String() {
+		(rpcContext.LanguageID == lsp.Stacks.String() || rpcContext.LanguageID == lsp.Deploy.String()) {
 		// the file has already been parsed, so only examine this file and not the whole module
-		err = stackStore.SetStackDiagnosticsState(stackPath, globalAst.HCLParsingSource, operation.OpStateLoading)
+		err = stackStore.SetDiagnosticsState(stackPath, globalAst.HCLParsingSource, operation.OpStateLoading)
 		if err != nil {
 			return err
 		}
@@ -54,39 +54,39 @@ func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *sta
 		}
 		fileName := filepath.Base(filePath)
 
-		stackFile, stackFileDiags, err := parser.ParseStackFile(fs, filePath)
+		pFile, fDiags, err := parser.ParseFile(fs, filePath)
 		if err != nil {
 			return err
 		}
-		existingFiles := record.ParsedStackFiles.Copy()
-		existingFiles[ast.StackFilename(fileName)] = stackFile
+		existingFiles := record.ParsedFiles.Copy()
+		existingFiles[ast.FilenameFromName(fileName)] = pFile
 		files = existingFiles
 
-		existingDiags, ok := record.StackDiagnostics[globalAst.HCLParsingSource]
+		existingDiags, ok := record.Diagnostics[globalAst.HCLParsingSource]
 		if !ok {
-			existingDiags = make(ast.StackDiags)
+			existingDiags = make(ast.Diagnostics)
 		} else {
 			existingDiags = existingDiags.Copy()
 		}
-		existingDiags[ast.StackFilename(fileName)] = stackFileDiags
+		existingDiags[ast.FilenameFromName(fileName)] = fDiags
 		diags = existingDiags
 
 	} else {
 		// this is the first time file is opened so parse the whole module
-		err = stackStore.SetStackDiagnosticsState(stackPath, globalAst.HCLParsingSource, operation.OpStateLoading)
+		err = stackStore.SetDiagnosticsState(stackPath, globalAst.HCLParsingSource, operation.OpStateLoading)
 		if err != nil {
 			return err
 		}
 
-		files, diags, err = parser.ParseStackFiles(fs, stackPath)
+		files, diags, err = parser.ParseFiles(fs, stackPath)
 	}
 
-	sErr := stackStore.UpdateParsedStackFiles(stackPath, files, err)
+	sErr := stackStore.UpdateParsedFiles(stackPath, files, err)
 	if sErr != nil {
 		return sErr
 	}
 
-	sErr = stackStore.UpdateStackDiagnostics(stackPath, globalAst.HCLParsingSource, diags)
+	sErr = stackStore.UpdateDiagnostics(stackPath, globalAst.HCLParsingSource, diags)
 	if sErr != nil {
 		return sErr
 	}

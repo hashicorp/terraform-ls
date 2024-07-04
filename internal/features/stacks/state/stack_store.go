@@ -129,7 +129,7 @@ func (s *StackStore) AddIfNotExists(path string) error {
 	return err
 }
 
-func (s *StackStore) SetStackDiagnosticsState(path string, source globalAst.DiagnosticSource, state operation.OpState) error {
+func (s *StackStore) SetDiagnosticsState(path string, source globalAst.DiagnosticSource, state operation.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -137,7 +137,7 @@ func (s *StackStore) SetStackDiagnosticsState(path string, source globalAst.Diag
 	if err != nil {
 		return err
 	}
-	record.StackDiagnosticsState[source] = state
+	record.DiagnosticsState[source] = state
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
@@ -148,7 +148,7 @@ func (s *StackStore) SetStackDiagnosticsState(path string, source globalAst.Diag
 	return nil
 }
 
-func (s *StackStore) UpdateParsedStackFiles(path string, pFiles ast.StackFiles, pErr error) error {
+func (s *StackStore) UpdateParsedFiles(path string, pFiles ast.Files, pErr error) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
 
@@ -157,9 +157,9 @@ func (s *StackStore) UpdateParsedStackFiles(path string, pFiles ast.StackFiles, 
 		return err
 	}
 
-	mod.ParsedStackFiles = pFiles
+	mod.ParsedFiles = pFiles
 
-	mod.StackParsingErr = pErr
+	mod.ParsingErr = pErr
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -170,10 +170,10 @@ func (s *StackStore) UpdateParsedStackFiles(path string, pFiles ast.StackFiles, 
 	return nil
 }
 
-func (s *StackStore) UpdateStackDiagnostics(path string, source globalAst.DiagnosticSource, diags ast.StackDiags) error {
+func (s *StackStore) UpdateDiagnostics(path string, source globalAst.DiagnosticSource, diags ast.Diagnostics) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
-		s.SetStackDiagnosticsState(path, source, operation.OpStateLoaded)
+		s.SetDiagnosticsState(path, source, operation.OpStateLoaded)
 	})
 	defer txn.Abort()
 
@@ -183,10 +183,10 @@ func (s *StackStore) UpdateStackDiagnostics(path string, source globalAst.Diagno
 	}
 
 	mod := oldMod.Copy()
-	if mod.StackDiagnostics == nil {
-		mod.StackDiagnostics = make(ast.SourceStackDiags)
+	if mod.Diagnostics == nil {
+		mod.Diagnostics = make(ast.SourceDiagnostics)
 	}
-	mod.StackDiagnostics[source] = diags
+	mod.Diagnostics[source] = diags
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {
@@ -194,79 +194,6 @@ func (s *StackStore) UpdateStackDiagnostics(path string, source globalAst.Diagno
 	}
 
 	err = s.queueRecordChange(oldMod, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *StackStore) SetDeployDiagnosticsState(path string, source globalAst.DiagnosticSource, state operation.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	record, err := stackCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-	record.DeployDiagnosticsState[source] = state
-
-	err = txn.Insert(s.tableName, record)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *StackStore) UpdateParsedDeployFiles(path string, pFiles ast.DeployFiles, pErr error) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	mod, err := stackCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	mod.ParsedDeployFiles = pFiles
-
-	mod.DeployParsingErr = pErr
-
-	err = txn.Insert(s.tableName, mod)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *StackStore) UpdateDeployDiagnostics(path string, source globalAst.DiagnosticSource, diags ast.DeployDiags) error {
-	txn := s.db.Txn(true)
-	txn.Defer(func() {
-		s.SetStackDiagnosticsState(path, source, operation.OpStateLoaded)
-	})
-	defer txn.Abort()
-
-	oldStack, err := stackByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	stack := oldStack.Copy()
-	if stack.DeployDiagnostics == nil {
-		stack.DeployDiagnostics = make(ast.SourceDeployDiags)
-	}
-	stack.DeployDiagnostics[source] = diags
-
-	err = txn.Insert(s.tableName, stack)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueRecordChange(oldStack, stack)
 	if err != nil {
 		return err
 	}
@@ -328,10 +255,10 @@ func (s *StackStore) queueRecordChange(oldRecord, newRecord *StackRecord) error 
 
 	oldDiags, newDiags := 0, 0
 	if oldRecord != nil {
-		oldDiags = oldRecord.StackDiagnostics.Count() + oldRecord.DeployDiagnostics.Count()
+		oldDiags = oldRecord.Diagnostics.Count()
 	}
 	if newRecord != nil {
-		newDiags = newRecord.StackDiagnostics.Count() + newRecord.DeployDiagnostics.Count()
+		newDiags = newRecord.Diagnostics.Count()
 	}
 	// Comparing diagnostics accurately could be expensive
 	// so we just treat any non-empty diags as a change

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/jobs"
@@ -56,19 +55,7 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, err
 	}
 
-	sIds, err := f.decodeStacks(ctx, dir, false, true)
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, sIds...)
-
-	dIds, err := f.decodeDeploy(ctx, dir, false, true)
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, dIds...)
-
-	return ids, nil
+	return f.decodeStacks(ctx, dir, false, true)
 }
 
 func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
@@ -77,15 +64,7 @@ func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (
 		return job.IDs{}, nil
 	}
 
-	rpcContext := lsctx.DocumentContext(ctx)
-	switch rpcContext.LanguageID {
-	case lsp.Stacks.String():
-		return f.decodeStacks(ctx, dir, true, true)
-	case lsp.Deploy.String():
-		return f.decodeDeploy(ctx, dir, true, true)
-	}
-
-	return nil, nil
+	return f.decodeStacks(ctx, dir, true, true)
 }
 
 func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, changeType protocol.FileChangeType, isDir bool) (job.IDs, error) {
@@ -138,19 +117,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		sIds, err := f.decodeStacks(ctx, dir, false, true)
-		if err != nil {
-			return ids, err
-		}
-		ids = append(ids, sIds...)
-
-		dIds, err := f.decodeDeploy(ctx, dir, false, true)
-		if err != nil {
-			return ids, err
-		}
-		ids = append(ids, dIds...)
-
-		return ids, nil
+		return f.decodeStacks(ctx, dir, true, true)
 
 	case protocol.Changed:
 		fallthrough
@@ -178,19 +145,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		sIds, err := f.decodeStacks(ctx, dir, false, true)
-		if err != nil {
-			return ids, err
-		}
-		ids = append(ids, sIds...)
-
-		dIds, err := f.decodeDeploy(ctx, dir, false, true)
-		if err != nil {
-			return ids, err
-		}
-		ids = append(ids, dIds...)
-
-		return ids, nil
+		return f.decodeStacks(ctx, dir, true, true)
 	}
 
 	return nil, nil
@@ -206,33 +161,6 @@ func (f *StacksFeature) decodeStacks(ctx context.Context, dir document.DirHandle
 			return jobs.ParseStackConfiguration(ctx, f.fs, f.store, path)
 		},
 		Type:        operation.OpTypeParseStacksConfiguration.String(),
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, parseId)
-
-	// TODO: Implement the following functions where appropriate to stacks
-	// Future: LoadModuleMetadata(ctx, f.Store, path)
-	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)
-	// TODO: PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
-	// Future: DecodeReferenceTargets(ctx, f.Store, f.rootFeature, path)
-	// Future: DecodeReferenceOrigins(ctx, f.Store, f.rootFeature, path)
-
-	return ids, nil
-}
-
-func (f *StacksFeature) decodeDeploy(ctx context.Context, dir document.DirHandle, ignoreState bool, isFirstLevel bool) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-	path := dir.Path()
-
-	parseId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-		Dir: dir,
-		Func: func(ctx context.Context) error {
-			return jobs.ParseDeployConfiguration(ctx, f.fs, f.store, path)
-		},
-		Type:        operation.OpTypeParseDeployConfiguration.String(),
 		IgnoreState: ignoreState,
 	})
 	if err != nil {

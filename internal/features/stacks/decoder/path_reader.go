@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	stackschema "github.com/hashicorp/terraform-schema/schema"
@@ -59,8 +60,10 @@ func stackPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
 
 	// TODO: Add reference origins and targets if needed
 
-	for name, f := range record.ParsedStackFiles {
-		pathCtx.Files[name.String()] = f
+	for name, f := range record.ParsedFiles {
+		if _, ok := name.(ast.StackFilename); ok {
+			pathCtx.Files[name.String()] = f
+		}
 	}
 
 	return pathCtx, nil
@@ -83,8 +86,10 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 
 	// TODO: Add reference origins and targets if needed
 
-	for name, f := range record.ParsedDeployFiles {
-		pathCtx.Files[name.String()] = f
+	for name, f := range record.ParsedFiles {
+		if _, ok := name.(ast.DeployFilename); ok {
+			pathCtx.Files[name.String()] = f
+		}
 	}
 
 	return pathCtx, nil
@@ -99,13 +104,24 @@ func (pr *PathReader) Paths(ctx context.Context) []lang.Path {
 	}
 
 	for _, record := range stackRecords {
-		if len(record.ParsedStackFiles) > 0 {
+		foundStack := false
+		foundDeploy := false
+		for name := range record.ParsedFiles {
+			if _, ok := name.(ast.StackFilename); ok {
+				foundStack = true
+			}
+			if _, ok := name.(ast.DeployFilename); ok {
+				foundDeploy = true
+			}
+		}
+
+		if foundStack {
 			paths = append(paths, lang.Path{
 				Path:       record.Path(),
 				LanguageID: ilsp.Stacks.String(),
 			})
 		}
-		if len(record.ParsedDeployFiles) > 0 {
+		if foundDeploy {
 			paths = append(paths, lang.Path{
 				Path:       record.Path(),
 				LanguageID: ilsp.Deploy.String(),

@@ -10,9 +10,14 @@ import (
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 )
 
+type Filename interface {
+	String() string
+	IsJSON() bool
+	IsIgnored() bool
+}
+
+// StackFilename is a custom type for stack configuration files
 type StackFilename string
-type StackFiles map[StackFilename]*hcl.File
-type StackDiags map[StackFilename]hcl.Diagnostics
 
 func (mf StackFilename) String() string {
 	return string(mf)
@@ -31,16 +36,53 @@ func IsStackFilename(name string) bool {
 		strings.HasSuffix(name, ".tfstack.json")
 }
 
-func (sf StackFiles) Copy() StackFiles {
-	m := make(StackFiles, len(sf))
+// DeployFilename is a custom type for deployment files
+type DeployFilename string
+
+func (df DeployFilename) String() string {
+	return string(df)
+}
+
+func (df DeployFilename) IsJSON() bool {
+	return strings.HasSuffix(string(df), ".json")
+}
+
+func (df DeployFilename) IsIgnored() bool {
+	return globalAst.IsIgnoredFile(string(df))
+}
+
+func IsDeployFilename(name string) bool {
+	return strings.HasSuffix(name, ".tfdeploy.hcl") ||
+		strings.HasSuffix(name, ".tfdeploy.json")
+}
+
+// FilenameFromName returns either a StackFilename or DeployFilename based
+// on the name
+func FilenameFromName(name string) Filename {
+	if IsStackFilename(name) {
+		return StackFilename(name)
+	}
+	if IsDeployFilename(name) {
+		return DeployFilename(name)
+	}
+
+	return nil
+}
+
+type Files map[Filename]*hcl.File
+
+func (sf Files) Copy() Files {
+	m := make(Files, len(sf))
 	for name, file := range sf {
 		m[name] = file
 	}
 	return m
 }
 
-func (sd StackDiags) Copy() StackDiags {
-	m := make(StackDiags, len(sd))
+type Diagnostics map[Filename]hcl.Diagnostics
+
+func (sd Diagnostics) Copy() Diagnostics {
+	m := make(Diagnostics, len(sd))
 	for name, diags := range sd {
 		m[name] = diags
 	}
@@ -48,8 +90,8 @@ func (sd StackDiags) Copy() StackDiags {
 }
 
 // AutoloadedOnly returns only diagnostics that are not from ignored files
-func (sd StackDiags) AutoloadedOnly() StackDiags {
-	diags := make(StackDiags)
+func (sd Diagnostics) AutoloadedOnly() Diagnostics {
+	diags := make(Diagnostics)
 	for name, f := range sd {
 		if !name.IsIgnored() {
 			diags[name] = f
@@ -58,15 +100,15 @@ func (sd StackDiags) AutoloadedOnly() StackDiags {
 	return diags
 }
 
-func (sd StackDiags) AsMap() map[string]hcl.Diagnostics {
+func (sd Diagnostics) AsMap() map[string]hcl.Diagnostics {
 	m := make(map[string]hcl.Diagnostics, len(sd))
 	for name, diags := range sd {
-		m[string(name)] = diags
+		m[name.String()] = diags
 	}
 	return m
 }
 
-func (sd StackDiags) Count() int {
+func (sd Diagnostics) Count() int {
 	count := 0
 	for _, diags := range sd {
 		count += len(diags)
@@ -74,9 +116,9 @@ func (sd StackDiags) Count() int {
 	return count
 }
 
-type SourceStackDiags map[globalAst.DiagnosticSource]StackDiags
+type SourceDiagnostics map[globalAst.DiagnosticSource]Diagnostics
 
-func (svd SourceStackDiags) Count() int {
+func (svd SourceDiagnostics) Count() int {
 	count := 0
 	for _, diags := range svd {
 		count += diags.Count()
