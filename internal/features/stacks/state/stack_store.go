@@ -53,12 +53,11 @@ func (s *StackStore) Remove(stackPath string) error {
 		return nil
 	}
 
-	// TODO: Implement queueStackChange?
-	// oldMod := oldObj.(*StackRecord)
-	// err = s.queueModuleChange(oldMod, nil)
-	// if err != nil {
-	// 	return err
-	// }
+	oldRecord := oldObj.(*StackRecord)
+	err = s.queueRecordChange(oldRecord, nil)
+	if err != nil {
+		return err
+	}
 
 	_, err = txn.DeleteAll(s.tableName, "id", stackPath)
 	if err != nil {
@@ -288,17 +287,16 @@ func (s *StackStore) add(txn *memdb.Txn, stackPath string) error {
 		}
 	}
 
-	mod := newStack(stackPath)
-	err = txn.Insert(s.tableName, mod)
+	record := newStack(stackPath)
+	err = txn.Insert(s.tableName, record)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Implement queueStackChange?
-	// err = s.queueModuleChange(nil, mod)
-	// if err != nil {
-	// 	return err
-	// }
+	err = s.queueRecordChange(nil, record)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
