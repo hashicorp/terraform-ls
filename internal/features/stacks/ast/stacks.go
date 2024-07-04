@@ -47,6 +47,7 @@ func (sd StackDiags) Copy() StackDiags {
 	return m
 }
 
+// AutoloadedOnly returns only diagnostics that are not from ignored files
 func (sd StackDiags) AutoloadedOnly() StackDiags {
 	diags := make(StackDiags)
 	for name, f := range sd {

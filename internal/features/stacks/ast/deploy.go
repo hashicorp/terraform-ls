@@ -47,6 +47,7 @@ func (dd DeployDiags) Copy() DeployDiags {
 	return m
 }
 
+// AutoloadedOnly returns only diagnostics that are not from ignored files
 func (dd DeployDiags) AutoloadedOnly() DeployDiags {
 	diags := make(DeployDiags)
 	for name, f := range dd {
