@@ -35,5 +35,5 @@ const (
 	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation
 	OpTypeTerraformValidate
-	OpTypeParseStacks
+	OpTypeParseStackConfiguration
 )
