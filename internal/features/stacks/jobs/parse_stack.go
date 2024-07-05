@@ -38,10 +38,12 @@ func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *sta
 	var diags ast.Diagnostics
 	rpcContext := lsctx.DocumentContext(ctx)
 
+	isMatchingLanguageId := (rpcContext.LanguageID == lsp.Stacks.String() || rpcContext.LanguageID == lsp.Deploy.String())
+
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
 	if record.DiagnosticsState[globalAst.HCLParsingSource] == operation.OpStateLoaded &&
 		rpcContext.IsDidChangeRequest() &&
-		(rpcContext.LanguageID == lsp.Stacks.String() || rpcContext.LanguageID == lsp.Deploy.String()) {
+		isMatchingLanguageId {
 		// the file has already been parsed, so only examine this file and not the whole module
 		err = stackStore.SetDiagnosticsState(stackPath, globalAst.HCLParsingSource, operation.OpStateLoading)
 		if err != nil {
