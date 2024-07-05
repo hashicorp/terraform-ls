@@ -65,6 +65,7 @@ func ModDiagsFromMap(m map[string]hcl.Diagnostics) ModDiags {
 	return mf
 }
 
+// AutoloadedOnly returns only diagnostics that are not from ignored files
 func (md ModDiags) AutoloadedOnly() ModDiags {
 	diags := make(ModDiags)
 	for name, f := range md {
