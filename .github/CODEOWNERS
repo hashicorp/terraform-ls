@@ -1,5 +1,6 @@
-* @hashicorp/tf-editor-experience-engineers
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# they will be requested for review when someone opens a
+# pull request.
 
-# release configuration
-/.release/                   @hashicorp/release-engineering @hashicorp/tf-editor-experience-engineers
-/.github/workflows/build.yml @hashicorp/release-engineering @hashicorp/tf-editor-experience-engineers
+* @hashicorp/tf-editor-experience-engineers
