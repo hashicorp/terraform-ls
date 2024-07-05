@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
+	fstacks "github.com/hashicorp/terraform-ls/internal/features/stacks"
 	fvariables "github.com/hashicorp/terraform-ls/internal/features/variables"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/langserver/session"
@@ -161,9 +162,15 @@ func NewTestFeatures(eventBus *eventbus.EventBus, s *state.StateStore, fs *files
 		return nil, err
 	}
 
+	stacksFeature, err := fstacks.NewStacksFeature(eventBus, s, fs)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Features{
 		Modules:     modulesFeature,
 		RootModules: rootModulesFeature,
 		Variables:   variablesFeature,
+		Stacks:      stacksFeature,
 	}, nil
 }
