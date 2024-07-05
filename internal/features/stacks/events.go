@@ -55,7 +55,7 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, err
 	}
 
-	return f.decodeStacks(ctx, dir, false, true)
+	return f.decodeStack(ctx, dir, false, true)
 }
 
 func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
@@ -64,7 +64,7 @@ func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (
 		return job.IDs{}, nil
 	}
 
-	return f.decodeStacks(ctx, dir, true, true)
+	return f.decodeStack(ctx, dir, true, true)
 }
 
 func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, changeType protocol.FileChangeType, isDir bool) (job.IDs, error) {
@@ -117,7 +117,7 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		return f.decodeStacks(ctx, dir, true, true)
+		return f.decodeStack(ctx, dir, true, true)
 
 	case protocol.Changed:
 		fallthrough
@@ -145,13 +145,13 @@ func (f *StacksFeature) didChangeWatched(ctx context.Context, rawPath string, ch
 			return ids, nil
 		}
 
-		return f.decodeStacks(ctx, dir, true, true)
+		return f.decodeStack(ctx, dir, true, true)
 	}
 
 	return nil, nil
 }
 
-func (f *StacksFeature) decodeStacks(ctx context.Context, dir document.DirHandle, ignoreState bool, isFirstLevel bool) (job.IDs, error) {
+func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle, ignoreState bool, isFirstLevel bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 	path := dir.Path()
 
