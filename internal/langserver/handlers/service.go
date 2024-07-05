@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
+	"github.com/hashicorp/terraform-ls/internal/features/stacks"
 	fvariables "github.com/hashicorp/terraform-ls/internal/features/variables"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
@@ -48,6 +49,7 @@ type Features struct {
 	Modules     *fmodules.ModulesFeature
 	RootModules *frootmodules.RootModulesFeature
 	Variables   *fvariables.VariablesFeature
+	Stacks      *stacks.StacksFeature
 }
 
 type service struct {
@@ -534,17 +536,27 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		variablesFeature.SetLogger(svc.logger)
 		variablesFeature.Start(svc.sessCtx)
 
+		stacksFeature, err := stacks.NewStacksFeature(svc.eventBus, svc.stateStore, svc.fs)
+		if err != nil {
+			return err
+		}
+		stacksFeature.SetLogger(svc.logger)
+		stacksFeature.Start(svc.sessCtx)
+
 		svc.features = &Features{
 			Modules:     modulesFeature,
 			RootModules: rootModulesFeature,
 			Variables:   variablesFeature,
+			Stacks:      stacksFeature,
 		}
 	}
 
 	svc.decoder = decoder.NewDecoder(&idecoder.GlobalPathReader{
 		PathReaderMap: idecoder.PathReaderMap{
-			"terraform":      svc.features.Modules,
-			"terraform-vars": svc.features.Variables,
+			"terraform":        svc.features.Modules,
+			"terraform-vars":   svc.features.Variables,
+			"terraform-stack":  svc.features.Stacks,
+			"terraform-deploy": svc.features.Stacks,
 		},
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
@@ -633,6 +645,9 @@ func (svc *service) shutdown() {
 		}
 		if svc.features.Variables != nil {
 			svc.features.Variables.Stop()
+		}
+		if svc.features.Stacks != nil {
+			svc.features.Stacks.Stop()
 		}
 	}
 }

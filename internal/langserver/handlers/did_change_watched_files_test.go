@@ -65,6 +65,8 @@ func TestLangServer_DidChangeWatchedFiles_change_file(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 
@@ -243,6 +245,8 @@ func TestLangServer_DidChangeWatchedFiles_create_file(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -380,6 +384,8 @@ func TestLangServer_DidChangeWatchedFiles_delete_file(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -512,6 +518,8 @@ func TestLangServer_DidChangeWatchedFiles_change_dir(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -651,6 +659,8 @@ func TestLangServer_DidChangeWatchedFiles_create_dir(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -787,6 +797,8 @@ func TestLangServer_DidChangeWatchedFiles_delete_dir(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 
 	wc := walker.NewWalkerCollector()
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -954,6 +966,8 @@ func TestLangServer_DidChangeWatchedFiles_pluginChange(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
@@ -1056,6 +1070,8 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 	defer features.RootModules.Stop()
 	features.Variables.Start(ctx)
 	defer features.Variables.Stop()
+	features.Stacks.Start(ctx)
+	defer features.Stacks.Stop()
 	wc := walker.NewWalkerCollector()
 
 	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
