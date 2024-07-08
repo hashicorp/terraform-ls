@@ -36,5 +36,5 @@ const (
 	OpTypeReferenceValidation
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
-	OpTypeLoadTerraformVersion
+	OpTypeLoadStackRequiredTerraformVersion
 )
