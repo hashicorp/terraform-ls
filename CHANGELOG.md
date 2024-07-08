@@ -1,13 +1,8 @@
-## 0.33.3 (27 June 2024)
+## 0.34.0-beta1 (08 July 2024)
 
 ENHANCEMENTS:
 
-* Add support for the new `templatestring` functions in Terraform 1.9 ([terraform-schema#357](https://github.com/hashicorp/terraform-schema/issues/357))
-* Introduce provisioners to `removed` blocks in Terraform 1.9 ([terraform-schema#358](https://github.com/hashicorp/terraform-schema/issues/358))
-
-INTERNAL:
-
-* Document schema bundling in CONTRIBUTING.md ([#1736](https://github.com/hashicorp/terraform-ls/issues/1736))
+* Add initial support for Terraform Stacks files and Deployment files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Stacks and Deployment files ([#1745](https://github.com/hashicorp/terraform-ls/issues/1745))
 
 ## 0.34.0-alpha20240611 (11 June 2024)
 
@@ -23,6 +18,17 @@ We have tested this with workspaces and configurations of different sizes, but s
 INTERNAL:
 
 * Split internal modules state into separate features ([#1667](https://github.com/hashicorp/terraform-ls/issues/1667))
+
+## 0.33.3 (27 June 2024)
+
+ENHANCEMENTS:
+
+* Add support for the new `templatestring` functions in Terraform 1.9 ([terraform-schema#357](https://github.com/hashicorp/terraform-schema/issues/357))
+* Introduce provisioners to `removed` blocks in Terraform 1.9 ([terraform-schema#358](https://github.com/hashicorp/terraform-schema/issues/358))
+
+INTERNAL:
+
+* Document schema bundling in CONTRIBUTING.md ([#1736](https://github.com/hashicorp/terraform-ls/issues/1736))
 
 ## 0.33.2 (06 June 2024)
 
