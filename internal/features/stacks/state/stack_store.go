@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/go-memdb"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
@@ -202,6 +203,61 @@ func (s *StackStore) UpdateDiagnostics(path string, source globalAst.DiagnosticS
 	return nil
 }
 
+func (s *StackStore) setTerraformVersionWithChangeNotification(path string, version *version.Version, vErr error, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	oldStack, err := stackByPath(txn, path)
+	if err != nil {
+		return err
+	}
+	stack := oldStack.Copy()
+
+	stack.TerraformVersion = version
+	stack.TerraformVersionErr = vErr
+	stack.TerraformVersionState = state
+
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	err = s.queueRecordChange(oldStack, stack)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetTerraformVersion(path string, version *version.Version) error {
+	return s.setTerraformVersionWithChangeNotification(path, version, nil, operation.OpStateLoaded)
+}
+
+func (s *StackStore) SetTerraformVersionError(path string, vErr error) error {
+	return s.setTerraformVersionWithChangeNotification(path, nil, vErr, operation.OpStateLoaded)
+}
+
+func (s *StackStore) SetTerraformVersionState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	stack, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack.TerraformVersionState = state
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *StackStore) add(txn *memdb.Txn, stackPath string) error {
 	// TODO: Introduce Exists method to Txn?
 	obj, err := txn.First(s.tableName, "id", stackPath)
@@ -252,6 +308,26 @@ func stackCopyByPath(txn *memdb.Txn, path string) (*StackRecord, error) {
 
 func (s *StackStore) queueRecordChange(oldRecord, newRecord *StackRecord) error {
 	changes := globalState.Changes{}
+
+	switch {
+	// new record added
+	case oldRecord == nil && newRecord != nil:
+		if newRecord.TerraformVersion != nil {
+			changes.TerraformVersion = true
+		}
+	// record removed
+	case oldRecord != nil && newRecord == nil:
+		changes.IsRemoval = true
+
+		if oldRecord.TerraformVersion != nil {
+			changes.TerraformVersion = true
+		}
+	// record changed
+	default:
+		if oldRecord.TerraformVersion == nil || !oldRecord.TerraformVersion.Equal(newRecord.TerraformVersion) {
+			changes.TerraformVersion = true
+		}
+	}
 
 	oldDiags, newDiags := 0, 0
 	if oldRecord != nil {
