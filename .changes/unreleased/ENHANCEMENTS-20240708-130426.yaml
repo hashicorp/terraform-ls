@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'Add initial support for Terraform Stacks files and Deployment files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Stacks and Deployment files'
+time: 2024-07-08T13:04:26.436497-04:00
+custom:
+    Issue: "1745"
+    Repository: terraform-ls
