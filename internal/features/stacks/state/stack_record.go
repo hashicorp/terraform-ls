@@ -4,6 +4,7 @@
 package state
 
 import (
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
@@ -23,6 +24,10 @@ type StackRecord struct {
 	ParsingErr       error
 	Diagnostics      ast.SourceDiagnostics
 	DiagnosticsState globalAst.DiagnosticSourceState
+
+	TerraformVersion      *version.Version
+	TerraformVersionErr   error
+	TerraformVersionState operation.OpState
 }
 
 func (m *StackRecord) Path() string {
