@@ -25,9 +25,9 @@ type StackRecord struct {
 	Diagnostics      ast.SourceDiagnostics
 	DiagnosticsState globalAst.DiagnosticSourceState
 
-	TerraformVersion      *version.Version
-	TerraformVersionErr   error
-	TerraformVersionState operation.OpState
+	RequiredTerraformVersion      *version.Version
+	RequiredTerraformVersionErr   error
+	RequiredTerraformVersionState operation.OpState
 }
 
 func (m *StackRecord) Path() string {
