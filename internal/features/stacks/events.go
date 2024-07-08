@@ -60,7 +60,7 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		Func: func(ctx context.Context) error {
 			return jobs.LoadTerraformVersion(ctx, f.fs, f.store, path)
 		},
-		Type: operation.OpTypeLoadTerraformVersion.String(),
+		Type: operation.OpTypeLoadStackRequiredTerraformVersion.String(),
 	})
 	if err != nil {
 		return ids, err

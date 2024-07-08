@@ -213,9 +213,9 @@ func (s *StackStore) setTerraformVersionWithChangeNotification(path string, vers
 	}
 	stack := oldStack.Copy()
 
-	stack.TerraformVersion = version
-	stack.TerraformVersionErr = vErr
-	stack.TerraformVersionState = state
+	stack.RequiredTerraformVersion = version
+	stack.RequiredTerraformVersionErr = vErr
+	stack.RequiredTerraformVersionState = state
 
 	err = txn.Insert(s.tableName, stack)
 	if err != nil {
@@ -248,7 +248,7 @@ func (s *StackStore) SetTerraformVersionState(path string, state operation.OpSta
 		return err
 	}
 
-	stack.TerraformVersionState = state
+	stack.RequiredTerraformVersionState = state
 	err = txn.Insert(s.tableName, stack)
 	if err != nil {
 		return err
@@ -312,19 +312,19 @@ func (s *StackStore) queueRecordChange(oldRecord, newRecord *StackRecord) error 
 	switch {
 	// new record added
 	case oldRecord == nil && newRecord != nil:
-		if newRecord.TerraformVersion != nil {
+		if newRecord.RequiredTerraformVersion != nil {
 			changes.TerraformVersion = true
 		}
 	// record removed
 	case oldRecord != nil && newRecord == nil:
 		changes.IsRemoval = true
 
-		if oldRecord.TerraformVersion != nil {
+		if oldRecord.RequiredTerraformVersion != nil {
 			changes.TerraformVersion = true
 		}
 	// record changed
 	default:
-		if oldRecord.TerraformVersion == nil || !oldRecord.TerraformVersion.Equal(newRecord.TerraformVersion) {
+		if !oldRecord.RequiredTerraformVersion.Equal(newRecord.RequiredTerraformVersion) {
 			changes.TerraformVersion = true
 		}
 	}

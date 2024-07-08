@@ -27,27 +27,36 @@ func LoadTerraformVersion(ctx context.Context, fs ReadOnlyFS, stackStore *state.
 	}
 
 	// Avoid parsing if it is already in progress or already known
-	if stackRecord.TerraformVersionState != operation.OpStateUnknown && !job.IgnoreState(ctx) {
+	if stackRecord.RequiredTerraformVersionState != operation.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(stackPath)}
 	}
 
-	stackStore.SetTerraformVersionState(stackPath, operation.OpStateLoading)
+	err = stackStore.SetTerraformVersionState(stackPath, operation.OpStateLoading)
+	if err != nil {
+		return err
+	}
 
 	// read version file
 	v, err := fs.ReadFile(filepath.Join(stackPath, ".terraform-version"))
 	if err != nil {
-		stackStore.SetTerraformVersionError(stackPath, err)
+		updateErr := stackStore.SetTerraformVersionError(stackPath, err)
+		if updateErr != nil {
+			return updateErr
+		}
+
 		return err
 	}
 
 	// parse version
 	version, err := version.NewVersion(strings.TrimSpace(string(v)))
 	if err != nil {
-		stackStore.SetTerraformVersionError(stackPath, err)
+		updateErr := stackStore.SetTerraformVersionError(stackPath, err)
+		if updateErr != nil {
+			return updateErr
+		}
+
 		return err
 	}
 
-	stackStore.SetTerraformVersion(stackPath, version)
-
-	return nil
+	return stackStore.SetTerraformVersion(stackPath, version)
 }

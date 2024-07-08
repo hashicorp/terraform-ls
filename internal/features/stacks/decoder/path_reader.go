@@ -45,7 +45,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 func stackPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
 	// TODO: this should only work for terraform 1.8 and above
-	version := record.TerraformVersion
+	version := record.RequiredTerraformVersion
 	if version == nil {
 		version = stackschema.LatestAvailableVersion
 	}
@@ -75,7 +75,7 @@ func stackPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
 
 func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
 	// TODO: this should only work for terraform 1.8 and above
-	version := record.TerraformVersion
+	version := record.RequiredTerraformVersion
 	if version == nil {
 		version = stackschema.LatestAvailableVersion
 	}
