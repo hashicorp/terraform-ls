@@ -55,7 +55,25 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, err
 	}
 
-	return f.decodeStack(ctx, dir, false, true)
+	tfVersion, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+		Dir: dir,
+		Func: func(ctx context.Context) error {
+			return jobs.LoadTerraformVersion(ctx, f.fs, f.store, path)
+		},
+		Type: operation.OpTypeLoadTerraformVersion.String(),
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, tfVersion)
+
+	decodeIds, err := f.decodeStack(ctx, dir, false, true)
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, decodeIds...)
+
+	return ids, err
 }
 
 func (f *StacksFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
@@ -167,20 +185,6 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 		return ids, err
 	}
 	ids = append(ids, parseId)
-
-	tfVersion, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-		Dir: dir,
-		Func: func(ctx context.Context) error {
-			return jobs.LoadTerraformVersion(ctx, f.fs, f.store, path)
-		},
-		Type:        operation.OpTypeLoadModuleMetadata.String(),
-		DependsOn:   job.IDs{parseId},
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, tfVersion)
 
 	// TODO: Implement the following functions where appropriate to stacks
 	// Future: LoadModuleMetadata(ctx, f.Store, path)
