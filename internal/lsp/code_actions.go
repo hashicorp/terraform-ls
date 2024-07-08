@@ -12,6 +12,7 @@ import (
 const (
 	// SourceFormatAllTerraform is a Terraform specific format code action.
 	SourceFormatAllTerraform = "source.formatAll.terraform"
+	Quickfix                 = "quickfix"
 )
 
 type CodeActions map[lsp.CodeActionKind]bool
@@ -35,6 +36,7 @@ var (
 	// files to be formatted, but not terraform files (or vice versa).
 	SupportedCodeActions = CodeActions{
 		SourceFormatAllTerraform: true,
+		Quickfix:                 true,
 	}
 )
 

@@ -49,7 +49,11 @@ func (mra MissingRequiredAttribute) Visit(ctx context.Context, node hclsyntax.No
 						Summary:  fmt.Sprintf("Required attribute %q not specified", name),
 						Detail:   fmt.Sprintf("An attribute named %q is required here", name),
 						Subject:  nodeType.SrcRange.Ptr(),
+						Extra: map[string]interface{}{
+							"MissingAttribute": name,
+						},
 					})
+
 				}
 			}
 		}
