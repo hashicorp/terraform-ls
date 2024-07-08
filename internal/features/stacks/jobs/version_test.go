@@ -51,16 +51,16 @@ func TestLoadTerraformVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if record.TerraformVersion.String() != "1.9.0" {
-		t.Fatalf("expected version 1.9.0, got %s", record.TerraformVersion.String())
+	if record.RequiredTerraformVersion.String() != "1.9.0" {
+		t.Fatalf("expected version 1.9.0, got %s", record.RequiredTerraformVersion.String())
 	}
 
-	if record.TerraformVersionState != operation.OpStateLoaded {
-		t.Fatalf("expected state %s, got %s", operation.OpStateLoaded, record.TerraformVersionState)
+	if record.RequiredTerraformVersionState != operation.OpStateLoaded {
+		t.Fatalf("expected state %s, got %s", operation.OpStateLoaded, record.RequiredTerraformVersionState)
 	}
 
-	if record.TerraformVersionErr != nil {
-		t.Fatalf("expected nil error, got %s", record.TerraformVersionErr)
+	if record.RequiredTerraformVersionErr != nil {
+		t.Fatalf("expected nil error, got %s", record.RequiredTerraformVersionErr)
 	}
 }
 
@@ -116,15 +116,15 @@ func TestLoadTerraformVersion_invalid(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if record.TerraformVersion != nil {
-				t.Fatalf("expected nil version, got %s", record.TerraformVersion.String())
+			if record.RequiredTerraformVersion != nil {
+				t.Fatalf("expected nil version, got %s", record.RequiredTerraformVersion.String())
 			}
 
-			if record.TerraformVersionState != operation.OpStateLoaded {
-				t.Fatalf("expected state %s, got %s", operation.OpStateLoaded, record.TerraformVersionState)
+			if record.RequiredTerraformVersionState != operation.OpStateLoaded {
+				t.Fatalf("expected state %s, got %s", operation.OpStateLoaded, record.RequiredTerraformVersionState)
 			}
 
-			if record.TerraformVersionErr == nil {
+			if record.RequiredTerraformVersionErr == nil {
 				t.Fatal("expected error in record, got nil")
 			}
 		})
