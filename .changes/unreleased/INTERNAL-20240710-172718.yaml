@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Introduce a workflow that checks for changelog entries
+time: 2024-07-10T17:27:18.567311+02:00
+custom:
+    Issue: "1759"
+    Repository: terraform-ls
