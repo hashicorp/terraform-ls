@@ -37,6 +37,10 @@ func (r RootReaderMock) TerraformVersion(modPath string) *version.Version {
 	return nil
 }
 
+func (r RootReaderMock) InstalledModulePath(rootPath string, normalizedSource string) (string, bool) {
+	return "", false
+}
+
 func TestDecoder_CodeLensesForFile_concurrencyBug(t *testing.T) {
 	globalStore, err := globalState.NewStateStore()
 	if err != nil {
