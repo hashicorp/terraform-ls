@@ -23,6 +23,10 @@ type RootRecord struct {
 	ModManifestErr   error
 	ModManifestState op.OpState
 
+	// InstalledModules is a map of normalized source addresses from the
+	// manifest to the path of the local directory where the module is installed
+	InstalledModules InstalledModules
+
 	TerraformVersion      *version.Version
 	TerraformVersionErr   error
 	TerraformVersionState op.OpState
@@ -56,10 +60,17 @@ func (m *RootRecord) Copy() *RootRecord {
 	}
 
 	if m.InstalledProviders != nil {
-		newRecord.InstalledProviders = make(InstalledProviders, 0)
+		newRecord.InstalledProviders = make(InstalledProviders, len(m.InstalledProviders))
 		for addr, pv := range m.InstalledProviders {
 			// version.Version is practically immutable once parsed
 			newRecord.InstalledProviders[addr] = pv
+		}
+	}
+
+	if m.InstalledModules != nil {
+		newRecord.InstalledModules = make(InstalledModules, len(m.InstalledModules))
+		for source, dir := range m.InstalledModules {
+			newRecord.InstalledModules[source] = dir
 		}
 	}
 

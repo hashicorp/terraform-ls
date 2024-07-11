@@ -188,3 +188,22 @@ func (f *RootModulesFeature) Telemetry(path string) map[string]interface{} {
 
 	return properties
 }
+
+// InstalledModulePath checks the installed modules in the given root module
+// for the given normalized source address.
+//
+// If the module is installed, it returns the path to the module installation
+// directory on disk.
+func (f *RootModulesFeature) InstalledModulePath(rootPath string, normalizedSource string) (string, bool) {
+	record, err := f.Store.RootRecordByPath(rootPath)
+	if err != nil {
+		return "", false
+	}
+
+	dir, ok := record.InstalledModules[normalizedSource]
+	if !ok {
+		return "", false
+	}
+
+	return dir, true
+}
