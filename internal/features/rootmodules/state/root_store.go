@@ -258,6 +258,7 @@ func (s *RootStore) UpdateModManifest(path string, manifest *datadir.ModuleManif
 
 	record.ModManifest = manifest
 	record.ModManifestErr = mErr
+	record.InstalledModules = InstalledModulesFromManifest(manifest)
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
