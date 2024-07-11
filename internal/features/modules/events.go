@@ -20,6 +20,7 @@ import (
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
@@ -183,14 +184,30 @@ func (f *ModulesFeature) decodeDeclaredModuleCalls(ctx context.Context, dir docu
 
 	var errs *multierror.Error
 
-	f.logger.Printf("indexing declared module calls for %q: %d", dir.URI, len(declared))
 	for _, mc := range declared {
-		// TODO! handle installed module calls
-		localSource, ok := mc.SourceAddr.(tfmod.LocalSourceAddr)
-		if !ok {
+		var mcPath string
+		switch source := mc.SourceAddr.(type) {
+		// For local module sources, we can construct the path directly from the configuration
+		case tfmod.LocalSourceAddr:
+			mcPath = filepath.Join(dir.Path(), filepath.FromSlash(source.String()))
+		// For registry modules, we need to find the local installation path (if installed)
+		case tfaddr.Module:
+			installedDir, ok := f.rootFeature.InstalledModulePath(dir.Path(), source.String())
+			if !ok {
+				continue
+			}
+			mcPath = filepath.Join(dir.Path(), filepath.FromSlash(installedDir))
+		// For other remote modules, we need to find the local installation path (if installed)
+		case tfmod.RemoteSourceAddr:
+			installedDir, ok := f.rootFeature.InstalledModulePath(dir.Path(), source.String())
+			if !ok {
+				continue
+			}
+			mcPath = filepath.Join(dir.Path(), filepath.FromSlash(installedDir))
+		default:
+			// Unknown source address, we can't resolve the path
 			continue
 		}
-		mcPath := filepath.Join(dir.Path(), filepath.FromSlash(localSource.String()))
 
 		fi, err := os.Stat(mcPath)
 		if err != nil || !fi.IsDir() {
