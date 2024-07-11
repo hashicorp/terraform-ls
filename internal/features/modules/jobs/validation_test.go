@@ -28,6 +28,10 @@ func (r RootReaderMock) TerraformVersion(modPath string) *version.Version {
 	return nil
 }
 
+func (r RootReaderMock) InstalledModulePath(rootPath string, normalizedSource string) (string, bool) {
+	return "", false
+}
+
 func TestSchemaModuleValidation_FullModule(t *testing.T) {
 	ctx := context.Background()
 	gs, err := globalState.NewStateStore()
