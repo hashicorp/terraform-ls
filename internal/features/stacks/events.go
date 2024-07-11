@@ -186,6 +186,20 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 	}
 	ids = append(ids, parseId)
 
+	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+		Dir: dir,
+		Func: func(ctx context.Context) error {
+			return jobs.LoadStackMetadata(ctx, f.store, path)
+		},
+		Type:        operation.OpTypeLoadModuleMetadata.String(),
+		DependsOn:   job.IDs{parseId},
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, metaId)
+
 	// TODO: Implement the following functions where appropriate to stacks
 	// Future: LoadModuleMetadata(ctx, f.Store, path)
 	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)

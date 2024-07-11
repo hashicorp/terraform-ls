@@ -16,7 +16,9 @@ import (
 type StackRecord struct {
 	path string
 
-	Meta StackMetadata
+	Meta      StackMetadata
+	MetaErr   error
+	MetaState operation.OpState
 
 	// ParsedFiles is a map of all the parsed files for the stack,
 	// including Stack and Deploy files.
