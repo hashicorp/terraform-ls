@@ -171,11 +171,12 @@ func (s *ModuleStore) DeclaredModuleCalls(modPath string) (map[string]tfmod.Decl
 	declared := make(map[string]tfmod.DeclaredModuleCall)
 	for _, mc := range mod.Meta.ModuleCalls {
 		declared[mc.LocalName] = tfmod.DeclaredModuleCall{
-			LocalName:  mc.LocalName,
-			SourceAddr: mc.SourceAddr,
-			Version:    mc.Version,
-			InputNames: mc.InputNames,
-			RangePtr:   mc.RangePtr,
+			LocalName:     mc.LocalName,
+			RawSourceAddr: mc.RawSourceAddr,
+			SourceAddr:    mc.SourceAddr,
+			Version:       mc.Version,
+			InputNames:    mc.InputNames,
+			RangePtr:      mc.RangePtr,
 		}
 	}
 
