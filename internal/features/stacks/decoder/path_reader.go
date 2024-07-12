@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
@@ -14,7 +15,10 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
-	stackschema "github.com/hashicorp/terraform-schema/schema"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
+	stackschema "github.com/hashicorp/terraform-schema/schema/stacks"
+	tfstack "github.com/hashicorp/terraform-schema/stack"
 )
 
 type PathReader struct {
@@ -24,6 +28,7 @@ type PathReader struct {
 type StateReader interface {
 	List() ([]*state.StackRecord, error)
 	StackRecordByPath(modPath string) (*state.StackRecord, error)
+	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
 }
 
 // PathContext returns a PathContext for the given path based on the language ID
@@ -35,7 +40,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 	switch path.LanguageID {
 	case ilsp.Stacks.String():
-		return stackPathContext(record)
+		return stackPathContext(record, pr.StateReader)
 	case ilsp.Deploy.String():
 		return deployPathContext(record)
 	}
@@ -43,11 +48,11 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	return nil, fmt.Errorf("unknown language ID: %q", path.LanguageID)
 }
 
-func stackPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
+func stackPathContext(record *state.StackRecord, stateReader stackschema.StateReader) (*decoder.PathContext, error) {
 	// TODO: this should only work for terraform 1.8 and above
 	version := record.RequiredTerraformVersion
 	if version == nil {
-		version = stackschema.LatestAvailableVersion
+		version = tfschema.LatestAvailableVersion
 	}
 
 	schema, err := stackschema.CoreStackSchemaForVersion(version)
@@ -55,8 +60,25 @@ func stackPathContext(record *state.StackRecord) (*decoder.PathContext, error) {
 		return nil, err
 	}
 
+	sm := stackschema.NewStackSchemaMerger(schema)
+	sm.SetStateReader(stateReader)
+
+	meta := &tfstack.Meta{
+		Path:                 record.Path(),
+		ProviderRequirements: record.Meta.ProviderRequirements,
+		Components:           record.Meta.Components,
+		Variables:            record.Meta.Variables,
+		Outputs:              record.Meta.Outputs,
+		Filenames:            record.Meta.Filenames,
+	}
+
+	mergedSchema, err := sm.SchemaForModule(meta)
+	if err != nil {
+		return nil, err
+	}
+
 	pathCtx := &decoder.PathContext{
-		Schema:           schema,
+		Schema:           mergedSchema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
@@ -77,7 +99,7 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 	// TODO: this should only work for terraform 1.8 and above
 	version := record.RequiredTerraformVersion
 	if version == nil {
-		version = stackschema.LatestAvailableVersion
+		version = tfschema.LatestAvailableVersion
 	}
 
 	schema, err := stackschema.CoreDeploySchemaForVersion(version)

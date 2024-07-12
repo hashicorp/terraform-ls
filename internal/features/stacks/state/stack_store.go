@@ -13,6 +13,8 @@ import (
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfschema "github.com/hashicorp/terraform-schema/schema"
 	tfstack "github.com/hashicorp/terraform-schema/stack"
 )
 
@@ -306,6 +308,11 @@ func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error)
 		return err
 	}
 
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
 	err = s.queueRecordChange(oldRecord, record)
 	if err != nil {
 		return err
@@ -426,4 +433,8 @@ func (s *StackStore) queueRecordChange(oldRecord, newRecord *StackRecord) error 
 	}
 
 	return s.changeStore.QueueChange(dir, changes)
+}
+
+func (s *StackStore) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
+	return s.providerSchemasStore.ProviderSchema(modPath, addr, vc)
 }
