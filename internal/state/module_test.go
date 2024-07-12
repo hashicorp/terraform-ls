@@ -493,7 +493,7 @@ dev = {
 
 	err = s.Modules.UpdateParsedVarsFiles(tmpDir, ast.VarsFilesFromMap(map[string]*hcl.File{
 		"test.tfvars": testFile,
-	}), nil)
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
