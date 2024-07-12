@@ -21,7 +21,8 @@ type StackStore struct {
 	tableName string
 	logger    *log.Logger
 
-	changeStore *globalState.ChangeStore
+	changeStore          *globalState.ChangeStore
+	providerSchemasStore *globalState.ProviderSchemaStore
 }
 
 func (s *StackStore) SetLogger(logger *log.Logger) {
@@ -306,6 +307,25 @@ func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error)
 	}
 
 	err = s.queueRecordChange(oldRecord, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetPreloadEmbeddedSchemaState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	record, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.PreloadEmbeddedSchemaState = state
+	err = txn.Insert(s.tableName, record)
 	if err != nil {
 		return err
 	}

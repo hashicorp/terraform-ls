@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
+	"github.com/hashicorp/terraform-ls/internal/schemas"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
@@ -200,9 +201,23 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 	}
 	ids = append(ids, metaId)
 
+	eSchemaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+		Dir: dir,
+		Func: func(ctx context.Context) error {
+			return jobs.PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
+				f.store, f.stateStore.ProviderSchemas, path)
+		},
+		DependsOn:   job.IDs{metaId},
+		Type:        operation.OpTypePreloadEmbeddedSchema.String(),
+		IgnoreState: ignoreState,
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, eSchemaId)
+
 	// TODO: Implement the following functions where appropriate to stacks
 	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)
-	// TODO: PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
 	// Future: DecodeReferenceTargets(ctx, f.Store, f.rootFeature, path)
 	// Future: DecodeReferenceOrigins(ctx, f.Store, f.rootFeature, path)
 

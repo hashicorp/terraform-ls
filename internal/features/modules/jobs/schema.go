@@ -5,10 +5,8 @@ package jobs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"time"
@@ -16,23 +14,16 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/lang"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/modules/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/registry"
-	"github.com/hashicorp/terraform-ls/internal/schemas"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfregistry "github.com/hashicorp/terraform-schema/registry"
-	tfschema "github.com/hashicorp/terraform-schema/schema"
 	"github.com/zclconf/go-cty/cty"
 	ctyjson "github.com/zclconf/go-cty/cty/json"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const tracerName = "github.com/hashicorp/terraform-ls/internal/terraform/module"
@@ -73,124 +64,11 @@ func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDi
 	}
 
 	for _, pAddr := range missingReqs {
-		err := preloadSchemaForProviderAddr(ctx, pAddr, fs, schemaStore, logger)
+		err := globalState.PreloadSchemaForProviderAddr(ctx, pAddr, fs, schemaStore, logger)
 		if err != nil {
 			return err
 		}
 	}
-
-	return nil
-}
-
-func preloadSchemaForProviderAddr(ctx context.Context, pAddr tfaddr.Provider, fs fs.ReadDirFS,
-	schemaStore *globalState.ProviderSchemaStore, logger *log.Logger) error {
-
-	startTime := time.Now()
-
-	if pAddr.IsLegacy() && pAddr.Type == "terraform" {
-		// The terraform provider is built into Terraform 0.11+
-		// and while it's possible, users typically don't declare
-		// entry in required_providers block for it.
-		pAddr = tfaddr.NewProvider(tfaddr.BuiltInProviderHost, tfaddr.BuiltInProviderNamespace, "terraform")
-	} else if pAddr.IsLegacy() {
-		// Since we use recent version of Terraform to generate
-		// embedded schemas, these will never contain legacy
-		// addresses.
-		//
-		// A legacy namespace may come from missing
-		// required_providers entry & implied requirement
-		// from the provider block or 0.12-style entry,
-		// such as { grafana = "1.0" }.
-		//
-		// Implying "hashicorp" namespace here mimics behaviour
-		// of all recent (0.14+) Terraform versions.
-		originalAddr := pAddr
-		pAddr.Namespace = "hashicorp"
-		logger.Printf("preloading schema for %s (implying %s)",
-			originalAddr.ForDisplay(), pAddr.ForDisplay())
-	}
-
-	ctx, rootSpan := otel.Tracer(tracerName).Start(ctx, "preloadProviderSchema",
-		trace.WithAttributes(attribute.KeyValue{
-			Key:   attribute.Key("ProviderAddress"),
-			Value: attribute.StringValue(pAddr.String()),
-		}))
-	defer rootSpan.End()
-
-	pSchemaFile, err := schemas.FindProviderSchemaFile(fs, pAddr)
-	if err != nil {
-		rootSpan.RecordError(err)
-		rootSpan.SetStatus(codes.Error, "schema file not found")
-		if errors.Is(err, schemas.SchemaNotAvailable{Addr: pAddr}) {
-			logger.Printf("preloaded schema not available for %s", pAddr)
-			return nil
-		}
-		return err
-	}
-
-	_, span := otel.Tracer(tracerName).Start(ctx, "readProviderSchemaFile",
-		trace.WithAttributes(attribute.KeyValue{
-			Key:   attribute.Key("ProviderAddress"),
-			Value: attribute.StringValue(pAddr.String()),
-		}))
-	b, err := io.ReadAll(pSchemaFile.File)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "schema file not readable")
-		return err
-	}
-	span.SetStatus(codes.Ok, "schema file read successfully")
-	span.End()
-
-	_, span = otel.Tracer(tracerName).Start(ctx, "decodeProviderSchemaData",
-		trace.WithAttributes(attribute.KeyValue{
-			Key:   attribute.Key("ProviderAddress"),
-			Value: attribute.StringValue(pAddr.String()),
-		}))
-	jsonSchemas := tfjson.ProviderSchemas{}
-	err = json.Unmarshal(b, &jsonSchemas)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "schema file not decodable")
-		return err
-	}
-	span.SetStatus(codes.Ok, "schema data decoded successfully")
-	span.End()
-
-	ps, ok := jsonSchemas.Schemas[pAddr.String()]
-	if !ok {
-		return fmt.Errorf("%q: no schema found in file", pAddr)
-	}
-
-	pSchema := tfschema.ProviderSchemaFromJson(ps, pAddr)
-	pSchema.SetProviderVersion(pAddr, pSchemaFile.Version)
-
-	_, span = otel.Tracer(tracerName).Start(ctx, "loadProviderSchemaDataIntoMemDb",
-		trace.WithAttributes(attribute.KeyValue{
-			Key:   attribute.Key("ProviderAddress"),
-			Value: attribute.StringValue(pAddr.String()),
-		}))
-	err = schemaStore.AddPreloadedSchema(pAddr, pSchemaFile.Version, pSchema)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "loading schema into mem-db failed")
-		span.End()
-		existsError := &globalState.AlreadyExistsError{}
-		if errors.As(err, &existsError) {
-			// This accounts for a possible race condition
-			// where we may be preloading the same schema
-			// for different providers at the same time
-			logger.Printf("schema for %s is already loaded", pAddr)
-			return nil
-		}
-		return err
-	}
-	span.SetStatus(codes.Ok, "schema loaded successfully")
-	span.End()
-
-	elapsedTime := time.Since(startTime)
-	logger.Printf("preloaded schema for %s %s in %s", pAddr, pSchemaFile.Version, elapsedTime)
-	rootSpan.SetStatus(codes.Ok, "schema loaded successfully")
 
 	return nil
 }

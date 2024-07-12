@@ -16,6 +16,10 @@ import (
 type StackRecord struct {
 	path string
 
+	// PreloadEmbeddedSchemaState tracks if we tried loading all provider
+	// schemas from our embedded schema data
+	PreloadEmbeddedSchemaState operation.OpState
+
 	Meta      StackMetadata
 	MetaErr   error
 	MetaState operation.OpState
@@ -42,10 +46,17 @@ func (m *StackRecord) Copy() *StackRecord {
 	}
 
 	newRecord := &StackRecord{
-		path:             m.path,
+		path: m.path,
+
+		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
+
 		Meta:             m.Meta.Copy(),
 		ParsingErr:       m.ParsingErr,
 		DiagnosticsState: m.DiagnosticsState.Copy(),
+
+		RequiredTerraformVersion:      m.RequiredTerraformVersion,
+		RequiredTerraformVersionErr:   m.RequiredTerraformVersionErr,
+		RequiredTerraformVersionState: m.RequiredTerraformVersionState,
 	}
 
 	if m.ParsedFiles != nil {

@@ -30,7 +30,7 @@ var dbSchema = &memdb.DBSchema{
 	},
 }
 
-func NewStackStore(changeStore *globalState.ChangeStore) (*StackStore, error) {
+func NewStackStore(changeStore *globalState.ChangeStore, providerSchemasStore *globalState.ProviderSchemaStore) (*StackStore, error) {
 	db, err := memdb.NewMemDB(dbSchema)
 	if err != nil {
 		return nil, err
@@ -39,9 +39,10 @@ func NewStackStore(changeStore *globalState.ChangeStore) (*StackStore, error) {
 	discardLogger := log.New(io.Discard, "", 0)
 
 	return &StackStore{
-		db:          db,
-		tableName:   stackTableName,
-		logger:      discardLogger,
-		changeStore: changeStore,
+		db:                   db,
+		tableName:            stackTableName,
+		logger:               discardLogger,
+		changeStore:          changeStore,
+		providerSchemasStore: providerSchemasStore,
 	}, nil
 }
