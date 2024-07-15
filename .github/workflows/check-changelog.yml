@@ -27,7 +27,7 @@ jobs:
         with:
           filters: |
             exists:
-              - added|modified: '.changes/unreleased/**.yaml'
+              - '.changes/unreleased/**.yaml'
 
       - name: Fail job if changelog entry is missing and required
         if: steps.changelog_check.outputs.exists == 'false'
