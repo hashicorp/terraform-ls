@@ -13,6 +13,7 @@ import (
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfstack "github.com/hashicorp/terraform-schema/stack"
 )
 
 type StackStore struct {
@@ -250,6 +251,61 @@ func (s *StackStore) SetTerraformVersionState(path string, state operation.OpSta
 
 	stack.RequiredTerraformVersionState = state
 	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetMetaState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	stack, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack.MetaState = state
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetMetaState(path, operation.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	oldRecord, err := stackByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record := oldRecord.Copy()
+	record.Meta = StackMetadata{
+		Components:           meta.Components,
+		Variables:            meta.Variables,
+		Outputs:              meta.Outputs,
+		Filenames:            meta.Filenames,
+		ProviderRequirements: meta.ProviderRequirements,
+	}
+	record.MetaErr = mErr
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	err = s.queueRecordChange(oldRecord, record)
 	if err != nil {
 		return err
 	}
