@@ -285,26 +285,27 @@ func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error)
 	})
 	defer txn.Abort()
 
-	oldMod, err := stackByPath(txn, path)
+	oldRecord, err := stackByPath(txn, path)
 	if err != nil {
 		return err
 	}
 
-	mod := oldMod.Copy()
-	mod.Meta = StackMetadata{
-		Components: meta.Components,
-		Variables:  meta.Variables,
-		Outputs:    meta.Outputs,
-		Filenames:  meta.Filenames,
+	record := oldRecord.Copy()
+	record.Meta = StackMetadata{
+		Components:           meta.Components,
+		Variables:            meta.Variables,
+		Outputs:              meta.Outputs,
+		Filenames:            meta.Filenames,
+		ProviderRequirements: meta.ProviderRequirements,
 	}
-	mod.MetaErr = mErr
+	record.MetaErr = mErr
 
-	err = txn.Insert(s.tableName, mod)
+	err = txn.Insert(s.tableName, record)
 	if err != nil {
 		return err
 	}
 
-	err = s.queueRecordChange(oldMod, mod)
+	err = s.queueRecordChange(oldRecord, record)
 	if err != nil {
 		return err
 	}

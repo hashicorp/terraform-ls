@@ -7,19 +7,23 @@ import (
 	tfstack "github.com/hashicorp/terraform-schema/stack"
 )
 
-// StackMetadata contains the result of the early decoding of a module,
+// StackMetadata contains the result of the early decoding of a Stack,
 // it will be used obtain the correct provider and related module schemas
 type StackMetadata struct {
-	Filenames  []string
-	Components map[string]tfstack.Component
-	Variables  map[string]tfstack.Variable
-	Outputs    map[string]tfstack.Output
+	Filenames            []string
+	Components           map[string]tfstack.Component
+	Variables            map[string]tfstack.Variable
+	Outputs              map[string]tfstack.Output
+	ProviderRequirements map[string]tfstack.ProviderRequirement
 }
 
 func (sm StackMetadata) Copy() StackMetadata {
 	newSm := StackMetadata{
-		// version.Constraints is practically immutable once parsed
-		Filenames: sm.Filenames,
+		Filenames:            sm.Filenames,
+		Components:           sm.Components,
+		Variables:            sm.Variables,
+		Outputs:              sm.Outputs,
+		ProviderRequirements: sm.ProviderRequirements,
 	}
 
 	return newSm
