@@ -3,16 +3,51 @@
 
 package state
 
-// StackMetadata contains the result of the early decoding of a module,
+import (
+	tfstack "github.com/hashicorp/terraform-schema/stack"
+)
+
+// StackMetadata contains the result of the early decoding of a Stack,
 // it will be used obtain the correct provider and related module schemas
 type StackMetadata struct {
-	Filenames []string
+	Filenames            []string
+	Components           map[string]tfstack.Component
+	Variables            map[string]tfstack.Variable
+	Outputs              map[string]tfstack.Output
+	ProviderRequirements map[string]tfstack.ProviderRequirement
 }
 
 func (sm StackMetadata) Copy() StackMetadata {
 	newSm := StackMetadata{
-		// version.Constraints is practically immutable once parsed
 		Filenames: sm.Filenames,
+	}
+
+	if sm.Components != nil {
+		newSm.Components = make(map[string]tfstack.Component, len(sm.Components))
+		for k, v := range sm.Components {
+			newSm.Components[k] = v
+		}
+	}
+
+	if sm.Variables != nil {
+		newSm.Variables = make(map[string]tfstack.Variable, len(sm.Variables))
+		for k, v := range sm.Variables {
+			newSm.Variables[k] = v
+		}
+	}
+
+	if sm.Outputs != nil {
+		newSm.Outputs = make(map[string]tfstack.Output, len(sm.Outputs))
+		for k, v := range sm.Outputs {
+			newSm.Outputs[k] = v
+		}
+	}
+
+	if sm.ProviderRequirements != nil {
+		newSm.ProviderRequirements = make(map[string]tfstack.ProviderRequirement, len(sm.ProviderRequirements))
+		for k, v := range sm.ProviderRequirements {
+			newSm.ProviderRequirements[k] = v
+		}
 	}
 
 	return newSm

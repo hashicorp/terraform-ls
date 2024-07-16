@@ -79,6 +79,14 @@ func (sf Files) Copy() Files {
 	return m
 }
 
+func (mf Files) AsMap() map[string]*hcl.File {
+	m := make(map[string]*hcl.File, len(mf))
+	for name, file := range mf {
+		m[name.String()] = file // TODO: is this right?
+	}
+	return m
+}
+
 type Diagnostics map[Filename]hcl.Diagnostics
 
 func (sd Diagnostics) Copy() Diagnostics {
