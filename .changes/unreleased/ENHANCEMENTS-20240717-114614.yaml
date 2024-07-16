@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Load Stack component sources from metadata
+time: 2024-07-17T11:46:14.048412-04:00
+custom:
+    Issue: "1768"
+    Repository: terraform-ls
