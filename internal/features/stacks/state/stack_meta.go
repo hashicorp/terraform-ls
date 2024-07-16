@@ -19,11 +19,35 @@ type StackMetadata struct {
 
 func (sm StackMetadata) Copy() StackMetadata {
 	newSm := StackMetadata{
-		Filenames:            sm.Filenames,
-		Components:           sm.Components,
-		Variables:            sm.Variables,
-		Outputs:              sm.Outputs,
-		ProviderRequirements: sm.ProviderRequirements,
+		Filenames: sm.Filenames,
+	}
+
+	if sm.Components != nil {
+		newSm.Components = make(map[string]tfstack.Component, len(sm.Components))
+		for k, v := range sm.Components {
+			newSm.Components[k] = v
+		}
+	}
+
+	if sm.Variables != nil {
+		newSm.Variables = make(map[string]tfstack.Variable, len(sm.Variables))
+		for k, v := range sm.Variables {
+			newSm.Variables[k] = v
+		}
+	}
+
+	if sm.Outputs != nil {
+		newSm.Outputs = make(map[string]tfstack.Output, len(sm.Outputs))
+		for k, v := range sm.Outputs {
+			newSm.Outputs[k] = v
+		}
+	}
+
+	if sm.ProviderRequirements != nil {
+		newSm.ProviderRequirements = make(map[string]tfstack.ProviderRequirement, len(sm.ProviderRequirements))
+		for k, v := range sm.ProviderRequirements {
+			newSm.ProviderRequirements[k] = v
+		}
 	}
 
 	return newSm
