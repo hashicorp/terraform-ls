@@ -15,7 +15,7 @@ import (
 
 // LoadStackMetadata loads data about the stack in a version-independent
 // way that enables us to decode the rest of the configuration,
-// e.g. by knowing provider versions, Terraform Core constraint etc.
+// e.g. by knowing provider versions, etc.
 func LoadStackMetadata(ctx context.Context, stackStore *state.StackStore, stackPath string) error {
 	stack, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
@@ -39,20 +39,6 @@ func LoadStackMetadata(ctx context.Context, stackStore *state.StackStore, stackP
 	if len(diags) > 0 {
 		mErr = diags
 	}
-
-	// providerRequirements := make(map[tfaddr.Provider]version.Constraints, len(meta.ProviderRequirements))
-	// for pAddr, pvc := range meta.ProviderRequirements {
-	// 	// TODO: check pAddr for migrations via Registry API?
-	// 	providerRequirements[pAddr] = pvc
-	// }
-	// meta.ProviderRequirements = providerRequirements
-
-	// providerRefs := make(map[tfmodule.ProviderRef]tfaddr.Provider, len(meta.ProviderReferences))
-	// for localRef, pAddr := range meta.ProviderReferences {
-	// 	// TODO: check pAddr for migrations via Registry API?
-	// 	providerRefs[localRef] = pAddr
-	// }
-	// meta.ProviderReferences = providerRefs
 
 	sErr := stackStore.UpdateMetadata(stackPath, meta, mErr)
 	if sErr != nil {
