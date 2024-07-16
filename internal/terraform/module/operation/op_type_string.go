@@ -29,12 +29,13 @@ func _() {
 	_ = x[OpTypeTerraformValidate-18]
 	_ = x[OpTypeParseStackConfiguration-19]
 	_ = x[OpTypeLoadStackMetadata-20]
-	_ = x[OpTypeLoadStackRequiredTerraformVersion-21]
+	_ = x[OpTypeLoadStackComponentSources-21]
+	_ = x[OpTypeLoadStackRequiredTerraformVersion-22]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackRequiredTerraformVersion"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackComponentSourcesOpTypeLoadStackRequiredTerraformVersion"
 
-var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 389, 417, 443, 468, 491, 520, 543, 582}
+var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 389, 417, 443, 468, 491, 520, 543, 574, 613}
 
 func (i OpType) String() string {
 	if i >= OpType(len(_OpType_index)-1) {
