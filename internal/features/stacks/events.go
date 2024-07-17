@@ -208,7 +208,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				f.store, f.stateStore.ProviderSchemas, path)
 		},
 		DependsOn:   job.IDs{metaId},
-		Type:        operation.OpTypePreloadEmbeddedSchema.String(),
+		Type:        operation.OpTypeStacksPreloadEmbeddedSchema.String(),
 		IgnoreState: ignoreState,
 	})
 	if err != nil {
