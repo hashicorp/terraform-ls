@@ -15,9 +15,7 @@ import (
 	"github.com/hashicorp/terraform-schema/module"
 )
 
-// LoadStackMetadata loads data about the stack in a version-independent
-// way that enables us to decode the rest of the configuration,
-// e.g. by knowing provider versions, etc.
+// LoadStackComponentSources will trigger parsing the local terraform modules for a stack in the ModulesFeature
 func LoadStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) error {
 	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
