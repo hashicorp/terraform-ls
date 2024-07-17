@@ -22,7 +22,7 @@ func TestLoadTerraformVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ss, err := state.NewStackStore(gs.ChangeStore)
+	ss, err := state.NewStackStore(gs.ChangeStore, gs.ProviderSchemas)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestLoadTerraformVersion_invalid(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			ss, err := state.NewStackStore(gs.ChangeStore)
+			ss, err := state.NewStackStore(gs.ChangeStore, gs.ProviderSchemas)
 			if err != nil {
 				t.Fatal(err)
 			}

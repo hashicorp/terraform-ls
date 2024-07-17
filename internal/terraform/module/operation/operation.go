@@ -31,6 +31,7 @@ const (
 	OpTypeGetModuleDataFromRegistry
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
+	OpTypeStacksPreloadEmbeddedSchema
 	OpTypeSchemaModuleValidation
 	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation

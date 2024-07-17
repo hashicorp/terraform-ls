@@ -22,18 +22,19 @@ func _() {
 	_ = x[OpTypeGetModuleDataFromRegistry-11]
 	_ = x[OpTypeParseProviderVersions-12]
 	_ = x[OpTypePreloadEmbeddedSchema-13]
-	_ = x[OpTypeSchemaModuleValidation-14]
-	_ = x[OpTypeSchemaVarsValidation-15]
-	_ = x[OpTypeReferenceValidation-16]
-	_ = x[OpTypeTerraformValidate-17]
-	_ = x[OpTypeParseStackConfiguration-18]
-	_ = x[OpTypeLoadStackMetadata-19]
-	_ = x[OpTypeLoadStackRequiredTerraformVersion-20]
+	_ = x[OpTypeStacksPreloadEmbeddedSchema-14]
+	_ = x[OpTypeSchemaModuleValidation-15]
+	_ = x[OpTypeSchemaVarsValidation-16]
+	_ = x[OpTypeReferenceValidation-17]
+	_ = x[OpTypeTerraformValidate-18]
+	_ = x[OpTypeParseStackConfiguration-19]
+	_ = x[OpTypeLoadStackMetadata-20]
+	_ = x[OpTypeLoadStackRequiredTerraformVersion-21]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackRequiredTerraformVersion"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackRequiredTerraformVersion"
 
-var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 384, 410, 435, 458, 487, 510, 549}
+var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 389, 417, 443, 468, 491, 520, 543, 582}
 
 func (i OpType) String() string {
 	if i >= OpType(len(_OpType_index)-1) {
