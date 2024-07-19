@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: "Check for submodules when fetching schemas from the registry"
+time: 2024-07-19T17:25:14.211785+02:00
+custom:
+    Issue: "1772"
+    Repository: terraform-ls

@@ -261,7 +261,37 @@ var puppetModuleDataMockResponse = `{
       }
     ]
   },
-  "submodules": [],
+  "submodules": [
+    {
+      "path": "modules/ec",
+      "inputs": [
+        {
+          "name": "sub_autoscale",
+          "type": "string",
+          "description": "Enable autoscaling of elasticsearch",
+          "default": "\"true\"",
+          "required": false
+        },
+        {
+          "name": "sub_ec_stack_version",
+          "type": "string",
+          "description": "Version of Elastic Cloud stack to deploy",
+          "default": "\"\"",
+          "required": false
+        }
+      ],
+      "outputs": [
+        {
+          "name": "sub_elasticsearch_password",
+          "description": "elasticsearch password"
+        },
+        {
+          "name": "sub_deployment_id",
+          "description": "Elastic Cloud deployment ID"
+        }
+      ]
+    }
+  ],
   "examples": [],
   "providers": [
     "ec"

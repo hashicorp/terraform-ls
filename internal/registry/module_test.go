@@ -121,6 +121,7 @@ func TestGetModuleData(t *testing.T) {
 				},
 			},
 		},
+		Submodules: []Submodule{},
 	}
 	if diff := cmp.Diff(expectedData, data); diff != "" {
 		t.Fatalf("mismatched data: %s", diff)

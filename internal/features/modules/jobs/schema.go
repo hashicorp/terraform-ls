@@ -250,8 +250,24 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 			continue
 		}
 
-		inputs := make([]tfregistry.Input, len(metaData.Root.Inputs))
-		for i, input := range metaData.Root.Inputs {
+		registryInputs := metaData.Root.Inputs
+		registryOutputs := metaData.Root.Outputs
+
+		// Check if the source address contains a submodule
+		// If we can find the submodule in the API response, we will use its inputs and outputs instead
+		if sourceAddr.Subdir != "" {
+			for _, mod := range metaData.Submodules {
+				if mod.Path == sourceAddr.Subdir {
+					registryInputs = mod.Inputs
+					registryOutputs = mod.Outputs
+
+					break
+				}
+			}
+		}
+
+		inputs := make([]tfregistry.Input, len(registryInputs))
+		for i, input := range registryInputs {
 			isRequired := isRegistryModuleInputRequired(metaData.PublishedAt, input)
 			inputs[i] = tfregistry.Input{
 				Name:        input.Name,
@@ -282,8 +298,8 @@ func GetModuleDataFromRegistry(ctx context.Context, regClient registry.Client, m
 				}
 			}
 		}
-		outputs := make([]tfregistry.Output, len(metaData.Root.Outputs))
-		for i, output := range metaData.Root.Outputs {
+		outputs := make([]tfregistry.Output, len(registryOutputs))
+		for i, output := range registryOutputs {
 			outputs[i] = tfregistry.Output{
 				Name:        output.Name,
 				Description: lang.Markdown(output.Description),
