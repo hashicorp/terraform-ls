@@ -23,7 +23,7 @@ type DidChangeWatchedEvent struct {
 	ChangeType protocol.FileChangeType
 }
 
-func (n *EventBus) OnDidChangeWatched(identifier string, doneChannel <-chan struct{}) <-chan DidChangeWatchedEvent {
+func (n *EventBus) OnDidChangeWatched(identifier string, doneChannel DoneChannel) <-chan DidChangeWatchedEvent {
 	n.logger.Printf("bus: %q subscribed to OnDidChangeWatched", identifier)
 	return n.didChangeWatchedTopic.Subscribe(doneChannel)
 }

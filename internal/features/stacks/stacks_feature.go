@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/features/modules/jobs"
 	stackDecoder "github.com/hashicorp/terraform-ls/internal/features/stacks/decoder"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 )
@@ -57,9 +58,9 @@ func (f *StacksFeature) Start(ctx context.Context) {
 
 	topic := "feature.stacks"
 
-	didOpenDone := make(chan struct{}, 10)
-	didChangeDone := make(chan struct{}, 10)
-	didChangeWatchedDone := make(chan struct{}, 10)
+	didOpenDone := make(chan job.IDs, 10)
+	didChangeDone := make(chan job.IDs, 10)
+	didChangeWatchedDone := make(chan job.IDs, 10)
 
 	discover := f.bus.OnDiscover(topic, nil)
 	didOpen := f.bus.OnDidOpen(topic, didOpenDone)
@@ -74,16 +75,16 @@ func (f *StacksFeature) Start(ctx context.Context) {
 				f.discover(discover.Path, discover.Files)
 			case didOpen := <-didOpen:
 				// TODO? collect errors
-				f.didOpen(didOpen.Context, didOpen.Dir, didOpen.LanguageID)
-				didOpenDone <- struct{}{}
+				spawnedIds, _ := f.didOpen(didOpen.Context, didOpen.Dir, didOpen.LanguageID)
+				didOpenDone <- spawnedIds
 			case didChange := <-didChange:
 				// TODO? collect errors
-				f.didChange(didChange.Context, didChange.Dir)
-				didChangeDone <- struct{}{}
+				spawnedIds, _ := f.didChange(didChange.Context, didChange.Dir)
+				didChangeDone <- spawnedIds
 			case didChangeWatched := <-didChangeWatched:
 				// TODO? collect errors
-				f.didChangeWatched(didChangeWatched.Context, didChangeWatched.RawPath, didChangeWatched.ChangeType, didChangeWatched.IsDir)
-				didChangeWatchedDone <- struct{}{}
+				spawnedIds, _ := f.didChangeWatched(didChangeWatched.Context, didChangeWatched.RawPath, didChangeWatched.ChangeType, didChangeWatched.IsDir)
+				didChangeWatchedDone <- spawnedIds
 
 			case <-ctx.Done():
 				return
