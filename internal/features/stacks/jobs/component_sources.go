@@ -10,16 +10,19 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/module"
 )
 
 // LoadStackComponentSources will trigger parsing the local terraform modules for a stack in the ModulesFeature
-func LoadStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) error {
+func LoadStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) (job.IDs, error) {
+	ids := make(job.IDs, 0)
+
 	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
-		return err
+		return ids, err
 	}
 
 	// iterate over each component in the stack and find local terraform modules
@@ -52,12 +55,14 @@ func LoadStackComponentSources(ctx context.Context, stackStore *state.StackStore
 
 		// notify the event bus that a new Component with a
 		// local modules has been opened
-		bus.DidOpen(eventbus.DidOpenEvent{
+		spawnedIds := bus.DidOpen(eventbus.DidOpenEvent{
 			Context:    ctx,
 			Dir:        dh,
 			LanguageID: lsp.Terraform.String(),
 		})
+
+		ids = append(ids, spawnedIds...)
 	}
 
-	return nil
+	return ids, nil
 }

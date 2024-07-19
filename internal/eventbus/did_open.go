@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/job"
 )
 
 // DidOpenEvent is an event to signal that a directory is open in the editor
@@ -23,12 +24,12 @@ type DidOpenEvent struct {
 	LanguageID string
 }
 
-func (n *EventBus) OnDidOpen(identifier string, doneChannel <-chan struct{}) <-chan DidOpenEvent {
+func (n *EventBus) OnDidOpen(identifier string, doneChannel <-chan job.IDs) <-chan DidOpenEvent {
 	n.logger.Printf("bus: %q subscribed to OnDidOpen", identifier)
 	return n.didOpenTopic.Subscribe(doneChannel)
 }
 
-func (n *EventBus) DidOpen(e DidOpenEvent) {
+func (n *EventBus) DidOpen(e DidOpenEvent) job.IDs {
 	n.logger.Printf("bus: -> DidOpen %s", e.Dir)
-	n.didOpenTopic.Publish(e)
+	return n.didOpenTopic.Publish(e)
 }

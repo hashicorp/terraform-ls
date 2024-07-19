@@ -29,6 +29,8 @@ type Job struct {
 	// Defer is a function to execute after Func is executed
 	// and before the job is marked as done (StateDone).
 	// This can be used to schedule jobs dependent on the main job.
+	// Jobs depending on the main job won't automatically depend on
+	// jobs scheduled by Defer.
 	Defer DeferFunc
 
 	// DependsOn represents any other job IDs this job depends on.
