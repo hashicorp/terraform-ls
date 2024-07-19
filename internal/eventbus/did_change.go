@@ -20,7 +20,7 @@ type DidChangeEvent struct {
 	LanguageID string
 }
 
-func (n *EventBus) OnDidChange(identifier string, doneChannel <-chan struct{}) <-chan DidChangeEvent {
+func (n *EventBus) OnDidChange(identifier string, doneChannel DoneChannel) <-chan DidChangeEvent {
 	n.logger.Printf("bus: %q subscribed to OnDidChange", identifier)
 	return n.didChangeTopic.Subscribe(doneChannel)
 }

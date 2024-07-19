@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/jobs"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/state"
+	"github.com/hashicorp/terraform-ls/internal/job"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/telemetry"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -70,13 +71,13 @@ func (f *RootModulesFeature) Start(ctx context.Context) {
 
 	discover := f.eventbus.OnDiscover("feature.rootmodules", nil)
 
-	didOpenDone := make(chan struct{}, 10)
+	didOpenDone := make(chan job.IDs, 10)
 	didOpen := f.eventbus.OnDidOpen("feature.rootmodules", didOpenDone)
 
-	manifestChangeDone := make(chan struct{}, 10)
+	manifestChangeDone := make(chan job.IDs, 10)
 	manifestChange := f.eventbus.OnManifestChange("feature.rootmodules", manifestChangeDone)
 
-	pluginLockChangeDone := make(chan struct{}, 10)
+	pluginLockChangeDone := make(chan job.IDs, 10)
 	pluginLockChange := f.eventbus.OnPluginLockChange("feature.rootmodules", pluginLockChangeDone)
 
 	go func() {
@@ -87,16 +88,16 @@ func (f *RootModulesFeature) Start(ctx context.Context) {
 				f.discover(discover.Path, discover.Files)
 			case didOpen := <-didOpen:
 				// TODO? collect errors
-				f.didOpen(didOpen.Context, didOpen.Dir)
-				didOpenDone <- struct{}{}
+				spawnedIds, _ := f.didOpen(didOpen.Context, didOpen.Dir)
+				didOpenDone <- spawnedIds
 			case manifestChange := <-manifestChange:
 				// TODO? collect errors
-				f.manifestChange(manifestChange.Context, manifestChange.Dir, manifestChange.ChangeType)
-				manifestChangeDone <- struct{}{}
+				spawnedIds, _ := f.manifestChange(manifestChange.Context, manifestChange.Dir, manifestChange.ChangeType)
+				manifestChangeDone <- spawnedIds
 			case pluginLockChange := <-pluginLockChange:
 				// TODO? collect errors
-				f.pluginLockChange(pluginLockChange.Context, pluginLockChange.Dir)
-				pluginLockChangeDone <- struct{}{}
+				spawnedIds, _ := f.pluginLockChange(pluginLockChange.Context, pluginLockChange.Dir)
+				pluginLockChangeDone <- spawnedIds
 
 			case <-ctx.Done():
 				return
