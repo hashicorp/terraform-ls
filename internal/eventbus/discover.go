@@ -17,7 +17,7 @@ type DiscoverEvent struct {
 	Files []string
 }
 
-func (n *EventBus) OnDiscover(identifier string, doneChannel <-chan struct{}) <-chan DiscoverEvent {
+func (n *EventBus) OnDiscover(identifier string, doneChannel DoneChannel) <-chan DiscoverEvent {
 	n.logger.Printf("bus: %q subscribed to OnDiscover", identifier)
 	return n.discoverTopic.Subscribe(doneChannel)
 }

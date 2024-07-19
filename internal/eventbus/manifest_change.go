@@ -19,7 +19,7 @@ type ManifestChangeEvent struct {
 	ChangeType protocol.FileChangeType
 }
 
-func (n *EventBus) OnManifestChange(identifier string, doneChannel <-chan struct{}) <-chan ManifestChangeEvent {
+func (n *EventBus) OnManifestChange(identifier string, doneChannel DoneChannel) <-chan ManifestChangeEvent {
 	n.logger.Printf("bus: %q subscribed to OnManifestChange", identifier)
 	return n.manifestChangeTopic.Subscribe(doneChannel)
 }

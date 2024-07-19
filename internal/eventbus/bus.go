@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"sync"
+
+	"github.com/hashicorp/terraform-ls/internal/job"
 )
 
 const ChannelSize = 10
@@ -52,6 +54,8 @@ type Topic[T any] struct {
 	mutex       sync.Mutex
 }
 
+type DoneChannel <-chan job.IDs
+
 // Subscriber represents a subscriber to a topic
 type Subscriber[T any] struct {
 	// channel is the channel to which all events of the topic are sent
@@ -59,7 +63,7 @@ type Subscriber[T any] struct {
 
 	// doneChannel is an optional channel that the subscriber can use to signal
 	// that it is done processing the event
-	doneChannel <-chan struct{}
+	doneChannel DoneChannel
 }
 
 // NewTopic creates a new topic
@@ -70,7 +74,7 @@ func NewTopic[T any]() *Topic[T] {
 }
 
 // Subscribe adds a subscriber to a topic
-func (eb *Topic[T]) Subscribe(doneChannel <-chan struct{}) <-chan T {
+func (eb *Topic[T]) Subscribe(doneChannel <-chan job.IDs) <-chan T {
 	channel := make(chan T, ChannelSize)
 	eb.mutex.Lock()
 	defer eb.mutex.Unlock()
@@ -83,7 +87,9 @@ func (eb *Topic[T]) Subscribe(doneChannel <-chan struct{}) <-chan T {
 }
 
 // Publish sends an event to all subscribers of a specific topic
-func (eb *Topic[T]) Publish(event T) {
+func (eb *Topic[T]) Publish(event T) job.IDs {
+	ids := make(job.IDs, 0)
+
 	eb.mutex.Lock()
 	defer eb.mutex.Unlock()
 
@@ -93,7 +99,10 @@ func (eb *Topic[T]) Publish(event T) {
 
 		if subscriber.doneChannel != nil {
 			// And wait until the subscriber is done processing it
-			<-subscriber.doneChannel
+			spawnedIds := <-subscriber.doneChannel
+			ids = append(ids, spawnedIds...)
 		}
 	}
+
+	return ids
 }

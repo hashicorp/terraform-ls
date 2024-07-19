@@ -19,7 +19,7 @@ type PluginLockChangeEvent struct {
 	ChangeType protocol.FileChangeType
 }
 
-func (n *EventBus) OnPluginLockChange(identifier string, doneChannel <-chan struct{}) <-chan PluginLockChangeEvent {
+func (n *EventBus) OnPluginLockChange(identifier string, doneChannel DoneChannel) <-chan PluginLockChangeEvent {
 	n.logger.Printf("bus: %q subscribed to OnPluginLockChange", identifier)
 	return n.pluginLockChangeTopic.Subscribe(doneChannel)
 }
