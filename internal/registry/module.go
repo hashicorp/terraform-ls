@@ -22,12 +22,19 @@ import (
 )
 
 type ModuleResponse struct {
-	Version     string     `json:"version"`
-	PublishedAt time.Time  `json:"published_at"`
-	Root        ModuleRoot `json:"root"`
+	Version     string      `json:"version"`
+	PublishedAt time.Time   `json:"published_at"`
+	Root        ModuleRoot  `json:"root"`
+	Submodules  []Submodule `json:"submodules"`
 }
 
 type ModuleRoot struct {
+	Inputs  []Input  `json:"inputs"`
+	Outputs []Output `json:"outputs"`
+}
+
+type Submodule struct {
+	Path    string   `json:"path"`
 	Inputs  []Input  `json:"inputs"`
 	Outputs []Output `json:"outputs"`
 }
