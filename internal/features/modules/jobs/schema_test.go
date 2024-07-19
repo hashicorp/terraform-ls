@@ -112,6 +112,83 @@ func TestGetModuleDataFromRegistry_singleModule(t *testing.T) {
 	}
 }
 
+func TestGetModuleDataFromRegistry_submodule(t *testing.T) {
+	ctx := context.Background()
+	gs, err := globalState.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms, err := state.NewModuleStore(gs.ProviderSchemas, gs.RegistryModules, gs.ChangeStore)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testData, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	modPath := filepath.Join(testData, "uninitialized-external-submodule")
+
+	err = ms.Add(modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := filesystem.NewFilesystem(gs.DocumentStore)
+	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
+	err = ParseModuleConfiguration(ctx, fs, ms, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = LoadModuleMetadata(ctx, ms, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	regClient := registry.NewClient()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/versions" {
+			w.Write([]byte(puppetModuleVersionsMockResponse))
+			return
+		}
+		if r.RequestURI == "/v1/modules/puppetlabs/deployment/ec/0.0.8" {
+			w.Write([]byte(puppetModuleDataMockResponse))
+			return
+		}
+		http.Error(w, fmt.Sprintf("unexpected request: %q", r.RequestURI), 400)
+	}))
+	regClient.BaseURL = srv.URL
+	t.Cleanup(srv.Close)
+
+	err = GetModuleDataFromRegistry(ctx, regClient, ms, gs.RegistryModules, modPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	addr, err := tfaddr.ParseModuleSource("puppetlabs/deployment/ec//modules/ec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cons := version.MustConstraints(version.NewConstraint("0.0.8"))
+
+	exists, err := gs.RegistryModules.Exists(addr, cons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatalf("expected cached metadata to exist for %q %q", addr, cons)
+	}
+
+	meta, err := ms.RegistryModuleMeta(addr, cons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(puppetExpectedSubmoduleData, meta, ctydebug.CmpOptions); diff != "" {
+		t.Fatalf("metadata mismatch: %s", diff)
+	}
+}
+
 func TestGetModuleDataFromRegistry_unreliableInputs(t *testing.T) {
 	ctx := context.Background()
 	gs, err := globalState.NewStateStore()
@@ -469,6 +546,36 @@ var puppetExpectedModuleData = &tfregistry.ModuleData{
 		{
 			Name:        "elasticsearch_username",
 			Description: lang.Markdown("elasticsearch username"),
+		},
+	},
+}
+
+var puppetExpectedSubmoduleData = &tfregistry.ModuleData{
+	Version: version.Must(version.NewVersion("0.0.8")),
+	Inputs: []tfregistry.Input{
+		{
+			Name:        "sub_autoscale",
+			Type:        cty.String,
+			Default:     cty.StringVal("true"),
+			Description: lang.Markdown("Enable autoscaling of elasticsearch"),
+			Required:    false,
+		},
+		{
+			Name:        "sub_ec_stack_version",
+			Type:        cty.String,
+			Default:     cty.StringVal(""),
+			Description: lang.Markdown("Version of Elastic Cloud stack to deploy"),
+			Required:    false,
+		},
+	},
+	Outputs: []tfregistry.Output{
+		{
+			Name:        "sub_elasticsearch_password",
+			Description: lang.Markdown("elasticsearch password"),
+		},
+		{
+			Name:        "sub_deployment_id",
+			Description: lang.Markdown("Elastic Cloud deployment ID"),
 		},
 	},
 }
