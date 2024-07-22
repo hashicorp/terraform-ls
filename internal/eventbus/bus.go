@@ -74,7 +74,7 @@ func NewTopic[T any]() *Topic[T] {
 }
 
 // Subscribe adds a subscriber to a topic
-func (eb *Topic[T]) Subscribe(doneChannel <-chan job.IDs) <-chan T {
+func (eb *Topic[T]) Subscribe(doneChannel DoneChannel) <-chan T {
 	channel := make(chan T, ChannelSize)
 	eb.mutex.Lock()
 	defer eb.mutex.Unlock()
