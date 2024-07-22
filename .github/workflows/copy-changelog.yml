@@ -1,0 +1,38 @@
+# This workflow copies the changelog entries from terraform-ls to vscode-terraform
+# when a PR is merged.
+# https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#running-your-pull_request-workflow-when-a-pull-request-merges
+# https://github.com/actions/checkout?tab=readme-ov-file#checkout-multiple-repos-side-by-side
+name: Copy changelog to vscode-terraform
+
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+  update_vscode_terraform_changelog:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: terraform-ls
+      
+      - name: Checkout tools repo
+        uses: actions/checkout@v4
+        with:
+          repository: hashicorp/vscode-terraform
+          path: vscode-terraform
+
+      - name: Copy changelog entry
+        run: |
+          cp terraform-ls/.changes/unreleased/*.yaml vscode-terraform/.changes/unreleased/
+
+      - name: Commit changelog entry
+        run: |
+          cd ./vscode-terraform
+          git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
+          git config --global user.email "${{ vars.TF_DEVEX_CI_COMMIT_EMAIL }}"
+          git add .changes/unreleased/*.yaml
+          git commit -m "Copy changelog entries from terraform-ls"
+          git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/hashicorp/vscode-terraform.git"
