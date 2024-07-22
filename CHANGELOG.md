@@ -1,3 +1,9 @@
+## 0.34.1 (22 July 2024)
+
+BUG FIXES:
+
+* Check for submodules when fetching schemas from the registry ([#1772](https://github.com/hashicorp/terraform-ls/issues/1772))
+
 ## 0.34.0 (15 July 2024)
 
 ENHANCEMENTS:
