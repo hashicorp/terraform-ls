@@ -38,7 +38,6 @@ const (
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
 	OpTypeLoadStackMetadata
-	OpTypeLoadStackComponentSources
 	OpTypeLoadStackRequiredTerraformVersion
 	OpTypeParseTestConfiguration
 	OpTypeLoadTestMetadata

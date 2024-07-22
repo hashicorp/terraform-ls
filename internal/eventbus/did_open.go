@@ -24,7 +24,7 @@ type DidOpenEvent struct {
 	LanguageID string
 }
 
-func (n *EventBus) OnDidOpen(identifier string, doneChannel <-chan job.IDs) <-chan DidOpenEvent {
+func (n *EventBus) OnDidOpen(identifier string, doneChannel DoneChannel) <-chan DidOpenEvent {
 	n.logger.Printf("bus: %q subscribed to OnDidOpen", identifier)
 	return n.didOpenTopic.Subscribe(doneChannel)
 }
