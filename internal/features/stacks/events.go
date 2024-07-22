@@ -9,14 +9,18 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/jobs"
+	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/schemas"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/module"
 )
 
 func (f *StacksFeature) discover(path string, files []string) error {
@@ -200,7 +204,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
-			spawnedIds, err := jobs.LoadStackComponentSources(ctx, f.store, f.bus, path)
+			spawnedIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
 
 			// while we now have the job ids in here, depending on the metaId job is not enough
 			// to await these spawned jobs, so we will need to move all depending jobs to this function
@@ -252,4 +256,55 @@ func (f *StacksFeature) removeIndexedStack(rawPath string) {
 		f.logger.Printf("failed to remove stack from state: %s", err)
 		return
 	}
+}
+
+// loadStackComponentSources will trigger parsing the local terraform modules for a stack in the ModulesFeature
+func loadStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) (job.IDs, error) {
+	ids := make(job.IDs, 0)
+
+	record, err := stackStore.StackRecordByPath(stackPath)
+	if err != nil {
+		return ids, err
+	}
+
+	// iterate over each component in the stack and find local terraform modules
+	for _, component := range record.Meta.Components {
+		if component.Source == "" {
+			// no source recorded, skip
+			continue
+		}
+
+		var fullPath string
+		// detect if component.Source is a local module
+		switch component.SourceAddr.(type) {
+		case module.LocalSourceAddr:
+			fullPath = filepath.Join(stackPath, filepath.FromSlash(component.Source))
+		case tfaddr.Module:
+			continue
+		case module.RemoteSourceAddr:
+			continue
+		default:
+			// Unknown source address, we can't resolve the path
+			continue
+		}
+
+		if fullPath == "" {
+			// Unknown source address, we can't resolve the path
+			continue
+		}
+
+		dh := document.DirHandleFromPath(fullPath)
+
+		// notify the event bus that a new Component with a
+		// local modules has been opened
+		spawnedIds := bus.DidOpen(eventbus.DidOpenEvent{
+			Context:    ctx,
+			Dir:        dh,
+			LanguageID: lsp.Terraform.String(),
+		})
+
+		ids = append(ids, spawnedIds...)
+	}
+
+	return ids, nil
 }
