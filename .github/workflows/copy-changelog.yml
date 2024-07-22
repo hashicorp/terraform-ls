@@ -8,6 +8,10 @@ on:
   pull_request:
     types:
       - closed
+
+permissions:
+  pull-requests: write # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-scopes  
+
 jobs:
   update_vscode_terraform_changelog:
     if: github.event.pull_request.merged == true
@@ -29,10 +33,17 @@ jobs:
           cp terraform-ls/.changes/unreleased/*.yaml vscode-terraform/.changes/unreleased/
 
       - name: Commit changelog entry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd ./vscode-terraform
           git config --global user.name "${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}"
           git config --global user.email "${{ vars.TF_DEVEX_CI_COMMIT_EMAIL }}"
           git add .changes/unreleased/*.yaml
           git commit -m "Copy changelog entries from terraform-ls"
-          git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/hashicorp/vscode-terraform.git"
+
+          # direct push
+          # git push "https://${{ vars.TF_DEVEX_CI_COMMIT_AUTHOR }}:${{ secrets.TF_DEVEX_COMMIT_GITHUB_TOKEN }}@github.com/hashicorp/vscode-terraform.git"
+
+          # pull request
+          # gh pr create -B main -H branch_to_merge --fill
