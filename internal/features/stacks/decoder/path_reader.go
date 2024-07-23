@@ -16,19 +16,27 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 	tfschema "github.com/hashicorp/terraform-schema/schema"
 	stackschema "github.com/hashicorp/terraform-schema/schema/stacks"
 	tfstack "github.com/hashicorp/terraform-schema/stack"
 )
 
 type PathReader struct {
-	StateReader StateReader
+	StateReader  StateReader
+	ModuleReader ModuleReader
 }
 
 type StateReader interface {
 	List() ([]*state.StackRecord, error)
 	StackRecordByPath(modPath string) (*state.StackRecord, error)
 	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
+}
+
+type ModuleReader interface {
+	// LocalModuleMeta returns the module meta data for a local module. This is the result
+	// of the [earlydecoder] when processing module files
+	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 }
 
 // PathContext returns a PathContext for the given path based on the language ID
@@ -40,7 +48,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 	switch path.LanguageID {
 	case ilsp.Stacks.String():
-		return stackPathContext(record, pr.StateReader)
+		return stackPathContext(record, pr.StateReader, pr.ModuleReader)
 	case ilsp.Deploy.String():
 		return deployPathContext(record)
 	}
@@ -48,7 +56,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	return nil, fmt.Errorf("unknown language ID: %q", path.LanguageID)
 }
 
-func stackPathContext(record *state.StackRecord, stateReader stackschema.StateReader) (*decoder.PathContext, error) {
+func stackPathContext(record *state.StackRecord, stateReader stackschema.StateReader, moduleReader stackschema.ModuleReader) (*decoder.PathContext, error) {
 	// TODO: this should only work for terraform 1.8 and above
 	version := record.RequiredTerraformVersion
 	if version == nil {
@@ -62,6 +70,7 @@ func stackPathContext(record *state.StackRecord, stateReader stackschema.StateRe
 
 	sm := stackschema.NewStackSchemaMerger(schema)
 	sm.SetStateReader(stateReader)
+	sm.SetModuleReader(moduleReader)
 
 	meta := &tfstack.Meta{
 		Path:                 record.Path(),
