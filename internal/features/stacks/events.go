@@ -205,34 +205,38 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			}
 
 			spawnedIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
+			if err != nil {
+				return spawnedIds, err
+			}
 
 			// while we now have the job ids in here, depending on the metaId job is not enough
 			// to await these spawned jobs, so we will need to move all depending jobs to this function
 			// as well. e.g. LoadStackComponentSources, PreloadEmbeddedSchema (because future ref collection jobs depend on it), etc.
 			// we might just move all in here for simplicity
 
-			return spawnedIds, err
+			// Reference collection jobs will depend on this one, so we move it here in advance
+			eSchemaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
+						f.store, f.stateStore.ProviderSchemas, path)
+				},
+				// DependsOn: none required, since we are inside
+				Type:        operation.OpTypeStacksPreloadEmbeddedSchema.String(),
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return spawnedIds, err
+			}
+			spawnedIds = append(spawnedIds, eSchemaId)
+
+			return spawnedIds, nil
 		},
 	})
 	if err != nil {
 		return ids, err
 	}
 	ids = append(ids, metaId)
-
-	eSchemaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-		Dir: dir,
-		Func: func(ctx context.Context) error {
-			return jobs.PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
-				f.store, f.stateStore.ProviderSchemas, path)
-		},
-		DependsOn:   job.IDs{metaId},
-		Type:        operation.OpTypeStacksPreloadEmbeddedSchema.String(),
-		IgnoreState: ignoreState,
-	})
-	if err != nil {
-		return ids, err
-	}
-	ids = append(ids, eSchemaId)
 
 	// TODO: Implement the following functions where appropriate to stacks
 	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)
