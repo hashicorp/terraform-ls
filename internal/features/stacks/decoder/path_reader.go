@@ -102,6 +102,7 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Functions:        mustFunctionsForVersion(version),
+		Validators:       stackValidators,
 	}
 
 	// TODO: Add reference origins and targets if needed
@@ -148,6 +149,7 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
+		Validators:       stackValidators,
 	}
 
 	// TODO: Add reference origins and targets if needed
