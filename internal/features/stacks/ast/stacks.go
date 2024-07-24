@@ -124,6 +124,14 @@ func (sd Diagnostics) Count() int {
 	return count
 }
 
+func DiagnosticsFromMap(m map[string]hcl.Diagnostics) Diagnostics {
+	mf := make(Diagnostics, len(m))
+	for name, file := range m {
+		mf[FilenameFromName(name)] = file
+	}
+	return mf
+}
+
 type SourceDiagnostics map[globalAst.DiagnosticSource]Diagnostics
 
 func (svd SourceDiagnostics) Count() int {
