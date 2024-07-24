@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
@@ -191,6 +192,10 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 	}
 	ids = append(ids, parseId)
 
+	// this needs to be here because the setting context
+	// is not available in the validate job
+	validationOptions, _ := lsctx.ValidationOptions(ctx)
+
 	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
@@ -232,6 +237,22 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				return deferIds, err
 			}
 			deferIds = append(deferIds, eSchemaId)
+
+			if validationOptions.EnableEnhancedValidation {
+				validationId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+					Dir: dir,
+					Func: func(ctx context.Context) error {
+						return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, dir.Path())
+					},
+					Type:        operation.OpTypeSchemaStackValidation.String(),
+					DependsOn:   deferIds,
+					IgnoreState: ignoreState,
+				})
+				if err != nil {
+					return deferIds, err
+				}
+				deferIds = append(deferIds, validationId)
+			}
 
 			return deferIds, nil
 		},
