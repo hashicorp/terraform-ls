@@ -33,6 +33,7 @@ const (
 	OpTypePreloadEmbeddedSchema
 	OpTypeStacksPreloadEmbeddedSchema
 	OpTypeSchemaModuleValidation
+	OpTypeSchemaStackValidation
 	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation
 	OpTypeTerraformValidate
