@@ -381,6 +381,8 @@ func isDirOpen(txn *memdb.Txn, dirHandle document.DirHandle) bool {
 	return docObj != nil
 }
 
+// WaitForJobs waits for all jobs to be done. If a job has a defer function
+// that returns new job IDs, it waits for those jobs to be done as well.
 func (js *JobStore) WaitForJobs(ctx context.Context, ids ...job.ID) error {
 	if len(ids) == 0 {
 		return nil

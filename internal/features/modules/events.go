@@ -253,6 +253,15 @@ func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandl
 	}
 	ids = append(ids, parseId)
 
+	// Changes to a setting currently requires a LS restart, so the LS
+	// setting context cannot change during the execution of a job. That's
+	// why we can extract it here and use it in Defer.
+	// See https://github.com/hashicorp/terraform-ls/issues/1008
+	// We can safely ignore the error here. If we can't get the options from
+	// the context, validationOptions.EnableEnhancedValidation will be false
+	// by default. So we don't run the validation jobs.
+	validationOptions, _ := lsctx.ValidationOptions(ctx)
+
 	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
@@ -322,6 +331,35 @@ func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandl
 			}
 			deferIds = append(deferIds, refOriginsId)
 
+			// We don't want to validate nested modules
+			if isFirstLevel && validationOptions.EnableEnhancedValidation {
+				_, err = f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+					Dir: dir,
+					Func: func(ctx context.Context) error {
+						return jobs.SchemaModuleValidation(ctx, f.Store, f.rootFeature, dir.Path())
+					},
+					Type:        op.OpTypeSchemaModuleValidation.String(),
+					DependsOn:   append(modCalls, eSchemaId),
+					IgnoreState: ignoreState,
+				})
+				if err != nil {
+					return deferIds, err
+				}
+
+				_, err = f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+					Dir: dir,
+					Func: func(ctx context.Context) error {
+						return jobs.ReferenceValidation(ctx, f.Store, f.rootFeature, dir.Path())
+					},
+					Type:        op.OpTypeReferenceValidation.String(),
+					DependsOn:   job.IDs{refOriginsId, refTargetsId},
+					IgnoreState: ignoreState,
+				})
+				if err != nil {
+					return deferIds, err
+				}
+			}
+
 			return deferIds, nil
 		},
 	})
@@ -330,42 +368,10 @@ func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandl
 	}
 	ids = append(ids, metaId)
 
-	// We don't want to run validation or fetch module data from the registry
-	// for nested modules, so we return early.
+	// We don't want to fetch module data from the registry for nested modules,
+	// so we return early.
 	if !isFirstLevel {
 		return ids, nil
-	}
-
-	validationOptions, err := lsctx.ValidationOptions(ctx)
-	if err != nil {
-		return ids, err
-	}
-	if validationOptions.EnableEnhancedValidation {
-		_, err = f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-			Dir: dir,
-			Func: func(ctx context.Context) error {
-				return jobs.SchemaModuleValidation(ctx, f.Store, f.rootFeature, dir.Path())
-			},
-			Type:        op.OpTypeSchemaModuleValidation.String(),
-			DependsOn:   ids,
-			IgnoreState: ignoreState,
-		})
-		if err != nil {
-			return ids, err
-		}
-
-		_, err = f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-			Dir: dir,
-			Func: func(ctx context.Context) error {
-				return jobs.ReferenceValidation(ctx, f.Store, f.rootFeature, dir.Path())
-			},
-			Type:        op.OpTypeReferenceValidation.String(),
-			DependsOn:   ids,
-			IgnoreState: ignoreState,
-		})
-		if err != nil {
-			return ids, err
-		}
 	}
 
 	// This job may make an HTTP request, and we schedule it in
