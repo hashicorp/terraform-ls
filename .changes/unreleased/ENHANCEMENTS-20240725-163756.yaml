@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Merge stack configuration schema with dynamic schema based on used components source and providers
+time: 2024-07-25T16:37:56.096322+02:00
+custom:
+    Issue: "1770"
+    Repository: terraform-ls
