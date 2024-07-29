@@ -1,3 +1,9 @@
+## 0.34.2 (29 July 2024)
+
+BUG FIXES:
+
+* Ensure validation runs after decoding the whole module to avoid stale diagnostics ([#1777](https://github.com/hashicorp/terraform-ls/issues/1777))
+
 ## 0.34.1 (22 July 2024)
 
 BUG FIXES:
