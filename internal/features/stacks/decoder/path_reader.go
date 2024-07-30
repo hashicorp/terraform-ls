@@ -27,6 +27,13 @@ type PathReader struct {
 	ModuleReader ModuleReader
 }
 
+var _ decoder.PathReader = &PathReader{}
+
+type CombinedReader struct {
+	ModuleReader
+	StateReader
+}
+
 type StateReader interface {
 	List() ([]*state.StackRecord, error)
 	StackRecordByPath(modPath string) (*state.StackRecord, error)
@@ -48,7 +55,10 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 	switch path.LanguageID {
 	case ilsp.Stacks.String():
-		return stackPathContext(record, pr.StateReader, pr.ModuleReader)
+		return stackPathContext(record, CombinedReader{
+			StateReader:  pr.StateReader,
+			ModuleReader: pr.ModuleReader,
+		})
 	case ilsp.Deploy.String():
 		return deployPathContext(record)
 	}
@@ -56,7 +66,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	return nil, fmt.Errorf("unknown language ID: %q", path.LanguageID)
 }
 
-func stackPathContext(record *state.StackRecord, stateReader stackschema.StateReader, moduleReader stackschema.ModuleReader) (*decoder.PathContext, error) {
+func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*decoder.PathContext, error) {
 	// TODO: this should only work for terraform 1.8 and above
 	version := record.RequiredTerraformVersion
 	if version == nil {
@@ -70,7 +80,6 @@ func stackPathContext(record *state.StackRecord, stateReader stackschema.StateRe
 
 	sm := stackschema.NewStackSchemaMerger(schema)
 	sm.SetStateReader(stateReader)
-	sm.SetModuleReader(moduleReader)
 
 	meta := &tfstack.Meta{
 		Path:                 record.Path(),

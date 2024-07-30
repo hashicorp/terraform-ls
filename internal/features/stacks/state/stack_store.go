@@ -308,11 +308,6 @@ func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error)
 		return err
 	}
 
-	err = txn.Insert(s.tableName, record)
-	if err != nil {
-		return err
-	}
-
 	err = s.queueRecordChange(oldRecord, record)
 	if err != nil {
 		return err

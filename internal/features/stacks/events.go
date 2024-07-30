@@ -200,13 +200,16 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 		DependsOn:   job.IDs{parseId},
 		IgnoreState: ignoreState,
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			deferIds := make(job.IDs, 0)
+
 			if jobErr != nil {
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
 			spawnedIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
+			deferIds = append(deferIds, spawnedIds...)
 			if err != nil {
-				return spawnedIds, err
+				return deferIds, err
 			}
 
 			// while we now have the job ids in here, depending on the metaId job is not enough
@@ -226,11 +229,11 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				IgnoreState: ignoreState,
 			})
 			if err != nil {
-				return spawnedIds, err
+				return deferIds, err
 			}
-			spawnedIds = append(spawnedIds, eSchemaId)
+			deferIds = append(deferIds, eSchemaId)
 
-			return spawnedIds, nil
+			return deferIds, nil
 		},
 	})
 	if err != nil {
