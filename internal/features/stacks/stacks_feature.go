@@ -26,9 +26,11 @@ type StacksFeature struct {
 	fs         jobs.ReadOnlyFS
 	logger     *log.Logger
 	stopFunc   context.CancelFunc
+
+	moduleFeature stackDecoder.ModuleReader
 }
 
-func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore, fs jobs.ReadOnlyFS) (*StacksFeature, error) {
+func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore, fs jobs.ReadOnlyFS, moduleFeature stackDecoder.ModuleReader) (*StacksFeature, error) {
 	store, err := state.NewStackStore(stateStore.ChangeStore, stateStore.ProviderSchemas)
 	if err != nil {
 		return nil, err
@@ -36,12 +38,13 @@ func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore
 	discardLogger := log.New(io.Discard, "", 0)
 
 	return &StacksFeature{
-		store:      store,
-		bus:        bus,
-		fs:         fs,
-		stateStore: stateStore,
-		logger:     discardLogger,
-		stopFunc:   func() {},
+		store:         store,
+		bus:           bus,
+		fs:            fs,
+		stateStore:    stateStore,
+		logger:        discardLogger,
+		stopFunc:      func() {},
+		moduleFeature: moduleFeature,
 	}, nil
 }
 
@@ -100,7 +103,8 @@ func (f *StacksFeature) Stop() {
 
 func (f *StacksFeature) PathContext(path lang.Path) (*decoder.PathContext, error) {
 	pathReader := &stackDecoder.PathReader{
-		StateReader: f.store,
+		StateReader:  f.store,
+		ModuleReader: f.moduleFeature,
 	}
 
 	return pathReader.PathContext(path)
@@ -108,7 +112,8 @@ func (f *StacksFeature) PathContext(path lang.Path) (*decoder.PathContext, error
 
 func (f *StacksFeature) Paths(ctx context.Context) []lang.Path {
 	pathReader := &stackDecoder.PathReader{
-		StateReader: f.store,
+		StateReader:  f.store,
+		ModuleReader: f.moduleFeature,
 	}
 
 	return pathReader.Paths(ctx)
