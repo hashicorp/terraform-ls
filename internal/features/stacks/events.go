@@ -209,7 +209,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			spawnedIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
 			deferIds = append(deferIds, spawnedIds...)
 			if err != nil {
-				return deferIds, err
+				f.logger.Printf("loading stack component sources returned error: %s", err)
 			}
 
 			// while we now have the job ids in here, depending on the metaId job is not enough
