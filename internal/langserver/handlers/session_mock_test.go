@@ -163,7 +163,7 @@ func NewTestFeatures(eventBus *eventbus.EventBus, s *state.StateStore, fs *files
 		return nil, err
 	}
 
-	stacksFeature, err := fstacks.NewStacksFeature(eventBus, s, fs)
+	stacksFeature, err := fstacks.NewStacksFeature(eventBus, s, fs, modulesFeature)
 	if err != nil {
 		return nil, err
 	}
