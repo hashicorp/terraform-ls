@@ -12,6 +12,8 @@ const (
 	Tfvars    LanguageID = "terraform-vars"
 	Stacks    LanguageID = "terraform-stack"
 	Deploy    LanguageID = "terraform-deploy"
+	Test      LanguageID = "terraform-test"
+	Mock      LanguageID = "terraform-mock"
 )
 
 func (l LanguageID) String() string {
