@@ -536,7 +536,7 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		variablesFeature.SetLogger(svc.logger)
 		variablesFeature.Start(svc.sessCtx)
 
-		stacksFeature, err := stacks.NewStacksFeature(svc.eventBus, svc.stateStore, svc.fs)
+		stacksFeature, err := stacks.NewStacksFeature(svc.eventBus, svc.stateStore, svc.fs, modulesFeature)
 		if err != nil {
 			return err
 		}
