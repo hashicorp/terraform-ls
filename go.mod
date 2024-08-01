@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/hc-install v0.7.0
+	github.com/hashicorp/hc-install v0.8.0
 	github.com/hashicorp/hcl-lang v0.0.0-20240605150436-0e930f47b31b
 	github.com/hashicorp/hcl/v2 v2.21.0
 	github.com/hashicorp/terraform-exec v0.21.0
@@ -40,6 +40,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 )
 
