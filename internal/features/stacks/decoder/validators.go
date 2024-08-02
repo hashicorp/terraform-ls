@@ -14,7 +14,8 @@ var stackValidators = []validator.Validator{
 	validator.DeprecatedBlock{},
 	validator.MaxBlocks{},
 	validator.MinBlocks{},
-	validations.MissingRequiredAttribute{},
 	validator.UnexpectedAttribute{},
 	validator.UnexpectedBlock{},
+	validations.MissingRequiredAttribute{},
+	validations.StackBlockValidName{},
 }
