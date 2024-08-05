@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Support Terraform functions in stack files
+time: 2024-07-31T15:56:57.234803+02:00
+custom:
+    Issue: "1781"
+    Repository: terraform-ls
