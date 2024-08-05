@@ -5,6 +5,7 @@ package state
 
 import (
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
@@ -34,6 +35,14 @@ type StackRecord struct {
 	RequiredTerraformVersion      *version.Version
 	RequiredTerraformVersionErr   error
 	RequiredTerraformVersionState operation.OpState
+
+	RefTargets      reference.Targets
+	RefTargetsErr   error
+	RefTargetsState operation.OpState
+
+	RefOrigins      reference.Origins
+	RefOriginsErr   error
+	RefOriginsState operation.OpState
 }
 
 func (m *StackRecord) Path() string {
@@ -59,6 +68,14 @@ func (m *StackRecord) Copy() *StackRecord {
 		RequiredTerraformVersion:      m.RequiredTerraformVersion,
 		RequiredTerraformVersionErr:   m.RequiredTerraformVersionErr,
 		RequiredTerraformVersionState: m.RequiredTerraformVersionState,
+
+		RefTargets:      m.RefTargets.Copy(),
+		RefTargetsErr:   m.RefTargetsErr,
+		RefTargetsState: m.RefTargetsState,
+
+		RefOrigins:      m.RefOrigins.Copy(),
+		RefOriginsErr:   m.RefOriginsErr,
+		RefOriginsState: m.RefOriginsState,
 	}
 
 	if m.ParsedFiles != nil {
@@ -85,9 +102,13 @@ func (m *StackRecord) Copy() *StackRecord {
 	return newRecord
 }
 
-func newStack(modPath string) *StackRecord {
+func newStack(stackPath string) *StackRecord {
 	return &StackRecord{
-		path: modPath,
+		path:                       stackPath,
+		PreloadEmbeddedSchemaState: operation.OpStateUnknown,
+		RefOriginsState:            operation.OpStateUnknown,
+		RefTargetsState:            operation.OpStateUnknown,
+		MetaState:                  operation.OpStateUnknown,
 		DiagnosticsState: globalAst.DiagnosticSourceState{
 			globalAst.HCLParsingSource:          operation.OpStateUnknown,
 			globalAst.SchemaValidationSource:    operation.OpStateUnknown,

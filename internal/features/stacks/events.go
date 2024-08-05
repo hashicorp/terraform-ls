@@ -192,10 +192,6 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 	}
 	ids = append(ids, parseId)
 
-	// this needs to be here because the setting context
-	// is not available in the validate job
-	validationOptions, _ := lsctx.ValidationOptions(ctx)
-
 	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
@@ -238,21 +234,33 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			}
 			deferIds = append(deferIds, eSchemaId)
 
-			if validationOptions.EnableEnhancedValidation {
-				validationId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
-					Dir: dir,
-					Func: func(ctx context.Context) error {
-						return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, dir.Path())
-					},
-					Type:        operation.OpTypeSchemaStackValidation.String(),
-					DependsOn:   deferIds,
-					IgnoreState: ignoreState,
-				})
-				if err != nil {
-					return deferIds, err
-				}
-				deferIds = append(deferIds, validationId)
+			refTargetsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.DecodeReferenceTargets(ctx, f.store, f.moduleFeature, path)
+				},
+				Type:        operation.OpTypeDecodeReferenceTargets.String(),
+				DependsOn:   job.IDs{eSchemaId},
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
 			}
+			deferIds = append(deferIds, refTargetsId)
+
+			refOriginsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.DecodeReferenceOrigins(ctx, f.store, f.moduleFeature, path)
+				},
+				Type:        operation.OpTypeDecodeReferenceOrigins.String(),
+				DependsOn:   job.IDs{eSchemaId},
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
+			}
+			deferIds = append(deferIds, refOriginsId)
 
 			return deferIds, nil
 		},
@@ -261,6 +269,25 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 		return ids, err
 	}
 	ids = append(ids, metaId)
+
+	validationOptions, err := lsctx.ValidationOptions(ctx)
+	if err != nil {
+		return ids, err
+	}
+	if validationOptions.EnableEnhancedValidation {
+		_, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+			Dir: dir,
+			Func: func(ctx context.Context) error {
+				return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, dir.Path())
+			},
+			Type:        operation.OpTypeSchemaStackValidation.String(),
+			DependsOn:   ids,
+			IgnoreState: ignoreState,
+		})
+		if err != nil {
+			return ids, err
+		}
+	}
 
 	// TODO: Implement the following functions where appropriate to stacks
 	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)

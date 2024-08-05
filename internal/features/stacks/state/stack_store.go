@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/go-memdb"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
@@ -328,6 +329,92 @@ func (s *StackStore) SetPreloadEmbeddedSchemaState(path string, state operation.
 
 	record.PreloadEmbeddedSchemaState = state
 	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetReferenceTargetsState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	record, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.RefTargetsState = state
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) UpdateReferenceTargets(path string, refs reference.Targets, rErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetReferenceTargetsState(path, operation.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	record, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.RefTargets = refs
+	record.RefTargetsErr = rErr
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) SetReferenceOriginsState(path string, state operation.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	stack, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack.RefOriginsState = state
+	err = txn.Insert(s.tableName, stack)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *StackStore) UpdateReferenceOrigins(path string, origins reference.Origins, roErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetReferenceOriginsState(path, operation.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	stack, err := stackCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	stack.RefOrigins = origins
+	stack.RefOriginsErr = roErr
+
+	err = txn.Insert(s.tableName, stack)
 	if err != nil {
 		return err
 	}

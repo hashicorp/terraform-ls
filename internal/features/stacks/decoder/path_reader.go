@@ -106,6 +106,19 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 	}
 
 	// TODO: Add reference origins and targets if needed
+	for _, origin := range record.RefOrigins {
+		if ast.IsStackFilename(origin.OriginRange().Filename) {
+			pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
+		}
+	}
+
+	for _, target := range record.RefTargets {
+		if target.RangePtr != nil && ast.IsStackFilename(target.RangePtr.Filename) {
+			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+		} else if target.RangePtr == nil {
+			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+		}
+	}
 
 	for name, f := range record.ParsedFiles {
 		if _, ok := name.(ast.StackFilename); ok {
@@ -153,6 +166,19 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 	}
 
 	// TODO: Add reference origins and targets if needed
+	for _, origin := range record.RefOrigins {
+		if ast.IsDeployFilename(origin.OriginRange().Filename) {
+			pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
+		}
+	}
+
+	for _, target := range record.RefTargets {
+		if target.RangePtr != nil && ast.IsDeployFilename(target.RangePtr.Filename) {
+			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+		} else if target.RangePtr == nil {
+			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+		}
+	}
 
 	for name, f := range record.ParsedFiles {
 		if _, ok := name.(ast.DeployFilename); ok {

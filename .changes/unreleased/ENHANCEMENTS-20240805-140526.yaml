@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Add DecodeReferenceOrigins and DecodeReferenceTargets jobs
+time: 2024-08-05T14:05:26.030294-04:00
+custom:
+    Issue: "1786"
+    Repository: terraform-ls
