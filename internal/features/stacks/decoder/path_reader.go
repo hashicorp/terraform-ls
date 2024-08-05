@@ -125,8 +125,24 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 		return nil, err
 	}
 
+	sm := stackschema.NewDeploySchemaMerger(schema)
+
+	meta := &tfstack.Meta{
+		Path:                 record.Path(),
+		ProviderRequirements: record.Meta.ProviderRequirements,
+		Components:           record.Meta.Components,
+		Variables:            record.Meta.Variables,
+		Outputs:              record.Meta.Outputs,
+		Filenames:            record.Meta.Filenames,
+	}
+
+	mergedSchema, err := sm.SchemaForDeployment(meta)
+	if err != nil {
+		return nil, err
+	}
+
 	pathCtx := &decoder.PathContext{
-		Schema:           schema,
+		Schema:           mergedSchema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
