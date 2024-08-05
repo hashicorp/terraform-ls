@@ -51,6 +51,8 @@ func (m *StackRecord) Copy() *StackRecord {
 		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
 
 		Meta:             m.Meta.Copy(),
+		MetaErr:          m.MetaErr,
+		MetaState:        m.MetaState,
 		ParsingErr:       m.ParsingErr,
 		DiagnosticsState: m.DiagnosticsState.Copy(),
 
