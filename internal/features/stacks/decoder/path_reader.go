@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
@@ -100,6 +101,7 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
+		Functions:        mustFunctionsForVersion(version),
 	}
 
 	// TODO: Add reference origins and targets if needed
@@ -194,4 +196,13 @@ func (pr *PathReader) Paths(ctx context.Context) []lang.Path {
 	}
 
 	return paths
+}
+
+func mustFunctionsForVersion(v *version.Version) map[string]schema.FunctionSignature {
+	s, err := tfschema.FunctionsForVersion(v)
+	if err != nil {
+		// this should never happen
+		panic(err)
+	}
+	return s
 }
