@@ -192,8 +192,13 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 	}
 	ids = append(ids, parseId)
 
-	// this needs to be here because the setting context
-	// is not available in the validate job
+	// Changes to a setting currently requires a LS restart, so the LS
+	// setting context cannot change during the execution of a job. That's
+	// why we can extract it here and use it in Defer.
+	// See https://github.com/hashicorp/terraform-ls/issues/1008
+	// We can safely ignore the error here. If we can't get the options from
+	// the context, validationOptions.EnableEnhancedValidation will be false
+	// by default. So we don't run the validation jobs.
 	validationOptions, _ := lsctx.ValidationOptions(ctx)
 
 	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
@@ -211,10 +216,13 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
-			spawnedIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
-			deferIds = append(deferIds, spawnedIds...)
+			componentIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
+			deferIds = append(deferIds, componentIds...)
 			if err != nil {
 				f.logger.Printf("loading stack component sources returned error: %s", err)
+				// We log the error but still continue scheduling other jobs
+				// which are still valuable for the rest of the configuration
+				// even if they may not have the data for module calls.
 			}
 
 			// while we now have the job ids in here, depending on the metaId job is not enough
@@ -238,20 +246,47 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			}
 			deferIds = append(deferIds, eSchemaId)
 
+			refTargetsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.DecodeReferenceTargets(ctx, f.store, f.moduleFeature, path)
+				},
+				Type:        operation.OpTypeDecodeReferenceTargets.String(),
+				DependsOn:   append(componentIds, eSchemaId),
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
+			}
+			deferIds = append(deferIds, refTargetsId)
+
+			refOriginsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.DecodeReferenceOrigins(ctx, f.store, f.moduleFeature, path)
+				},
+				Type:        operation.OpTypeDecodeReferenceOrigins.String(),
+				DependsOn:   append(componentIds, eSchemaId),
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
+			}
+			deferIds = append(deferIds, refOriginsId)
+
 			if validationOptions.EnableEnhancedValidation {
-				validationId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				_, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 					Dir: dir,
 					Func: func(ctx context.Context) error {
 						return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, dir.Path())
 					},
 					Type:        operation.OpTypeSchemaStackValidation.String(),
-					DependsOn:   deferIds,
+					DependsOn:   job.IDs{refOriginsId, refTargetsId},
 					IgnoreState: ignoreState,
 				})
 				if err != nil {
-					return deferIds, err
+					return ids, err
 				}
-				deferIds = append(deferIds, validationId)
 			}
 
 			return deferIds, nil
@@ -261,11 +296,6 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 		return ids, err
 	}
 	ids = append(ids, metaId)
-
-	// TODO: Implement the following functions where appropriate to stacks
-	// Future: decodeDeclaredModuleCalls(ctx, dir, ignoreState)
-	// Future: DecodeReferenceTargets(ctx, f.Store, f.rootFeature, path)
-	// Future: DecodeReferenceOrigins(ctx, f.Store, f.rootFeature, path)
 
 	return ids, nil
 }
