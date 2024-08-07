@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Load embedded provider schemas for providers found in stacks files into state
-time: 2024-07-17T11:56:36.184201+02:00
-custom:
-    Issue: "1763"
-    Repository: terraform-ls
