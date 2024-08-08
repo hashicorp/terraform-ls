@@ -1,3 +1,13 @@
+## 0.35.0-alpha2 (08 August 2024)
+
+BUG FIXES:
+
+* fix panic on blocks with no labels during validation of label name ([#1791](https://github.com/hashicorp/terraform-ls/issues/1791))
+
+INTERNAL:
+
+* Bump terraform-schema to c2315af ([#1788](https://github.com/hashicorp/terraform-ls/issues/1788))
+
 ## 0.35.0-alpha1 (07 August 2024)
 
 ENHANCEMENTS:
