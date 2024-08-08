@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Parse and load Stack and Deploy metadata
-time: 2024-07-16T09:48:42.389816-04:00
-custom:
-    Issue: "1761"
-    Repository: terraform-ls
