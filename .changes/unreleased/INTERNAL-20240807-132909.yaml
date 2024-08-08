@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Bump terraform-schema to c2315af
+time: 2024-08-07T13:29:09.149354-04:00
+custom:
+    Issue: "1788"
+    Repository: terraform-ls

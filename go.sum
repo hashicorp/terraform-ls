@@ -229,8 +229,8 @@ github.com/hashicorp/terraform-json v0.22.1 h1:xft84GZR0QzjPVWs4lRUwvTcPnegqlyS7
 github.com/hashicorp/terraform-json v0.22.1/go.mod h1:JbWSQCLFSXFFhg42T7l9iJwdGXBYV8fmmD6o/ML4p3A=
 github.com/hashicorp/terraform-registry-address v0.2.3 h1:2TAiKJ1A3MAkZlH1YI/aTVcLZRu7JseiXNRHbOAyoTI=
 github.com/hashicorp/terraform-registry-address v0.2.3/go.mod h1:lFHA76T8jfQteVfT7caREqguFrW3c4MFSPhZB7HHgUM=
-github.com/hashicorp/terraform-schema v0.0.0-20240731132239-de259563ac92 h1:GghC8nByA4ZQaZ7kB2ijlPHefJ+zGyheB1itRWmsITE=
-github.com/hashicorp/terraform-schema v0.0.0-20240731132239-de259563ac92/go.mod h1:k86q3epNJLLo/iHmXVrdjLU84bprKTFW1vxuP4iG07M=
+github.com/hashicorp/terraform-schema v0.0.0-20240807075038-c2315af9606d h1:WDUXglKGEnbQxXYfSfZq2gEjORvinXj1hGbXQrabVJw=
+github.com/hashicorp/terraform-schema v0.0.0-20240807075038-c2315af9606d/go.mod h1:k86q3epNJLLo/iHmXVrdjLU84bprKTFW1vxuP4iG07M=
 github.com/hashicorp/terraform-svchost v0.1.1 h1:EZZimZ1GxdqFRinZ1tpJwVxxt49xc/S52uzrw4x0jKQ=
 github.com/hashicorp/terraform-svchost v0.1.1/go.mod h1:mNsjQfZyf/Jhz35v6/0LWcv26+X7JPS+buii2c9/ctc=
 github.com/hexops/autogold v1.3.1 h1:YgxF9OHWbEIUjhDbpnLhgVsjUDsiHDTyDfy2lrfdlzo=
@@ -375,8 +375,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/subosito/gotenv v1.4.2 h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8=
 github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
-github.com/vektra/mockery/v2 v2.44.1 h1:lfvocO3HklLp68gezPBVaHl+5rKXloGCO7eTEXh71dA=
-github.com/vektra/mockery/v2 v2.44.1/go.mod h1:XNTE9RIu3deGAGQRVjP1VZxGpQNm0YedZx4oDs3prr8=
+github.com/vektra/mockery/v2 v2.43.2 h1:OdivAsQL/uoQ55UnTt25tliRI8kaj5j6caHk9xaAUD0=
+github.com/vektra/mockery/v2 v2.43.2/go.mod h1:XNTE9RIu3deGAGQRVjP1VZxGpQNm0YedZx4oDs3prr8=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
