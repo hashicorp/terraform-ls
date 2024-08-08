@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: fix panic on blocks with no labels during validation of label name
+time: 2024-08-08T10:50:00.988265+02:00
+custom:
+    Issue: "1791"
+    Repository: terraform-ls
