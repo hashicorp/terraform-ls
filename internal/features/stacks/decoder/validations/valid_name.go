@@ -59,7 +59,7 @@ func (sb StackBlockValidName) Visit(ctx context.Context, node hclsyntax.Node, no
 }
 
 func hasValidNameLabel(block *hclsyntax.Block, diags hcl.Diagnostics) hcl.Diagnostics {
-	if !hclsyntax.ValidIdentifier(block.Labels[0]) {
+	if len(block.Labels) > 0 && !hclsyntax.ValidIdentifier(block.Labels[0]) {
 		diags = append(diags, &hcl.Diagnostic{
 			Severity: hcl.DiagError,
 			Summary:  fmt.Sprintf("Invalid %q name %q", block.Type, block.Labels[0]),
