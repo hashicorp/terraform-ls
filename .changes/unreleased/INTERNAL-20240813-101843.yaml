@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Add artifacts manifest
+time: 2024-08-13T10:18:43.294235-04:00
+custom:
+    Issue: "1784"
+    Repository: terraform-ls
