@@ -289,6 +289,20 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				}
 			}
 
+			_, err = f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+
+					return jobs.ReferenceValidation(ctx, f.store, f.moduleFeature, dir.Path())
+				},
+				Type:        operation.OpTypeReferenceStackValidation.String(),
+				DependsOn:   job.IDs{refOriginsId, refTargetsId},
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
+			}
+
 			return deferIds, nil
 		},
 	})
