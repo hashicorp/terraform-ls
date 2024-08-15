@@ -91,7 +91,7 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 		Filenames:            record.Meta.Filenames,
 	}
 
-	mergedSchema, err := sm.SchemaForModule(meta)
+	mergedSchema, err := sm.SchemaForStack(meta)
 	if err != nil {
 		return nil, err
 	}
