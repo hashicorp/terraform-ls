@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Enable output references
+time: 2024-08-15T12:17:16.21816-04:00
+custom:
+    Issue: "384"
+    Repository: terraform-schema
