@@ -163,6 +163,7 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Validators:       stackValidators,
+		Functions:        deployFunctionsForVersion(version),
 	}
 
 	// TODO: Add reference origins and targets if needed
