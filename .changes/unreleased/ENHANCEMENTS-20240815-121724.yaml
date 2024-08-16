@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Add input block schema and deprecate variable block
+time: 2024-08-15T12:17:24.782291-04:00
+custom:
+    Issue: "381"
+    Repository: terraform-schema

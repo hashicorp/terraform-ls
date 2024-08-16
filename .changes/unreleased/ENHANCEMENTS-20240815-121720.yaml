@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Add Address to variable block schema for stacks to enable references
+time: 2024-08-15T12:17:20.507605-04:00
+custom:
+    Issue: "383"
+    Repository: terraform-schema
