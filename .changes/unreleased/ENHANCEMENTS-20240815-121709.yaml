@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Enable references for variables in deployment inputs (Deploy)
+time: 2024-08-15T12:17:09.801718-04:00
+custom:
+    Issue: "389"
+    Repository: terraform-schema
