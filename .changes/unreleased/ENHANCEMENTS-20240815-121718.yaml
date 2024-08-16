@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Enable provider references
+time: 2024-08-15T12:17:18.370531-04:00
+custom:
+    Issue: "385"
+    Repository: terraform-schema

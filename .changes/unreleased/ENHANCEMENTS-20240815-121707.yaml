@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Support references for identity tokens and their attributes
+time: 2024-08-15T12:17:07.66066-04:00
+custom:
+    Issue: "388"
+    Repository: terraform-schema
