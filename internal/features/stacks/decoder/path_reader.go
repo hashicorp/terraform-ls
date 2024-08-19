@@ -89,6 +89,8 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 		Variables:            record.Meta.Variables,
 		Outputs:              record.Meta.Outputs,
 		Filenames:            record.Meta.Filenames,
+		Deployments:          record.Meta.Deployments,
+		Stores:               record.Meta.Stores,
 	}
 
 	mergedSchema, err := sm.SchemaForStack(meta)
@@ -150,6 +152,8 @@ func deployPathContext(record *state.StackRecord) (*decoder.PathContext, error) 
 		Variables:            record.Meta.Variables,
 		Outputs:              record.Meta.Outputs,
 		Filenames:            record.Meta.Filenames,
+		Deployments:          record.Meta.Deployments,
+		Stores:               record.Meta.Stores,
 	}
 
 	mergedSchema, err := sm.SchemaForDeployment(meta)
