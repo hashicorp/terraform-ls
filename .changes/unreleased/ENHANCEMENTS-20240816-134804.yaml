@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Early decode deployment config to support references to store blocks
+time: 2024-08-16T13:48:04.258277+02:00
+custom:
+    Issue: "390"
+    Repository: terraform-schema
