@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	stackDecoder "github.com/hashicorp/terraform-ls/internal/features/stacks/decoder"
+	"github.com/hashicorp/terraform-ls/internal/features/stacks/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -115,4 +116,54 @@ func SchemaStackValidation(ctx context.Context, stackStore *state.StackStore, mo
 	}
 
 	return rErr
+}
+
+// ReferenceValidation does validation based on (mis)matched
+// reference origins and targets, to flag up "orphaned" references.
+//
+// It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
+// to supply both origins and targets to compare.
+func ReferenceValidation(ctx context.Context, stackStore *state.StackStore, moduleFeature stackDecoder.ModuleReader, stackPath string) error {
+	record, err := stackStore.StackRecordByPath(stackPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if record.DiagnosticsState[globalAst.ReferenceValidationSource] != operation.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(stackPath)}
+	}
+
+	err = stackStore.SetDiagnosticsState(stackPath, globalAst.ReferenceValidationSource, operation.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	pathReader := &stackDecoder.PathReader{
+		StateReader:  stackStore,
+		ModuleReader: moduleFeature,
+	}
+
+	stackDecoder, err := pathReader.PathContext(lang.Path{
+		Path:       stackPath,
+		LanguageID: ilsp.Stacks.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	deployDecoder, err := pathReader.PathContext(lang.Path{
+		Path:       stackPath,
+		LanguageID: ilsp.Deploy.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	diags := validations.UnreferencedOrigins(ctx, stackDecoder)
+
+	deployDiags := validations.UnreferencedOrigins(ctx, deployDecoder)
+	diags = diags.Extend(deployDiags)
+
+	return stackStore.UpdateDiagnostics(stackPath, globalAst.ReferenceValidationSource, ast.DiagnosticsFromMap(diags))
 }
