@@ -47,16 +47,16 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			// for Stacks. This is relatively safe as we know the structure of the references
 			// and can validate them without needing to know the schema of the referenced object.
 			// TODO: revisit after user feedback
-			supported := []string{"provider", "identity_token", "component"}
+			supported := []string{"provider", "identity_token"}
 			if !slices.Contains(supported, address[0].String()) {
 				continue
 			}
 		}
 
-		// we only initially validate variables, providers, identity_tokens, and components
+		// we only initially validate variables, providers, and identity_tokens
 		// resources can have unknown schema and will be researched at a later point
 		// TODO: revisit as part of https://github.com/hashicorp/terraform-ls/issues/1364
-		supported := []string{"var", "provider", "identity_token", "component"}
+		supported := []string{"var", "provider", "identity_token"}
 		firstStep := address[0].String()
 		if !slices.Contains(supported, firstStep) {
 			continue
