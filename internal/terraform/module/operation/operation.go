@@ -36,6 +36,7 @@ const (
 	OpTypeSchemaStackValidation
 	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation
+	OpTypeReferenceStackValidation
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
 	OpTypeLoadStackMetadata
