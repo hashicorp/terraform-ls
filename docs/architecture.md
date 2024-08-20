@@ -90,6 +90,16 @@ The `jobs` package of each feature contains all the different indexing jobs need
 - `ObtainSchema` - obtains provider schemas via `terraform providers schema -json`
 - `ParseProviderVersions` is a job complimentary to `ObtainSchema` in that it obtains versions of providers/schemas from Terraform CLI's lock file
 
+### Stack Feature Jobs
+
+- `ParseStackConfiguration` - parses `*.tfstack.hcl` and `*.tfdeploy.hcl` files to turn `[]byte` into `hcl` types (AST)
+- `LoadStackMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/stacks/earlydecoder) to do early TF version-agnostic decoding to obtain metadata (variables, outputs etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
+- `PreloadEmbeddedSchema` – loads provider schemas based on provider requirements from the bundled schemas
+- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfstack.hcl` and `*.tfdeploy.hcl`
+- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfstack.hcl` and `*.tfdeploy.hcl`
+- `SchemaStackValidation` - does schema-based validation of module files (`*.tfstack.hcl` and `*.tfdeploy.hcl`) and produces diagnostics associated with any "invalid" parts of code
+- `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
+
 ### Adding a new feature / "language"
 
 The existing `variables` feature is a good starting point when introducing a new language. Usually you need to roughly follow these steps to get a minimal working example:
