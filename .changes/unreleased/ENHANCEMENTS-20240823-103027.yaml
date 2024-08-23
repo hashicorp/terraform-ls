@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support locals in stack and deploy configs
-time: 2024-08-23T10:30:27.204226+02:00
-custom:
-    Issue: "395"
-    Repository: terraform-schema

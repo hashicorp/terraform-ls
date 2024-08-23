@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support description attribute for orchestration rule block
-time: 2024-08-23T10:29:40.717478+02:00
-custom:
-    Issue: "393"
-    Repository: terraform-schema

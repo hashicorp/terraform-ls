@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Add deployments store block schema
-time: 2024-08-15T12:17:22.646247-04:00
-custom:
-    Issue: "382"
-    Repository: terraform-schema
