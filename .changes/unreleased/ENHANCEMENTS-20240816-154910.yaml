@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support a subset of functions in deployment configurations
-time: 2024-08-16T15:49:10.404259+02:00
-custom:
-    Issue: "1799"
-    Repository: terraform-ls
