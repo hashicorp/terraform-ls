@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Validate Stack and Deployment files for unreferenced origins
-time: 2024-08-15T13:51:08.906805-04:00
-custom:
-    Issue: "1797"
-    Repository: terraform-ls
