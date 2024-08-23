@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Enable component references
-time: 2024-08-15T12:17:11.950162-04:00
-custom:
-    Issue: "386"
-    Repository: terraform-schema
