@@ -98,12 +98,17 @@ func stackPathContext(record *state.StackRecord, stateReader CombinedReader) (*d
 		return nil, err
 	}
 
+	functions, err := functionsForStack(record, version, stateReader)
+	if err != nil {
+		return nil, err
+	}
+
 	pathCtx := &decoder.PathContext{
 		Schema:           mergedSchema,
 		ReferenceOrigins: make(reference.Origins, 0),
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
-		Functions:        mustFunctionsForVersion(version),
+		Functions:        functions,
 		Validators:       stackValidators,
 	}
 
