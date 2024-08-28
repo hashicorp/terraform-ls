@@ -6,8 +6,10 @@ This document contains notes for language client developers.
 
 The following file types are currently supported and language IDs expected:
 
- - `terraform` - standard `*.tf` config files
- - `terraform-vars` - variable files (`*.tfvars`)
+- `terraform` - standard `*.tf` config files
+- `terraform-vars` - variable files (`*.tfvars`)
+- `terraform-stack` - standard `*.tfstack.hcl` files
+- `terraform-deploy` - standard `*.tfstack.hcl` files
 
 Client can choose to highlight other files locally, but such other files
 must **not** be send to the server as the server isn't equipped to handle those.
@@ -44,7 +46,7 @@ This allows IntelliSense to remain accurate e.g. when switching branches in VCS
 or when there are any other changes made to these files outside the editor.
 
 If the client implements file watcher, it should watch for any changes
-in `**/*.tf` and `**/*.tfvars` files in the workspace.
+in `**/*.tf`, `**/*.tfvars`, `**/*.tfstack.hcl` and `**/*.tfstack.hcl` files in the workspace.
 
 Client should **not** send changes for any other files.
 
@@ -85,8 +87,8 @@ Language server supports multiple folders natively from version `0.19`.
 Client is expected to always launch a single instance of the server and check for
 [`workspace.workspaceFolders.supported`](https://microsoft.github.io/language-server-protocol/specifications/specification-3-17/#workspaceFoldersServerCapabilities) server capability, and then:
 
- - launch any more instances (_one instance per folder_) if multiple folders are _not supported_
- - avoid launching any more instances if multiple folders _are supported_
+- launch any more instances (_one instance per folder_) if multiple folders are _not supported_
+- avoid launching any more instances if multiple folders _are supported_
 
 It is assumed that paths to these folders will be provided as part of `workspaceFolders`
 in the `initialize` request per LSP.
@@ -105,7 +107,7 @@ A Code Action is an action that changes content in the active editor. Each Code 
 
 In VS Code, code action can be _invoked manually_ or _automatically_ based on the respective [CodeActionTriggerKind](https://code.visualstudio.com/api/references/vscode-api#CodeActionTriggerKind).
 
-**Manually invoked** actions come from the contextual in-line💡 icon inside the editor, and are chosen by the user. The user can choose which action is invoked and *then* invoke it. However, in order for the client to display the contextual actions, the client requests LS to "pre-calculate" any actions relevant to the cursor position. Then, when the user selects the action in the UI, the client applies the `edits` or executes the `command` as provided by the server.
+**Manually invoked** actions come from the contextual in-line💡 icon inside the editor, and are chosen by the user. The user can choose which action is invoked and _then_ invoke it. However, in order for the client to display the contextual actions, the client requests LS to "pre-calculate" any actions relevant to the cursor position. Then, when the user selects the action in the UI, the client applies the `edits` or executes the `command` as provided by the server.
 
 **Automatically triggered** actions come from events such as "on save", as configured via the `editor.codeActionsOnSave` setting. These usually do not give much choice to the user, they are either on or off, as they cannot accept user input. For example, formatting a document or removing simple style errors don't prompt for user action before or during execution.
 
@@ -154,11 +156,11 @@ For example:
 
 ```json
 {
-    "capabilities": {
-        "experimental": {
-            "showReferencesCommandId": "client.showReferences"
-        }
+  "capabilities": {
+    "experimental": {
+      "showReferencesCommandId": "client.showReferences"
     }
+  }
 }
 ```
 
@@ -168,13 +170,13 @@ The client-side command is executed with 2 arguments (position, reference contex
 
 ```json
 [
-    {
-        "line": 0,
-        "character": 8
-    },
-    {
-        "includeDeclaration": false
-    }
+  {
+    "line": 0,
+    "character": 8
+  },
+  {
+    "includeDeclaration": false
+  }
 ]
 ```
 
@@ -183,7 +185,6 @@ request back to the server to obtain the list of references relevant to
 that position and finally display received references in the editor.
 
 See [example implementation in the Terraform VS Code extension](https://github.com/hashicorp/vscode-terraform/pull/686).
-
 
 ## Custom Commands
 
