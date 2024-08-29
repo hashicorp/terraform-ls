@@ -303,6 +303,7 @@ func (s *StackStore) UpdateMetadata(path string, meta *tfstack.Meta, mErr error)
 		ProviderRequirements: meta.ProviderRequirements,
 		Deployments:          meta.Deployments,
 		Stores:               meta.Stores,
+		OrchestrationRules:   meta.OrchestrationRules,
 	}
 	record.MetaErr = mErr
 
