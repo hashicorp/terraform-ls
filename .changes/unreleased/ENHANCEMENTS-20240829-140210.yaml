@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Support context references within orchestrate blocks in deployment configuration
+time: 2024-08-29T14:02:10.75361+02:00
+custom:
+    Issue: "1813"
+    Repository: terraform-ls
