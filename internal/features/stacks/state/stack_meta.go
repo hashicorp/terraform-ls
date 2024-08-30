@@ -16,8 +16,9 @@ type StackMetadata struct {
 	Outputs              map[string]tfstack.Output
 	ProviderRequirements map[string]tfstack.ProviderRequirement
 
-	Deployments map[string]tfstack.Deployment
-	Stores      map[string]tfstack.Store
+	Deployments        map[string]tfstack.Deployment
+	Stores             map[string]tfstack.Store
+	OrchestrationRules map[string]tfstack.OrchestrationRule
 }
 
 func (sm StackMetadata) Copy() StackMetadata {
@@ -64,6 +65,13 @@ func (sm StackMetadata) Copy() StackMetadata {
 		newSm.Stores = make(map[string]tfstack.Store, len(sm.Stores))
 		for k, v := range sm.Stores {
 			newSm.Stores[k] = v
+		}
+	}
+
+	if sm.OrchestrationRules != nil {
+		newSm.OrchestrationRules = make(map[string]tfstack.OrchestrationRule, len(sm.OrchestrationRules))
+		for k, v := range sm.OrchestrationRules {
+			newSm.OrchestrationRules[k] = v
 		}
 	}
 
