@@ -68,9 +68,16 @@ func DecodeReferenceTargets(ctx context.Context, stackStore *state.StackStore, m
 	}
 	deployTargets, rErr := deployDecoder.CollectReferenceTargets()
 
+	record, err := stackStore.StackRecordByPath(stackPath)
+	if err != nil {
+		return err
+	}
+	builtinTargets := builtinReferences(record)
+
 	targets := make(reference.Targets, 0)
 	targets = append(targets, stackTargets...)
 	targets = append(targets, deployTargets...)
+	targets = append(targets, builtinTargets...)
 
 	sErr := stackStore.UpdateReferenceTargets(stackPath, targets, rErr)
 	if sErr != nil {
