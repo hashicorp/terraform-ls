@@ -37,26 +37,16 @@ func builtinReferences(record *state.StackRecord) reference.Targets {
 
 	// The ranges of the orchestrate blocks as we have to create targets with these ranges
 	// to ensure they are only available within orchestrate blocks
-	ranges := make([]hcl.Range, 0)
 	for _, rule := range record.Meta.OrchestrationRules {
-		ranges = append(ranges, rule.Range)
-	}
+		rng := rule.Range
 
-	// The names of the existing components in the stack
-	// We use this to offer completions for the component_changes map
-	componentNames := make([]string, 0)
-	for name := range record.Meta.Components {
-		componentNames = append(componentNames, name)
-	}
-
-	for _, rng := range ranges {
 		// create the static base targets (like context.operation, context.success, etc.)
 		targets = append(targets, baseTargets(rng)...)
 		// create the static plan targets (like context.plan.mode, context.plan.applyable, etc.)
 		targets = append(targets, staticPlanTargets(rng)...)
 
 		// targets for each component for the component_changes map (like context.plan.component_changes["vpc"].total)
-		for _, name := range componentNames {
+		for name := range record.Meta.Components {
 			addr := lang.Address{
 				lang.RootStep{Name: "context"},
 				lang.AttrStep{Name: "plan"},
