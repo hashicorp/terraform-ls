@@ -233,8 +233,8 @@ github.com/hashicorp/terraform-json v0.22.1 h1:xft84GZR0QzjPVWs4lRUwvTcPnegqlyS7
 github.com/hashicorp/terraform-json v0.22.1/go.mod h1:JbWSQCLFSXFFhg42T7l9iJwdGXBYV8fmmD6o/ML4p3A=
 github.com/hashicorp/terraform-registry-address v0.2.3 h1:2TAiKJ1A3MAkZlH1YI/aTVcLZRu7JseiXNRHbOAyoTI=
 github.com/hashicorp/terraform-registry-address v0.2.3/go.mod h1:lFHA76T8jfQteVfT7caREqguFrW3c4MFSPhZB7HHgUM=
-github.com/hashicorp/terraform-schema v0.0.0-20240826132342-4f99bab76318 h1:uvRBiaf+0qM3c6u/AjOmKsvdtEsSKlmty8PJ9ukEnsY=
-github.com/hashicorp/terraform-schema v0.0.0-20240826132342-4f99bab76318/go.mod h1:Tc8mlcXI3ulpnC1/Ho4O5DeivcXGfezj0U+igIDE3iA=
+github.com/hashicorp/terraform-schema v0.0.0-20240830131621-c383931da2df h1:RALMHz4If9EjrEraJ88CbyO8zxLGXtmYlbLAtpMmNxQ=
+github.com/hashicorp/terraform-schema v0.0.0-20240830131621-c383931da2df/go.mod h1:Tc8mlcXI3ulpnC1/Ho4O5DeivcXGfezj0U+igIDE3iA=
 github.com/hashicorp/terraform-svchost v0.1.1 h1:EZZimZ1GxdqFRinZ1tpJwVxxt49xc/S52uzrw4x0jKQ=
 github.com/hashicorp/terraform-svchost v0.1.1/go.mod h1:mNsjQfZyf/Jhz35v6/0LWcv26+X7JPS+buii2c9/ctc=
 github.com/hexops/autogold v1.3.1 h1:YgxF9OHWbEIUjhDbpnLhgVsjUDsiHDTyDfy2lrfdlzo=
