@@ -16,7 +16,7 @@ You can install the language server manually using one of the many package manag
 You can install via [Homebrew](https://brew.sh)
 
 ```
-brew install hashicorp/tap/terraform-ls
+brew install terraform-ls
 ```
 
 This tap only contains stable releases (i.e. no pre-releases).
