@@ -1,3 +1,13 @@
+## 0.34.3 (03 September 2024)
+
+ENHANCEMENTS:
+
+* Generate built in providers ([#1817](https://github.com/hashicorp/terraform-ls/issues/1817))
+
+INTERNAL:
+
+* Add artifacts manifest ([#1784](https://github.com/hashicorp/terraform-ls/issues/1784))
+
 ## 0.34.2 (29 July 2024)
 
 BUG FIXES:
