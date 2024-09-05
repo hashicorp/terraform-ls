@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: Support sensitive attribute for stacks variables
-time: 2024-09-05T11:50:50.100725-04:00
-custom:
-    Issue: "401"
-    Repository: terraform-schema
