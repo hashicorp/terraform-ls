@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Allow any type as inputs to components per default
+time: 2024-09-05T11:51:11.826519-04:00
+custom:
+    Issue: "400"
+    Repository: terraform-schema
