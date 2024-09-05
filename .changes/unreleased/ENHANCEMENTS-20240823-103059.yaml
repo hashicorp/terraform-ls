@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support depends_on attribute in component blocks
-time: 2024-08-23T10:30:59.844584+02:00
-custom:
-    Issue: "392"
-    Repository: terraform-schema

@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Document Terraform Stacks support
-time: 2024-08-27T14:45:43.975259-04:00
-custom:
-    Issue: "1802"
-    Repository: terraform-ls

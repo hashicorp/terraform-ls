@@ -4,9 +4,27 @@ ENHANCEMENTS:
 
 * Generate built in providers ([#1817](https://github.com/hashicorp/terraform-ls/issues/1817))
 
+## 0.35.0-beta2 (05 September 2024)
+
+ENHANCEMENTS:
+
+* Support provider defined functions in stacks configuration ([#1804](https://github.com/hashicorp/terraform-ls/issues/1804))
+* Support description attribute for orchestration rule block ([terraform-schema#393](https://github.com/hashicorp/terraform-schema/issues/393))
+* Support locals in stack and deploy configs ([terraform-schema#395](https://github.com/hashicorp/terraform-schema/issues/395))
+* Support depends_on attribute in component blocks ([terraform-schema#392](https://github.com/hashicorp/terraform-schema/issues/392))
+* Document Terraform Stacks support ([#1802](https://github.com/hashicorp/terraform-ls/issues/1802))
+* Support context references within orchestrate blocks in deployment configuration ([#1813](https://github.com/hashicorp/terraform-ls/issues/1813))
+
+BUG FIXES:
+
+* Fix type for provider references in component blocks ([terraform-schema#391](https://github.com/hashicorp/terraform-schema/issues/391))
+* Support sensitive attribute for stacks variables ([terraform-schema#401](https://github.com/hashicorp/terraform-schema/issues/401))
+* Allow any type as inputs to components per default ([terraform-schema#400](https://github.com/hashicorp/terraform-schema/issues/400))
+
 INTERNAL:
 
 * Add artifacts manifest ([#1784](https://github.com/hashicorp/terraform-ls/issues/1784))
+* Update terraform-schema and hcl-lang ([#1814](https://github.com/hashicorp/terraform-ls/issues/1814))
 
 ## 0.35.0-beta1 (23 August 2024)
 
