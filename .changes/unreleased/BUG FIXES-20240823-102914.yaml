@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: Fix type for provider references in component blocks
-time: 2024-08-23T10:29:14.023346+02:00
-custom:
-    Issue: "391"
-    Repository: terraform-schema

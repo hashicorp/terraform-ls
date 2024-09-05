@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Update terraform-schema and hcl-lang
-time: 2024-08-30T11:05:39.356723-04:00
-custom:
-    Issue: "1814"
-    Repository: terraform-ls
