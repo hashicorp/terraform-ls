@@ -106,7 +106,7 @@ func testPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Validators:       validators,
-		// TODO? functions
+		// TODO? functions TFECO-7480
 	}
 
 	for _, origin := range record.RefOrigins {
@@ -160,7 +160,7 @@ func mockPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Validators:       validators,
-		// TODO? functions
+		// TODO? functions TFECO-7480
 	}
 
 	for _, origin := range record.RefOrigins {

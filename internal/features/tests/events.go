@@ -277,9 +277,9 @@ func loadTestModuleSources(ctx context.Context, testStore *state.TestStore, bus 
 		return ids, err
 	}
 
-	// TODO! load the adjacent Terraform module (usually ../)
-	// TODO load the run -> module block sources
-	// TODO load the mock_provider block sources
+	// TODO! load the adjacent Terraform module (usually ../) TFECO-7479
+	// TODO load the run -> module block sources TFECO-7483
+	// TODO load the mock_provider block sources TFECO-7481
 
 	return ids, nil
 }
