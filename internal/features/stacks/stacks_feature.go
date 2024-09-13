@@ -133,3 +133,20 @@ func (f *StacksFeature) Diagnostics(path string) diagnostics.Diagnostics {
 
 	return diags
 }
+
+func (f *StacksFeature) Telemetry(path string) map[string]interface{} {
+	properties := make(map[string]interface{})
+
+	record, err := f.store.StackRecordByPath(path)
+	if err != nil {
+		return properties
+	}
+
+	properties["stacks"] = true
+
+	if record.RequiredTerraformVersion != nil {
+		properties["stacksTfVersion"] = record.RequiredTerraformVersion.String()
+	}
+
+	return properties
+}
