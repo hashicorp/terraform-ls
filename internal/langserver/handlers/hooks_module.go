@@ -37,7 +37,11 @@ func sendModuleTelemetry(features *Features, telemetrySender telemetry.Sender) n
 		// We assume there are no conflicting property keys
 		properties := features.Modules.Telemetry(path)
 		rootTelemetry := features.RootModules.Telemetry(path)
+		stacksTelemetry := features.Stacks.Telemetry(path)
 		for property, value := range rootTelemetry {
+			properties[property] = value
+		}
+		for property, value := range stacksTelemetry {
 			properties[property] = value
 		}
 
