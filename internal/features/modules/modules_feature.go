@@ -282,3 +282,7 @@ func (f *ModulesFeature) MetadataReady(dir document.DirHandle) (<-chan struct{},
 
 	return f.Store.MetadataReady(dir)
 }
+
+func (s *ModulesFeature) LocalModuleMeta(modPath string) (*tfmod.Meta, error) {
+	return s.Store.LocalModuleMeta(modPath)
+}
