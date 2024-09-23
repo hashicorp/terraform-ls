@@ -37,4 +37,9 @@ const (
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
 	OpTypeLoadStackRequiredTerraformVersion
+	OpTypeParseTestConfiguration
+	OpTypeLoadTestMetadata
+	OpTypeDecodeTestReferenceTargets
+	OpTypeDecodeTestReferenceOrigins
+	OpTypeSchemaTestValidation
 )

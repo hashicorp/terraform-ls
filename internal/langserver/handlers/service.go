@@ -22,6 +22,7 @@ import (
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks"
+	ftests "github.com/hashicorp/terraform-ls/internal/features/tests"
 	fvariables "github.com/hashicorp/terraform-ls/internal/features/variables"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	"github.com/hashicorp/terraform-ls/internal/job"
@@ -50,6 +51,7 @@ type Features struct {
 	RootModules *frootmodules.RootModulesFeature
 	Variables   *fvariables.VariablesFeature
 	Stacks      *stacks.StacksFeature
+	Tests       *ftests.TestsFeature
 }
 
 type service struct {
@@ -543,11 +545,19 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		stacksFeature.SetLogger(svc.logger)
 		stacksFeature.Start(svc.sessCtx)
 
+		testsFeature, err := ftests.NewTestsFeature(svc.eventBus, svc.stateStore, svc.fs, modulesFeature, rootModulesFeature)
+		if err != nil {
+			return err
+		}
+		testsFeature.SetLogger(svc.logger)
+		testsFeature.Start(svc.sessCtx)
+
 		svc.features = &Features{
 			Modules:     modulesFeature,
 			RootModules: rootModulesFeature,
 			Variables:   variablesFeature,
 			Stacks:      stacksFeature,
+			Tests:       testsFeature,
 		}
 	}
 
@@ -557,6 +567,8 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 			"terraform-vars":   svc.features.Variables,
 			"terraform-stack":  svc.features.Stacks,
 			"terraform-deploy": svc.features.Stacks,
+			"terraform-test":   svc.features.Tests,
+			"terraform-mock":   svc.features.Tests,
 		},
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
@@ -648,6 +660,9 @@ func (svc *service) shutdown() {
 		}
 		if svc.features.Stacks != nil {
 			svc.features.Stacks.Stop()
+		}
+		if svc.features.Tests != nil {
+			svc.features.Tests.Stop()
 		}
 	}
 }
