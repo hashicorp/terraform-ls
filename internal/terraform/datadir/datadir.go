@@ -45,6 +45,10 @@ func ModulePath(filePath string) (string, bool) {
 	if strings.HasSuffix(filePath, manifestSuffix) {
 		return strings.TrimSuffix(filePath, manifestSuffix), true
 	}
+	terraformSourcesSuffix := filepath.Join(terraformSourcesDirElements...)
+	if strings.HasSuffix(filePath, terraformSourcesSuffix) {
+		return strings.TrimSuffix(filePath, terraformSourcesSuffix), true
+	}
 
 	for _, pathElems := range pluginLockFilePathElements {
 		suffix := filepath.Join(pathElems...)
