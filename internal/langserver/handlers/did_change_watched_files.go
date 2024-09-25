@@ -76,6 +76,9 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 			continue
 		}
 
+		// If the .terraform/modules/terraform-sources.json file changes
+		// TODO: implement this
+
 		rawPath, err := uri.PathFromURI(rawURI)
 		if err != nil {
 			svc.logger.Printf("error parsing %q: %s", rawURI, err)

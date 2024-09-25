@@ -41,6 +41,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
+	github.com/hashicorp/go-slug v0.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 )
 

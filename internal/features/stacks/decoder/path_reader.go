@@ -26,6 +26,7 @@ import (
 type PathReader struct {
 	StateReader  StateReader
 	ModuleReader ModuleReader
+	RootReader   RootReader
 }
 
 var _ decoder.PathReader = &PathReader{}
@@ -33,6 +34,7 @@ var _ decoder.PathReader = &PathReader{}
 type CombinedReader struct {
 	ModuleReader
 	StateReader
+	RootReader
 }
 
 type StateReader interface {
@@ -47,6 +49,10 @@ type ModuleReader interface {
 	LocalModuleMeta(modPath string) (*tfmod.Meta, error)
 }
 
+type RootReader interface {
+	InstalledModulePath(rootPath string, normalizedSource string) (string, bool)
+}
+
 // PathContext returns a PathContext for the given path based on the language ID
 func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) {
 	record, err := pr.StateReader.StackRecordByPath(path.Path)
@@ -59,6 +65,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 		return stackPathContext(record, CombinedReader{
 			StateReader:  pr.StateReader,
 			ModuleReader: pr.ModuleReader,
+			RootReader:   pr.RootReader,
 		})
 	case ilsp.Deploy.String():
 		return deployPathContext(record)

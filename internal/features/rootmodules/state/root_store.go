@@ -274,6 +274,57 @@ func (s *RootStore) UpdateModManifest(path string, manifest *datadir.ModuleManif
 	return nil
 }
 
+func (s *RootStore) SetTerraformSourcesState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	record, err := rootRecordCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.TerraformSourcesState = state
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *RootStore) UpdateTerraformSources(path string, manifest *datadir.TerraformSources, mErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetTerraformSourcesState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	record, err := rootRecordCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.TerraformSources = manifest
+	record.TerraformSourcesErr = mErr
+	// this races with modules.json files, but that's okay as they should not exist at the same time
+	record.InstalledModules = InstalledModulesFromTerraformSources(manifest)
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	err = s.queueRecordChange(nil, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *RootStore) SetTerraformVersionState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -350,6 +401,8 @@ func (s *RootStore) CallersOfModule(path string) ([]string, error) {
 		if record.ModManifest.ContainsLocalModule(path) {
 			callers = append(callers, record.path)
 		}
+
+		// TODO: support TerraformSources as well here
 	}
 
 	return callers, nil
@@ -375,8 +428,26 @@ func (s *RootStore) InstalledModuleCalls(path string) (map[string]tfmod.Installe
 			}
 		}
 	}
+	// TODO: support TerraformSources as well here
 
 	return installed, err
+}
+
+func (s *RootStore) TerraformSourcesDirectories(path string) []string {
+	dirs := make([]string, 0)
+
+	record, err := s.RootRecordByPath(path)
+	if err != nil {
+		return dirs
+	}
+
+	if record.TerraformSourcesState == op.OpStateLoaded {
+		for _, dir := range record.InstalledModules {
+			dirs = append(dirs, dir)
+		}
+	}
+
+	return dirs
 }
 
 func (s *RootStore) queueRecordChange(oldRecord, newRecord *RootRecord) error {
