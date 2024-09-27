@@ -4,6 +4,8 @@
 package state
 
 import (
+	"path/filepath"
+
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	tfmod "github.com/hashicorp/terraform-schema/module"
 )
@@ -28,7 +30,7 @@ func InstalledModulesFromManifest(manifest *datadir.ModuleManifest) InstalledMod
 	return installedModules
 }
 
-func InstalledModulesFromTerraformSources(sources *datadir.TerraformSources) InstalledModules {
+func InstalledModulesFromTerraformSources(path string, sources *datadir.TerraformSources) InstalledModules {
 	if sources == nil {
 		return nil
 	}
@@ -38,10 +40,16 @@ func InstalledModulesFromTerraformSources(sources *datadir.TerraformSources) Ins
 	installedModules := make(InstalledModules)
 
 	for _, remote := range sources.RemotePackages() {
-		dir, err := sources.LocalPathForSource(remote.SourceAddr(""))
+		absDir, err := sources.LocalPathForSource(remote.SourceAddr(""))
 		if err != nil {
-			continue
+			continue // TODO: log error
 		}
+		// installed modules expects a relative dir
+		dir, err := filepath.Rel(path, absDir)
+		if err != nil {
+			continue // TODO: log error
+		}
+
 		normalizedSource := tfmod.ParseModuleSourceAddr(remote.String())
 		installedModules[normalizedSource.String()] = dir
 	}

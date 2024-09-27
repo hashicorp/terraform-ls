@@ -279,6 +279,7 @@ func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandl
 			modCalls := job.IDs{}
 			if isFirstLevel {
 				var mcErr error
+				// TODO: this is needed for terraform sources as well
 				modCalls, mcErr = f.decodeDeclaredModuleCalls(ctx, dir, ignoreState)
 				if mcErr != nil {
 					f.logger.Printf("decoding declared module calls for %q failed: %s", dir.URI, mcErr)

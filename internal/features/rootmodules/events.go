@@ -5,11 +5,14 @@ package rootmodules
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/jobs"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -241,9 +244,20 @@ func (f *RootModulesFeature) indexInstalledModuleCalls(ctx context.Context, dir 
 func (f *RootModulesFeature) indexTerraformSourcesDirs(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
 	jobIds := make(job.IDs, 0)
 
-	for _, dir := range f.Store.TerraformSourcesDirectories(dir.Path()) {
-		mcHandle := document.DirHandleFromPath(dir)
-		f.stateStore.WalkerPaths.EnqueueDir(ctx, mcHandle)
+	for _, subDir := range f.Store.TerraformSourcesDirectories(dir.Path()) {
+		dh := document.DirHandleFromPath(filepath.Join(dir.Path(), subDir))
+
+		// notify the event bus that a module has been opened
+		// to trigger decoding of the module and its providers
+		// this is done differently for declared module calls in normal TF code
+		// TODO: FIND OUT IF THIS CAUSES A REGRESSION IN PERFORMANCE AS IT ALSO MIGHT RUN RECURSIVELY FOR
+		// NORMAL MODULES SINCE THEY ALSO WRITE TO record.InstalledModules
+		spawnedIds := f.eventbus.DidOpen(eventbus.DidOpenEvent{
+			Context:    ctx,
+			Dir:        dh,
+			LanguageID: lsp.Terraform.String(),
+		})
+		jobIds = append(jobIds, spawnedIds...)
 	}
 
 	return jobIds, nil
