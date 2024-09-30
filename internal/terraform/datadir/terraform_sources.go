@@ -51,32 +51,9 @@ func (mm *TerraformSources) Copy() *TerraformSources {
 	return newTfS
 }
 
-// func NewModuleManifest(rootDir string, records []ModuleRecord) *ModuleManifest {
-// 	return &ModuleManifest{
-// 		rootDir: rootDir,
-// 		Records: records,
-// 	}
-// }
-
 func (tfs *TerraformSources) RootDir() string {
 	return tfs.rootDir
 }
-
-// TODO: parse using go-slug
-
-// func (mm *ModuleManifest) ContainsLocalModule(path string) bool {
-// 	for _, mod := range mm.Records {
-// 		if mod.IsRoot() || mod.IsExternal() {
-// 			continue
-// 		}
-
-// 		absPath := filepath.Join(mm.RootDir(), mod.Dir)
-// 		if pathcmp.PathEquals(absPath, path) {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
 
 func ParseTerraformSourcesFromFile(path string) (*TerraformSources, error) {
 	bundle, err := sourcebundle.OpenDir(path)
@@ -88,7 +65,7 @@ func ParseTerraformSourcesFromFile(path string) (*TerraformSources, error) {
 		Bundle: *bundle,
 	}
 
-	rootDir, ok := ModulePath(path) // TODO: this needs to be done differently for terraform-sources.json
+	rootDir, ok := ModulePath(path)
 	if !ok {
 		return nil, fmt.Errorf("failed to detect module path: %s", path)
 	}
@@ -96,13 +73,3 @@ func ParseTerraformSourcesFromFile(path string) (*TerraformSources, error) {
 
 	return tfs, nil
 }
-
-// func parseModuleManifest(b []byte) (*ModuleManifest, error) {
-// 	mm := ModuleManifest{}
-// 	err := json.Unmarshal(b, &mm)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &mm, nil
-// }
