@@ -77,7 +77,17 @@ func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidCha
 		}
 
 		// If the .terraform/modules/terraform-sources.json file changes
-		// TODO: implement this
+		if modUri, ok := datadir.ModuleUriFromTerraformSourcesFile(rawURI); ok {
+			modHandle := document.DirHandleFromURI(modUri)
+			// manifest change event handles terraform-sources.json as well
+			svc.eventBus.ManifestChange(eventbus.ManifestChangeEvent{
+				Context:    ctx, // We pass the context for data here
+				Dir:        modHandle,
+				ChangeType: change.Type,
+			})
+
+			continue
+		}
 
 		rawPath, err := uri.PathFromURI(rawURI)
 		if err != nil {
