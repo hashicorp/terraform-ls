@@ -250,8 +250,6 @@ func (f *RootModulesFeature) indexTerraformSourcesDirs(ctx context.Context, dir 
 		// notify the event bus that a module has been opened
 		// to trigger decoding of the module and its providers
 		// this is done differently for declared module calls in normal TF code
-		// TODO: FIND OUT IF THIS CAUSES A REGRESSION IN PERFORMANCE AS IT ALSO MIGHT RUN RECURSIVELY FOR
-		// NORMAL MODULES SINCE THEY ALSO WRITE TO record.InstalledModules
 		spawnedIds := f.eventbus.DidOpen(eventbus.DidOpenEvent{
 			Context:    ctx,
 			Dir:        dh,

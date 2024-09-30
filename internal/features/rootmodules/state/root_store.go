@@ -441,6 +441,8 @@ func (s *RootStore) TerraformSourcesDirectories(path string) []string {
 		return dirs
 	}
 
+	// If terraform-sources.json file was loaded, we assume that InstalledModules
+	// contains them as modules.json and terraform-sources.json are not expected to exist at the same time
 	if record.TerraformSourcesState == op.OpStateLoaded {
 		for _, dir := range record.InstalledModules {
 			dirs = append(dirs, dir)
