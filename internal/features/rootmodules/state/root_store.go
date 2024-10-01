@@ -428,7 +428,6 @@ func (s *RootStore) InstalledModuleCalls(path string) (map[string]tfmod.Installe
 			}
 		}
 	}
-	// TODO: support TerraformSources as well here
 
 	return installed, err
 }

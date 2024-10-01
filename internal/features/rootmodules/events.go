@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
-	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/jobs"
 	"github.com/hashicorp/terraform-ls/internal/job"
-	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
@@ -94,9 +92,6 @@ func (f *RootModulesFeature) didOpen(ctx context.Context, dir document.DirHandle
 			return jobs.ParseTerraformSources(ctx, f.fs, f.Store, dir.Path())
 		},
 		Type: op.OpTypeParseTerraformSources.String(),
-		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
-			return f.indexTerraformSourcesDirs(ctx, dir) // TODO: find out why this does not exist for mod manifest
-		},
 	})
 	if err != nil {
 		return ids, err
@@ -246,16 +241,7 @@ func (f *RootModulesFeature) indexTerraformSourcesDirs(ctx context.Context, dir 
 
 	for _, subDir := range f.Store.TerraformSourcesDirectories(dir.Path()) {
 		dh := document.DirHandleFromPath(filepath.Join(dir.Path(), subDir))
-
-		// notify the event bus that a module has been opened
-		// to trigger decoding of the module and its providers
-		// this is done differently for declared module calls in normal TF code
-		spawnedIds := f.eventbus.DidOpen(eventbus.DidOpenEvent{
-			Context:    ctx,
-			Dir:        dh,
-			LanguageID: lsp.Terraform.String(),
-		})
-		jobIds = append(jobIds, spawnedIds...)
+		f.stateStore.WalkerPaths.EnqueueDir(ctx, dh)
 	}
 
 	return jobIds, nil
