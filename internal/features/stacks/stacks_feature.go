@@ -28,9 +28,10 @@ type StacksFeature struct {
 	stopFunc   context.CancelFunc
 
 	moduleFeature stackDecoder.ModuleReader
+	rootFeature   stackDecoder.RootReader
 }
 
-func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore, fs jobs.ReadOnlyFS, moduleFeature stackDecoder.ModuleReader) (*StacksFeature, error) {
+func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore, fs jobs.ReadOnlyFS, moduleFeature stackDecoder.ModuleReader, rootFeature stackDecoder.RootReader) (*StacksFeature, error) {
 	store, err := state.NewStackStore(stateStore.ChangeStore, stateStore.ProviderSchemas)
 	if err != nil {
 		return nil, err
@@ -45,6 +46,7 @@ func NewStacksFeature(bus *eventbus.EventBus, stateStore *globalState.StateStore
 		logger:        discardLogger,
 		stopFunc:      func() {},
 		moduleFeature: moduleFeature,
+		rootFeature:   rootFeature,
 	}, nil
 }
 
@@ -105,6 +107,7 @@ func (f *StacksFeature) PathContext(path lang.Path) (*decoder.PathContext, error
 	pathReader := &stackDecoder.PathReader{
 		StateReader:  f.store,
 		ModuleReader: f.moduleFeature,
+		RootReader:   f.rootFeature,
 	}
 
 	return pathReader.PathContext(path)
@@ -114,6 +117,7 @@ func (f *StacksFeature) Paths(ctx context.Context) []lang.Path {
 	pathReader := &stackDecoder.PathReader{
 		StateReader:  f.store,
 		ModuleReader: f.moduleFeature,
+		RootReader:   f.rootFeature,
 	}
 
 	return pathReader.Paths(ctx)

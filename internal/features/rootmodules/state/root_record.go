@@ -23,6 +23,10 @@ type RootRecord struct {
 	ModManifestErr   error
 	ModManifestState op.OpState
 
+	TerraformSources      *datadir.TerraformSources
+	TerraformSourcesErr   error
+	TerraformSourcesState op.OpState
+
 	// InstalledModules is a map of normalized source addresses from the
 	// manifest to the path of the local directory where the module is installed
 	InstalledModules InstalledModules
@@ -49,6 +53,10 @@ func (m *RootRecord) Copy() *RootRecord {
 		ModManifest:      m.ModManifest.Copy(),
 		ModManifestErr:   m.ModManifestErr,
 		ModManifestState: m.ModManifestState,
+
+		TerraformSources:      m.TerraformSources.Copy(),
+		TerraformSourcesErr:   m.TerraformSourcesErr,
+		TerraformSourcesState: m.TerraformSourcesState,
 
 		// version.Version is practically immutable once parsed
 		TerraformVersion:      m.TerraformVersion,
@@ -86,6 +94,7 @@ func newRootRecord(path string) *RootRecord {
 		path:                    path,
 		ProviderSchemaState:     op.OpStateUnknown,
 		ModManifestState:        op.OpStateUnknown,
+		TerraformSourcesState:   op.OpStateUnknown,
 		TerraformVersionState:   op.OpStateUnknown,
 		InstalledProvidersState: op.OpStateUnknown,
 	}

@@ -24,6 +24,7 @@ const (
 	OpTypeParseModuleConfiguration
 	OpTypeParseVariables
 	OpTypeParseModuleManifest
+	OpTypeParseTerraformSources
 	OpTypeLoadModuleMetadata
 	OpTypeDecodeReferenceTargets
 	OpTypeDecodeReferenceOrigins
