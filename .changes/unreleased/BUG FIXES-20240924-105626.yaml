@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: Fix typo in USAGE.md
-time: 2024-09-24T10:56:26.217913+02:00
-custom:
-    Issue: "1835"
-    Repository: terraform-ls

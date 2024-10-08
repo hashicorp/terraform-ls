@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Add Stacks Terraform version to telemetry
-time: 2024-09-13T11:13:49.570195+02:00
-custom:
-    Issue: "1828"
-    Repository: terraform-ls
