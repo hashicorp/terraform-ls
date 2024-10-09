@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Copy unreleased changelogs to vscode-terrafor on PR merge
+time: 2024-07-22T15:25:32.261657-04:00
+custom:
+    Issue: "1775"
+    Repository: terraform-ls
