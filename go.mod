@@ -32,7 +32,7 @@ require (
 	github.com/zclconf/go-cty v1.15.0
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
 	go.bobheadxi.dev/gobenchdata v1.3.1
-	go.opentelemetry.io/otel/trace v1.30.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	golang.org/x/tools v0.26.0
 )
 
@@ -42,7 +42,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	go.opentelemetry.io/otel/metric v1.30.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 )
 
 require (
@@ -98,7 +98,7 @@ require (
 	go.bobheadxi.dev/streamline v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.55.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0
-	go.opentelemetry.io/otel v1.30.0
+	go.opentelemetry.io/otel v1.31.0
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
