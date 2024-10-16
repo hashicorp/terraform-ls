@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Bump Go version to `1.23.2`
+time: 2024-10-16T12:12:54.944971+02:00
+custom:
+    Issue: "1849"
+    Repository: terraform-ls
