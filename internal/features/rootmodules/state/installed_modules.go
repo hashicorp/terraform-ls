@@ -4,6 +4,7 @@
 package state
 
 import (
+	"log"
 	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/terraform/datadir"
@@ -30,7 +31,7 @@ func InstalledModulesFromManifest(manifest *datadir.ModuleManifest) InstalledMod
 	return installedModules
 }
 
-func InstalledModulesFromTerraformSources(path string, sources *datadir.TerraformSources) InstalledModules {
+func InstalledModulesFromTerraformSources(path string, sources *datadir.TerraformSources, logger *log.Logger) InstalledModules {
 	if sources == nil {
 		return nil
 	}
@@ -42,12 +43,14 @@ func InstalledModulesFromTerraformSources(path string, sources *datadir.Terrafor
 	for _, remote := range sources.RemotePackages() {
 		absDir, err := sources.LocalPathForSource(remote.SourceAddr(""))
 		if err != nil {
-			continue // TODO: log error
+			logger.Printf("Error getting local path for source %s: %s", remote.String(), err)
+			continue
 		}
 		// installed modules expects a relative dir
 		dir, err := filepath.Rel(path, absDir)
 		if err != nil {
-			continue // TODO: log error
+			logger.Printf("Error getting relative path for source %s and path %s and absolute dir %s: %s", remote.String(), path, absDir, err)
+			continue
 		}
 
 		normalizedSource := tfmod.ParseModuleSourceAddr(remote.String())

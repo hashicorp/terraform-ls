@@ -309,7 +309,7 @@ func (s *RootStore) UpdateTerraformSources(path string, manifest *datadir.Terraf
 	record.TerraformSources = manifest
 	record.TerraformSourcesErr = mErr
 	// this races with modules.json files, but that's okay as they should not exist at the same time
-	record.InstalledModules = InstalledModulesFromTerraformSources(path, manifest)
+	record.InstalledModules = InstalledModulesFromTerraformSources(path, manifest, s.logger)
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
