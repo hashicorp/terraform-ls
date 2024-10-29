@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'Add `category` to Stacks Deployment store blocks '
+time: 2024-10-29T11:35:54.290832+01:00
+custom:
+    Issue: "1852"
+    Repository: terraform-ls
