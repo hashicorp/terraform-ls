@@ -43,6 +43,9 @@ func modulePathContext(mod *state.ModuleRecord, stateReader CombinedReader) (*de
 		}
 	}
 
+	// append Terraform version specific path targets that are available in all modules (builtin references)
+	pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, referencesForModule(mod, stateReader)...)
+
 	for name, f := range mod.ParsedModuleFiles {
 		pathCtx.Files[name.String()] = f
 	}
