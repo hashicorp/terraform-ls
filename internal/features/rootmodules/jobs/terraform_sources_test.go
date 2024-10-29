@@ -109,8 +109,8 @@ func TestParseTerraformSources(t *testing.T) {
 	}
 
 	expectedInstalledModules := state.InstalledModules{
-		"git::https://github.com/shernandez5/terraform-kubernetes-crd-demo-module?ref=f6cf642c8671262aac30f0af6e62b6ee85a54204": ".terraform/modules/UmN8ypf1BrY_efIIl4pzoutkgPaJClzCskrS6IWxDfI",
-		"git::https://github.com/shernandez5/terraforming-stacks.git":                                                           ".terraform/modules/m9Di4tJSWWxjddtdLEPk1u9uhAdx6uuzJWzUIds_1BQ",
+		"git::https://github.com/shernandez5/terraform-kubernetes-crd-demo-module?ref=f6cf642c8671262aac30f0af6e62b6ee85a54204": filepath.FromSlash(".terraform/modules/UmN8ypf1BrY_efIIl4pzoutkgPaJClzCskrS6IWxDfI"),
+		"git::https://github.com/shernandez5/terraforming-stacks.git":                                                           filepath.FromSlash(".terraform/modules/m9Di4tJSWWxjddtdLEPk1u9uhAdx6uuzJWzUIds_1BQ"),
 	}
 	if diff := cmp.Diff(expectedInstalledModules, mod.InstalledModules); diff != "" {
 		t.Fatalf("unexpected installed modules: %s", diff)
