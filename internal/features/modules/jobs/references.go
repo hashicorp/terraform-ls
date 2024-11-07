@@ -58,8 +58,6 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, ro
 	}
 	targets, rErr := pd.CollectReferenceTargets()
 
-	targets = append(targets, builtinReferences(modPath)...)
-
 	sErr := modStore.UpdateReferenceTargets(modPath, targets, rErr)
 	if sErr != nil {
 		return sErr
