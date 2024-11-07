@@ -23,7 +23,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 )
 
-func SchemaStackValidation(ctx context.Context, stackStore *state.StackStore, moduleFeature stackDecoder.ModuleReader, stackPath string) error {
+func SchemaStackValidation(ctx context.Context, stackStore *state.StackStore, moduleFeature stackDecoder.ModuleReader, rootFeature stackDecoder.RootReader, stackPath string) error {
 	rpcContext := lsctx.DocumentContext(ctx)
 
 	record, err := stackStore.StackRecordByPath(stackPath)
@@ -44,6 +44,7 @@ func SchemaStackValidation(ctx context.Context, stackStore *state.StackStore, mo
 	d := decoder.NewDecoder(&stackDecoder.PathReader{
 		StateReader:  stackStore,
 		ModuleReader: moduleFeature,
+		RootReader:   rootFeature,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
@@ -123,7 +124,7 @@ func SchemaStackValidation(ctx context.Context, stackStore *state.StackStore, mo
 //
 // It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
 // to supply both origins and targets to compare.
-func ReferenceValidation(ctx context.Context, stackStore *state.StackStore, moduleFeature stackDecoder.ModuleReader, stackPath string) error {
+func ReferenceValidation(ctx context.Context, stackStore *state.StackStore, moduleFeature stackDecoder.ModuleReader, rootFeature stackDecoder.RootReader, stackPath string) error {
 	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
 		return err
@@ -142,6 +143,7 @@ func ReferenceValidation(ctx context.Context, stackStore *state.StackStore, modu
 	pathReader := &stackDecoder.PathReader{
 		StateReader:  stackStore,
 		ModuleReader: moduleFeature,
+		RootReader:   rootFeature,
 	}
 
 	stackDecoder, err := pathReader.PathContext(lang.Path{
