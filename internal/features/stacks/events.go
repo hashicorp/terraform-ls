@@ -249,7 +249,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			refTargetsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 				Dir: dir,
 				Func: func(ctx context.Context) error {
-					return jobs.DecodeReferenceTargets(ctx, f.store, f.moduleFeature, path)
+					return jobs.DecodeReferenceTargets(ctx, f.store, f.moduleFeature, f.rootFeature, path)
 				},
 				Type:        operation.OpTypeDecodeReferenceTargets.String(),
 				DependsOn:   append(componentIds, eSchemaId),
@@ -263,7 +263,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 			refOriginsId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 				Dir: dir,
 				Func: func(ctx context.Context) error {
-					return jobs.DecodeReferenceOrigins(ctx, f.store, f.moduleFeature, path)
+					return jobs.DecodeReferenceOrigins(ctx, f.store, f.moduleFeature, f.rootFeature, path)
 				},
 				Type:        operation.OpTypeDecodeReferenceOrigins.String(),
 				DependsOn:   append(componentIds, eSchemaId),
@@ -278,7 +278,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				_, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 					Dir: dir,
 					Func: func(ctx context.Context) error {
-						return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, dir.Path())
+						return jobs.SchemaStackValidation(ctx, f.store, f.moduleFeature, f.rootFeature, dir.Path())
 					},
 					Type:        operation.OpTypeSchemaStackValidation.String(),
 					DependsOn:   job.IDs{refOriginsId, refTargetsId},
@@ -293,7 +293,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				Dir: dir,
 				Func: func(ctx context.Context) error {
 
-					return jobs.ReferenceValidation(ctx, f.store, f.moduleFeature, dir.Path())
+					return jobs.ReferenceValidation(ctx, f.store, f.moduleFeature, f.rootFeature, dir.Path())
 				},
 				Type:        operation.OpTypeReferenceStackValidation.String(),
 				DependsOn:   job.IDs{refOriginsId, refTargetsId},

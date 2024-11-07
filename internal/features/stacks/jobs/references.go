@@ -26,7 +26,7 @@ import (
 // For example it tells us that variable block between certain LOC
 // can be referred to as var.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
-func DecodeReferenceTargets(ctx context.Context, stackStore *state.StackStore, moduleReader sdecoder.ModuleReader, stackPath string) error {
+func DecodeReferenceTargets(ctx context.Context, stackStore *state.StackStore, moduleReader sdecoder.ModuleReader, rootFeature sdecoder.RootReader, stackPath string) error {
 	mod, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
 		return err
@@ -47,6 +47,7 @@ func DecodeReferenceTargets(ctx context.Context, stackStore *state.StackStore, m
 	d := decoder.NewDecoder(&sdecoder.PathReader{
 		StateReader:  stackStore,
 		ModuleReader: moduleReader,
+		RootReader:   rootFeature,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
@@ -95,7 +96,7 @@ func DecodeReferenceTargets(ctx context.Context, stackStore *state.StackStore, m
 // For example it tells us that there is a reference address var.foobar
 // at a particular LOC. This can be later matched with targets
 // (as obtained via [DecodeReferenceTargets]) during hover or go-to-definition.
-func DecodeReferenceOrigins(ctx context.Context, stackStore *state.StackStore, moduleReader sdecoder.ModuleReader, stackPath string) error {
+func DecodeReferenceOrigins(ctx context.Context, stackStore *state.StackStore, moduleReader sdecoder.ModuleReader, rootFeature sdecoder.RootReader, stackPath string) error {
 	mod, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
 		return err
@@ -116,6 +117,7 @@ func DecodeReferenceOrigins(ctx context.Context, stackStore *state.StackStore, m
 	d := decoder.NewDecoder(&sdecoder.PathReader{
 		StateReader:  stackStore,
 		ModuleReader: moduleReader,
+		RootReader:   rootFeature,
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
