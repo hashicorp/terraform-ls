@@ -262,16 +262,6 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 		return nil, fmt.Errorf("unable to create workspace dir: %w", err)
 	}
 
-	dataDir := filepath.Join(input.DataDirPath,
-		input.Provider.Addr.Hostname.String(),
-		input.Provider.Addr.Namespace,
-		input.Provider.Addr.Type,
-		pVersion.String())
-	err = os.MkdirAll(dataDir, 0755)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create data dir: %w", err)
-	}
-
 	type templateData struct {
 		TerraformVersion string
 		LocalName        string
@@ -283,7 +273,6 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
   required_providers {
     {{ .LocalName }} = {
       source  = "{{ .Source }}"
-      {{ with .Version }}version = "{{ . }}"{{ end }}
     }
   }
 }
@@ -354,7 +343,12 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 			return nil, fmt.Errorf("provider version not found for %q", input.Provider.Addr.ForDisplay())
 		}
 		if !pv.Equal(pVersion) {
-			return nil, fmt.Errorf("expected provider version %s to match %s", pv, pVersion)
+			// The Terraform registry currently returns pre-release versions as the latest available version,
+			// although Terraform defaults to the latest stable version. In this case, we'll ignore the
+			// latest version from the registry until they implement a filter for stable versions.
+			log.Printf("%s: registry version doesn't match installed version: %s != %s. Using %s",
+				input.Provider.Addr.ForDisplay(), pVersion, pv, pv)
+			pVersion = pv
 		}
 	}
 
@@ -362,6 +356,16 @@ func schemaForProvider(ctx context.Context, client registry.Client, input Inputs
 	ps, err := retryProviderSchema(ctx, tf, input.Provider.Addr.ForDisplay(), 0)
 	if err != nil {
 		return nil, err
+	}
+
+	dataDir := filepath.Join(input.DataDirPath,
+		input.Provider.Addr.Hostname.String(),
+		input.Provider.Addr.Namespace,
+		input.Provider.Addr.Type,
+		pVersion.String())
+	err = os.MkdirAll(dataDir, 0755)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create data dir: %w", err)
 	}
 
 	f, err := os.Create(filepath.Join(dataDir, "schema.json.gz"))
