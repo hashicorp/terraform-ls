@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Avoid copying constraints for attribute schemas
+time: 2024-11-15T15:01:20.496555+01:00
+custom:
+    Issue: "426"
+    Repository: hcl-lang
