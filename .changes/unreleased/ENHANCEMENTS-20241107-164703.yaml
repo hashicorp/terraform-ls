@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Raise HCL Diagnostics during early validation
-time: 2024-11-07T16:47:03.069677-05:00
-custom:
-    Issue: "1500"
-    Repository: terraform-ls

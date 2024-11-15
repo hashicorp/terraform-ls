@@ -1,3 +1,24 @@
+## 0.36.0 (15 November 2024)
+
+ENHANCEMENTS:
+
+* Add `category` to Stacks Deployment store blocks  ([#1852](https://github.com/hashicorp/terraform-ls/issues/1852))
+* Support terraform.applying built-in reference starting at TF 1.10 ([#1854](https://github.com/hashicorp/terraform-ls/issues/1854))
+* Raise HCL Diagnostics during early validation ([#1850](https://github.com/hashicorp/terraform-ls/issues/1850))
+* backend/s3: Reflect use_lockfile (v1.10) ([terraform-schema#419](https://github.com/hashicorp/terraform-schema/issues/419))
+* backend/s3: Remove deprecated assume role attributes (v1.10) ([terraform-schema#420](https://github.com/hashicorp/terraform-schema/issues/420))
+
+BUG FIXES:
+
+* Use a provider's stable version when bundling schemas ([#1860](https://github.com/hashicorp/terraform-ls/issues/1860))
+* Avoid copying constraints for attribute schemas ([hcl-lang#426](https://github.com/hashicorp/hcl-lang/issues/426))
+
+INTERNAL:
+
+* Bump Go version to `1.23.2` ([#1849](https://github.com/hashicorp/terraform-ls/issues/1849))
+* Add a provider schema explainer doc ([#1853](https://github.com/hashicorp/terraform-ls/issues/1853))
+* Update terraform-json dep to v0.23.0 ([#1855](https://github.com/hashicorp/terraform-ls/issues/1855))
+
 ## 0.35.0 (15 October 2024)
 
 NOTES:

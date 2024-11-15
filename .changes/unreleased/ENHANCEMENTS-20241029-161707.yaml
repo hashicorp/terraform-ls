@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support terraform.applying built-in reference starting at TF 1.10
-time: 2024-10-29T16:17:07.267245+01:00
-custom:
-    Issue: "1854"
-    Repository: terraform-ls

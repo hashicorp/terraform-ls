@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: 'backend/s3: Remove deprecated assume role attributes (v1.10)'
-time: 2024-11-15T15:02:17.251199+01:00
-custom:
-    Issue: "420"
-    Repository: terraform-schema

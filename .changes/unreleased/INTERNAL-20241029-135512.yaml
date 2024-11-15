@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Add a provider schema explainer doc
-time: 2024-10-29T13:55:12.556361+01:00
-custom:
-    Issue: "1853"
-    Repository: terraform-ls

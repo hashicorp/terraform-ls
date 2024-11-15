@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Update terraform-json dep to v0.23.0
-time: 2024-10-30T09:27:54.622287+01:00
-custom:
-    Issue: "1855"
-    Repository: terraform-ls
