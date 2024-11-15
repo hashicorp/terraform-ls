@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Use a provider's stable version when bundling schemas
+time: 2024-11-11T13:10:48.339488+01:00
+custom:
+    Issue: "1860"
+    Repository: terraform-ls
