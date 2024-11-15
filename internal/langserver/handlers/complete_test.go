@@ -558,6 +558,26 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 						}
 					},
 					{
+						"label": "ephemeral",
+						"kind": 10,
+						"detail": "optional, bool",
+						"documentation": "Whether the value is ephemeral and should not be persisted in the state",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "ephemeral"
+						}
+					},
+					{
 						"label": "nullable",
 						"kind": 10,
 						"detail": "optional, bool",
