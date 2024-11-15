@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: 'backend/s3: Reflect use_lockfile (v1.10)'
+time: 2024-11-15T15:01:54.796792+01:00
+custom:
+    Issue: "419"
+    Repository: terraform-schema
