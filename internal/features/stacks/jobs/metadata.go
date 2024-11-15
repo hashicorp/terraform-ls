@@ -7,8 +7,10 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/features/stacks/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
+	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	earlydecoder "github.com/hashicorp/terraform-schema/earlydecoder/stacks"
 )
@@ -17,7 +19,7 @@ import (
 // way that enables us to decode the rest of the configuration,
 // e.g. by knowing provider versions, etc.
 func LoadStackMetadata(ctx context.Context, stackStore *state.StackStore, stackPath string) error {
-	stack, err := stackStore.StackRecordByPath(stackPath)
+	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
 		return err
 	}
@@ -25,7 +27,7 @@ func LoadStackMetadata(ctx context.Context, stackStore *state.StackStore, stackP
 	// TODO: Avoid parsing if upstream (parsing) job reported no changes
 
 	// Avoid parsing if it is already in progress or already known
-	if stack.MetaState != operation.OpStateUnknown && !job.IgnoreState(ctx) {
+	if record.MetaState != operation.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(stackPath)}
 	}
 
@@ -34,13 +36,36 @@ func LoadStackMetadata(ctx context.Context, stackStore *state.StackStore, stackP
 		return err
 	}
 
+	meta, diags := earlydecoder.LoadStack(record.Path(), record.ParsedFiles.AsMap())
+
 	var mErr error
-	meta, diags := earlydecoder.LoadStack(stack.Path(), stack.ParsedFiles.AsMap())
-	if len(diags) > 0 {
-		mErr = diags
+	sErr := stackStore.UpdateMetadata(stackPath, meta, mErr)
+	if sErr != nil {
+		return sErr
 	}
 
-	sErr := stackStore.UpdateMetadata(stackPath, meta, mErr)
+	if len(diags) <= 0 {
+		// no new diagnostics, so return early
+		return mErr
+	}
+
+	// Merge the new diagnostics with the existing ones
+	existingDiags, ok := record.Diagnostics[globalAst.HCLParsingSource]
+	if !ok {
+		existingDiags = make(ast.Diagnostics)
+	} else {
+		existingDiags = existingDiags.Copy()
+	}
+
+	for fileName, diagnostic := range diags {
+		// Convert the filename to an AST filename
+		fn := ast.FilenameFromName(fileName)
+
+		// Append the diagnostic to the existing diagnostics if it exists
+		existingDiags[fn] = existingDiags[fn].Extend(diagnostic)
+	}
+
+	sErr = stackStore.UpdateDiagnostics(stackPath, globalAst.HCLParsingSource, existingDiags)
 	if sErr != nil {
 		return sErr
 	}

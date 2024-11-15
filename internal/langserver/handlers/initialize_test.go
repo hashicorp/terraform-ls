@@ -567,6 +567,12 @@ func TestInitialize_differentWorkspaceLayouts(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(allModules) != len(tc.expectedModules) {
+				for _, mods := range tc.expectedModules {
+					t.Logf("expected module: %s", mods)
+				}
+				for _, mods := range allModules {
+					t.Logf("got module: %s", mods.Path())
+				}
 				t.Fatalf("expected %d modules, got %d", len(tc.expectedModules), len(allModules))
 			}
 			for _, path := range tc.expectedModules {
