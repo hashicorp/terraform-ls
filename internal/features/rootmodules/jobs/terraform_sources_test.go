@@ -5,7 +5,7 @@ package jobs
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -111,6 +111,7 @@ func TestParseTerraformSources(t *testing.T) {
 	expectedInstalledModules := state.InstalledModules{
 		"git::https://github.com/shernandez5/terraform-kubernetes-crd-demo-module?ref=f6cf642c8671262aac30f0af6e62b6ee85a54204": filepath.FromSlash(".terraform/modules/UmN8ypf1BrY_efIIl4pzoutkgPaJClzCskrS6IWxDfI"),
 		"git::https://github.com/shernandez5/terraforming-stacks.git":                                                           filepath.FromSlash(".terraform/modules/m9Di4tJSWWxjddtdLEPk1u9uhAdx6uuzJWzUIds_1BQ"),
+		"registry.terraform.io/shernandez5/crd-demo-module/kubernetes":                                                          filepath.FromSlash(".terraform/modules/UmN8ypf1BrY_efIIl4pzoutkgPaJClzCskrS6IWxDfI"),
 	}
 	if diff := cmp.Diff(expectedInstalledModules, mod.InstalledModules); diff != "" {
 		t.Fatalf("unexpected installed modules: %s", diff)
@@ -160,10 +161,7 @@ func TestParseTerraformSources_no_sources_file(t *testing.T) {
 		t.Fatal("expected error for missing sources file")
 	}
 
-	// ( ಠ ʖ̯ ಠ)
-	errorUnix := fmt.Sprintf("failed to parse terraform sources: cannot read manifest: open %s: The system cannot find the file specified.", filepath.FromSlash(modPath+"/.terraform/modules/terraform-sources.json"))
-	errorWindows := fmt.Sprintf("failed to parse terraform sources: cannot read manifest: open %s: no such file or directory", filepath.FromSlash(modPath+"/.terraform/modules/terraform-sources.json"))
-	if mod.TerraformSourcesErr.Error() != errorUnix && mod.TerraformSourcesErr.Error() != errorWindows {
+	if !errors.Is(mod.TerraformSourcesErr, os.ErrNotExist) {
 		t.Fatalf("unexpected error: %s", mod.TerraformSourcesErr)
 	}
 }

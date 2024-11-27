@@ -401,8 +401,6 @@ func (s *RootStore) CallersOfModule(path string) ([]string, error) {
 		if record.ModManifest.ContainsLocalModule(path) {
 			callers = append(callers, record.path)
 		}
-
-		// TODO: support TerraformSources as well here -> they don't contain local modules though, so we'd need to do this different here for stacks?
 	}
 
 	return callers, nil
