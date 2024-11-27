@@ -160,7 +160,10 @@ func TestParseTerraformSources_no_sources_file(t *testing.T) {
 		t.Fatal("expected error for missing sources file")
 	}
 
-	if mod.TerraformSourcesErr.Error() != fmt.Sprintf("%s: terraform sources file does not exist", modPath) {
+	// ( ಠ ʖ̯ ಠ)
+	errorUnix := fmt.Sprintf("failed to parse terraform sources: cannot read manifest: open %s: The system cannot find the file specified.", filepath.FromSlash(modPath+"/.terraform/modules/terraform-sources.json"))
+	errorWindows := fmt.Sprintf("failed to parse terraform sources: cannot read manifest: open %s: no such file or directory", filepath.FromSlash(modPath+"/.terraform/modules/terraform-sources.json"))
+	if mod.TerraformSourcesErr.Error() != errorUnix && mod.TerraformSourcesErr.Error() != errorWindows {
 		t.Fatalf("unexpected error: %s", mod.TerraformSourcesErr)
 	}
 }

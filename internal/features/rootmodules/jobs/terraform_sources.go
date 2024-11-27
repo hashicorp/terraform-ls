@@ -37,17 +37,7 @@ func ParseTerraformSources(ctx context.Context, fs ReadOnlyFS, rootStore *state.
 		return err
 	}
 
-	terraformSourcesPath, ok := datadir.TerraformSourcesDirPath(fs, modPath)
-	if !ok {
-		err := fmt.Errorf("%s: terraform sources file does not exist", modPath)
-		sErr := rootStore.UpdateTerraformSources(modPath, nil, err)
-		if sErr != nil {
-			return sErr
-		}
-		return err
-	}
-
-	tfs, err := datadir.ParseTerraformSourcesFromFile(terraformSourcesPath)
+	tfs, err := datadir.ParseTerraformSourcesFromFile(modPath)
 	if err != nil {
 		err := fmt.Errorf("failed to parse terraform sources: %w", err)
 		sErr := rootStore.UpdateTerraformSources(modPath, nil, err)
