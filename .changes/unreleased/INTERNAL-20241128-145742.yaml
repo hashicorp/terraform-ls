@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Add tests for Stacks feature
+time: 2024-11-28T14:57:42.823414+01:00
+custom:
+    Issue: "1879"
+    Repository: terraform-ls
