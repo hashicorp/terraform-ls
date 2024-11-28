@@ -5,6 +5,8 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver"
@@ -17,6 +19,15 @@ import (
 func TestLangServer_workspace_symbol_basic(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
+
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "first.tf"), []byte("provider \"github\" {}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tmpDir.Path(), "second.tf"), []byte("provider \"google\" {}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ss, err := state.NewStateStore()
 	if err != nil {
@@ -165,6 +176,15 @@ func TestLangServer_workspace_symbol_basic(t *testing.T) {
 func TestLangServer_workspace_symbol_missing(t *testing.T) {
 	tmpDir := TempDir(t)
 	InitPluginCache(t, tmpDir.Path())
+
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "first.tf"), []byte("provider \"github\" {}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(tmpDir.Path(), "second.tf"), []byte("provider \"google\" {}\n"), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ss, err := state.NewStateStore()
 	if err != nil {
