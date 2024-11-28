@@ -85,3 +85,11 @@ func ModuleUriFromModuleLockFile(rawUri string) (string, bool) {
 	}
 	return "", false
 }
+
+func ModuleUriFromTerraformSourcesFile(rawUri string) (string, bool) {
+	suffix := "/" + path.Join(terraformSourcesPathElements...)
+	if strings.HasSuffix(rawUri, suffix) {
+		return strings.TrimSuffix(rawUri, suffix), true
+	}
+	return "", false
+}

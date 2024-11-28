@@ -10,6 +10,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-slug v0.16.0
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/hc-install v0.9.0
@@ -18,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.21.0
 	github.com/hashicorp/terraform-json v0.23.0
 	github.com/hashicorp/terraform-registry-address v0.2.3
-	github.com/hashicorp/terraform-schema v0.0.0-20241115125457-9097f9e5a82e
+	github.com/hashicorp/terraform-schema v0.0.0-20241128095320-1392f740c4fe
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.5
@@ -37,6 +38,7 @@ require (
 
 require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
+	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

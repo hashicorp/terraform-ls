@@ -15,28 +15,34 @@ func _() {
 	_ = x[OpTypeParseModuleConfiguration-4]
 	_ = x[OpTypeParseVariables-5]
 	_ = x[OpTypeParseModuleManifest-6]
-	_ = x[OpTypeLoadModuleMetadata-7]
-	_ = x[OpTypeDecodeReferenceTargets-8]
-	_ = x[OpTypeDecodeReferenceOrigins-9]
-	_ = x[OpTypeDecodeVarsReferences-10]
-	_ = x[OpTypeGetModuleDataFromRegistry-11]
-	_ = x[OpTypeParseProviderVersions-12]
-	_ = x[OpTypePreloadEmbeddedSchema-13]
-	_ = x[OpTypeStacksPreloadEmbeddedSchema-14]
-	_ = x[OpTypeSchemaModuleValidation-15]
-	_ = x[OpTypeSchemaStackValidation-16]
-	_ = x[OpTypeSchemaVarsValidation-17]
-	_ = x[OpTypeReferenceValidation-18]
-	_ = x[OpTypeReferenceStackValidation-19]
-	_ = x[OpTypeTerraformValidate-20]
-	_ = x[OpTypeParseStackConfiguration-21]
-	_ = x[OpTypeLoadStackMetadata-22]
-	_ = x[OpTypeLoadStackRequiredTerraformVersion-23]
+	_ = x[OpTypeParseTerraformSources-7]
+	_ = x[OpTypeLoadModuleMetadata-8]
+	_ = x[OpTypeDecodeReferenceTargets-9]
+	_ = x[OpTypeDecodeReferenceOrigins-10]
+	_ = x[OpTypeDecodeVarsReferences-11]
+	_ = x[OpTypeGetModuleDataFromRegistry-12]
+	_ = x[OpTypeParseProviderVersions-13]
+	_ = x[OpTypePreloadEmbeddedSchema-14]
+	_ = x[OpTypeStacksPreloadEmbeddedSchema-15]
+	_ = x[OpTypeSchemaModuleValidation-16]
+	_ = x[OpTypeSchemaStackValidation-17]
+	_ = x[OpTypeSchemaVarsValidation-18]
+	_ = x[OpTypeReferenceValidation-19]
+	_ = x[OpTypeReferenceStackValidation-20]
+	_ = x[OpTypeTerraformValidate-21]
+	_ = x[OpTypeParseStackConfiguration-22]
+	_ = x[OpTypeLoadStackMetadata-23]
+	_ = x[OpTypeLoadStackRequiredTerraformVersion-24]
+	_ = x[OpTypeParseTestConfiguration-25]
+	_ = x[OpTypeLoadTestMetadata-26]
+	_ = x[OpTypeDecodeTestReferenceTargets-27]
+	_ = x[OpTypeDecodeTestReferenceOrigins-28]
+	_ = x[OpTypeSchemaTestValidation-29]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaStackValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeReferenceStackValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackRequiredTerraformVersion"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeParseTerraformSourcesOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaStackValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeReferenceStackValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeLoadStackMetadataOpTypeLoadStackRequiredTerraformVersionOpTypeParseTestConfigurationOpTypeLoadTestMetadataOpTypeDecodeTestReferenceTargetsOpTypeDecodeTestReferenceOriginsOpTypeSchemaTestValidation"
 
-var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 189, 217, 245, 271, 302, 329, 356, 389, 417, 444, 470, 495, 525, 548, 577, 600, 639}
+var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 192, 216, 244, 272, 298, 329, 356, 383, 416, 444, 471, 497, 522, 552, 575, 604, 627, 666, 694, 716, 748, 780, 806}
 
 func (i OpType) String() string {
 	if i >= OpType(len(_OpType_index)-1) {

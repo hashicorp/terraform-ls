@@ -5,6 +5,7 @@ package rootmodules
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/rootmodules/ast"
@@ -84,6 +85,18 @@ func (f *RootModulesFeature) didOpen(ctx context.Context, dir document.DirHandle
 		return ids, err
 	}
 	ids = append(ids, modManifestId)
+
+	terraformSourcesId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+		Dir: dir,
+		Func: func(ctx context.Context) error {
+			return jobs.ParseTerraformSources(ctx, f.fs, f.Store, dir.Path())
+		},
+		Type: op.OpTypeParseTerraformSources.String(),
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, terraformSourcesId)
 
 	pSchemaVerId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
@@ -168,6 +181,9 @@ func (f *RootModulesFeature) manifestChange(ctx context.Context, dir document.Di
 	if changeType == protocol.Deleted {
 		// Manifest is deleted, so we clear the manifest from the store
 		f.Store.UpdateModManifest(path, nil, nil)
+		// We also delete the Terraform Sources (if they exist), since delete changes can also happen if the
+		// entire .terraform directory is deleted and there should only be either a manifest or terraform sources anyway
+		f.Store.UpdateTerraformSources(path, nil, nil)
 		return ids, nil
 	}
 
@@ -186,6 +202,21 @@ func (f *RootModulesFeature) manifestChange(ctx context.Context, dir document.Di
 	}
 	ids = append(ids, modManifestId)
 
+	terraformSourcesId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+		Dir: dir,
+		Func: func(ctx context.Context) error {
+			return jobs.ParseTerraformSources(ctx, f.fs, f.Store, dir.Path())
+		},
+		Type: op.OpTypeParseTerraformSources.String(),
+		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
+			return f.indexTerraformSourcesDirs(ctx, dir)
+		},
+	})
+	if err != nil {
+		return ids, err
+	}
+	ids = append(ids, terraformSourcesId)
+
 	return ids, nil
 }
 
@@ -200,6 +231,17 @@ func (f *RootModulesFeature) indexInstalledModuleCalls(ctx context.Context, dir 
 	for _, mc := range moduleCalls {
 		mcHandle := document.DirHandleFromPath(mc.Path)
 		f.stateStore.WalkerPaths.EnqueueDir(ctx, mcHandle)
+	}
+
+	return jobIds, nil
+}
+
+func (f *RootModulesFeature) indexTerraformSourcesDirs(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
+	jobIds := make(job.IDs, 0)
+
+	for _, subDir := range f.Store.TerraformSourcesDirectories(dir.Path()) {
+		dh := document.DirHandleFromPath(filepath.Join(dir.Path(), subDir))
+		f.stateStore.WalkerPaths.EnqueueDir(ctx, dh)
 	}
 
 	return jobIds, nil

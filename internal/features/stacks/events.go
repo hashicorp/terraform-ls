@@ -21,7 +21,7 @@ import (
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
-	"github.com/hashicorp/terraform-schema/module"
+	tfmod "github.com/hashicorp/terraform-schema/module"
 )
 
 func (f *StacksFeature) discover(path string, files []string) error {
@@ -216,7 +216,7 @@ func (f *StacksFeature) decodeStack(ctx context.Context, dir document.DirHandle,
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
-			componentIds, err := loadStackComponentSources(ctx, f.store, f.bus, path)
+			componentIds, err := f.decodeStackComponentSources(ctx, f.store, f.bus, path)
 			deferIds = append(deferIds, componentIds...)
 			if err != nil {
 				f.logger.Printf("loading stack component sources returned error: %s", err)
@@ -330,8 +330,8 @@ func (f *StacksFeature) removeIndexedStack(rawPath string) {
 	}
 }
 
-// loadStackComponentSources will trigger parsing the local terraform modules for a stack in the ModulesFeature
-func loadStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) (job.IDs, error) {
+// decodeStackComponentSources will trigger parsing the local terraform modules for a stack in the ModulesFeature
+func (f *StacksFeature) decodeStackComponentSources(ctx context.Context, stackStore *state.StackStore, bus *eventbus.EventBus, stackPath string) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 
 	record, err := stackStore.StackRecordByPath(stackPath)
@@ -349,12 +349,22 @@ func loadStackComponentSources(ctx context.Context, stackStore *state.StackStore
 		var fullPath string
 		// detect if component.Source is a local module
 		switch component.SourceAddr.(type) {
-		case module.LocalSourceAddr:
+		case tfmod.LocalSourceAddr:
 			fullPath = filepath.Join(stackPath, filepath.FromSlash(component.Source))
+			// For registry modules, we need to find the local installation path (if installed)
 		case tfaddr.Module:
-			continue
-		case module.RemoteSourceAddr:
-			continue
+			installedDir, ok := f.rootFeature.InstalledModulePath(stackPath, component.SourceAddr.String())
+			if !ok {
+				continue
+			}
+			fullPath = filepath.Join(stackPath, filepath.FromSlash(installedDir))
+		// For other remote modules, we need to find the local installation path (if installed)
+		case tfmod.RemoteSourceAddr:
+			installedDir, ok := f.rootFeature.InstalledModulePath(stackPath, component.SourceAddr.String())
+			if !ok {
+				continue
+			}
+			fullPath = filepath.Join(stackPath, filepath.FromSlash(installedDir))
 		default:
 			// Unknown source address, we can't resolve the path
 			continue

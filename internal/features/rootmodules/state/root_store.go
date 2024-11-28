@@ -274,6 +274,57 @@ func (s *RootStore) UpdateModManifest(path string, manifest *datadir.ModuleManif
 	return nil
 }
 
+func (s *RootStore) SetTerraformSourcesState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	record, err := rootRecordCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.TerraformSourcesState = state
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *RootStore) UpdateTerraformSources(path string, manifest *datadir.TerraformSources, mErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetTerraformSourcesState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	record, err := rootRecordCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	record.TerraformSources = manifest
+	record.TerraformSourcesErr = mErr
+	// this races with modules.json files, but that's okay as they should not exist at the same time
+	record.InstalledModules = InstalledModulesFromTerraformSources(path, manifest, s.logger)
+
+	err = txn.Insert(s.tableName, record)
+	if err != nil {
+		return err
+	}
+
+	err = s.queueRecordChange(nil, record)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *RootStore) SetTerraformVersionState(path string, state op.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -377,6 +428,25 @@ func (s *RootStore) InstalledModuleCalls(path string) (map[string]tfmod.Installe
 	}
 
 	return installed, err
+}
+
+func (s *RootStore) TerraformSourcesDirectories(path string) []string {
+	dirs := make([]string, 0)
+
+	record, err := s.RootRecordByPath(path)
+	if err != nil {
+		return dirs
+	}
+
+	// If terraform-sources.json file was loaded, we assume that InstalledModules
+	// contains them as modules.json and terraform-sources.json are not expected to exist at the same time
+	if record.TerraformSourcesState == op.OpStateLoaded {
+		for _, dir := range record.InstalledModules {
+			dirs = append(dirs, dir)
+		}
+	}
+
+	return dirs
 }
 
 func (s *RootStore) queueRecordChange(oldRecord, newRecord *RootRecord) error {
