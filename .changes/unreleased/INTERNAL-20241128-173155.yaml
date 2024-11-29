@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Fix flaky `workspace/symbol` tests
+time: 2024-11-28T17:31:55.311726+01:00
+custom:
+    Issue: "1880"
+    Repository: terraform-ls
