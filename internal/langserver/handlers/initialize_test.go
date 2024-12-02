@@ -545,7 +545,11 @@ func TestInitialize_differentWorkspaceLayouts(t *testing.T) {
 			ls.Call(t, &langserver.CallRequest{
 				Method: "initialize",
 				ReqParams: fmt.Sprintf(`{
-				"capabilities": {},
+				"capabilities": {
+					"workspace": {
+						"workspaceFolders": true
+					}
+				},
 				"rootUri": %q,
 				"processId": 12345,
 				"workspaceFolders": [
