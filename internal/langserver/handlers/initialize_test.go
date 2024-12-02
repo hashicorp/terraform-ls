@@ -588,7 +588,13 @@ func TestInitialize_differentWorkspaceLayouts(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(allRootModules) != len(tc.expectedRootModules) {
-				t.Fatalf("expected %d root modules, got %d", len(tc.expectedModules), len(allModules))
+				for _, mods := range tc.expectedRootModules {
+					t.Logf("expected root module: %s", mods)
+				}
+				for _, mods := range allRootModules {
+					t.Logf("got root module: %s", mods.Path())
+				}
+				t.Fatalf("expected %d root modules, got %d", len(tc.expectedRootModules), len(allRootModules))
 			}
 			for _, path := range tc.expectedRootModules {
 				_, err := features.RootModules.Store.RootRecordByPath(path)
