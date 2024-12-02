@@ -69,7 +69,8 @@ func (f *RootModulesFeature) Start(ctx context.Context) {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	f.stopFunc = cancelFunc
 
-	discover := f.eventbus.OnDiscover("feature.rootmodules", nil)
+	discoverDone := make(chan job.IDs, 10)
+	discover := f.eventbus.OnDiscover("feature.rootmodules", discoverDone)
 
 	didOpenDone := make(chan job.IDs, 10)
 	didOpen := f.eventbus.OnDidOpen("feature.rootmodules", didOpenDone)
@@ -86,6 +87,7 @@ func (f *RootModulesFeature) Start(ctx context.Context) {
 			case discover := <-discover:
 				// TODO? collect errors
 				f.discover(discover.Path, discover.Files)
+				discoverDone <- job.IDs{}
 			case didOpen := <-didOpen:
 				// TODO? collect errors
 				spawnedIds, _ := f.didOpen(didOpen.Context, didOpen.Dir)
