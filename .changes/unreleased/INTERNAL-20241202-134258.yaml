@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Fix flaky initialize handler tests
+time: 2024-12-02T13:42:58.677986+01:00
+custom:
+    Issue: "1883"
+    Repository: terraform-ls
