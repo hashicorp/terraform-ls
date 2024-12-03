@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Fix incorrect validation for heterogeneous list
+time: 2024-12-03T14:41:06.889146+01:00
+custom:
+    Issue: "1884"
+    Repository: terraform-ls
