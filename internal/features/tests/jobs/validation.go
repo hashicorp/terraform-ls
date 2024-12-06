@@ -54,6 +54,7 @@ func SchemaTestValidation(ctx context.Context, testStore *state.TestStore, testP
 	testDecoder, err := d.Path(lang.Path{
 		Path:       testPath,
 		LanguageID: ilsp.Test.String(),
+		// TODO: do this individually for each file
 	})
 	if err != nil {
 		return err

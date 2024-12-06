@@ -6,11 +6,13 @@ package jobs
 import (
 	"context"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/tests/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	earlydecoder "github.com/hashicorp/terraform-schema/earlydecoder/tests"
+	"github.com/hashicorp/terraform-schema/test"
 )
 
 // LoadTestMetadata loads data about the test in a version-independent
@@ -34,8 +36,15 @@ func LoadTestMetadata(ctx context.Context, testStore *state.TestStore, testPath 
 		return err
 	}
 
+	var diags hcl.Diagnostics
+	meta := map[string]*test.Meta{}
+	for filename, file := range record.ParsedFiles.AsMap() {
+		fMeta, fDiags := earlydecoder.LoadTest(record.Path(), filename, file)
+		diags = append(diags, fDiags...)
+		meta[filename] = fMeta
+	}
+
 	var mErr error
-	meta, diags := earlydecoder.LoadTest(record.Path(), record.ParsedFiles.AsMap())
 	if len(diags) > 0 {
 		mErr = diags
 	}

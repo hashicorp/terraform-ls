@@ -17,17 +17,20 @@ type TestRecord struct {
 
 	PreloadEmbeddedSchemaState op.OpState
 
-	Meta      TestMetadata
+	// Mapping of filename to Metadata (same for the other maps below)
+	Meta      map[string]TestMetadata
 	MetaErr   error
 	MetaState op.OpState
 
-	RefTargets      reference.Targets
-	RefTargetsErr   error
-	RefTargetsState op.OpState
+	GlobalRefTargets reference.Targets // these are global targets that are not tied to a specific file
+	RefTargets       map[string]reference.Targets
+	RefTargetsErr    error
+	RefTargetsState  op.OpState
 
-	RefOrigins      reference.Origins
-	RefOriginsErr   error
-	RefOriginsState op.OpState
+	GlobalRefOrigins reference.Origins // these are global origins that are not tied to a specific file
+	RefOrigins       map[string]reference.Origins
+	RefOriginsErr    error
+	RefOriginsState  op.OpState
 
 	ParsedFiles      ast.Files
 	ParsingErr       error
@@ -49,20 +52,38 @@ func (m *TestRecord) Copy() *TestRecord {
 
 		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
 
-		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,
 		RefTargetsState: m.RefTargetsState,
 
-		RefOrigins:      m.RefOrigins.Copy(),
 		RefOriginsErr:   m.RefOriginsErr,
 		RefOriginsState: m.RefOriginsState,
 
-		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
 
 		ParsingErr:       m.ParsingErr,
 		DiagnosticsState: m.DiagnosticsState.Copy(),
+	}
+
+	if m.RefTargets != nil {
+		newRecord.RefTargets = make(map[string]reference.Targets, len(m.RefTargets))
+		for name, targets := range m.RefTargets {
+			newRecord.RefTargets[name] = targets.Copy()
+		}
+	}
+
+	if m.RefOrigins != nil {
+		newRecord.RefOrigins = make(map[string]reference.Origins, len(m.RefOrigins))
+		for name, origins := range m.RefOrigins {
+			newRecord.RefOrigins[name] = origins.Copy()
+		}
+	}
+
+	if m.Meta != nil {
+		newRecord.Meta = make(map[string]TestMetadata, len(m.Meta))
+		for name, meta := range m.Meta {
+			newRecord.Meta[name] = meta.Copy()
+		}
 	}
 
 	if m.ParsedFiles != nil {

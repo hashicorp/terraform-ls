@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/tests/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/tests/state"
@@ -52,6 +53,12 @@ var _ decoder.PathReader = &PathReader{}
 
 // PathContext returns a PathContext for the given path based on the language ID
 func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) {
+	if path.File == "" {
+		panic("file is empty")
+		// TODO: make this nicer after testing is done
+		// return nil, fmt.Errorf("file is empty")
+	}
+
 	record, err := pr.StateReader.TestRecordByPath(path.Path)
 	if err != nil {
 		return nil, err
@@ -59,7 +66,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 
 	switch path.LanguageID {
 	case ilsp.Test.String():
-		return testPathContext(record, CombinedReader{
+		return testPathContext(record, path.File, CombinedReader{
 			StateReader:  pr.StateReader,
 			ModuleReader: pr.ModuleReader,
 			RootReader:   pr.RootReader,
@@ -75,7 +82,7 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 	return nil, fmt.Errorf("unknown language ID: %q", path.LanguageID)
 }
 
-func testPathContext(record *state.TestRecord, stateReader CombinedReader) (*decoder.PathContext, error) {
+func testPathContext(record *state.TestRecord, filename string, stateReader CombinedReader) (*decoder.PathContext, error) {
 	// TODO! this should only work for terraform 1.6 and above
 	version := stateReader.TerraformVersion(record.Path())
 	if version == nil {
@@ -91,11 +98,15 @@ func testPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 	sm.SetStateReader(stateReader)
 
 	meta := &tftest.Meta{
-		Path:      record.Path(),
-		Filenames: record.Meta.Filenames,
+		Path: record.Path(),
 	}
 
 	mergedSchema, err := sm.SchemaForTest(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	functions, err := functionsForTest(record, version, stateReader)
 	if err != nil {
 		return nil, err
 	}
@@ -106,25 +117,22 @@ func testPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Validators:       validators,
-		// TODO? functions TFECO-7480
+		Functions:        functions,
 	}
 
-	for _, origin := range record.RefOrigins {
+	for _, origin := range record.RefOrigins[filename] {
 		if ast.IsTestFilename(origin.OriginRange().Filename) {
 			pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
 		}
 	}
-	for _, target := range record.RefTargets {
+	for _, target := range record.RefTargets[filename] {
 		if target.RangePtr != nil && ast.IsTestFilename(target.RangePtr.Filename) {
 			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
 		}
 	}
 
-	for name, f := range record.ParsedFiles {
-		if _, ok := name.(ast.TestFilename); ok {
-			pathCtx.Files[name.String()] = f
-		}
-	}
+	// only one file in this context
+	pathCtx.Files[filename] = record.ParsedFiles[ast.TestFilename(filename)]
 
 	return pathCtx, nil
 }
@@ -145,11 +153,19 @@ func mockPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 	sm.SetStateReader(stateReader)
 
 	meta := &tftest.Meta{
-		Path:      record.Path(),
-		Filenames: record.Meta.Filenames,
+		Path: record.Path(),
 	}
 
+	// TODO: the schema for mock files gets all the schemas from the test files combined
+	// while we could know in which test files mocks are used, we want to keep them open
+	// to all the test files as far as completions go
+
 	mergedSchema, err := sm.SchemaForMock(meta)
+	if err != nil {
+		return nil, err
+	}
+
+	functions, err := functionsForTest(record, version, stateReader)
 	if err != nil {
 		return nil, err
 	}
@@ -160,17 +176,21 @@ func mockPathContext(record *state.TestRecord, stateReader CombinedReader) (*dec
 		ReferenceTargets: make(reference.Targets, 0),
 		Files:            make(map[string]*hcl.File, 0),
 		Validators:       validators,
-		// TODO? functions TFECO-7480
+		Functions:        functions,
 	}
 
-	for _, origin := range record.RefOrigins {
-		if ast.IsMockFilename(origin.OriginRange().Filename) {
-			pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
+	for _, origins := range record.RefOrigins {
+		for _, origin := range origins {
+			if ast.IsMockFilename(origin.OriginRange().Filename) {
+				pathCtx.ReferenceOrigins = append(pathCtx.ReferenceOrigins, origin)
+			}
 		}
 	}
-	for _, target := range record.RefTargets {
-		if target.RangePtr != nil && ast.IsMockFilename(target.RangePtr.Filename) {
-			pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+	for _, targets := range record.RefTargets {
+		for _, target := range targets {
+			if target.RangePtr != nil && ast.IsMockFilename(target.RangePtr.Filename) {
+				pathCtx.ReferenceTargets = append(pathCtx.ReferenceTargets, target)
+			}
 		}
 	}
 
@@ -207,6 +227,7 @@ func (pr *PathReader) Paths(ctx context.Context) []lang.Path {
 			paths = append(paths, lang.Path{
 				Path:       record.Path(),
 				LanguageID: ilsp.Test.String(),
+				// TODO: add filename!
 			})
 		}
 		if foundMock {
@@ -218,4 +239,13 @@ func (pr *PathReader) Paths(ctx context.Context) []lang.Path {
 	}
 
 	return paths
+}
+
+func mustFunctionsForVersion(v *version.Version) map[string]schema.FunctionSignature {
+	s, err := tfschema.FunctionsForVersion(v)
+	if err != nil {
+		// this should never happen
+		panic(err)
+	}
+	return s
 }

@@ -227,7 +227,7 @@ func (s *TestStore) SetMetaState(path string, state op.OpState) error {
 	return nil
 }
 
-func (s *TestStore) UpdateMetadata(path string, meta *tftest.Meta, mErr error) error {
+func (s *TestStore) UpdateMetadata(path string, meta map[string]*tftest.Meta, mErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetMetaState(path, op.OpStateLoaded)
@@ -240,10 +240,13 @@ func (s *TestStore) UpdateMetadata(path string, meta *tftest.Meta, mErr error) e
 	}
 
 	record := oldRecord.Copy()
-	record.Meta = TestMetadata{
-		Filenames: meta.Filenames,
-	}
 	record.MetaErr = mErr
+
+	for filename, m := range meta {
+		record.Meta[filename] = TestMetadata{
+			RunBlocks: m.RunBlocks,
+		}
+	}
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
@@ -328,7 +331,7 @@ func (s *TestStore) SetReferenceTargetsState(path string, state op.OpState) erro
 	return nil
 }
 
-func (s *TestStore) UpdateReferenceTargets(path string, refs reference.Targets, rErr error) error {
+func (s *TestStore) UpdateReferenceTargets(path string, refs map[string]reference.Targets, globalRefs reference.Targets, rErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetReferenceTargetsState(path, op.OpStateLoaded)
@@ -340,6 +343,7 @@ func (s *TestStore) UpdateReferenceTargets(path string, refs reference.Targets, 
 		return err
 	}
 
+	mod.GlobalRefTargets = globalRefs
 	mod.RefTargets = refs
 	mod.RefTargetsErr = rErr
 
@@ -371,7 +375,7 @@ func (s *TestStore) SetReferenceOriginsState(path string, state op.OpState) erro
 	return nil
 }
 
-func (s *TestStore) UpdateReferenceOrigins(path string, origins reference.Origins, roErr error) error {
+func (s *TestStore) UpdateReferenceOrigins(path string, origins map[string]reference.Origins, globalOrigins reference.Origins, roErr error) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetReferenceOriginsState(path, op.OpStateLoaded)
@@ -383,6 +387,7 @@ func (s *TestStore) UpdateReferenceOrigins(path string, origins reference.Origin
 		return err
 	}
 
+	mod.GlobalRefOrigins = globalOrigins
 	mod.RefOrigins = origins
 	mod.RefOriginsErr = roErr
 

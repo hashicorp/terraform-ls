@@ -750,5 +750,6 @@ func (svc *service) decoderForDocument(_ context.Context, doc *document.Document
 	return svc.decoder.Path(lang.Path{
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
+		File:       doc.Filename, // TODO: this might have consequences for non test files
 	})
 }

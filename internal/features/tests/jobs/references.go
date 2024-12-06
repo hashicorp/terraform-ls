@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl-lang/reference"
 	idecoder "github.com/hashicorp/terraform-ls/internal/decoder"
 	"github.com/hashicorp/terraform-ls/internal/document"
+	"github.com/hashicorp/terraform-ls/internal/features/tests/ast"
 	fdecoder "github.com/hashicorp/terraform-ls/internal/features/tests/decoder"
 	"github.com/hashicorp/terraform-ls/internal/features/tests/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
@@ -27,7 +28,7 @@ import (
 // can be referred to as var.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
 func DecodeReferenceTargets(ctx context.Context, testStore *state.TestStore, testPath string, moduleFeature fdecoder.ModuleReader, rootFeature fdecoder.RootReader) error {
-	mod, err := testStore.TestRecordByPath(testPath)
+	record, err := testStore.TestRecordByPath(testPath)
 	if err != nil {
 		return err
 	}
@@ -35,7 +36,7 @@ func DecodeReferenceTargets(ctx context.Context, testStore *state.TestStore, tes
 	// TODO: Avoid collection if upstream jobs reported no changes
 
 	// Avoid collection if it is already in progress or already done
-	if mod.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if record.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(testPath)}
 	}
 
@@ -51,14 +52,24 @@ func DecodeReferenceTargets(ctx context.Context, testStore *state.TestStore, tes
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
-	testDecoder, err := d.Path(lang.Path{
-		Path:       testPath,
-		LanguageID: ilsp.Test.String(),
-	})
-	if err != nil {
-		return err
+	// loop through all parsed files and collect targets separately for all test files
+	testTargets := make(map[string]reference.Targets, 0)
+	var rErr error
+	for name := range record.ParsedFiles {
+		if _, ok := name.(ast.TestFilename); ok {
+			testDecoder, err := d.Path(lang.Path{
+				Path:       testPath,
+				LanguageID: ilsp.Test.String(),
+				File:       name.String(),
+			})
+			if err != nil {
+				return err
+			}
+			targets, err := testDecoder.CollectReferenceTargets()
+			testTargets[name.String()] = targets
+			rErr = err
+		}
 	}
-	testTargets, rErr := testDecoder.CollectReferenceTargets()
 
 	mockDecoder, err := d.Path(lang.Path{
 		Path:       testPath,
@@ -69,11 +80,7 @@ func DecodeReferenceTargets(ctx context.Context, testStore *state.TestStore, tes
 	}
 	mockTargets, rErr := mockDecoder.CollectReferenceTargets()
 
-	targets := make(reference.Targets, 0)
-	targets = append(targets, testTargets...)
-	targets = append(targets, mockTargets...)
-
-	sErr := testStore.UpdateReferenceTargets(testPath, targets, rErr)
+	sErr := testStore.UpdateReferenceTargets(testPath, testTargets, mockTargets, rErr)
 	if sErr != nil {
 		return sErr
 	}
@@ -90,7 +97,7 @@ func DecodeReferenceTargets(ctx context.Context, testStore *state.TestStore, tes
 // at a particular LOC. This can be later matched with targets
 // (as obtained via [DecodeReferenceTargets]) during hover or go-to-definition.
 func DecodeReferenceOrigins(ctx context.Context, testStore *state.TestStore, testPath string, moduleFeature fdecoder.ModuleReader, rootFeature fdecoder.RootReader) error {
-	mod, err := testStore.TestRecordByPath(testPath)
+	record, err := testStore.TestRecordByPath(testPath)
 	if err != nil {
 		return err
 	}
@@ -98,7 +105,7 @@ func DecodeReferenceOrigins(ctx context.Context, testStore *state.TestStore, tes
 	// TODO: Avoid collection if upstream jobs reported no changes
 
 	// Avoid collection if it is already in progress or already done
-	if mod.RefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	if record.RefOriginsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
 		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(testPath)}
 	}
 
@@ -114,14 +121,24 @@ func DecodeReferenceOrigins(ctx context.Context, testStore *state.TestStore, tes
 	})
 	d.SetContext(idecoder.DecoderContext(ctx))
 
-	testDecoder, err := d.Path(lang.Path{
-		Path:       testPath,
-		LanguageID: ilsp.Test.String(),
-	})
-	if err != nil {
-		return err
+	// loop through all parsed files and collect targets separately for all test files
+	testOrigins := make(map[string]reference.Origins, 0)
+	var rErr error
+	for name := range record.ParsedFiles {
+		if _, ok := name.(ast.TestFilename); ok {
+			testDecoder, err := d.Path(lang.Path{
+				Path:       testPath,
+				LanguageID: ilsp.Test.String(),
+				File:       name.String(),
+			})
+			if err != nil {
+				return err
+			}
+			origins, err := testDecoder.CollectReferenceOrigins()
+			testOrigins[name.String()] = origins
+			rErr = err
+		}
 	}
-	testOrigins, _ := testDecoder.CollectReferenceOrigins()
 
 	mockDecoder, err := d.Path(lang.Path{
 		Path:       testPath,
@@ -132,11 +149,7 @@ func DecodeReferenceOrigins(ctx context.Context, testStore *state.TestStore, tes
 	}
 	mockOrigins, rErr := mockDecoder.CollectReferenceOrigins()
 
-	origins := make(reference.Origins, 0)
-	origins = append(origins, testOrigins...)
-	origins = append(origins, mockOrigins...)
-
-	sErr := testStore.UpdateReferenceOrigins(testPath, origins, rErr)
+	sErr := testStore.UpdateReferenceOrigins(testPath, testOrigins, mockOrigins, rErr)
 	if sErr != nil {
 		return sErr
 	}

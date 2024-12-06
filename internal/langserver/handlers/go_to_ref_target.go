@@ -61,6 +61,7 @@ func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocu
 	path := lang.Path{
 		Path:       doc.Dir.Path(),
 		LanguageID: doc.LanguageID,
+		File:       doc.Filename, // TODO: this might have consequences for non test files
 	}
 
 	return svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename, pos)
