@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Fix incorrect validation for for-expressions
+time: 2024-12-09T15:10:45.0655+01:00
+custom:
+    Issue: "1890"
+    Repository: terraform-ls
