@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: 'Stacks: parse terraform-sources.json to support remote component sources'
-time: 2024-10-28T09:04:53.004252+01:00
-custom:
-    Issue: "1836"
-    Repository: terraform-ls

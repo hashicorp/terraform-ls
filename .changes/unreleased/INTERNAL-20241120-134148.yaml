@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Add Heimdall metadata
-time: 2024-11-20T13:41:48.024126-05:00
-custom:
-    Issue: "1874"
-    Repository: terraform-ls
