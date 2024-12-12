@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: Fix crash when using ephemeral resources with older Terraform versions
-time: 2024-12-12T12:05:30.160278+01:00
-custom:
-    Issue: "1892"
-    Repository: terraform-ls
