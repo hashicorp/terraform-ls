@@ -32,7 +32,7 @@ require (
 	github.com/zclconf/go-cty v1.15.1
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
 	go.bobheadxi.dev/gobenchdata v1.3.1
-	go.opentelemetry.io/otel/trace v1.32.0
+	go.opentelemetry.io/otel/trace v1.33.0
 	golang.org/x/tools v0.28.0
 )
 
@@ -43,7 +43,8 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	go.opentelemetry.io/otel/metric v1.32.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/otel/metric v1.33.0 // indirect
 )
 
 require (
@@ -74,7 +75,6 @@ require (
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/copier v0.3.5 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -99,7 +99,7 @@ require (
 	go.bobheadxi.dev/streamline v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.57.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0
-	go.opentelemetry.io/otel v1.32.0
+	go.opentelemetry.io/otel v1.33.0
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.32.0 // indirect
