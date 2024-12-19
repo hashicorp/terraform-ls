@@ -258,7 +258,12 @@ func (s *RootStore) UpdateModManifest(path string, manifest *datadir.ModuleManif
 
 	record.ModManifest = manifest
 	record.ModManifestErr = mErr
-	record.InstalledModules = InstalledModulesFromManifest(manifest)
+
+	// Only overwrite InstalledModules if manifest is not nil to not overwrite modules that might have
+	// been set via UpdateTerraformSources() – we should probably refactor this to not share the same field
+	if manifest != nil {
+		record.InstalledModules = InstalledModulesFromManifest(manifest)
+	}
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
@@ -308,8 +313,11 @@ func (s *RootStore) UpdateTerraformSources(path string, manifest *datadir.Terraf
 
 	record.TerraformSources = manifest
 	record.TerraformSourcesErr = mErr
-	// this races with modules.json files, but that's okay as they should not exist at the same time
-	record.InstalledModules = InstalledModulesFromTerraformSources(path, manifest, s.logger)
+	// Only overwrite InstalledModules if manifest is not nil to not overwrite modules that might have
+	// been set via UpdateModManifest() – we should probably refactor this to not share the same field
+	if manifest != nil {
+		record.InstalledModules = InstalledModulesFromTerraformSources(path, manifest, s.logger)
+	}
 
 	err = txn.Insert(s.tableName, record)
 	if err != nil {
