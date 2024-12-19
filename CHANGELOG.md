@@ -4,6 +4,10 @@ BUG FIXES:
 
 * Fix race when parsing locally installed module sources leading to empty completions ([#1903](https://github.com/hashicorp/terraform-ls/issues/1903))
 
+INTERNAL:
+
+* Bump golang.org/x/net from 0.32.2 to 0.33.0 ([#1905](https://github.com/hashicorp/terraform-ls/issues/1905))
+
 ## 0.36.2 (12 December 2024)
 
 BUG FIXES:
