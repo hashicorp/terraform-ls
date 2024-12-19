@@ -2,5 +2,5 @@ kind: INTERNAL
 body: Bump golang.org/x/net from 0.32.2 to 0.33.0
 time: 2024-12-19T11:27:51.936154-05:00
 custom:
-    Issue: "1234"
+    Issue: "1905"
     Repository: terraform-ls
