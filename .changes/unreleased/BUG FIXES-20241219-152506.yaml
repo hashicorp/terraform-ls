@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: Fix race when parsing locally installed module sources leading to empty completions
-time: 2024-12-19T15:25:06.951366+01:00
-custom:
-    Issue: "1903"
-    Repository: terraform-ls

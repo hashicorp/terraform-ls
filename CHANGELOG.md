@@ -1,3 +1,9 @@
+## 0.36.3 (19 December 2024)
+
+BUG FIXES:
+
+* Fix race when parsing locally installed module sources leading to empty completions ([#1903](https://github.com/hashicorp/terraform-ls/issues/1903))
+
 ## 0.36.2 (12 December 2024)
 
 BUG FIXES:
