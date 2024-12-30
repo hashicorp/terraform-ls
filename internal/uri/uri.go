@@ -109,7 +109,7 @@ func PathFromURI(rawUri string) (string, error) {
 func MustParseURI(rawUri string) string {
 	uri, err := parseUri(rawUri)
 	if err != nil {
-		panic(fmt.Sprintf("invalid URI: %s", uri))
+		panic(fmt.Sprintf("invalid URI: %s", rawUri))
 	}
 
 	return uri.String()
