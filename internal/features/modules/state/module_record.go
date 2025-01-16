@@ -36,6 +36,10 @@ type ModuleRecord struct {
 	MetaErr   error
 	MetaState op.OpState
 
+	WriteOnlyAttributes      WriteOnlyAttributes
+	WriteOnlyAttributesErr   error
+	WriteOnlyAttributesState op.OpState
+
 	ModuleDiagnostics      ast.SourceModDiags
 	ModuleDiagnosticsState globalAst.DiagnosticSourceState
 }
@@ -62,6 +66,10 @@ func (m *ModuleRecord) Copy() *ModuleRecord {
 		Meta:      m.Meta.Copy(),
 		MetaErr:   m.MetaErr,
 		MetaState: m.MetaState,
+
+		WriteOnlyAttributes:      m.WriteOnlyAttributes,
+		WriteOnlyAttributesErr:   m.WriteOnlyAttributesErr,
+		WriteOnlyAttributesState: m.WriteOnlyAttributesState,
 
 		ModuleDiagnosticsState: m.ModuleDiagnosticsState.Copy(),
 	}
@@ -101,6 +109,7 @@ func newModule(modPath string) *ModuleRecord {
 		RefOriginsState:            op.OpStateUnknown,
 		RefTargetsState:            op.OpStateUnknown,
 		MetaState:                  op.OpStateUnknown,
+		WriteOnlyAttributesState:   op.OpStateUnknown,
 		ModuleDiagnosticsState: globalAst.DiagnosticSourceState{
 			globalAst.HCLParsingSource:          op.OpStateUnknown,
 			globalAst.SchemaValidationSource:    op.OpStateUnknown,

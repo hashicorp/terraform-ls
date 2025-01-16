@@ -46,5 +46,6 @@ const (
 	OpTypeLoadTestMetadata
 	OpTypeDecodeTestReferenceTargets
 	OpTypeDecodeTestReferenceOrigins
+	OpTypeDecodeWriteOnlyAttributes
 	OpTypeSchemaTestValidation
 )

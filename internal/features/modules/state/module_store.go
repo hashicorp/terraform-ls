@@ -566,6 +566,49 @@ func (s *ModuleStore) UpdateReferenceOrigins(path string, origins reference.Orig
 	return nil
 }
 
+func (s *ModuleStore) SetWriteOnlyAttributesState(path string, state op.OpState) error {
+	txn := s.db.Txn(true)
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.WriteOnlyAttributesState = state
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
+func (s *ModuleStore) UpdateWriteOnlyAttributes(path string, woAttrs WriteOnlyAttributes, woAttrsErr error) error {
+	txn := s.db.Txn(true)
+	txn.Defer(func() {
+		s.SetWriteOnlyAttributesState(path, op.OpStateLoaded)
+	})
+	defer txn.Abort()
+
+	mod, err := moduleCopyByPath(txn, path)
+	if err != nil {
+		return err
+	}
+
+	mod.WriteOnlyAttributes = woAttrs
+	mod.WriteOnlyAttributesErr = woAttrsErr
+
+	err = txn.Insert(s.tableName, mod)
+	if err != nil {
+		return err
+	}
+
+	txn.Commit()
+	return nil
+}
+
 func (s *ModuleStore) RegistryModuleMeta(addr tfaddr.Module, cons version.Constraints) (*registry.ModuleData, error) {
 	return s.registryModuleStore.RegistryModuleMeta(addr, cons)
 }
