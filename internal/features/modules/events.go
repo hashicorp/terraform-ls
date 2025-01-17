@@ -360,6 +360,20 @@ func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandl
 				}
 			}
 
+			woAttributesId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
+				Dir: dir,
+				Func: func(ctx context.Context) error {
+					return jobs.DecodeWriteOnlyAttributes(ctx, f.Store, f.rootFeature, path)
+				},
+				Type:        op.OpTypeDecodeWriteOnlyAttributes.String(),
+				DependsOn:   append(modCalls, eSchemaId),
+				IgnoreState: ignoreState,
+			})
+			if err != nil {
+				return deferIds, err
+			}
+			deferIds = append(deferIds, woAttributesId)
+
 			return deferIds, nil
 		},
 	})

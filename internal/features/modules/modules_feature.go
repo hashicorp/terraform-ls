@@ -266,6 +266,18 @@ func (f *ModulesFeature) Telemetry(path string) map[string]interface{} {
 		properties["providerRequirements"] = reqs
 	}
 
+	if len(mod.WriteOnlyAttributes) > 0 {
+		woAttrs := make(map[string]map[string]map[string]int)
+
+		for pAddr, stats := range mod.WriteOnlyAttributes {
+			if telemetry.IsPublicProvider(pAddr) {
+				woAttrs[pAddr.String()] = stats
+			}
+		}
+
+		properties["writeOnlyAttributes"] = woAttrs
+	}
+
 	modId, err := f.Store.GetModuleID(mod.Path())
 	if err != nil {
 		return properties
