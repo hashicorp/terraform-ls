@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Report usage of write-only attributes for public providers
-time: 2025-01-17T16:45:15.722924+01:00
-custom:
-    Issue: "1926"
-    Repository: terraform-ls
