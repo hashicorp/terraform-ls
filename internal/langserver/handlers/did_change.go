@@ -54,6 +54,8 @@ func (svc *service) TextDocumentDidChange(ctx context.Context, params lsp.DidCha
 		return err
 	}
 
+	svc.stateStore.DocumentStore.DumpState(svc.logger)
+
 	svc.eventBus.DidChange(eventbus.DidChangeEvent{
 		Context:    ctx, // We pass the context for data here
 		Dir:        dh.Dir,

@@ -21,6 +21,25 @@ type DocumentStore struct {
 	TimeProvider func() time.Time
 }
 
+func (s *DocumentStore) DumpState(logger *log.Logger) {
+	logger.Printf("=== FILESYSTEM STATE DUMP ===")
+	txn := s.db.Txn(false)
+	it, err := txn.Get(documentsTableName, "dir", "")
+	if err != nil {
+		logger.Printf("ERROR getting documents: %s", err)
+		return
+	}
+	for obj := it.Next(); obj != nil; obj = it.Next() {
+		doc := obj.(*document.Document)
+		logger.Printf("File: %s", doc.FullPath())
+		logger.Printf("  Version: %d", doc.Version)
+		logger.Printf("  Size: %d bytes", len(doc.Text))
+		logger.Printf("  Content: %s", string(doc.Text))
+		logger.Printf("---")
+	}
+	logger.Printf("=== END FILESYSTEM STATE DUMP ===")
+}
+
 func (s *DocumentStore) OpenDocument(dh document.Handle, langId string, version int, text []byte) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
