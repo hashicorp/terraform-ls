@@ -6,6 +6,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/langserver/diagnostics"
 	"github.com/hashicorp/terraform-ls/internal/langserver/notifier"
@@ -62,10 +63,30 @@ func updateDiagnostics(features *Features, dNotifier *diagnostics.Notifier) noti
 			diags := diagnostics.NewDiagnostics()
 			diags.EmptyRootDiagnostic()
 
-			diags.Extend(features.Modules.Diagnostics(path))
-			diags.Extend(features.Variables.Diagnostics(path))
-			diags.Extend(features.Stacks.Diagnostics(path))
-			diags.Extend(features.Tests.Diagnostics(path))
+			// Log only non-empty diagnostics
+			moduleDiags := features.Modules.Diagnostics(path)
+			if len(moduleDiags) > 0 {
+				log.Printf("Modules feature diagnostics for %s: %+v", path, moduleDiags)
+			}
+			diags.Extend(moduleDiags)
+
+			varDiags := features.Variables.Diagnostics(path)
+			if len(varDiags) > 0 {
+				log.Printf("Variables feature diagnostics for %s: %+v", path, varDiags)
+			}
+			diags.Extend(varDiags)
+
+			stackDiags := features.Stacks.Diagnostics(path)
+			if len(stackDiags) > 0 {
+				log.Printf("Stacks feature diagnostics for %s: %+v", path, stackDiags)
+			}
+			diags.Extend(stackDiags)
+
+			testDiags := features.Tests.Diagnostics(path)
+			if len(testDiags) > 0 {
+				log.Printf("Tests feature diagnostics for %s: %+v", path, testDiags)
+			}
+			diags.Extend(testDiags)
 
 			dNotifier.PublishHCLDiags(ctx, path, diags)
 		}

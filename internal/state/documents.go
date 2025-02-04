@@ -24,11 +24,14 @@ type DocumentStore struct {
 func (s *DocumentStore) DumpState(logger *log.Logger) {
 	logger.Printf("=== FILESYSTEM STATE DUMP ===")
 	txn := s.db.Txn(false)
-	it, err := txn.Get(documentsTableName, "dir", "")
+	defer txn.Abort()
+
+	it, err := txn.Get(s.tableName, "id")
 	if err != nil {
 		logger.Printf("ERROR getting documents: %s", err)
 		return
 	}
+
 	for obj := it.Next(); obj != nil; obj = it.Next() {
 		doc := obj.(*document.Document)
 		logger.Printf("File: %s", doc.FullPath())

@@ -5,6 +5,7 @@ package jobs
 
 import (
 	"context"
+	"log"
 	"path"
 
 	"github.com/hashicorp/hcl-lang/decoder"
@@ -80,6 +81,9 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, ro
 		if sErr != nil {
 			return sErr
 		}
+
+		log.Printf("SchemaModuleValidation for changed file %s", filename)
+		log.Printf("Schema validation diagnostics: %+v", fileDiags)
 	} else {
 		// We validate the whole module, e.g. on open
 		var diags lang.DiagnosticsMap
@@ -100,15 +104,15 @@ func SchemaModuleValidation(ctx context.Context, modStore *state.ModuleStore, ro
 // It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
 // to supply both origins and targets to compare.
 func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, rootFeature fdecoder.RootReader, modPath string) error {
-	mod, err := modStore.ModuleRecordByPath(modPath)
-	if err != nil {
-		return err
-	}
+	_, err := modStore.ModuleRecordByPath(modPath)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Avoid validation if it is already in progress or already finished
-	if mod.ModuleDiagnosticsState[globalAst.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
-		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
-	}
+	// if mod.ModuleDiagnosticsState[globalAst.ReferenceValidationSource] != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	// }
 
 	err = modStore.SetModuleDiagnosticsState(modPath, globalAst.ReferenceValidationSource, op.OpStateLoading)
 	if err != nil {
@@ -127,7 +131,9 @@ func ReferenceValidation(ctx context.Context, modStore *state.ModuleStore, rootF
 		return err
 	}
 
+	log.Printf("ReferenceValidation for module %s", modPath)
 	diags := validations.UnreferencedOrigins(ctx, pathCtx)
+	log.Printf("Reference validation diagnostics: %+v", diags)
 	return modStore.UpdateModuleDiagnostics(modPath, globalAst.ReferenceValidationSource, ast.ModDiagsFromMap(diags))
 }
 

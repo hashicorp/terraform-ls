@@ -64,6 +64,7 @@ func (f *ModulesFeature) didOpen(ctx context.Context, dir document.DirHandle, la
 		return ids, nil
 	}
 
+	f.logger.Printf("Calling decodeModule from didOpen")
 	return f.decodeModule(ctx, dir, false, true)
 }
 
@@ -239,6 +240,8 @@ func (f *ModulesFeature) decodeDeclaredModuleCalls(ctx context.Context, dir docu
 func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandle, ignoreState bool, isFirstLevel bool) (job.IDs, error) {
 	ids := make(job.IDs, 0)
 	path := dir.Path()
+
+	f.logger.Printf("decodeModule called for path: %s, ignoreState: %v, isFirstLevel: %v", path, ignoreState, isFirstLevel)
 
 	parseId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,

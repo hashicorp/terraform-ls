@@ -430,6 +430,9 @@ func (s *ModuleStore) UpdateMetadata(path string, meta *tfmod.Meta, mErr error) 
 }
 
 func (s *ModuleStore) UpdateModuleDiagnostics(path string, source globalAst.DiagnosticSource, diags ast.ModDiags) error {
+	s.logger.Printf("UpdateModuleDiagnostics called for path %s with source %v (int value: %d)", path, source, int(source))
+	s.logger.Printf("Diagnostics to update: %+v", diags)
+
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetModuleDiagnosticsState(path, source, op.OpStateLoaded)
@@ -445,7 +448,18 @@ func (s *ModuleStore) UpdateModuleDiagnostics(path string, source globalAst.Diag
 	if mod.ModuleDiagnostics == nil {
 		mod.ModuleDiagnostics = make(ast.SourceModDiags)
 	}
+
+	s.logger.Printf("Current module diagnostics before update (with numeric sources):")
+	for src, d := range mod.ModuleDiagnostics {
+		s.logger.Printf("  Source %d: %+v", int(src), d)
+	}
+
 	mod.ModuleDiagnostics[source] = diags
+
+	s.logger.Printf("Module diagnostics after update (with numeric sources):")
+	for src, d := range mod.ModuleDiagnostics {
+		s.logger.Printf("  Source %d: %+v", int(src), d)
+	}
 
 	err = txn.Insert(s.tableName, mod)
 	if err != nil {

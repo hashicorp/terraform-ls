@@ -5,6 +5,7 @@ package jobs
 
 import (
 	"context"
+	"log"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -26,7 +27,9 @@ import (
 // can be referred to as var.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
 func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, rootFeature fdecoder.RootReader, modPath string) error {
-	mod, err := modStore.ModuleRecordByPath(modPath)
+	log.Printf("Starting DecodeReferenceTargets for %s", modPath)
+
+	_, err := modStore.ModuleRecordByPath(modPath)
 	if err != nil {
 		return err
 	}
@@ -34,9 +37,9 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, ro
 	// TODO: Avoid collection if upstream jobs reported no changes
 
 	// Avoid collection if it is already in progress or already done
-	if mod.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
-		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
-	}
+	// if mod.RefTargetsState != op.OpStateUnknown && !job.IgnoreState(ctx) {
+	// 	return job.StateNotChangedErr{Dir: document.DirHandleFromPath(modPath)}
+	// }
 
 	err = modStore.SetReferenceTargetsState(modPath, op.OpStateLoading)
 	if err != nil {
@@ -56,7 +59,9 @@ func DecodeReferenceTargets(ctx context.Context, modStore *state.ModuleStore, ro
 	if err != nil {
 		return err
 	}
+	log.Printf("About to collect reference targets for %s", modPath)
 	targets, rErr := pd.CollectReferenceTargets()
+	log.Printf("Collected reference targets for %s: %+v", modPath, targets)
 
 	sErr := modStore.UpdateReferenceTargets(modPath, targets, rErr)
 	if sErr != nil {

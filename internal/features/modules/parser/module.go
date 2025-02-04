@@ -4,6 +4,7 @@
 package parser
 
 import (
+	"log"
 	"path/filepath"
 
 	"github.com/hashicorp/hcl/v2"
@@ -15,36 +16,38 @@ func ParseModuleFiles(fs parser.FS, modPath string) (ast.ModFiles, ast.ModDiags,
 	files := make(ast.ModFiles, 0)
 	diags := make(ast.ModDiags, 0)
 
+	log.Printf("Reading directory %s for module files", modPath)
 	infos, err := fs.ReadDir(modPath)
 	if err != nil {
+		log.Printf("Error reading directory %s: %v", modPath, err)
 		return nil, nil, err
 	}
 
+	log.Printf("Found %d entries in %s", len(infos), modPath)
 	for _, info := range infos {
 		if info.IsDir() {
-			// We only care about files
+			log.Printf("Skipping directory: %s", info.Name())
 			continue
 		}
 
 		name := info.Name()
+		log.Printf("Checking file: %s, is module file: %v", name, ast.IsModuleFilename(name))
 		if !ast.IsModuleFilename(name) {
 			continue
 		}
 
-		// TODO: overrides
-
 		fullPath := filepath.Join(modPath, name)
+		log.Printf("Reading module file: %s", fullPath)
 
 		src, err := fs.ReadFile(fullPath)
 		if err != nil {
-			// If a file isn't accessible, continue with reading the
-			// remaining module files
+			log.Printf("Error reading file %s: %v", fullPath, err)
 			continue
 		}
 
 		filename := ast.ModFilename(name)
-
 		f, pDiags := parser.ParseFile(src, filename)
+		log.Printf("Parsed file %s: file nil? %v, diagnostics: %v", filename, f == nil, pDiags)
 
 		diags[filename] = pDiags
 		if f != nil {
@@ -52,6 +55,7 @@ func ParseModuleFiles(fs parser.FS, modPath string) (ast.ModFiles, ast.ModDiags,
 		}
 	}
 
+	log.Printf("Finished parsing module files. Found %d files", len(files))
 	return files, diags, nil
 }
 

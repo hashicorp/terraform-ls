@@ -6,6 +6,7 @@ package validations
 import (
 	"context"
 	"fmt"
+	"log"
 	"slices"
 
 	"github.com/hashicorp/hcl-lang/decoder"
@@ -57,6 +58,9 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 
 		_, ok = pathCtx.ReferenceTargets.Match(localOrigin)
 		if !ok {
+			// Add this log
+			log.Printf("Reference validation: no target found for %v in targets: %+v", address, pathCtx.ReferenceTargets)
+
 			// target not found
 			fileName := origin.OriginRange().Filename
 			d := &hcl.Diagnostic{
