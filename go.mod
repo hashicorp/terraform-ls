@@ -28,7 +28,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/stretchr/testify v1.10.0
-	github.com/vektra/mockery/v2 v2.51.1
+	github.com/vektra/mockery/v2 v2.52.1
 	github.com/zclconf/go-cty v1.16.2
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
 	go.bobheadxi.dev/gobenchdata v1.3.1
@@ -87,7 +87,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/posener/complete v1.2.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
