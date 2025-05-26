@@ -5,8 +5,15 @@ updates:
     schedule:
       interval: "daily"
     labels: ["dependencies"]
-  # Dependabot only updates hashicorp GHAs, external GHAs are managed by internal tooling (tsccr)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      github-actions-breaking:
+        update-types:
+          - major
+      github-actions-backward-compatible:
+        update-types:
+          - minor
+          - patch
