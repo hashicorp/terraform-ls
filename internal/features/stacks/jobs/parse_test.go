@@ -20,6 +20,21 @@ import (
 )
 
 func TestParseStackConfiguration(t *testing.T) {
+	runTestParseStackConfiguration(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "simple-stack", extension: "tfcomponent.hcl"})
+
+	runTestParseStackConfiguration(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "simple-stack-legacy-extension", extension: "tfstack.hcl"})
+}
+
+func runTestParseStackConfiguration(t *testing.T, tc struct {
+	folderName string
+	extension  string
+}) {
 	ctx := context.Background()
 	gs, err := globalState.NewStateStore()
 	if err != nil {
@@ -36,7 +51,7 @@ func TestParseStackConfiguration(t *testing.T) {
 	}
 	testFs := filesystem.NewFilesystem(gs.DocumentStore)
 
-	simpleStackPath := filepath.Join(testData, "simple-stack")
+	simpleStackPath := filepath.Join(testData, tc.folderName)
 
 	err = ss.Add(simpleStackPath)
 	if err != nil {
@@ -58,7 +73,7 @@ func TestParseStackConfiguration(t *testing.T) {
 	ctx = job.WithIgnoreState(ctx, true)
 
 	// say we're coming from did_change request
-	componentsURI, err := filepath.Abs(filepath.Join(simpleStackPath, "components.tfstack.hcl"))
+	componentsURI, err := filepath.Abs(filepath.Join(simpleStackPath, "components."+tc.extension))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,24 +93,24 @@ func TestParseStackConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	componentsFile := ast.StackFilename("components.tfstack.hcl")
-	// test if components.tfstack.hcl is not the same as first seen
+	componentsFile := ast.StackFilename("components." + tc.extension)
+	// test if components.tfstack.hcl / components.tfcomponent.hcl is not the same as first seen
 	if before.ParsedFiles[componentsFile] == after.ParsedFiles[componentsFile] {
 		t.Fatal("file should mismatch")
 	}
 
-	variablesFile := ast.StackFilename("variables.tfstack.hcl")
-	// test if variables.tfstack.hcl is the same as first seen
+	variablesFile := ast.StackFilename("variables." + tc.extension)
+	// test if variables.tfstack.hcl / variables.tfcomponent.hcl is the same as first seen
 	if before.ParsedFiles[variablesFile] != after.ParsedFiles[variablesFile] {
 		t.Fatal("file mismatch")
 	}
 
-	// examine diags should change for components.tfstack.hcl
+	// examine diags should change for components.tfstack.hcl / components.tfcomponent.hcl
 	if before.Diagnostics[globalAst.HCLParsingSource][componentsFile][0] == after.Diagnostics[globalAst.HCLParsingSource][componentsFile][0] {
 		t.Fatal("diags should mismatch")
 	}
 
-	// examine diags should not change for variables.tfstack.hcl
+	// examine diags should not change for variables.tfstack.hcl / variables.tfcomponent.hcl
 	if before.Diagnostics[globalAst.HCLParsingSource][variablesFile][0] != after.Diagnostics[globalAst.HCLParsingSource][variablesFile][0] {
 		t.Fatal("diags should match")
 	}

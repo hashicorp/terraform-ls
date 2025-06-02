@@ -266,6 +266,13 @@ func TestStackStore_SetTerraformVersion(t *testing.T) {
 }
 
 func TestStackStore_UpdateParsedFiles(t *testing.T) {
+	runTestStackStore_UpdateParsedFiles(t, struct{ extension string }{extension: "tfstack.hcl"})
+	runTestStackStore_UpdateParsedFiles(t, struct{ extension string }{extension: "tfcomponent.hcl"})
+}
+
+func runTestStackStore_UpdateParsedFiles(t *testing.T, tc struct {
+	extension string
+}) {
 	globalStore, err := globalState.NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -286,13 +293,13 @@ func TestStackStore_UpdateParsedFiles(t *testing.T) {
 variable "blah" {
   type = string
 }
-`), "variables.tfstack.hcl")
+`), "variables."+tc.extension)
 	if len(diags) > 0 {
 		t.Fatal(diags)
 	}
 
 	err = s.UpdateParsedFiles(tmpDir, ast.Files{
-		ast.StackFilename("variables.tfstack.hcl"): testFile,
+		ast.StackFilename("variables." + tc.extension): testFile,
 	}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -304,7 +311,7 @@ variable "blah" {
 	}
 
 	expectedParsedFiles := ast.Files{
-		ast.StackFilename("variables.tfstack.hcl"): testFile,
+		ast.StackFilename("variables." + tc.extension): testFile,
 	}
 	if diff := cmp.Diff(expectedParsedFiles, record.ParsedFiles, cmpOpts); diff != "" {
 		t.Fatalf("unexpected parsed files: %s", diff)
@@ -312,6 +319,13 @@ variable "blah" {
 }
 
 func TestStackStore_UpdateDiagnostics(t *testing.T) {
+	runTestStackStore_UpdateDiagnostics(t, struct{ extension string }{extension: "tfstack.hcl"})
+	runTestStackStore_UpdateDiagnostics(t, struct{ extension string }{extension: "tfcomponent.hcl"})
+}
+
+func runTestStackStore_UpdateDiagnostics(t *testing.T, tc struct {
+	extension string
+}) {
 	globalStore, err := globalState.NewStateStore()
 	if err != nil {
 		t.Fatal(err)
@@ -331,10 +345,10 @@ func TestStackStore_UpdateDiagnostics(t *testing.T) {
 	_, diags := p.ParseHCL([]byte(`
 variable "blah" {
   type = string
-`), "variables.tfstack.hcl")
+`), "variables."+tc.extension)
 
 	err = s.UpdateDiagnostics(tmpDir, globalAst.HCLParsingSource, ast.DiagnosticsFromMap(map[string]hcl.Diagnostics{
-		"variables.tfstack.hcl": diags,
+		"variables." + tc.extension: diags,
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -347,13 +361,13 @@ variable "blah" {
 
 	expectedDiags := ast.SourceDiagnostics{
 		globalAst.HCLParsingSource: ast.DiagnosticsFromMap(map[string]hcl.Diagnostics{
-			"variables.tfstack.hcl": {
+			"variables." + tc.extension: {
 				{
 					Severity: hcl.DiagError,
 					Summary:  "Unclosed configuration block",
 					Detail:   "There is no closing brace for this block before the end of the file. This may be caused by incorrect brace nesting elsewhere in this file.",
 					Subject: &hcl.Range{
-						Filename: "variables.tfstack.hcl",
+						Filename: "variables." + tc.extension,
 						Start: hcl.Pos{
 							Line:   2,
 							Column: 17,

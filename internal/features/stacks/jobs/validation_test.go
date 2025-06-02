@@ -39,6 +39,20 @@ func (r RootReaderMock) InstalledModulePath(rootPath string, normalizedSource st
 }
 
 func TestSchemaStackValidation_FullStack(t *testing.T) {
+	runTestSchemaStackValidation_FullStack(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "invalid-stack", extension: "tfcomponent.hcl"})
+	runTestSchemaStackValidation_FullStack(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "invalid-stack-legacy-extension", extension: "tfstack.hcl"})
+}
+
+func runTestSchemaStackValidation_FullStack(t *testing.T, tc struct {
+	folderName string
+	extension  string
+}) {
 	ctx := context.Background()
 	gs, err := globalState.NewStateStore()
 	if err != nil {
@@ -53,7 +67,7 @@ func TestSchemaStackValidation_FullStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stackPath := filepath.Join(testData, "invalid-stack")
+	stackPath := filepath.Join(testData, tc.folderName)
 
 	err = ms.Add(stackPath)
 	if err != nil {
@@ -64,7 +78,7 @@ func TestSchemaStackValidation_FullStack(t *testing.T) {
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method:     "textDocument/didOpen",
 		LanguageID: ilsp.Stacks.String(),
-		URI:        "file:///test/variables.tfstack.hcl",
+		URI:        "file:///test/variables." + tc.extension,
 	})
 	err = ParseStackConfiguration(ctx, fs, ms, stackPath)
 	if err != nil {
@@ -88,6 +102,20 @@ func TestSchemaStackValidation_FullStack(t *testing.T) {
 }
 
 func TestSchemaStackValidation_SingleFile(t *testing.T) {
+	runTestSchemaStackValidation_SingleFile(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "invalid-stack", extension: "tfcomponent.hcl"})
+	runTestSchemaStackValidation_SingleFile(t, struct {
+		folderName string
+		extension  string
+	}{folderName: "invalid-stack-legacy-extension", extension: "tfstack.hcl"})
+}
+
+func runTestSchemaStackValidation_SingleFile(t *testing.T, tc struct {
+	folderName string
+	extension  string
+}) {
 	ctx := context.Background()
 	gs, err := globalState.NewStateStore()
 	if err != nil {
@@ -102,7 +130,7 @@ func TestSchemaStackValidation_SingleFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stackPath := filepath.Join(testData, "invalid-stack")
+	stackPath := filepath.Join(testData, tc.folderName)
 
 	err = ss.Add(stackPath)
 	if err != nil {
@@ -113,7 +141,7 @@ func TestSchemaStackValidation_SingleFile(t *testing.T) {
 	ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{
 		Method:     "textDocument/didChange",
 		LanguageID: ilsp.Stacks.String(),
-		URI:        "file:///test/variables.tfstack.hcl",
+		URI:        "file:///test/variables." + tc.extension,
 	})
 	err = ParseStackConfiguration(ctx, fs, ss, stackPath)
 	if err != nil {

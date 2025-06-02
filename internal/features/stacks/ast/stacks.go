@@ -33,7 +33,9 @@ func (mf StackFilename) IsIgnored() bool {
 
 func IsStackFilename(name string) bool {
 	return strings.HasSuffix(name, ".tfstack.hcl") ||
-		strings.HasSuffix(name, ".tfstack.json")
+		strings.HasSuffix(name, ".tfstack.json") ||
+		strings.HasSuffix(name, ".tfcomponent.hcl") ||
+		strings.HasSuffix(name, ".tfcomponent.json")
 }
 
 // DeployFilename is a custom type for deployment files
