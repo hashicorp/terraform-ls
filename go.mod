@@ -13,10 +13,10 @@ require (
 	github.com/hashicorp/go-slug v0.16.4
 	github.com/hashicorp/go-uuid v1.0.3
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/hc-install v0.9.1
+	github.com/hashicorp/hc-install v0.9.2
 	github.com/hashicorp/hcl-lang v0.0.0-20250117153936-66cdc97e9d3b
 	github.com/hashicorp/hcl/v2 v2.23.0
-	github.com/hashicorp/terraform-exec v0.22.0
+	github.com/hashicorp/terraform-exec v0.23.0
 	github.com/hashicorp/terraform-json v0.24.0
 	github.com/hashicorp/terraform-registry-address v0.2.4
 	github.com/hashicorp/terraform-schema v0.0.0-20250117153811-3c4991466f2c
@@ -56,13 +56,13 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
-	github.com/ProtonMail/go-crypto v1.1.3 // indirect
+	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/antonmedv/expr v1.10.5 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/chigopher/pathlib v1.0.0 // indirect
-	github.com/cloudflare/circl v1.3.7 // indirect
+	github.com/cloudflare/circl v1.6.0 // indirect
 	github.com/creachadair/mds v0.21.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/djherbis/buffer v1.2.0 // indirect
