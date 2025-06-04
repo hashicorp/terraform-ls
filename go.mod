@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/hcl-lang v0.0.0-20250117153936-66cdc97e9d3b
 	github.com/hashicorp/hcl/v2 v2.23.0
 	github.com/hashicorp/terraform-exec v0.23.0
-	github.com/hashicorp/terraform-json v0.24.0
+	github.com/hashicorp/terraform-json v0.25.0
 	github.com/hashicorp/terraform-registry-address v0.2.5
 	github.com/hashicorp/terraform-schema v0.0.0-20250117153811-3c4991466f2c
 	github.com/mcuadros/go-defaults v1.2.0
