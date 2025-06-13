@@ -8,8 +8,7 @@ The following file types are currently supported and language IDs expected:
 
 - `terraform` - standard `*.tf` config files
 - `terraform-vars` - variable files (`*.tfvars`)
-- `terraform-stack` - standard `*.tfstack.hcl` files
-- `terraform-component` - standard `*.tfcomponent.hcl` files
+- `terraform-stack` - standard `*.tfcomponent.hcl` and `*.tfstack.hcl` files
 - `terraform-deploy` - standard `*.tfdeploy.hcl` files
 
 Client can choose to highlight other files locally, but such other files
