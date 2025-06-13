@@ -20,7 +20,7 @@ import (
 )
 
 // ParseStackConfiguration parses the whole Stack configuration,
-// i.e. turns bytes of `*.tfstack.hcl` & `*.tfdeploy.hcl` files into AST ([*hcl.File]).
+// i.e. turns bytes of `*.tfcomponent.hcl`, `*.tfstack.hcl` & `*.tfdeploy.hcl` files into AST ([*hcl.File]).
 func ParseStackConfiguration(ctx context.Context, fs ReadOnlyFS, stackStore *state.StackStore, stackPath string) error {
 	record, err := stackStore.StackRecordByPath(stackPath)
 	if err != nil {
