@@ -1,3 +1,13 @@
+## 0.36.5 (17 June 2025)
+
+ENHANCEMENTS:
+
+* Support new Terraform Stacks tfcomponent.hcl extension ([#1977](https://github.com/hashicorp/terraform-ls/issues/1977))
+
+INTERNAL:
+
+* Set version to dev ([#1234](https://github.com/hashicorp/terraform-ls/issues/1234))
+
 ## 0.36.4 (22 January 2025)
 
 ENHANCEMENTS:

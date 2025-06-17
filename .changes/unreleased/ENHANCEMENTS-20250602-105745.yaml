@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: 'Support new Terraform Stacks tfcomponent.hcl extension'
-time: 2025-06-02T10:57:45.782842+05:30
-custom:
-    Issue: "1977"
-    Repository: terraform-ls
