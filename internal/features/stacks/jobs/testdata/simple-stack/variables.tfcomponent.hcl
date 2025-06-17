@@ -1,0 +1,2 @@
+variable "region" {
+  type = string
