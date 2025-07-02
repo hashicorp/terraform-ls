@@ -38,10 +38,14 @@ func sendModuleTelemetry(features *Features, telemetrySender telemetry.Sender) n
 		properties := features.Modules.Telemetry(path)
 		rootTelemetry := features.RootModules.Telemetry(path)
 		stacksTelemetry := features.Stacks.Telemetry(path)
+		searchTelemetry := features.Search.Telemetry(path)
 		for property, value := range rootTelemetry {
 			properties[property] = value
 		}
 		for property, value := range stacksTelemetry {
+			properties[property] = value
+		}
+		for property, value := range searchTelemetry {
 			properties[property] = value
 		}
 
@@ -66,6 +70,7 @@ func updateDiagnostics(features *Features, dNotifier *diagnostics.Notifier) noti
 			diags.Extend(features.Variables.Diagnostics(path))
 			diags.Extend(features.Stacks.Diagnostics(path))
 			diags.Extend(features.Tests.Diagnostics(path))
+			diags.Extend(features.Search.Diagnostics(path))
 
 			dNotifier.PublishHCLDiags(ctx, path, diags)
 		}
