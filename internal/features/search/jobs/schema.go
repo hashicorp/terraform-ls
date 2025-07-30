@@ -33,29 +33,27 @@ func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDi
 	}
 	defer searchStore.SetPreloadEmbeddedSchemaState(searchPath, operation.OpStateLoaded)
 
-	// TODO: get providerrequirements from *.tf files
-	/*
-		pReqs := make(map[tfaddr.Provider]version.Constraints, len(record.Meta.ProviderRequirements))
-		for _, req := range record.Meta.ProviderRequirements {
-			pReqs[req.Source] = req.VersionConstraints
-		}
+	pReqs, err := searchStore.ProviderRequirementsForModule(searchPath)
+	if err != nil {
+		return err
+	}
 
-		missingReqs, err := schemaStore.MissingSchemas(pReqs)
+	missingReqs, err := schemaStore.MissingSchemas(pReqs)
+	if err != nil {
+		return err
+	}
+
+	if len(missingReqs) == 0 {
+		// avoid preloading any schemas if we already have all
+		return nil
+	}
+
+	for _, pAddr := range missingReqs {
+		err := globalState.PreloadSchemaForProviderAddr(ctx, pAddr, fs, schemaStore, logger)
 		if err != nil {
 			return err
 		}
-
-		if len(missingReqs) == 0 {
-			// avoid preloading any schemas if we already have all
-			return nil
-		}
-
-		for _, pAddr := range missingReqs {
-			err := globalState.PreloadSchemaForProviderAddr(ctx, pAddr, fs, schemaStore, logger)
-			if err != nil {
-				return err
-			}
-		} */
+	}
 
 	return nil
 

@@ -296,9 +296,11 @@ func (s *SearchStore) UpdateMetadata(path string, meta *tfsearch.Meta, mErr erro
 
 	record := oldRecord.Copy()
 	record.Meta = SearchMetadata{
-		Lists:     meta.Lists,
-		Variables: meta.Variables,
-		Filenames: meta.Filenames,
+		Lists:                meta.Lists,
+		Variables:            meta.Variables,
+		Filenames:            meta.Filenames,
+		ProviderReferences:   meta.ProviderReferences,
+		ProviderRequirements: meta.ProviderRequirements,
 	}
 	record.MetaErr = mErr
 
@@ -517,4 +519,27 @@ func (s *SearchStore) queueRecordChange(oldRecord, newRecord *SearchRecord) erro
 
 func (s *SearchStore) ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error) {
 	return s.providerSchemasStore.ProviderSchema(modPath, addr, vc)
+}
+
+func (s *SearchStore) ProviderRequirementsForModule(modPath string) (tfsearch.ProviderRequirements, error) {
+	return s.providerRequirementsForModule(modPath, 0)
+}
+
+func (s *SearchStore) providerRequirementsForModule(searchPath string, level int) (tfsearch.ProviderRequirements, error) {
+	mod, err := s.SearchRecordByPath(searchPath)
+	if err != nil {
+		// It's possible that the configuration contains a module with an
+		// invalid local source, so we just ignore it if it can't be found.
+		// This allows us to still return provider requirements for other modules
+		return tfsearch.ProviderRequirements{}, nil
+	}
+
+	level++
+
+	requirements := make(tfsearch.ProviderRequirements, 0)
+	for k, v := range mod.Meta.ProviderRequirements {
+		requirements[k] = v
+	}
+
+	return requirements, nil
 }

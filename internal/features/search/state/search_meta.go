@@ -4,6 +4,7 @@
 package state
 
 import (
+	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfsearch "github.com/hashicorp/terraform-schema/search"
 )
 
@@ -14,6 +15,9 @@ type SearchMetadata struct {
 
 	Lists     map[string]tfsearch.List
 	Variables map[string]tfsearch.Variable
+
+	ProviderReferences   map[tfsearch.ProviderRef]tfaddr.Provider
+	ProviderRequirements tfsearch.ProviderRequirements
 }
 
 func (sm SearchMetadata) Copy() SearchMetadata {
@@ -32,6 +36,21 @@ func (sm SearchMetadata) Copy() SearchMetadata {
 		newSm.Variables = make(map[string]tfsearch.Variable, len(sm.Variables))
 		for k, v := range sm.Variables {
 			newSm.Variables[k] = v
+		}
+	}
+
+	if sm.ProviderReferences != nil {
+		newSm.ProviderReferences = make(map[tfsearch.ProviderRef]tfaddr.Provider, len(sm.ProviderReferences))
+		for ref, provider := range sm.ProviderReferences {
+			newSm.ProviderReferences[ref] = provider
+		}
+	}
+
+	if sm.ProviderRequirements != nil {
+		newSm.ProviderRequirements = make(tfsearch.ProviderRequirements, len(sm.ProviderRequirements))
+		for provider, vc := range sm.ProviderRequirements {
+			// version.Constraints is never mutated in this context
+			newSm.ProviderRequirements[provider] = vc
 		}
 	}
 

@@ -5,20 +5,23 @@ package jobs
 
 import (
 	"context"
+	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
+	searchDecoder "github.com/hashicorp/terraform-ls/internal/features/search/decoder"
 	"github.com/hashicorp/terraform-ls/internal/features/search/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
 	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
 	earlydecoder "github.com/hashicorp/terraform-schema/earlydecoder/search"
+	tfsearch "github.com/hashicorp/terraform-schema/search"
 )
 
 // LoadSearchMetadata loads data about the search in a version-independent
 // way that enables us to decode the rest of the configuration,
 // e.g. by knowing provider versions, etc.
-func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, searchPath string) error {
+func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, moduleFeature searchDecoder.ModuleReader, logger *log.Logger, searchPath string) error {
 	record, err := searchStore.SearchRecordByPath(searchPath)
 	if err != nil {
 		return err
@@ -37,6 +40,11 @@ func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, sea
 	}
 
 	meta, diags := earlydecoder.LoadSearch(record.Path(), record.ParsedFiles.AsMap())
+
+	err = loadSearchModuleSources(meta, moduleFeature, searchPath)
+	if err != nil {
+		logger.Printf("loading search module sources returned error: %s", err)
+	}
 
 	var mErr error
 	sErr := searchStore.UpdateMetadata(searchPath, meta, mErr)
@@ -71,4 +79,30 @@ func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, sea
 	}
 
 	return mErr
+}
+
+func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDecoder.ModuleReader, path string) error {
+	// load metadata from the adjacent Terraform module
+	modMeta, err := moduleFeature.LocalModuleMeta(path)
+	if err != nil {
+		return err
+	}
+
+	if modMeta != nil {
+		// Convert from module provider references to search provider references
+		for moduleProviderRef, provider := range modMeta.ProviderReferences {
+			searchProviderRef := tfsearch.ProviderRef{
+				LocalName: moduleProviderRef.LocalName,
+				Alias:     moduleProviderRef.Alias,
+			}
+			searchMeta.ProviderReferences[searchProviderRef] = provider
+		}
+
+		// Copy provider requirements
+		for provider, constraints := range modMeta.ProviderRequirements {
+			searchMeta.ProviderRequirements[provider] = constraints
+		}
+	}
+
+	return nil
 }

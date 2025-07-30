@@ -10,10 +10,8 @@ import (
 
 	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/document"
-	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/search/jobs"
-	"github.com/hashicorp/terraform-ls/internal/features/search/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	"github.com/hashicorp/terraform-ls/internal/lsp"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
@@ -190,7 +188,7 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 	metaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 		Dir: dir,
 		Func: func(ctx context.Context) error {
-			return jobs.LoadSearchMetadata(ctx, f.store, path)
+			return jobs.LoadSearchMetadata(ctx, f.store, f.moduleFeature, f.logger, path)
 		},
 		Type:        operation.OpTypeLoadSearchMetadata.String(),
 		DependsOn:   job.IDs{parseId},
@@ -202,17 +200,6 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
-			smIds, err := loadSearchModuleSources(ctx, f.store, f.bus, path)
-			if err != nil {
-				return deferIds, err
-			}
-			deferIds = append(deferIds, smIds...)
-
-			// while we now have the job ids in here, depending on the metaId job is not enough
-			// to await these spawned jobs, so we will need to move all depending jobs to this function
-			// as well. e.g. LoadSearchComponentSources, PreloadEmbeddedSchema (because future ref collection jobs depend on it), etc.
-			// we might just move all in here for simplicity
-
 			// Reference collection jobs will depend on this one, so we move it here in advance
 			eSchemaId, err := f.stateStore.JobStore.EnqueueJob(ctx, job.Job{
 				Dir: dir,
@@ -220,7 +207,6 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 					return jobs.PreloadEmbeddedSchema(ctx, f.logger, schemas.FS,
 						f.store, f.stateStore.ProviderSchemas, path)
 				},
-				// DependsOn: none required, since we are inside
 				Type:        operation.OpTypeSearchPreloadEmbeddedSchema.String(),
 				IgnoreState: ignoreState,
 			})
@@ -235,7 +221,7 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 					return jobs.DecodeReferenceTargets(ctx, f.store, f.moduleFeature, f.rootFeature, path)
 				},
 				Type:        operation.OpTypeDecodeReferenceTargets.String(),
-				DependsOn:   append(job.IDs{eSchemaId}, smIds...),
+				DependsOn:   job.IDs{eSchemaId},
 				IgnoreState: ignoreState,
 			})
 			if err != nil {
@@ -249,7 +235,7 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 					return jobs.DecodeReferenceOrigins(ctx, f.store, f.moduleFeature, f.rootFeature, path)
 				},
 				Type:        operation.OpTypeDecodeReferenceOrigins.String(),
-				DependsOn:   append(job.IDs{eSchemaId}, smIds...),
+				DependsOn:   job.IDs{eSchemaId},
 				IgnoreState: ignoreState,
 			})
 			if err != nil {
@@ -297,17 +283,4 @@ func (f *SearchFeature) removeIndexedSearch(rawPath string) {
 		f.logger.Printf("failed to remove search from state: %s", err)
 		return
 	}
-}
-
-func loadSearchModuleSources(ctx context.Context, testStore *state.SearchStore, bus *eventbus.EventBus, testPath string) (job.IDs, error) {
-	ids := make(job.IDs, 0)
-
-	_, err := testStore.SearchRecordByPath(testPath)
-	if err != nil {
-		return ids, err
-	}
-
-	// TODO load the adjacent Terraform module (usually ./)
-
-	return ids, nil
 }
