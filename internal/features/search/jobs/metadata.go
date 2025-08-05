@@ -5,6 +5,8 @@ package jobs
 
 import (
 	"context"
+	tfaddr "github.com/hashicorp/terraform-registry-address"
+	"github.com/hashicorp/terraform-schema/module"
 	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
@@ -89,18 +91,35 @@ func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDeco
 	}
 
 	if modMeta != nil {
+		if searchMeta.ProviderRequirements == nil {
+			searchMeta.ProviderRequirements = make(tfsearch.ProviderRequirements)
+		}
+		// Copy provider requirements
+		for provider, constraints := range modMeta.ProviderRequirements {
+			searchMeta.ProviderRequirements[provider] = constraints
+		}
+
+		for rf := range searchMeta.ProviderReferences {
+			src := modMeta.ProviderReferences[module.ProviderRef{
+				LocalName: rf.LocalName,
+			}]
+			if rf.Alias != "" {
+				searchMeta.ProviderReferences[tfsearch.ProviderRef{
+					LocalName: rf.LocalName,
+					Alias:     rf.Alias,
+				}] = src
+			}
+		}
 		// Convert from module provider references to search provider references
 		for moduleProviderRef, provider := range modMeta.ProviderReferences {
 			searchProviderRef := tfsearch.ProviderRef{
 				LocalName: moduleProviderRef.LocalName,
 				Alias:     moduleProviderRef.Alias,
 			}
+			if searchMeta.ProviderReferences == nil {
+				searchMeta.ProviderReferences = make(map[tfsearch.ProviderRef]tfaddr.Provider)
+			}
 			searchMeta.ProviderReferences[searchProviderRef] = provider
-		}
-
-		// Copy provider requirements
-		for provider, constraints := range modMeta.ProviderRequirements {
-			searchMeta.ProviderRequirements[provider] = constraints
 		}
 	}
 
