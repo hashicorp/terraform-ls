@@ -4,7 +4,6 @@
 package state
 
 import (
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl-lang/reference"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
@@ -31,10 +30,6 @@ type SearchRecord struct {
 	ParsingErr       error
 	Diagnostics      ast.SourceDiagnostics
 	DiagnosticsState globalAst.DiagnosticSourceState
-
-	RequiredTerraformVersion      *version.Version
-	RequiredTerraformVersionErr   error
-	RequiredTerraformVersionState operation.OpState
 
 	RefTargets      reference.Targets
 	RefTargetsErr   error
@@ -64,10 +59,6 @@ func (m *SearchRecord) Copy() *SearchRecord {
 		MetaState:        m.MetaState,
 		ParsingErr:       m.ParsingErr,
 		DiagnosticsState: m.DiagnosticsState.Copy(),
-
-		RequiredTerraformVersion:      m.RequiredTerraformVersion,
-		RequiredTerraformVersionErr:   m.RequiredTerraformVersionErr,
-		RequiredTerraformVersionState: m.RequiredTerraformVersionState,
 
 		RefTargets:      m.RefTargets.Copy(),
 		RefTargetsErr:   m.RefTargetsErr,

@@ -208,42 +208,6 @@ func (s *SearchStore) UpdateDiagnostics(path string, source globalAst.Diagnostic
 	return nil
 }
 
-func (s *SearchStore) setTerraformVersionWithChangeNotification(path string, version *version.Version, vErr error, state operation.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	oldSearch, err := searchByPath(txn, path)
-	if err != nil {
-		return err
-	}
-	search := oldSearch.Copy()
-
-	search.RequiredTerraformVersion = version
-	search.RequiredTerraformVersionErr = vErr
-	search.RequiredTerraformVersionState = state
-
-	err = txn.Insert(s.tableName, search)
-	if err != nil {
-		return err
-	}
-
-	err = s.queueRecordChange(oldSearch, search)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
-func (s *SearchStore) SetTerraformVersion(path string, version *version.Version) error {
-	return s.setTerraformVersionWithChangeNotification(path, version, nil, operation.OpStateLoaded)
-}
-
-func (s *SearchStore) SetTerraformVersionError(path string, vErr error) error {
-	return s.setTerraformVersionWithChangeNotification(path, nil, vErr, operation.OpStateLoaded)
-}
-
 func (s *SearchStore) SetTerraformVersionState(path string, state operation.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
@@ -253,7 +217,6 @@ func (s *SearchStore) SetTerraformVersionState(path string, state operation.OpSt
 		return err
 	}
 
-	search.RequiredTerraformVersionState = state
 	err = txn.Insert(s.tableName, search)
 	if err != nil {
 		return err
@@ -301,6 +264,7 @@ func (s *SearchStore) UpdateMetadata(path string, meta *tfsearch.Meta, mErr erro
 		Filenames:            meta.Filenames,
 		ProviderReferences:   meta.ProviderReferences,
 		ProviderRequirements: meta.ProviderRequirements,
+		CoreRequirements:     meta.CoreRequirements,
 	}
 	record.MetaErr = mErr
 
@@ -473,26 +437,6 @@ func searchCopyByPath(txn *memdb.Txn, path string) (*SearchRecord, error) {
 
 func (s *SearchStore) queueRecordChange(oldRecord, newRecord *SearchRecord) error {
 	changes := globalState.Changes{}
-
-	switch {
-	// new record added
-	case oldRecord == nil && newRecord != nil:
-		if newRecord.RequiredTerraformVersion != nil {
-			changes.TerraformVersion = true
-		}
-	// record removed
-	case oldRecord != nil && newRecord == nil:
-		changes.IsRemoval = true
-
-		if oldRecord.RequiredTerraformVersion != nil {
-			changes.TerraformVersion = true
-		}
-	// record changed
-	default:
-		if !oldRecord.RequiredTerraformVersion.Equal(newRecord.RequiredTerraformVersion) {
-			changes.TerraformVersion = true
-		}
-	}
 
 	oldDiags, newDiags := 0, 0
 	if oldRecord != nil {

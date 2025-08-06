@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl-lang/reference"
+	"github.com/hashicorp/hcl-lang/schema"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
 	"github.com/hashicorp/terraform-ls/internal/features/search/state"
@@ -50,6 +51,8 @@ type ModuleReader interface {
 
 type RootReader interface {
 	InstalledModulePath(rootPath string, normalizedSource string) (string, bool)
+
+	TerraformVersion(modPath string) *version.Version
 }
 
 // PathContext returns a PathContext for the given path based on the language ID
@@ -72,22 +75,14 @@ func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) 
 }
 
 func searchPathContext(record *state.SearchRecord, stateReader CombinedReader) (*decoder.PathContext, error) {
-	// TODO: this should only work for terraform 1.8 and above
-	version := record.RequiredTerraformVersion
-	if version == nil {
-		version = tfschema.LatestAvailableVersion
-	}
+	resolvedVersion := tfschema.ResolveVersion(stateReader.TerraformVersion(record.Path()), record.Meta.CoreRequirements)
 
-	schema, err := searchSchema.CoreSearchSchemaForVersion(version)
-	if err != nil {
-		return nil, err
-	}
-
-	sm := searchSchema.NewSearchSchemaMerger(schema)
+	sm := searchSchema.NewSearchSchemaMerger(mustCoreSchemaForVersion(resolvedVersion))
 	sm.SetStateReader(stateReader)
 
 	meta := &tfsearch.Meta{
 		Path:                 record.Path(),
+		CoreRequirements:     record.Meta.CoreRequirements,
 		Lists:                record.Meta.Lists,
 		Variables:            record.Meta.Variables,
 		Filenames:            record.Meta.Filenames,
@@ -159,4 +154,13 @@ func (pr *PathReader) Paths(ctx context.Context) []lang.Path {
 	}
 
 	return paths
+}
+
+func mustCoreSchemaForVersion(v *version.Version) *schema.BodySchema {
+	s, err := searchSchema.CoreSearchSchemaForVersion(v)
+	if err != nil {
+		// this should never happen
+		panic(err)
+	}
+	return s
 }

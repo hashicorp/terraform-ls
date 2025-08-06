@@ -5,9 +5,10 @@ package jobs
 
 import (
 	"context"
+	"log"
+
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/module"
-	"log"
 
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
@@ -91,6 +92,9 @@ func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDeco
 	}
 
 	if modMeta != nil {
+		if searchMeta.CoreRequirements == nil {
+			searchMeta.CoreRequirements = modMeta.CoreRequirements
+		}
 		if searchMeta.ProviderRequirements == nil {
 			searchMeta.ProviderRequirements = make(tfsearch.ProviderRequirements)
 		}

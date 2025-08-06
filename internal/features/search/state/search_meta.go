@@ -4,6 +4,7 @@
 package state
 
 import (
+	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	tfsearch "github.com/hashicorp/terraform-schema/search"
 )
@@ -11,7 +12,8 @@ import (
 // SearchMetadata contains the result of the early decoding of a Search,
 // it will be used obtain the correct provider and related module schemas
 type SearchMetadata struct {
-	Filenames []string
+	CoreRequirements version.Constraints
+	Filenames        []string
 
 	Lists     map[string]tfsearch.List
 	Variables map[string]tfsearch.Variable
@@ -22,7 +24,8 @@ type SearchMetadata struct {
 
 func (sm SearchMetadata) Copy() SearchMetadata {
 	newSm := SearchMetadata{
-		Filenames: sm.Filenames,
+		CoreRequirements: sm.CoreRequirements,
+		Filenames:        sm.Filenames,
 	}
 
 	if sm.Lists != nil {
