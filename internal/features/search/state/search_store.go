@@ -208,24 +208,6 @@ func (s *SearchStore) UpdateDiagnostics(path string, source globalAst.Diagnostic
 	return nil
 }
 
-func (s *SearchStore) SetTerraformVersionState(path string, state operation.OpState) error {
-	txn := s.db.Txn(true)
-	defer txn.Abort()
-
-	search, err := searchCopyByPath(txn, path)
-	if err != nil {
-		return err
-	}
-
-	err = txn.Insert(s.tableName, search)
-	if err != nil {
-		return err
-	}
-
-	txn.Commit()
-	return nil
-}
-
 func (s *SearchStore) SetMetaState(path string, state operation.OpState) error {
 	txn := s.db.Txn(true)
 	defer txn.Abort()
