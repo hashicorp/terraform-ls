@@ -1,0 +1,110 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package state
+
+import (
+	"github.com/hashicorp/hcl-lang/reference"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
+	globalAst "github.com/hashicorp/terraform-ls/internal/terraform/ast"
+	"github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+)
+
+// SearchRecord represents a single search in the state
+// /some/path/lambda-multi-account-search
+type SearchRecord struct {
+	path string
+
+	// PreloadEmbeddedSchemaState tracks if we tried loading all provider
+	// schemas from our embedded schema data
+	PreloadEmbeddedSchemaState operation.OpState
+
+	Meta      SearchMetadata
+	MetaErr   error
+	MetaState operation.OpState
+
+	// ParsedFiles is a map of all the parsed files for the search,
+	// including Search files.
+	ParsedFiles      ast.Files
+	ParsingErr       error
+	Diagnostics      ast.SourceDiagnostics
+	DiagnosticsState globalAst.DiagnosticSourceState
+
+	RefTargets      reference.Targets
+	RefTargetsErr   error
+	RefTargetsState operation.OpState
+
+	RefOrigins      reference.Origins
+	RefOriginsErr   error
+	RefOriginsState operation.OpState
+}
+
+func (m *SearchRecord) Path() string {
+	return m.path
+}
+
+func (m *SearchRecord) Copy() *SearchRecord {
+	if m == nil {
+		return nil
+	}
+
+	newRecord := &SearchRecord{
+		path: m.path,
+
+		PreloadEmbeddedSchemaState: m.PreloadEmbeddedSchemaState,
+
+		Meta:             m.Meta.Copy(),
+		MetaErr:          m.MetaErr,
+		MetaState:        m.MetaState,
+		ParsingErr:       m.ParsingErr,
+		DiagnosticsState: m.DiagnosticsState.Copy(),
+
+		RefTargets:      m.RefTargets.Copy(),
+		RefTargetsErr:   m.RefTargetsErr,
+		RefTargetsState: m.RefTargetsState,
+
+		RefOrigins:      m.RefOrigins.Copy(),
+		RefOriginsErr:   m.RefOriginsErr,
+		RefOriginsState: m.RefOriginsState,
+	}
+
+	if m.ParsedFiles != nil {
+		newRecord.ParsedFiles = make(ast.Files, len(m.ParsedFiles))
+		for name, f := range m.ParsedFiles {
+			// hcl.File is practically immutable once it comes out of parser
+			newRecord.ParsedFiles[name] = f
+		}
+	}
+
+	if m.Diagnostics != nil {
+		newRecord.Diagnostics = make(ast.SourceDiagnostics, len(m.Diagnostics))
+
+		for source, searchDiags := range m.Diagnostics {
+			newRecord.Diagnostics[source] = make(ast.Diagnostics, len(searchDiags))
+
+			for name, diags := range searchDiags {
+				newRecord.Diagnostics[source][name] = make(hcl.Diagnostics, len(diags))
+				copy(newRecord.Diagnostics[source][name], diags)
+			}
+		}
+	}
+
+	return newRecord
+}
+
+func newSearch(searchPath string) *SearchRecord {
+	return &SearchRecord{
+		path:                       searchPath,
+		PreloadEmbeddedSchemaState: operation.OpStateUnknown,
+		RefOriginsState:            operation.OpStateUnknown,
+		RefTargetsState:            operation.OpStateUnknown,
+		MetaState:                  operation.OpStateUnknown,
+		DiagnosticsState: globalAst.DiagnosticSourceState{
+			globalAst.HCLParsingSource:          operation.OpStateUnknown,
+			globalAst.SchemaValidationSource:    operation.OpStateUnknown,
+			globalAst.ReferenceValidationSource: operation.OpStateUnknown,
+			globalAst.TerraformValidateSource:   operation.OpStateUnknown,
+		},
+	}
+}
