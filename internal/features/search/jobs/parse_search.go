@@ -38,7 +38,7 @@ func ParseSearchConfiguration(ctx context.Context, fs ReadOnlyFS, searchStore *s
 	var diags ast.Diagnostics
 	rpcContext := lsctx.DocumentContext(ctx)
 
-	isMatchingLanguageId := (rpcContext.LanguageID == lsp.Search.String() || rpcContext.LanguageID == lsp.Deploy.String())
+	isMatchingLanguageId := (rpcContext.LanguageID == lsp.Search.String())
 
 	// Only parse the file that's being changed/opened, unless this is 1st-time parsing
 	if record.DiagnosticsState[globalAst.HCLParsingSource] == operation.OpStateLoaded &&

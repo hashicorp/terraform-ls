@@ -47,7 +47,7 @@ func (f *SearchFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 	f.logger.Printf("did open %q %q", path, languageID)
 
 	// We need to decide if the path is relevant to us
-	if languageID != lsp.Search.String() && languageID != lsp.Deploy.String() {
+	if languageID != lsp.Search.String() {
 		return ids, nil
 	}
 
