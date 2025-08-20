@@ -49,7 +49,7 @@ func TestParseSearchConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	before, err := ss.SearchRecordByPath(simpleSearchPath)
+	before, err := ss.GetSearchRecordByPath(simpleSearchPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestParseSearchConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	after, err := ss.SearchRecordByPath(simpleSearchPath)
+	after, err := ss.GetSearchRecordByPath(simpleSearchPath)
 	if err != nil {
 		t.Fatal(err)
 	}

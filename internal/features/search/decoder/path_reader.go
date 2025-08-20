@@ -39,7 +39,7 @@ type CombinedReader struct {
 
 type StateReader interface {
 	List() ([]*state.SearchRecord, error)
-	SearchRecordByPath(modPath string) (*state.SearchRecord, error)
+	GetSearchRecordByPath(modPath string) (*state.SearchRecord, error)
 	ProviderSchema(modPath string, addr tfaddr.Provider, vc version.Constraints) (*tfschema.ProviderSchema, error)
 }
 
@@ -57,7 +57,7 @@ type RootReader interface {
 
 // PathContext returns a PathContext for the given path based on the language ID
 func (pr *PathReader) PathContext(path lang.Path) (*decoder.PathContext, error) {
-	record, err := pr.StateReader.SearchRecordByPath(path.Path)
+	record, err := pr.StateReader.GetSearchRecordByPath(path.Path)
 	if err != nil {
 		return nil, err
 	}

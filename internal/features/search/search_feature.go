@@ -126,7 +126,7 @@ func (f *SearchFeature) Paths(ctx context.Context) []lang.Path {
 func (f *SearchFeature) Diagnostics(path string) diagnostics.Diagnostics {
 	diags := diagnostics.NewDiagnostics()
 
-	mod, err := f.store.SearchRecordByPath(path)
+	mod, err := f.store.GetSearchRecordByPath(path)
 	if err != nil {
 		return diags
 	}

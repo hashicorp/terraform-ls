@@ -26,7 +26,7 @@ import (
 func SchemaSearchValidation(ctx context.Context, searchStore *state.SearchStore, moduleFeature searchDecoder.ModuleReader, rootFeature searchDecoder.RootReader, searchPath string) error {
 	rpcContext := lsctx.DocumentContext(ctx)
 
-	record, err := searchStore.SearchRecordByPath(searchPath)
+	record, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func SchemaSearchValidation(ctx context.Context, searchStore *state.SearchStore,
 // It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
 // to supply both origins and targets to compare.
 func ReferenceValidation(ctx context.Context, searchStore *state.SearchStore, moduleFeature searchDecoder.ModuleReader, rootFeature searchDecoder.RootReader, searchPath string) error {
-	record, err := searchStore.SearchRecordByPath(searchPath)
+	record, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}

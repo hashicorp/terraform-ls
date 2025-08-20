@@ -16,7 +16,7 @@ import (
 )
 
 func PreloadEmbeddedSchema(ctx context.Context, logger *log.Logger, fs fs.ReadDirFS, searchStore *state.SearchStore, schemaStore *globalState.ProviderSchemaStore, searchPath string) error {
-	record, err := searchStore.SearchRecordByPath(searchPath)
+	record, err := searchStore.GetSearchRecordByPath(searchPath)
 
 	if err != nil {
 		return err

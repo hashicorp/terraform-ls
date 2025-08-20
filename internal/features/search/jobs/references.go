@@ -27,7 +27,7 @@ import (
 // can be referred to as var.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
 func DecodeReferenceTargets(ctx context.Context, searchStore *state.SearchStore, moduleReader sdecoder.ModuleReader, rootReader sdecoder.RootReader, searchPath string) error {
-	mod, err := searchStore.SearchRecordByPath(searchPath)
+	mod, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func DecodeReferenceTargets(ctx context.Context, searchStore *state.SearchStore,
 // at a particular LOC. This can be later matched with targets
 // (as obtained via [DecodeReferenceTargets]) during hover or go-to-definition.
 func DecodeReferenceOrigins(ctx context.Context, searchStore *state.SearchStore, moduleReader sdecoder.ModuleReader, rootReader sdecoder.RootReader, searchPath string) error {
-	mod, err := searchStore.SearchRecordByPath(searchPath)
+	mod, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}

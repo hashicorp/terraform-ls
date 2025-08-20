@@ -22,7 +22,7 @@ import (
 // ParseSearchConfiguration parses the whole Search configuration,
 // i.e. turns bytes of `*.tfquery.hcl` files into AST ([*hcl.File]).
 func ParseSearchConfiguration(ctx context.Context, fs ReadOnlyFS, searchStore *state.SearchStore, searchPath string) error {
-	record, err := searchStore.SearchRecordByPath(searchPath)
+	record, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}

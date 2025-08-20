@@ -91,7 +91,7 @@ func (s *SearchStore) List() ([]*SearchRecord, error) {
 	return searchRecords, nil
 }
 
-func (s *SearchStore) SearchRecordByPath(path string) (*SearchRecord, error) {
+func (s *SearchStore) GetSearchRecordByPath(path string) (*SearchRecord, error) {
 	txn := s.db.Txn(false)
 
 	mod, err := searchByPath(txn, path)
@@ -452,7 +452,7 @@ func (s *SearchStore) ProviderRequirementsForModule(modPath string) (tfsearch.Pr
 }
 
 func (s *SearchStore) providerRequirementsForModule(searchPath string, level int) (tfsearch.ProviderRequirements, error) {
-	mod, err := s.SearchRecordByPath(searchPath)
+	mod, err := s.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		// It's possible that the configuration contains a module with an
 		// invalid local source, so we just ignore it if it can't be found.

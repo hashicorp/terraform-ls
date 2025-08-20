@@ -25,7 +25,7 @@ import (
 // way that enables us to decode the rest of the configuration,
 // e.g. by knowing provider versions, etc.
 func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, moduleFeature searchDecoder.ModuleReader, logger *log.Logger, searchPath string) error {
-	record, err := searchStore.SearchRecordByPath(searchPath)
+	record, err := searchStore.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		return err
 	}

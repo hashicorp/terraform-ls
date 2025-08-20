@@ -75,7 +75,7 @@ func TestSchemaSearchValidation_FullSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := ms.SearchRecordByPath(searchPath)
+	record, err := ms.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +124,7 @@ func TestSchemaSearchValidation_SingleFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := ss.SearchRecordByPath(searchPath)
+	record, err := ss.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		t.Fatal(err)
 	}

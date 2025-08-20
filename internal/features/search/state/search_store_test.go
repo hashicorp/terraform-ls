@@ -80,7 +80,7 @@ func TestSearchStore_SearchRecordByPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(searchPath)
+	record, err := s.GetSearchRecordByPath(searchPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +314,7 @@ func TestSearchStore_UpdateMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ list "resource_search" "main" {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -434,7 +434,7 @@ variable "test_var" {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -489,7 +489,7 @@ func TestSearchStore_SetDiagnosticsState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -520,7 +520,7 @@ func TestSearchStore_SetMetaState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -551,7 +551,7 @@ func TestSearchStore_SetPreloadEmbeddedSchemaState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -582,7 +582,7 @@ func TestSearchStore_SetReferenceTargetsState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -616,7 +616,7 @@ func TestSearchStore_UpdateReferenceTargets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -651,7 +651,7 @@ func TestSearchStore_SetReferenceOriginsState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -685,7 +685,7 @@ func TestSearchStore_UpdateReferenceOrigins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	record, err := s.SearchRecordByPath(tmpDir)
+	record, err := s.GetSearchRecordByPath(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

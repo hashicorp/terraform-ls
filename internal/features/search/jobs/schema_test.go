@@ -349,7 +349,7 @@ func TestPreloadEmbeddedSchema_invalidSearchPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Don't add the search path to the store, causing SearchRecordByPath to fail
+	// Don't add the search path to the store, causing GetSearchRecordByPath to fail
 	searchPath := "nonexistent"
 
 	err = PreloadEmbeddedSchema(ctx, log.Default(), schemasFS, ss, gs.ProviderSchemas, searchPath)
