@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/features/search/ast"
 	searchDecoder "github.com/hashicorp/terraform-ls/internal/features/search/decoder"
+	"github.com/hashicorp/terraform-ls/internal/features/search/decoder/validations"
 	"github.com/hashicorp/terraform-ls/internal/features/search/state"
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
@@ -103,4 +104,44 @@ func SchemaSearchValidation(ctx context.Context, searchStore *state.SearchStore,
 	}
 
 	return rErr
+}
+
+// ReferenceValidation does validation based on (mis)matched
+// reference origins and targets, to flag up "orphaned" references.
+//
+// It relies on [DecodeReferenceTargets] and [DecodeReferenceOrigins]
+// to supply both origins and targets to compare.
+func ReferenceValidation(ctx context.Context, searchStore *state.SearchStore, moduleFeature searchDecoder.ModuleReader, rootFeature searchDecoder.RootReader, searchPath string) error {
+	record, err := searchStore.SearchRecordByPath(searchPath)
+	if err != nil {
+		return err
+	}
+
+	// Avoid validation if it is already in progress or already finished
+	if record.DiagnosticsState[globalAst.ReferenceValidationSource] != operation.OpStateUnknown && !job.IgnoreState(ctx) {
+		return job.StateNotChangedErr{Dir: document.DirHandleFromPath(searchPath)}
+	}
+
+	err = searchStore.SetDiagnosticsState(searchPath, globalAst.ReferenceValidationSource, operation.OpStateLoading)
+	if err != nil {
+		return err
+	}
+
+	pathReader := &searchDecoder.PathReader{
+		StateReader:  searchStore,
+		ModuleReader: moduleFeature,
+		RootReader:   rootFeature,
+	}
+
+	searchDecoder, err := pathReader.PathContext(lang.Path{
+		Path:       searchPath,
+		LanguageID: ilsp.Search.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	diags := validations.UnreferencedOrigins(ctx, searchDecoder)
+
+	return searchStore.UpdateDiagnostics(searchPath, globalAst.ReferenceValidationSource, ast.DiagnosticsFromMap(diags))
 }
