@@ -5,6 +5,7 @@ package decoder
 
 import (
 	"github.com/hashicorp/hcl-lang/validator"
+	"github.com/hashicorp/terraform-ls/internal/features/search/decoder/validations"
 )
 
 var searchValidators = []validator.Validator{
@@ -13,7 +14,7 @@ var searchValidators = []validator.Validator{
 	validator.DeprecatedBlock{},
 	validator.MaxBlocks{},
 	validator.MinBlocks{},
-	validator.MissingRequiredAttribute{},
 	validator.UnexpectedAttribute{},
 	validator.UnexpectedBlock{},
+	validations.MissingRequiredAttribute{},
 }
