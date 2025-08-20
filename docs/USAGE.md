@@ -10,6 +10,7 @@ The following filetypes are supported by the Terraform Language Server:
 - `terraform-vars` - variable files (`*.tfvars`)
 - `terraform-stack` - standard `*.tfcomponent.hcl` and `*.tfstack.hcl` files
 - `terraform-deploy` - standard `*.tfdeploy.hcl` files
+- `terraform-search` - standard `*.tfquery.hcl` files
 
 _NOTE:_ Clients should be configured to follow the above language ID conventions
 and do **not** send `*.tf.json`, `*.tfvars.json` nor Packer HCL config
