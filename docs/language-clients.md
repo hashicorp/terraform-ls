@@ -47,7 +47,7 @@ This allows IntelliSense to remain accurate e.g. when switching branches in VCS
 or when there are any other changes made to these files outside the editor.
 
 If the client implements file watcher, it should watch for any changes
-in `**/*.tf`, `**/*.tfvars`, `**.tfstack.hcl`, `**/*.tfcomponent.hcl`, `**/*.tfdeploy.hcl` and `**/*.tfquery.hcl` files in the workspace.
+in `**/*.tf`, `**/*.tfvars`, `**/*.tfstack.hcl`, `**/*.tfcomponent.hcl`, `**/*.tfdeploy.hcl` and `**/*.tfquery.hcl` files in the workspace.
 
 Client should **not** send changes for any other files.
 
