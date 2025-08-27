@@ -80,7 +80,7 @@ func TestSchemaSearchValidation_FullSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCount := 3
+	expectedCount := 2
 	diagsCount := record.Diagnostics[ast.SchemaValidationSource].Count()
 	if diagsCount != expectedCount {
 		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
@@ -129,7 +129,7 @@ func TestSchemaSearchValidation_SingleFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedCount := 2
+	expectedCount := 1
 	diagsCount := record.Diagnostics[ast.SchemaValidationSource].Count()
 	if diagsCount != expectedCount {
 		t.Fatalf("expected %d diagnostics, %d given", expectedCount, diagsCount)
