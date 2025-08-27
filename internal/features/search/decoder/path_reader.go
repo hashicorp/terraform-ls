@@ -81,13 +81,11 @@ func searchPathContext(record *state.SearchRecord, stateReader CombinedReader) (
 	sm.SetStateReader(stateReader)
 
 	meta := &tfsearch.Meta{
-		Path:                 record.Path(),
-		CoreRequirements:     record.Meta.CoreRequirements,
-		Lists:                record.Meta.Lists,
-		Variables:            record.Meta.Variables,
-		Filenames:            record.Meta.Filenames,
-		ProviderReferences:   record.Meta.ProviderReferences,
-		ProviderRequirements: record.Meta.ProviderRequirements,
+		Path:               record.Path(),
+		Lists:              record.Meta.Lists,
+		Variables:          record.Meta.Variables,
+		Filenames:          record.Meta.Filenames,
+		ProviderReferences: record.Meta.ProviderReferences,
 	}
 
 	mergedSchema, err := sm.SchemaForSearch(meta)

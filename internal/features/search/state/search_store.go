@@ -227,7 +227,7 @@ func (s *SearchStore) SetMetaState(path string, state operation.OpState) error {
 	return nil
 }
 
-func (s *SearchStore) UpdateMetadata(path string, meta *tfsearch.Meta, mErr error) error {
+func (s *SearchStore) UpdateMetadata(path string, meta *tfsearch.Meta, mErr error, providerReqs tfsearch.ProviderRequirements, coreRequirements version.Constraints) error {
 	txn := s.db.Txn(true)
 	txn.Defer(func() {
 		s.SetMetaState(path, operation.OpStateLoaded)
@@ -245,8 +245,8 @@ func (s *SearchStore) UpdateMetadata(path string, meta *tfsearch.Meta, mErr erro
 		Variables:            meta.Variables,
 		Filenames:            meta.Filenames,
 		ProviderReferences:   meta.ProviderReferences,
-		ProviderRequirements: meta.ProviderRequirements,
-		CoreRequirements:     meta.CoreRequirements,
+		ProviderRequirements: providerReqs,
+		CoreRequirements:     coreRequirements,
 	}
 	record.MetaErr = mErr
 

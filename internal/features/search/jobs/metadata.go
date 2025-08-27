@@ -7,6 +7,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/hashicorp/go-version"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
 	"github.com/hashicorp/terraform-schema/module"
 
@@ -44,13 +45,13 @@ func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, mod
 
 	meta, diags := earlydecoder.LoadSearch(record.Path(), record.ParsedFiles.AsMap())
 
-	err = loadSearchModuleSources(meta, moduleFeature, searchPath)
+	coreRequirements, providerReqs, err := loadSearchModuleSources(meta, moduleFeature, searchPath)
 	if err != nil {
 		logger.Printf("loading search module sources returned error: %s", err)
 	}
 
 	var mErr error
-	sErr := searchStore.UpdateMetadata(searchPath, meta, mErr)
+	sErr := searchStore.UpdateMetadata(searchPath, meta, mErr, providerReqs, coreRequirements)
 	if sErr != nil {
 		return sErr
 	}
@@ -84,23 +85,22 @@ func LoadSearchMetadata(ctx context.Context, searchStore *state.SearchStore, mod
 	return mErr
 }
 
-func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDecoder.ModuleReader, path string) error {
+func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDecoder.ModuleReader, path string) (version.Constraints, tfsearch.ProviderRequirements, error) {
+	providerReqs := make(tfsearch.ProviderRequirements)
+	var coreRequirements version.Constraints
+
 	// load metadata from the adjacent Terraform module
 	modMeta, err := moduleFeature.LocalModuleMeta(path)
 	if err != nil {
-		return err
+		return coreRequirements, providerReqs, err
 	}
 
 	if modMeta != nil {
-		if searchMeta.CoreRequirements == nil {
-			searchMeta.CoreRequirements = modMeta.CoreRequirements
-		}
-		if searchMeta.ProviderRequirements == nil {
-			searchMeta.ProviderRequirements = make(tfsearch.ProviderRequirements)
-		}
+		coreRequirements = modMeta.CoreRequirements
+
 		// Copy provider requirements
 		for provider, constraints := range modMeta.ProviderRequirements {
-			searchMeta.ProviderRequirements[provider] = constraints
+			providerReqs[provider] = constraints
 		}
 
 		for rf := range searchMeta.ProviderReferences {
@@ -127,5 +127,5 @@ func loadSearchModuleSources(searchMeta *tfsearch.Meta, moduleFeature searchDeco
 		}
 	}
 
-	return nil
+	return coreRequirements, providerReqs, nil
 }

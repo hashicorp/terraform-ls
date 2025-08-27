@@ -298,10 +298,6 @@ func TestSearchStore_UpdateMetadata(t *testing.T) {
 		ProviderReferences: map[tfsearch.ProviderRef]tfaddr.Provider{
 			{LocalName: "aws"}: tfaddr.MustParseProviderSource("hashicorp/aws"),
 		},
-		ProviderRequirements: map[tfaddr.Provider]version.Constraints{
-			tfaddr.MustParseProviderSource("hashicorp/aws"): testConstraint(t, "~> 5.7.0"),
-		},
-		CoreRequirements: testConstraint(t, ">= 1.0"),
 	}
 
 	err = s.Add(tmpDir)
@@ -309,7 +305,9 @@ func TestSearchStore_UpdateMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = s.UpdateMetadata(tmpDir, metadata, nil)
+	err = s.UpdateMetadata(tmpDir, metadata, nil, map[tfaddr.Provider]version.Constraints{
+		tfaddr.MustParseProviderSource("hashicorp/aws"): testConstraint(t, "~> 5.7.0"),
+	}, testConstraint(t, ">= 1.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -716,14 +714,12 @@ func TestSearchStore_ProviderRequirementsForModule(t *testing.T) {
 	}
 
 	// Update metadata with provider requirements
-	metadata := &tfsearch.Meta{
-		ProviderRequirements: map[tfaddr.Provider]version.Constraints{
-			tfaddr.MustParseProviderSource("hashicorp/aws"):    testConstraint(t, "~> 5.7.0"),
-			tfaddr.MustParseProviderSource("hashicorp/random"): testConstraint(t, "~> 3.5.1"),
-		},
-	}
+	metadata := &tfsearch.Meta{}
 
-	err = s.UpdateMetadata(tmpDir, metadata, nil)
+	err = s.UpdateMetadata(tmpDir, metadata, nil, map[tfaddr.Provider]version.Constraints{
+		tfaddr.MustParseProviderSource("hashicorp/aws"):    testConstraint(t, "~> 5.7.0"),
+		tfaddr.MustParseProviderSource("hashicorp/random"): testConstraint(t, "~> 3.5.1"),
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
