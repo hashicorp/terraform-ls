@@ -1,3 +1,13 @@
+## 0.37.0 (28 August 2025)
+
+ENHANCEMENTS:
+
+* Add support for Terraform Search files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Search files. ([#2007](https://github.com/hashicorp/terraform-ls/issues/2007))
+
+INTERNAL:
+
+* Add PR Template Usage for PCI ([#2000](https://github.com/hashicorp/terraform-ls/issues/2000))
+
 ## 0.36.5 (17 June 2025)
 
 ENHANCEMENTS:
