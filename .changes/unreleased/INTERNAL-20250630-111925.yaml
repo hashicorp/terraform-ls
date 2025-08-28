@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: Add PR Template Usage for PCI
-time: 2025-06-30T11:19:25.521749+05:30
-custom:
-    Issue: "2000"
-    Repository: terraform-ls
