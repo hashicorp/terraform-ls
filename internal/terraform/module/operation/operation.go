@@ -33,14 +33,18 @@ const (
 	OpTypeParseProviderVersions
 	OpTypePreloadEmbeddedSchema
 	OpTypeStacksPreloadEmbeddedSchema
+	OpTypeSearchPreloadEmbeddedSchema
 	OpTypeSchemaModuleValidation
 	OpTypeSchemaStackValidation
+	OpTypeSchemaSearchValidation
 	OpTypeSchemaVarsValidation
 	OpTypeReferenceValidation
 	OpTypeReferenceStackValidation
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
+	OpTypeParseSearchConfiguration
 	OpTypeLoadStackMetadata
+	OpTypeLoadSearchMetadata
 	OpTypeLoadStackRequiredTerraformVersion
 	OpTypeParseTestConfiguration
 	OpTypeLoadTestMetadata

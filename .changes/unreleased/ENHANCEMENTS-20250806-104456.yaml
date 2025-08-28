@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Add support for Terraform Search files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Search files.
+time: 2025-08-06T10:44:56.893693+05:30
+custom:
+    Issue: "2007"
+    Repository: terraform-ls

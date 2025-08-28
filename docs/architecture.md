@@ -60,6 +60,7 @@ We currently have several features:
 - `*.tfvars` and `*.tfvars.json` files are handled in the `variables` feature
 - `.terraform/` and `.terraform.lock.hcl` related operations are handled in the `rootmodules` feature
 - `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl` files are handled in the `stacks` feature
+- `*.tfquery.hcl` files are handled in the `search` feature
 
 A feature can provide data to the external consumers through methods. For example, the `variables` feature needs a list of variables from the `modules` feature. There should be no direct import from feature packages (we could enforce this by using `internal/`, but we won't for now) into other parts of the codebase. The "hot path" service mentioned above takes care of initializing each feature at the start of a new LS session.
 
@@ -93,11 +94,21 @@ The `jobs` package of each feature contains all the different indexing jobs need
 ### Stack Feature Jobs
 
 - `ParseStackConfiguration` - parses `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl` files to turn `[]byte` into `hcl` types (AST)
-- `LoadStackMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/stacks/earlydecoder) to do early TF version-agnostic decoding to obtain metadata (variables, outputs etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
+- `LoadStackMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/earlydecoder/stacks) to do early TF version-agnostic decoding to obtain metadata (variables, outputs etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
 - `PreloadEmbeddedSchema` – loads provider schemas based on provider requirements from the bundled schemas
 - `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`
 - `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`
 - `SchemaStackValidation` - does schema-based validation of module files (`*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`) and produces diagnostics associated with any "invalid" parts of code
+- `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
+
+### Search Feature Jobs
+
+- `ParseSearchConfiguration` - parses `*.tfquery.hcl` files to turn `[]byte` into `hcl` types (AST)
+- `LoadSearchMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/earlydecoder/search) to do early TF version-agnostic decoding to obtain metadata (variables, outputs etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
+- `PreloadEmbeddedSchema` – loads provider schemas based on provider requirements from the bundled schemas
+- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfquery.hcl`
+- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfquery.hcl`
+- `SchemaSearchValidation` - does schema-based validation of module files (`*.hcl.hcl`) and produces diagnostics associated with any "invalid" parts of code
 - `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
 
 ### Adding a new feature / "language"
