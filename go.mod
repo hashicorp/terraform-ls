@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.31.4
@@ -33,7 +33,7 @@ require (
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
 	go.bobheadxi.dev/gobenchdata v1.3.1
 	go.opentelemetry.io/otel/trace v1.37.0
-	golang.org/x/tools v0.35.0
+	golang.org/x/tools v0.37.0
 )
 
 require (
@@ -102,12 +102,12 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.62.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/otel v1.37.0
-	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/mod v0.26.0 // indirect
-	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/term v0.33.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
+	golang.org/x/crypto v0.42.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
+	golang.org/x/net v0.44.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/term v0.35.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
