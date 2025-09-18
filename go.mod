@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/hc-install v0.9.2
 	github.com/hashicorp/hcl-lang v0.0.0-20250613065305-ef4e1a57cead
 	github.com/hashicorp/hcl/v2 v2.24.0
-	github.com/hashicorp/terraform-exec v0.23.1
+	github.com/hashicorp/terraform-exec v0.24.0
 	github.com/hashicorp/terraform-json v0.27.2
 	github.com/hashicorp/terraform-registry-address v0.4.0
 	github.com/hashicorp/terraform-schema v0.0.0-20250828062434-26de354af365
