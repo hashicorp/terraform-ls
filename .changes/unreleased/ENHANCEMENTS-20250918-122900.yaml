@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Support for Terraform Action Static Schema
-time: 2025-09-18T12:29:00.562583+05:30
-custom:
-    Issue: "2031"
-    Repository: terraform-ls
