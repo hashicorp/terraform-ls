@@ -1,3 +1,9 @@
+## 0.38.0 (19 September 2025)
+
+ENHANCEMENTS:
+
+* Support for Terraform Action Static Schema ([#2031](https://github.com/hashicorp/terraform-ls/issues/2031))
+
 ## 0.37.0 (28 August 2025)
 
 ENHANCEMENTS:
