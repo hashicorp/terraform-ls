@@ -1,5 +1,9 @@
 ## 0.38.0 (19 September 2025)
 
+NOTES:
+
+This release adds initial support for the new Actions feature in Terraform. This provides foundational language support for the new action block and the corresponding action_trigger lifecycle block.
+
 ENHANCEMENTS:
 
 * Support for Terraform Action Static Schema ([#2031](https://github.com/hashicorp/terraform-ls/issues/2031))
