@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Support for Terraform Action Dynamic Schema
+time: 2025-09-29T14:01:22.520875+05:30
+custom:
+    Issue: "2035"
+    Repository: terraform-ls
