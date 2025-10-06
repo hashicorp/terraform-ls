@@ -1,3 +1,9 @@
+## 0.38.1 (06 October 2025)
+
+ENHANCEMENTS:
+
+* Improved code completion and validation for Terraform `actions` blocks through dynamic schema support. ([#2035](https://github.com/hashicorp/terraform-ls/issues/2035))
+
 ## 0.38.0 (19 September 2025)
 
 NOTES:
