@@ -1,3 +1,9 @@
+## 0.38.2 (09 October 2025)
+
+BUG FIXES:
+
+* fix schema 1.12 to correctly allow the import block to use for_each ([#2040](https://github.com/hashicorp/terraform-ls/issues/2040))
+
 ## 0.38.1 (06 October 2025)
 
 ENHANCEMENTS:

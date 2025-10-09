@@ -1,6 +1,0 @@
-kind: BUG FIXES
-body: 'fix schema 1.12 to correctly allow the import block to use for_each '
-time: 2025-10-09T11:11:32.828357+05:30
-custom:
-    Issue: "2040"
-    Repository: terraform-ls
