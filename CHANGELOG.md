@@ -1,3 +1,10 @@
+## 0.38.3 (24 November 2025)
+
+INTERNAL:
+
+* Updated slack channel id ([#2048](https://github.com/hashicorp/terraform-ls/issues/2048))
+* Bumped: terraform schema version ([#2049](https://github.com/hashicorp/terraform-ls/issues/2049))
+
 ## 0.38.2 (09 October 2025)
 
 BUG FIXES:
