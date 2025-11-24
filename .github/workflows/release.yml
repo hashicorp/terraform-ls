@@ -42,7 +42,7 @@ jobs:
             --environment=terraform-ls-oss \
             --org=hashicorp \
             --repo=terraform-ls \
-            --slack-channel=C02AGQXCAF5 \
+            --slack-channel=C09KW1G0B2R \
             --product-version=$VERSION \
             --sha=$SHA \
             --branch=$BRANCH \
@@ -70,7 +70,7 @@ jobs:
             --environment=terraform-ls-oss \
             --org=hashicorp \
             --repo=terraform-ls \
-            --slack-channel=C02AGQXCAF5 \
+            --slack-channel=C09KW1G0B2R \
             --product-version=$VERSION \
             --sha=$SHA \
             --branch=$BRANCH \
