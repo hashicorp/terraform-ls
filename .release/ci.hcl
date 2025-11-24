@@ -8,7 +8,7 @@ project "terraform-ls" {
   // but is required to be non-empty by CRT orchestator
   team = "_UNUSED_"
   slack {
-    notification_channel = "C02AGQXCAF5" // # feed-tf-editor-experience
+    notification_channel = "C09KW1G0B2R" // # feed-tf-editor-experience
   }
   github {
     organization = "hashicorp"

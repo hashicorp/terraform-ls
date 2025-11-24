@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Updated slack channel id
+time: 2025-11-24T12:25:38.370696+05:30
+custom:
+    Issue: "2048"
+    Repository: terraform-ls
