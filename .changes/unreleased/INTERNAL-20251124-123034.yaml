@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: 'Bumped: terraform schema version'
-time: 2025-11-24T12:30:34.212112+05:30
-custom:
-    Issue: "2049"
-    Repository: terraform-ls
