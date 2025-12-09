@@ -6,10 +6,13 @@ package command
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -103,6 +106,7 @@ func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, error) 
 func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder.Decoder) ([]edge, error) {
 	edges := make([]edge, 0)
 	refTargets := pathDecoder.RefTargets()
+	seen := make(map[string]bool)
 
 	for _, refTarget := range refTargets {
 		if refTarget.DefRangePtr != nil {
@@ -112,14 +116,31 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 					From: pathRangetoLocation(path, *refTarget.DefRangePtr),
 					To:   pathRangetoLocation(path, refOrigin.RootBlockRange),
 				}
+				edgeKey := edgeKey(edge)
+				if isSeenEdge(&seen, edgeKey) {
+					continue
+				}
 
 				edges = append(edges, edge)
-
+				seen[edgeKey] = true
 			}
 
 		}
 	}
 	return edges, nil
+}
+
+func edgeKey(e edge) string {
+	return edgeNodeKey(e.From) + "->" + edgeNodeKey(e.To)
+}
+
+func edgeNodeKey(e edgeNode) string {
+	return fmt.Sprintf("%s#%d:%d#%d:%d", e.URI, e.Range.Start.Line, e.Range.Start.Character, e.Range.End.Line, e.Range.End.Character)
+}
+
+func isSeenEdge(seen *map[string]bool, edgeKey string) bool {
+	_, ok := (*seen)[edgeKey]
+	return ok
 }
 
 func pathRangetoLocation(path lang.Path, rng hcl.Range) lsp.Location {
