@@ -95,6 +95,18 @@ func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, error) 
 	return nodes, nil
 }
 
+func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder.Decoder) ([]edge, error) {
+	edges := make([]edge, 0)
+	refTargets := pathDecoder.RefTargets()
+
+	for _, refTarget := range refTargets {
+		if refTarget.DefRangePtr != nil {
+
+		}
+	}
+	return edges, nil
+}
+
 func pathRangetoLocation(path lang.Path, rng hcl.Range) lsp.Location {
 	return lsp.Location{
 		URI:   lsp.DocumentURI(uri.FromPath(filepath.Join(path.Path, rng.Filename))),
