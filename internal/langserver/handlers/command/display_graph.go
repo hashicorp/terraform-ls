@@ -117,7 +117,7 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 					To:   pathRangetoLocation(path, refOrigin.RootBlockRange),
 				}
 				edgeKey := edgeKey(edge)
-				if isSeenEdge(&seen, edgeKey) {
+				if isASelfEdge(edge) || isSeenEdge(&seen, edgeKey) {
 					continue
 				}
 
@@ -141,6 +141,10 @@ func edgeNodeKey(e edgeNode) string {
 func isSeenEdge(seen *map[string]bool, edgeKey string) bool {
 	_, ok := (*seen)[edgeKey]
 	return ok
+}
+
+func isASelfEdge(edge edge) bool {
+	return edge.From == edge.To
 }
 
 func pathRangetoLocation(path lang.Path, rng hcl.Range) lsp.Location {
