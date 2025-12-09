@@ -66,8 +66,13 @@ func (h *CmdHandler) DisplayGraphHandler(ctx context.Context, args cmd.CommandAr
 		return response, err
 	}
 
-	response.Nodes = nodes
+	edges, err := getEdges(pathDecoder, path, h.Decoder)
+	if err != nil {
+		return response, err
+	}
 
+	response.Nodes = nodes
+	response.Edges = edges
 	return response, nil
 }
 
@@ -101,6 +106,16 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 
 	for _, refTarget := range refTargets {
 		if refTarget.DefRangePtr != nil {
+			origins := decoder.ReferenceOriginsByTarget(context.Background(), refTarget, path)
+			for _, refOrigin := range origins {
+				edge := edge{
+					From: pathRangetoLocation(path, *refTarget.DefRangePtr),
+					To:   pathRangetoLocation(path, refOrigin.RootBlockRange),
+				}
+
+				edges = append(edges, edge)
+
+			}
 
 		}
 	}
