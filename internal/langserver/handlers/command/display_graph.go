@@ -82,7 +82,22 @@ func newDisplayGraphResponse() displayGraphResponse {
 func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, error) {
 	nodes := make([]node, 0)
 	for _, file := range pathDecoder.Files() {
+		body := file.Body.(*hclsyntax.Body)
+		for _, block := range body.Blocks {
+			nodes = append(nodes,
+				node{
+					Type:     block.Type,
+					Labels:   block.Labels,
+					Location: pathRangetoLocation(path, block.DefRange())})
+		}
 
 	}
 	return nodes, nil
+}
+
+func pathRangetoLocation(path lang.Path, rng hcl.Range) lsp.Location {
+	return lsp.Location{
+		URI:   lsp.DocumentURI(uri.FromPath(filepath.Join(path.Path, rng.Filename))),
+		Range: ilsp.HCLRangeToLSP(rng),
+	}
 }
