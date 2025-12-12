@@ -109,8 +109,8 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 	seen := make(map[string]bool)
 
 	for _, refTarget := range refTargets {
-		if refTarget.DefRangePtr != nil {
-			fromEdge := pathRangetoLocation(path, *refTarget.DefRangePtr)
+		if refTarget.RootBlockRange != nil {
+			fromEdge := pathRangetoLocation(path, *refTarget.RootBlockRange)
 			origins := decoder.ReferenceOriginsByTarget(context.Background(), refTarget, path)
 			for _, refOrigin := range origins {
 				edge := edge{
