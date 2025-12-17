@@ -28,17 +28,16 @@ type displayGraphResponse struct {
 }
 
 type node struct {
+	ID int `json:"id"`
 	lsp.Location
 	Type   string   `json:"type"`
 	Labels []string `json:"labels"`
 }
 
 type edge struct {
-	From edgeNode `json:"from"`
-	To   edgeNode `json:"to"`
+	From int `json:"from"`
+	To   int `json:"to"`
 }
-
-type edgeNode = lsp.Location
 
 func (h *CmdHandler) DisplayGraphHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
 	response := newDisplayGraphResponse()
@@ -64,12 +63,12 @@ func (h *CmdHandler) DisplayGraphHandler(ctx context.Context, args cmd.CommandAr
 		return response, err
 	}
 
-	nodes, err := getNodes(pathDecoder, path)
+	nodes, nodeMap, err := getNodes(pathDecoder, path)
 	if err != nil {
 		return response, err
 	}
 
-	edges, err := getEdges(pathDecoder, path, h.Decoder)
+	edges, err := getEdges(pathDecoder, path, h.Decoder, nodeMap)
 	if err != nil {
 		return response, err
 	}
@@ -87,35 +86,54 @@ func newDisplayGraphResponse() displayGraphResponse {
 	}
 }
 
-func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, error) {
+func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, map[string]int, error) {
 	nodes := make([]node, 0)
+	nodeMap := make(map[string]int)
+	idCounter := 0
 	for _, file := range pathDecoder.Files() {
 		body := file.Body.(*hclsyntax.Body)
 		for _, block := range body.Blocks {
+			loc := pathRangetoLocation(path, block.DefRange())
+			key := locationKey(loc)
+			nodeMap[key] = idCounter
 			nodes = append(nodes,
 				node{
+					ID:       idCounter,
+					Location: loc,
 					Type:     block.Type,
 					Labels:   block.Labels,
-					Location: pathRangetoLocation(path, block.DefRange())})
+				})
+			idCounter++
 		}
 
 	}
-	return nodes, nil
+	return nodes, nodeMap, nil
 }
 
-func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder.Decoder) ([]edge, error) {
+func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder.Decoder, nodeMap map[string]int) ([]edge, error) {
 	edges := make([]edge, 0)
 	refTargets := pathDecoder.RefTargets()
 	seen := make(map[string]bool)
 
 	for _, refTarget := range refTargets {
 		if refTarget.RootBlockRange != nil {
-			fromEdge := pathRangetoLocation(path, *refTarget.RootBlockRange)
+			fromLoc := pathRangetoLocation(path, *refTarget.RootBlockRange)
+			fromKey := locationKey(fromLoc)
+			fromID, fromExists := nodeMap[fromKey]
+			if !fromExists {
+				continue
+			}
 			origins := decoder.ReferenceOriginsByTarget(context.Background(), refTarget, path)
 			for _, refOrigin := range origins {
+				toLoc := pathRangetoLocation(path, refOrigin.RootBlockRange)
+				toKey := locationKey(toLoc)
+				toID, toExists := nodeMap[toKey]
+				if !toExists {
+					continue
+				}
 				edge := edge{
-					From: fromEdge,
-					To:   pathRangetoLocation(path, refOrigin.RootBlockRange),
+					From: fromID,
+					To:   toID,
 				}
 				edgeKey := edgeKey(edge)
 				if isASelfEdge(edge) || isSeenEdge(&seen, edgeKey) {
@@ -132,11 +150,11 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 }
 
 func edgeKey(e edge) string {
-	return edgeNodeKey(e.From) + "->" + edgeNodeKey(e.To)
+	return fmt.Sprintf("%d->%d", e.From, e.To)
 }
 
-func edgeNodeKey(e edgeNode) string {
-	return fmt.Sprintf("%s#%d:%d#%d:%d", e.URI, e.Range.Start.Line, e.Range.Start.Character, e.Range.End.Line, e.Range.End.Character)
+func locationKey(loc lsp.Location) string {
+	return fmt.Sprintf("%s#%d:%d#%d:%d", loc.URI, loc.Range.Start.Line, loc.Range.Start.Character, loc.Range.End.Line, loc.Range.End.Character)
 }
 
 func isSeenEdge(seen *map[string]bool, edgeKey string) bool {
