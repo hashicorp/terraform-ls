@@ -53,6 +53,13 @@ func (h *CmdHandler) DisplayGraphHandler(ctx context.Context, args cmd.CommandAr
 		return response, err
 	}
 
+	// Wait for incomplete jobs to ensure references are computed
+	jobIds, err := h.StateStore.JobStore.ListIncompleteJobsForDir(dh.Dir)
+	if err != nil {
+		return response, err
+	}
+	h.StateStore.JobStore.WaitForJobs(ctx, jobIds...)
+
 	path := lang.Path{
 		Path:       dh.Dir.Path(),
 		LanguageID: doc.LanguageID,
