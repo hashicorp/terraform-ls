@@ -5,6 +5,7 @@ package handlers
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/creachadair/jrpc2"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/langserver/cmd"
 	"github.com/hashicorp/terraform-ls/internal/state"
 	"github.com/hashicorp/terraform-ls/internal/terraform/exec"
+	"github.com/hashicorp/terraform-ls/internal/uri"
 	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
@@ -68,8 +70,8 @@ func TestLangServer_workspaceExecuteCommand_displayGraph_basic(t *testing.T) {
 		Method: "workspace/executeCommand",
 		ReqParams: fmt.Sprintf(`{
 		"command": %q,
-		"arguments": ["uri=%s"]
-	}`, cmd.Name("terraform.display-graph"), tmpDir.Path()+"/main.tf")}, fmt.Sprintf(`{
+		"arguments": [%q]
+	}`, cmd.Name("terraform.display-graph"), fmt.Sprintf("uri=%s", filepath.Join(tmpDir.Path(), "main.tf")))}, fmt.Sprintf(`{
 		"jsonrpc": "2.0",
 		"id": 3,
 		"result": {
@@ -77,7 +79,7 @@ func TestLangServer_workspaceExecuteCommand_displayGraph_basic(t *testing.T) {
 			"nodes": [
 				{
 					"id": 0,
-					"uri": "file://%s",
+					"uri": %q,
 					"range": {
 						"start": {"line": 0, "character": 0},
 						"end": {"line": 0, "character": 17}
@@ -87,7 +89,7 @@ func TestLangServer_workspaceExecuteCommand_displayGraph_basic(t *testing.T) {
 				},
 				{
 					"id": 1,
-					"uri": "file://%s",
+					"uri": %q,
 					"range": {
 						"start": {"line": 4, "character": 0},
 						"end": {"line": 4, "character": 33}
@@ -97,7 +99,7 @@ func TestLangServer_workspaceExecuteCommand_displayGraph_basic(t *testing.T) {
 				},
 				{
 					"id": 2,
-					"uri": "file://%s",
+					"uri": %q,
 					"range": {
 						"start": {"line": 9, "character": 0},
 						"end": {"line": 9, "character": 24}
@@ -113,7 +115,7 @@ func TestLangServer_workspaceExecuteCommand_displayGraph_basic(t *testing.T) {
 				}
 			]
 		}
-	}`, tmpDir.Path()+"/main.tf", tmpDir.Path()+"/main.tf", tmpDir.Path()+"/main.tf"))
+	}`, uri.FromPath(filepath.Join(tmpDir.Path(), "main.tf")), uri.FromPath(filepath.Join(tmpDir.Path(), "main.tf")), uri.FromPath(filepath.Join(tmpDir.Path(), "main.tf"))))
 }
 
 func TestLangServer_workspaceExecuteCommand_displayGraph_missingUri(t *testing.T) {
