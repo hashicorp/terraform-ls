@@ -64,7 +64,7 @@ variable "region" {
 				{
 					ID: 0,
 					Location: lsp.Location{
-						URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+						URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 						Range: ilsp.HCLRangeToLSP(hcl.Range{
 							Filename: "main.tf",
 							Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -77,7 +77,7 @@ variable "region" {
 				{
 					ID: 1,
 					Location: lsp.Location{
-						URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+						URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 						Range: ilsp.HCLRangeToLSP(hcl.Range{
 							Filename: "main.tf",
 							Start:    hcl.Pos{Line: 7, Column: 1, Byte: 90},
@@ -90,7 +90,7 @@ variable "region" {
 			},
 			expectedNodeMap: map[string]int{
 				locationKey(lsp.Location{
-					URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+					URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 					Range: ilsp.HCLRangeToLSP(hcl.Range{
 						Filename: "main.tf",
 						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -98,7 +98,7 @@ variable "region" {
 					}),
 				}): 0,
 				locationKey(lsp.Location{
-					URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+					URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 					Range: ilsp.HCLRangeToLSP(hcl.Range{
 						Filename: "main.tf",
 						Start:    hcl.Pos{Line: 7, Column: 1, Byte: 90},
@@ -147,7 +147,7 @@ variable "instance_type" {
 				{
 					ID: 0,
 					Location: lsp.Location{
-						URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+						URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 						Range: ilsp.HCLRangeToLSP(hcl.Range{
 							Filename: "main.tf",
 							Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -160,7 +160,7 @@ variable "instance_type" {
 				{
 					ID: 1,
 					Location: lsp.Location{
-						URI: lsp.DocumentURI(uri.FromPath("/test/test/variables.tf")),
+						URI: lsp.DocumentURI(uri.FromPath("/test/variables.tf")),
 						Range: ilsp.HCLRangeToLSP(hcl.Range{
 							Filename: "variables.tf",
 							Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -173,7 +173,7 @@ variable "instance_type" {
 				{
 					ID: 2,
 					Location: lsp.Location{
-						URI: lsp.DocumentURI(uri.FromPath("/test/test/variables.tf")),
+						URI: lsp.DocumentURI(uri.FromPath("/test/variables.tf")),
 						Range: ilsp.HCLRangeToLSP(hcl.Range{
 							Filename: "variables.tf",
 							Start:    hcl.Pos{Line: 6, Column: 1, Byte: 34},
@@ -186,7 +186,7 @@ variable "instance_type" {
 			},
 			expectedNodeMap: map[string]int{
 				locationKey(lsp.Location{
-					URI: lsp.DocumentURI(uri.FromPath("/test/test/main.tf")),
+					URI: lsp.DocumentURI(uri.FromPath("/test/main.tf")),
 					Range: ilsp.HCLRangeToLSP(hcl.Range{
 						Filename: "main.tf",
 						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -194,7 +194,7 @@ variable "instance_type" {
 					}),
 				}): 0,
 				locationKey(lsp.Location{
-					URI: lsp.DocumentURI(uri.FromPath("/test/test/variables.tf")),
+					URI: lsp.DocumentURI(uri.FromPath("/test/variables.tf")),
 					Range: ilsp.HCLRangeToLSP(hcl.Range{
 						Filename: "variables.tf",
 						Start:    hcl.Pos{Line: 2, Column: 1, Byte: 1},
@@ -202,7 +202,7 @@ variable "instance_type" {
 					}),
 				}): 1,
 				locationKey(lsp.Location{
-					URI: lsp.DocumentURI(uri.FromPath("/test/test/variables.tf")),
+					URI: lsp.DocumentURI(uri.FromPath("/test/variables.tf")),
 					Range: ilsp.HCLRangeToLSP(hcl.Range{
 						Filename: "variables.tf",
 						Start:    hcl.Pos{Line: 6, Column: 1, Byte: 34},
@@ -358,7 +358,7 @@ func createTestDecoder(t *testing.T, files map[string]string, schema *schema.Bod
 	p := hclparse.NewParser()
 	dirPath := "/test"
 	for filename, content := range files {
-		file, diags := p.ParseHCL([]byte(content), filepath.Join(dirPath, filename))
+		file, diags := p.ParseHCL([]byte(content), filename)
 		if len(diags) > 0 {
 			t.Fatalf("failed to parse HCL for %s: %v", filename, diags)
 		}
