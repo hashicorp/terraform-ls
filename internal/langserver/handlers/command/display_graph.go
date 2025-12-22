@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/hashicorp/hcl-lang/decoder"
@@ -37,6 +38,11 @@ type node struct {
 type edge struct {
 	From int `json:"from"`
 	To   int `json:"to"`
+}
+
+type blockInfo struct {
+	filename string
+	block    *hclsyntax.Block
 }
 
 func (h *CmdHandler) DisplayGraphHandler(ctx context.Context, args cmd.CommandArgs) (interface{}, error) {
@@ -94,25 +100,39 @@ func newDisplayGraphResponse() displayGraphResponse {
 }
 
 func getNodes(pathDecoder *decoder.PathDecoder, path lang.Path) ([]node, map[string]int, error) {
-	nodes := make([]node, 0)
-	nodeMap := make(map[string]int)
-	idCounter := 0
+	var blocks []blockInfo
 	for _, file := range pathDecoder.Files() {
 		body := file.Body.(*hclsyntax.Body)
 		for _, block := range body.Blocks {
-			loc := pathRangetoLocation(path, block.DefRange())
-			key := locationKey(loc)
-			nodeMap[key] = idCounter
-			nodes = append(nodes,
-				node{
-					ID:       idCounter,
-					Location: loc,
-					Type:     block.Type,
-					Labels:   block.Labels,
-				})
-			idCounter++
+			blocks = append(blocks, blockInfo{
+				filename: block.DefRange().Filename,
+				block:    block,
+			})
 		}
+	}
 
+	sort.Slice(blocks, func(i, j int) bool {
+		if blocks[i].filename != blocks[j].filename {
+			return blocks[i].filename < blocks[j].filename
+		}
+		return blocks[i].block.DefRange().Start.Line < blocks[j].block.DefRange().Start.Line
+	})
+
+	nodes := make([]node, 0)
+	nodeMap := make(map[string]int)
+	idCounter := 0
+	for _, bi := range blocks {
+		loc := pathRangetoLocation(path, bi.block.DefRange())
+		key := locationKey(loc)
+		nodeMap[key] = idCounter
+		nodes = append(nodes,
+			node{
+				ID:       idCounter,
+				Location: loc,
+				Type:     bi.block.Type,
+				Labels:   bi.block.Labels,
+			})
+		idCounter++
 	}
 	return nodes, nodeMap, nil
 }
