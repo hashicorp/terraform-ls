@@ -150,7 +150,7 @@ func getEdges(pathDecoder *decoder.PathDecoder, path lang.Path, decoder *decoder
 			if !fromExists {
 				continue
 			}
-			origins := decoder.ReferenceOriginsByTarget(context.Background(), refTarget, path)
+			origins := decoder.ReferenceOriginsByTargetInPath(context.Background(), refTarget, path, path)
 			for _, refOrigin := range origins {
 				toLoc := pathRangetoLocation(path, refOrigin.RootBlockRange)
 				toKey := locationKey(toLoc)
