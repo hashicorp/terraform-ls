@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Update Copywright Headers
+time: 2026-01-19T17:34:18.018278+05:30
+custom:
+    Issue: "2055"
+    Repository: terraform-ls
