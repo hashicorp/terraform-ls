@@ -19,8 +19,9 @@ const _OpState_name = "OpStateUnknownOpStateQueuedOpStateLoadingOpStateLoaded"
 var _OpState_index = [...]uint8{0, 14, 27, 41, 54}
 
 func (i OpState) String() string {
-	if i >= OpState(len(_OpState_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_OpState_index)-1 {
 		return "OpState(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _OpState_name[_OpState_index[i]:_OpState_index[i+1]]
+	return _OpState_name[_OpState_index[idx]:_OpState_index[idx+1]]
 }
