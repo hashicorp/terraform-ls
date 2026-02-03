@@ -43,6 +43,10 @@ const (
 	OpTypeTerraformValidate
 	OpTypeParseStackConfiguration
 	OpTypeParseSearchConfiguration
+	OpTypeParsePolicyConfiguration
+	OpTypeLoadPolicyMetadata
+	OpTypeSchemaPolicyValidation
+	OpTypeReferencePolicyValidation
 	OpTypeLoadStackMetadata
 	OpTypeLoadSearchMetadata
 	OpTypeLoadStackRequiredTerraformVersion

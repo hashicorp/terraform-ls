@@ -15,6 +15,7 @@ const (
 	Test      LanguageID = "terraform-test"
 	Mock      LanguageID = "terraform-mock"
 	Search    LanguageID = "terraform-search"
+	Policy    LanguageID = "terraform-policy"
 )
 
 func (l LanguageID) String() string {
