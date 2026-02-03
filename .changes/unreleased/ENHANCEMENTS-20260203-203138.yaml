@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Added support for policy files
+time: 2026-02-03T20:31:38.788834+05:30
+custom:
+    Issue: "2060"
+    Repository: terraform-ls
