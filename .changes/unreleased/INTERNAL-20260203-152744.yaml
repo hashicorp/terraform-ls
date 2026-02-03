@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Update copyright config
+time: 2026-02-03T15:27:44.67944+05:30
+custom:
+    Issue: "2059"
+    Repository: terraform-ls
