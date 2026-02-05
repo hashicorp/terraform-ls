@@ -21,7 +21,6 @@ func schemaForPolicy(policy *state.PolicyRecord, stateReader CombinedReader) (*s
 	meta := &tfpolicy.Meta{
 		Path:             policy.Path(),
 		CoreRequirements: policy.Meta.CoreRequirements,
-		Variables:        policy.Meta.Variables,
 		ResourcePolicies: policy.Meta.ResourcePolicies,
 		ProviderPolicies: policy.Meta.ProviderPolicies,
 		ModulePolicies:   policy.Meta.ModulePolicies,

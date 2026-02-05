@@ -169,7 +169,6 @@ func (s *PolicyStore) LocalPolicyMeta(path string) (*tfpolicy.Meta, error) {
 
 		CoreRequirements: policy.Meta.CoreRequirements,
 
-		Variables:        policy.Meta.Variables,
 		ResourcePolicies: policy.Meta.ResourcePolicies,
 		ProviderPolicies: policy.Meta.ProviderPolicies,
 		ModulePolicies:   policy.Meta.ModulePolicies,
@@ -260,7 +259,6 @@ func (s *PolicyStore) UpdateMetadata(path string, meta *tfpolicy.Meta, mErr erro
 	policy := oldPolicy.Copy()
 	policy.Meta = PolicyMetadata{
 		CoreRequirements: meta.CoreRequirements,
-		Variables:        meta.Variables,
 		ResourcePolicies: meta.ResourcePolicies,
 		ProviderPolicies: meta.ProviderPolicies,
 		ModulePolicies:   meta.ModulePolicies,
