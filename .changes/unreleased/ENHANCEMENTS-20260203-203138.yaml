@@ -1,5 +1,5 @@
 kind: ENHANCEMENTS
-body: Added support for policy files
+body: Add support for Terraform Policy files (.policy.hcl). This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Policy files.
 time: 2026-02-03T20:31:38.788834+05:30
 custom:
     Issue: "2060"

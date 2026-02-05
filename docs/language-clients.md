@@ -11,6 +11,7 @@ The following file types are currently supported and language IDs expected:
 - `terraform-stack` - standard `*.tfcomponent.hcl` and `*.tfstack.hcl` files
 - `terraform-deploy` - standard `*.tfdeploy.hcl` files
 - `terraform-search` - standard `*.tfquery.hcl` files
+- `terraform-policy` - standard `*.policy.hcl` files
 
 Client can choose to highlight other files locally, but such other files
 must **not** be send to the server as the server isn't equipped to handle those.
@@ -47,7 +48,7 @@ This allows IntelliSense to remain accurate e.g. when switching branches in VCS
 or when there are any other changes made to these files outside the editor.
 
 If the client implements file watcher, it should watch for any changes
-in `**/*.tf`, `**/*.tfvars`, `**/*.tfstack.hcl`, `**/*.tfcomponent.hcl`, `**/*.tfdeploy.hcl` and `**/*.tfquery.hcl` files in the workspace.
+in `**/*.tf`, `**/*.tfvars`, `**/*.tfstack.hcl`, `**/*.tfcomponent.hcl`, `**/*.tfdeploy.hcl`, `**/*.tfquery.hcl` and `**/*.policy.hcl` files in the workspace.
 
 Client should **not** send changes for any other files.
 
