@@ -140,15 +140,6 @@ func (f *PolicyFeature) CoreRequirements(policyPath string) (version.Constraints
 	return policy.Meta.CoreRequirements, nil
 }
 
-func (f *PolicyFeature) PolicyInputs(policyPath string) (map[string]tfpolicy.Variable, error) {
-	policy, err := f.Store.PolicyRecordByPath(policyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return policy.Meta.Variables, nil
-}
-
 func (f *PolicyFeature) Diagnostics(path string) diagnostics.Diagnostics {
 	diags := diagnostics.NewDiagnostics()
 
