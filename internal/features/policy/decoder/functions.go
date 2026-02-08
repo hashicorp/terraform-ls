@@ -17,10 +17,14 @@ func functionsForPolicy(policy *state.PolicyRecord, stateReader CombinedReader) 
 }
 
 func mustFunctionsForVersion(v *version.Version) map[string]schema.FunctionSignature {
-	s, err := tfschema.FunctionsForVersion(v)
+	fs, err := tfschema.FunctionsForVersion(v)
 	if err != nil {
 		// this should never happen
 		panic(err)
 	}
-	return s
+	coreFunctions := make(map[string]schema.FunctionSignature, len(fs))
+	for name, signature := range fs {
+		coreFunctions["core::"+name] = signature
+	}
+	return coreFunctions
 }
