@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Added deprecated attribute to outputs and variables
-time: 2026-02-09T11:47:38.131526+05:30
-custom:
-    Issue: "2063"
-    Repository: terraform-ls
