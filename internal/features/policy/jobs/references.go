@@ -57,11 +57,17 @@ func DecodeReferenceTargets(ctx context.Context, policyStore *state.PolicyStore,
 	if err != nil {
 		return err
 	}
+	record, err := policyStore.PolicyRecordByPath(policyPath)
+	if err != nil {
+		return err
+	}
 
 	targets := make(reference.Targets, 0)
 	policyTargets, rErr := pd.CollectReferenceTargets()
+	builtinTargets := builtinReferences(record)
 
 	targets = append(targets, policyTargets...)
+	targets = append(targets, builtinTargets...)
 
 	sErr := policyStore.UpdateReferenceTargets(policyPath, targets, rErr)
 	if sErr != nil {
