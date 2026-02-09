@@ -1,4 +1,11 @@
-## 0.38.4 (09 February 2026)
+## 0.39.0-beta1 (09 February 2026)
+
+ENHANCEMENTS:
+
+* Add support for Terraform Policy files (.policy.hcl). This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Policy files. ([#2061](https://github.com/hashicorp/terraform-ls/issues/2061))
+* Add test cases for policy feature ([#2062](https://github.com/hashicorp/terraform-ls/issues/2062))
+
+## 0.38.3 (09 February 2026)
 
 ENHANCEMENTS:
 
