@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Add test cases for policy feature
+time: 2026-02-09T14:52:17.472152+05:30
+custom:
+    Issue: "2062"
+    Repository: terraform-ls
