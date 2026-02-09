@@ -530,6 +530,8 @@ func TestInitialize_differentWorkspaceLayouts(t *testing.T) {
 			defer features.Tests.Stop()
 			features.Search.Start(ctx)
 			defer features.Search.Stop()
+			features.Policy.Start(ctx)
+			defer features.Policy.Stop()
 
 			wc := walker.NewWalkerCollector()
 
