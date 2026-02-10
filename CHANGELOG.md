@@ -1,3 +1,9 @@
+## 0.39.0-beta2 (10 February 2026)
+
+ENHANCEMENTS:
+
+* Enforce block error message should support templating ([#2065](https://github.com/hashicorp/terraform-ls/issues/2065))
+
 ## 0.39.0-beta1 (09 February 2026)
 
 ENHANCEMENTS:
