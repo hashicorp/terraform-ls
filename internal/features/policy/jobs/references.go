@@ -5,6 +5,7 @@ package jobs
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
@@ -16,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/job"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	op "github.com/hashicorp/terraform-ls/internal/terraform/module/operation"
+	tfpolicy "github.com/hashicorp/terraform-schema/policy"
 )
 
 // DecodeReferenceTargets collects reference targets,
@@ -66,6 +68,7 @@ func DecodeReferenceTargets(ctx context.Context, policyStore *state.PolicyStore,
 	policyTargets, rErr := pd.CollectReferenceTargets()
 	builtinTargets := builtinReferences(record)
 
+	configurePolicyScopedLocalTargets(policyTargets, record.Meta.ResourcePolicies, record.Meta.ProviderPolicies, record.Meta.ModulePolicies)
 	targets = append(targets, policyTargets...)
 	targets = append(targets, builtinTargets...)
 
@@ -125,4 +128,46 @@ func DecodeReferenceOrigins(ctx context.Context, policyStore *state.PolicyStore,
 	}
 
 	return rErr
+}
+
+func configurePolicyScopedLocalTargets(targets reference.Targets, resourcePolicies map[string]tfpolicy.ResourcePolicy, providerPolicies map[string]tfpolicy.ProviderPolicy, modulePolicies map[string]tfpolicy.ModulePolicy) {
+	for i := range targets {
+		target := &targets[i]
+		if strings.HasPrefix(target.Addr.String(), "local.") && (target.ScopeId == lang.ScopeId("resource_policy") || target.ScopeId == lang.ScopeId("provider_policy") || target.ScopeId == lang.ScopeId("module_policy")) {
+			// Swap LocalAddr and Addr as locals are locally scoped to a block
+			target.LocalAddr = target.Addr.Copy()
+			target.Addr = nil
+
+			if target.TargetableFromRangePtr != nil {
+				continue
+			}
+
+			// For locally scoped local block add it's TargetableFromRangePtr
+			for _, rp := range resourcePolicies {
+				if target.RangePtr.Overlaps(rp.Range) {
+					target.TargetableFromRangePtr = &rp.Range
+					break
+				}
+			}
+
+			for _, pp := range providerPolicies {
+				if target.RangePtr.Overlaps(pp.Range) {
+					target.TargetableFromRangePtr = &pp.Range
+					break
+				}
+			}
+
+			for _, mp := range modulePolicies {
+				if target.RangePtr.Overlaps(mp.Range) {
+					target.TargetableFromRangePtr = &mp.Range
+					break
+				}
+			}
+
+		}
+		// Recursively modify nested targets
+		if len(target.NestedTargets) > 0 {
+			configurePolicyScopedLocalTargets(target.NestedTargets, resourcePolicies, providerPolicies, modulePolicies)
+		}
+	}
 }
