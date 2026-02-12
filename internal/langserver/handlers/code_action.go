@@ -74,6 +74,21 @@ func (svc *service) textDocumentCodeAction(ctx context.Context, params lsp.CodeA
 					},
 				},
 			})
+		case ilsp.ExtractPropertyToOutput:
+			edits, err := svc.ExtractPropToOutput(ctx, params)
+			if err != nil {
+				return ca, err
+			}
+
+			ca = append(ca, lsp.CodeAction{
+				Title: "Extract Property to Output",
+				Kind:  action,
+				Edit: lsp.WorkspaceEdit{
+					Changes: map[lsp.DocumentURI][]lsp.TextEdit{
+						lsp.DocumentURI(dh.FullURI()): edits,
+					},
+				},
+			})
 		}
 	}
 
