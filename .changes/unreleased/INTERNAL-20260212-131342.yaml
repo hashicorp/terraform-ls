@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Migrate GitHub Actions updates from TSCCR to Dependabot
+time: 2026-02-12T13:13:42.676849+05:30
+custom:
+    Issue: "1976"
+    Repository: terraform-ls
