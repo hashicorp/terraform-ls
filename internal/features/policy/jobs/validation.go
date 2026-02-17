@@ -24,7 +24,7 @@ import (
 )
 
 // SchemaPolicyValidation does schema-based validation
-// of policy files (*.tf) and produces diagnostics
+// of policy files (*.policy.hcl) and produces diagnostics
 // associated with any "invalid" parts of code.
 //
 // It relies on previously parsed AST (via [ParsePolicyConfiguration]),

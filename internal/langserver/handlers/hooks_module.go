@@ -40,6 +40,7 @@ func sendModuleTelemetry(features *Features, telemetrySender telemetry.Sender) n
 		stacksTelemetry := features.Stacks.Telemetry(path)
 		searchTelemetry := features.Search.Telemetry(path)
 		policyTelemetry := features.Policy.Telemetry(path)
+		policytestTelemetry := features.PolicyTest.Telemetry(path)
 		for property, value := range rootTelemetry {
 			properties[property] = value
 		}
@@ -50,6 +51,9 @@ func sendModuleTelemetry(features *Features, telemetrySender telemetry.Sender) n
 			properties[property] = value
 		}
 		for property, value := range policyTelemetry {
+			properties[property] = value
+		}
+		for property, value := range policytestTelemetry {
 			properties[property] = value
 		}
 

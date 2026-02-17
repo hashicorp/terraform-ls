@@ -8,14 +8,15 @@ package lsp
 type LanguageID string
 
 const (
-	Terraform LanguageID = "terraform"
-	Tfvars    LanguageID = "terraform-vars"
-	Stacks    LanguageID = "terraform-stack"
-	Deploy    LanguageID = "terraform-deploy"
-	Test      LanguageID = "terraform-test"
-	Mock      LanguageID = "terraform-mock"
-	Search    LanguageID = "terraform-search"
-	Policy    LanguageID = "terraform-policy"
+	Terraform  LanguageID = "terraform"
+	Tfvars     LanguageID = "terraform-vars"
+	Stacks     LanguageID = "terraform-stack"
+	Deploy     LanguageID = "terraform-deploy"
+	Test       LanguageID = "terraform-test"
+	Mock       LanguageID = "terraform-mock"
+	Search     LanguageID = "terraform-search"
+	Policy     LanguageID = "terraform-policy"
+	PolicyTest LanguageID = "terraform-policytest"
 )
 
 func (l LanguageID) String() string {
