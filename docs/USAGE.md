@@ -12,6 +12,7 @@ The following filetypes are supported by the Terraform Language Server:
 - `terraform-deploy` - standard `*.tfdeploy.hcl` files
 - `terraform-search` - standard `*.tfquery.hcl` files
 - `terraform-policy` - standard `*.policy.hcl` files
+- `terraform-policytest` - standard `*.policytest.hcl` files
 
 _NOTE:_ Clients should be configured to follow the above language ID conventions
 and do **not** send `*.tf.json`, `*.tfvars.json` nor Packer HCL config

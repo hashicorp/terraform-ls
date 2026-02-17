@@ -47,6 +47,10 @@ const (
 	OpTypeLoadPolicyMetadata
 	OpTypeSchemaPolicyValidation
 	OpTypeReferencePolicyValidation
+	OpTypeParsePolicyTestConfiguration
+	OpTypeLoadPolicyTestMetadata
+	OpTypeSchemaPolicyTestValidation
+	OpTypeReferencePolicyTestValidation
 	OpTypeLoadStackMetadata
 	OpTypeLoadSearchMetadata
 	OpTypeLoadStackRequiredTerraformVersion
