@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Add Support for Variables Block in .policy.hcl file
-time: 2026-02-23T16:30:56.681844+05:30
-custom:
-    Issue: "2078"
-    Repository: terraform-ls
