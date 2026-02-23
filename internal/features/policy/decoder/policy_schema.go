@@ -24,6 +24,7 @@ func schemaForPolicy(policy *state.PolicyRecord, stateReader CombinedReader) (*s
 		ResourcePolicies: policy.Meta.ResourcePolicies,
 		ProviderPolicies: policy.Meta.ProviderPolicies,
 		ModulePolicies:   policy.Meta.ModulePolicies,
+		Variables:        policy.Meta.Variables,
 		Filenames:        policy.Meta.Filenames,
 	}
 

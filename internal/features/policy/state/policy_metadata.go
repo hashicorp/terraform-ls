@@ -16,13 +16,14 @@ type PolicyMetadata struct {
 	ResourcePolicies map[string]tfpolicy.ResourcePolicy
 	ProviderPolicies map[string]tfpolicy.ProviderPolicy
 	ModulePolicies   map[string]tfpolicy.ModulePolicy
+	Variables        map[string]tfpolicy.Variable
 
 	Filenames []string
 }
 
 func (mm PolicyMetadata) Copy() PolicyMetadata {
 	newMm := PolicyMetadata{
-		// version.Constraints is practically immutable once parsed
+		// version.Constraints are practically immutable once parsed
 		CoreRequirements: mm.CoreRequirements,
 		Filenames:        mm.Filenames,
 	}
@@ -45,6 +46,13 @@ func (mm PolicyMetadata) Copy() PolicyMetadata {
 		newMm.ModulePolicies = make(map[string]tfpolicy.ModulePolicy, len(mm.ModulePolicies))
 		for k, v := range mm.ModulePolicies {
 			newMm.ModulePolicies[k] = v
+		}
+	}
+
+	if mm.Variables != nil {
+		newMm.Variables = make(map[string]tfpolicy.Variable, len(mm.Variables))
+		for k, v := range mm.Variables {
+			newMm.Variables[k] = v
 		}
 	}
 	return newMm
