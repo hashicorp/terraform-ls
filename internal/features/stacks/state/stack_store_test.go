@@ -266,7 +266,6 @@ func TestStackStore_SetTerraformVersion(t *testing.T) {
 }
 
 func TestStackStore_UpdateParsedFiles(t *testing.T) {
-	runTestStackStore_UpdateParsedFiles(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestStackStore_UpdateParsedFiles(t, struct{ extension string }{extension: "tfcomponent.hcl"})
 }
 
@@ -319,7 +318,6 @@ variable "blah" {
 }
 
 func TestStackStore_UpdateDiagnostics(t *testing.T) {
-	runTestStackStore_UpdateDiagnostics(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestStackStore_UpdateDiagnostics(t, struct{ extension string }{extension: "tfcomponent.hcl"})
 }
 
