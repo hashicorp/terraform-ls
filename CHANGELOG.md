@@ -1,3 +1,9 @@
+## 0.39.0-beta3 (23 February 2026)
+
+ENHANCEMENTS:
+
+* Add Support for Variables Block in .policy.hcl file ([#2078](https://github.com/hashicorp/terraform-ls/issues/2078))
+
 ## 0.39.0-beta2 (10 February 2026)
 
 ENHANCEMENTS:
