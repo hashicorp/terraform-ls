@@ -10,6 +10,32 @@ env:
   GOPROXY: https://proxy.golang.org/
 
 jobs:
+  zzz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: ...
+      - name: Clone Security Scanner Repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          repository: hashicorp/security-scanner
+          token: ${{ secrets.PRODSEC_SCANNER_READ_ONLY }}
+          path: security-scanner
+      - name: Clone Target Repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: Scan Target Repository
+        uses: hashicorp/terraform-ls@main
+        with:
+          repository: ${{ github.workspace }}
+          config: |
+            repository {
+              osv        = true
+              secrets {
+                all = true
+              }
+            }
   test:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
