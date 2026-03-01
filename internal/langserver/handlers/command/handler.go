@@ -6,6 +6,7 @@ package command
 import (
 	"log"
 
+	"github.com/hashicorp/hcl-lang/decoder"
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
 	"github.com/hashicorp/terraform-ls/internal/state"
@@ -18,4 +19,5 @@ type CmdHandler struct {
 	// the features here?
 	ModulesFeature     *fmodules.ModulesFeature
 	RootModulesFeature *frootmodules.RootModulesFeature
+	Decoder            *decoder.Decoder
 }

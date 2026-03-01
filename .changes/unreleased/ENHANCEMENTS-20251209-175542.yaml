@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Terraform Graph Visualization in VS Code Extension
+time: 2025-12-09T17:55:42.954862+05:30
+custom:
+    Issue: "2056"
+    Repository: terraform-ls
