@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Added locals block inside resource_policy, module_policy & provider_policy
+time: 2026-02-11T19:19:18.722747+05:30
+custom:
+    Issue: "2070"
+    Repository: terraform-ls
