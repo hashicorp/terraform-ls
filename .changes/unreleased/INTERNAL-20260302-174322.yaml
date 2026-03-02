@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: 'github/build: Avoid double checkout to address Duplicate header: Authorization'
+time: 2026-03-02T17:43:22.23998+05:30
+custom:
+    Issue: "2085"
+    Repository: terraform-ls
