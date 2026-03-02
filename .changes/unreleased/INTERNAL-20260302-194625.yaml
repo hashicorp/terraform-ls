@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: 'Bump: golang.org/x/net to v0.51.0'
+time: 2026-03-02T19:46:25.039946+05:30
+custom:
+    Issue: "2086"
+    Repository: terraform-ls
