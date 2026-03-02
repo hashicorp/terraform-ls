@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: Bump go version to 1.25
+time: 2026-03-02T17:12:36.162167+05:30
+custom:
+    Issue: "2084"
+    Repository: terraform-ls
