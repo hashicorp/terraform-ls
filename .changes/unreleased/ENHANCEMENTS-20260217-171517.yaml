@@ -1,5 +1,5 @@
-kind: ENHANCEMENTS
-body: Add support for Terraform Policy Test files (.policytest.hcl). This provides block and attribute completion, hover, and diagnostics along with syntax valida
+kind: INTERNAL
+body: Minor fixes
 time: 2026-02-17T17:15:17.168574+05:30
 custom:
     Issue: "2074"
