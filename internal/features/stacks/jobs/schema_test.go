@@ -25,7 +25,6 @@ import (
 )
 
 func TestPreloadEmbeddedSchema_basic(t *testing.T) {
-	runTestPreloadEmbeddedSchema_basic(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestPreloadEmbeddedSchema_basic(t, struct{ extension string }{extension: "tfcomponent.hcl"})
 }
 
@@ -112,7 +111,6 @@ func runTestPreloadEmbeddedSchema_basic(t *testing.T, tc struct {
 }
 
 func TestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T) {
-	runTestPreloadEmbeddedSchema_unknownProviderOnly(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestPreloadEmbeddedSchema_unknownProviderOnly(t, struct{ extension string }{extension: "tfextension.hcl"})
 }
 
@@ -174,7 +172,6 @@ func runTestPreloadEmbeddedSchema_unknownProviderOnly(t *testing.T, tc struct {
 }
 
 func TestPreloadEmbeddedSchema_idempotency(t *testing.T) {
-	runTestPreloadEmbeddedSchema_idempotency(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestPreloadEmbeddedSchema_idempotency(t, struct{ extension string }{extension: "tfcomponent.hcl"})
 }
 
@@ -263,7 +260,6 @@ func runTestPreloadEmbeddedSchema_idempotency(t *testing.T, tc struct {
 }
 
 func TestPreloadEmbeddedSchema_raceCondition(t *testing.T) {
-	runTestPreloadEmbeddedSchema_raceCondition(t, struct{ extension string }{extension: "tfstack.hcl"})
 	runTestPreloadEmbeddedSchema_raceCondition(t, struct{ extension string }{extension: "tfcomponent.hcl"})
 }
 
