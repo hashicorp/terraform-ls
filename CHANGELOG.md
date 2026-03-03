@@ -17,7 +17,20 @@ ENHANCEMENTS:
 * Add support for Terraform Policy files (.policy.hcl). This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Policy files. ([#2061](https://github.com/hashicorp/terraform-ls/issues/2061))
 * Add test cases for policy feature ([#2062](https://github.com/hashicorp/terraform-ls/issues/2062))
 
-## 0.38.3 (09 February 2026)
+## 0.38.5 (03 March 2026)
+
+ENHANCEMENTS:
+
+* Update Stacks schema to include missing GA specific blocks & attributes, remove support for tfstack.hcl ([#2080](https://github.com/hashicorp/terraform-ls/issues/2080))
+
+INTERNAL:
+
+* Migrate GitHub Actions updates from TSCCR to Dependabot ([#1976](https://github.com/hashicorp/terraform-ls/issues/1976))
+* Bump go version to 1.25 ([#2084](https://github.com/hashicorp/terraform-ls/issues/2084))
+* github/build: Avoid double checkout to address Duplicate header: Authorization ([#2085](https://github.com/hashicorp/terraform-ls/issues/2085))
+* Bump: golang.org/x/net to v0.51.0 ([#2086](https://github.com/hashicorp/terraform-ls/issues/2086))
+
+## 0.38.4 (09 February 2026)
 
 ENHANCEMENTS:
 

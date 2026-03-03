@@ -43,10 +43,6 @@ func TestSchemaStackValidation_FullStack(t *testing.T) {
 		folderName string
 		extension  string
 	}{folderName: "invalid-stack", extension: "tfcomponent.hcl"})
-	runTestSchemaStackValidation_FullStack(t, struct {
-		folderName string
-		extension  string
-	}{folderName: "invalid-stack-legacy-extension", extension: "tfstack.hcl"})
 }
 
 func runTestSchemaStackValidation_FullStack(t *testing.T, tc struct {
@@ -106,10 +102,7 @@ func TestSchemaStackValidation_SingleFile(t *testing.T) {
 		folderName string
 		extension  string
 	}{folderName: "invalid-stack", extension: "tfcomponent.hcl"})
-	runTestSchemaStackValidation_SingleFile(t, struct {
-		folderName string
-		extension  string
-	}{folderName: "invalid-stack-legacy-extension", extension: "tfstack.hcl"})
+
 }
 
 func runTestSchemaStackValidation_SingleFile(t *testing.T, tc struct {
