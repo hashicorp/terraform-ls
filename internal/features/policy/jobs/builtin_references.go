@@ -81,6 +81,16 @@ func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			Type:                   cty.DynamicPseudoType,
 			Description:            lang.Markdown("Workspace config for which the resource belongs to"),
 		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "address"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                resourcePolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("Address of the resource within Terraform"),
+		},
 	}
 }
 
@@ -98,13 +108,34 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "name"},
+				lang.AttrStep{Name: "source"},
 			},
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                providerPolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("Local identifier for the provider"),
+			Description:            lang.Markdown("The full, canonical registry address used to locate and download the provider plugin. It combines the namespace and the type"),
 		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "version"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                providerPolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("Version of the provider"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "type"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                providerPolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The official, short name of the provider. This is the simple identifier used to declare a provider block or resource type"),
+		},
+
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
@@ -118,52 +149,12 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "type"},
+				lang.AttrStep{Name: "address"},
 			},
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                providerPolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("The official, short name of the provider. This is the simple identifier used to declare a provider block or resource type"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "namespace"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("In the context of the registry, this is the organization or user who publishes the provider. It is the first segment of the provider's source address"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "source"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("The full, canonical registry address used to locate and download the provider plugin. It combines the namespace and the type"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "module_path"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("Root module path"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "version"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("Version of the provider"),
+			Description:            lang.Markdown("Address of the provider within Terraform"),
 		},
 	}
 }

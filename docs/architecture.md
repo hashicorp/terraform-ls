@@ -59,10 +59,8 @@ We currently have several features:
 - `*.tf` and `*.tf.json` files are handled in the `modules` feature
 - `*.tfvars` and `*.tfvars.json` files are handled in the `variables` feature
 - `.terraform/` and `.terraform.lock.hcl` related operations are handled in the `rootmodules` feature
-- `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl` files are handled in the `stacks` feature
+- `*.tfcomponent.hcl` and `*.tfdeploy.hcl` files are handled in the `stacks` feature
 - `*.tfquery.hcl` files are handled in the `search` feature
-- `*.policy.hcl` files are handled in the `policy` feature
-- `*.policytest.hcl` files are handled in the `policytest` feature
 
 A feature can provide data to the external consumers through methods. For example, the `variables` feature needs a list of variables from the `modules` feature. There should be no direct import from feature packages (we could enforce this by using `internal/`, but we won't for now) into other parts of the codebase. The "hot path" service mentioned above takes care of initializing each feature at the start of a new LS session.
 
@@ -95,12 +93,12 @@ The `jobs` package of each feature contains all the different indexing jobs need
 
 ### Stack Feature Jobs
 
-- `ParseStackConfiguration` - parses `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl` files to turn `[]byte` into `hcl` types (AST)
+- `ParseStackConfiguration` - parses `*.tfcomponent.hcl` and `*.tfdeploy.hcl` files to turn `[]byte` into `hcl` types (AST)
 - `LoadStackMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/earlydecoder/stacks) to do early TF version-agnostic decoding to obtain metadata (variables, outputs etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
 - `PreloadEmbeddedSchema` – loads provider schemas based on provider requirements from the bundled schemas
-- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`
-- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`
-- `SchemaStackValidation` - does schema-based validation of stack files (`*.tfcomponent.hcl`, `*.tfstack.hcl` and `*.tfdeploy.hcl`) and produces diagnostics associated with any "invalid" parts of code
+- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfcomponent.hcl` and `*.tfdeploy.hcl`
+- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfcomponent.hcl` and `*.tfdeploy.hcl`
+- `SchemaStackValidation` - does schema-based validation of stack files (`*.tfcomponent.hcl` and `*.tfdeploy.hcl`) and produces diagnostics associated with any "invalid" parts of code
 - `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
 
 ### Search Feature Jobs
@@ -111,24 +109,6 @@ The `jobs` package of each feature contains all the different indexing jobs need
 - `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.tfquery.hcl`
 - `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.tfquery.hcl`
 - `SchemaSearchValidation` - does schema-based validation of search files (`*.tfquery.hcl`) and produces diagnostics associated with any "invalid" parts of code
-- `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
-
-### Policy Feature Jobs
-
-- `ParsePolicyConfiguration` - parses `*.policy.hcl` files to turn `[]byte` into `hcl` types (AST)
-- `LoadPolicyMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/earlydecoder/policy) to do early TF version-agnostic decoding to obtain metadata (resource_policy, provider_policy etc.) which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
-- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.policy.hcl`
-- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.policy.hcl`
-- `SchemaPolicyValidation` - does schema-based validation of policy files (`*.policy.hcl`) and produces diagnostics associated with any "invalid" parts of code
-- `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
-
-### PolicyTest Feature Jobs
-
-- `ParsePolicyTestConfiguration` - parses `*.policytest.hcl` files to turn `[]byte` into `hcl` types (AST)
-- `LoadPolicyTestMetadata` - uses [`earlydecoder`](https://pkg.go.dev/github.com/hashicorp/terraform-schema@main/earlydecoder/policytest) to do early TF version-agnostic decoding to obtain metadata which can be used to do more detailed decoding in hot-path within `hcl-lang` decoder
-- `DecodeReferenceTargets` - uses `hcl-lang` decoder to collect reference targets within `*.policytest.hcl`
-- `DecodeReferenceOrigins` - uses `hcl-lang` decoder to collect reference origins within `*.policytest.hcl`
-- `SchemaPolicyTestValidation` - does schema-based validation of policytest files (`*.policytest.hcl`) and produces diagnostics associated with any "invalid" parts of code
 - `ReferenceValidation` - does validation based on (mis)matched reference origins and targets, to flag up "orphaned" references
 
 ### Adding a new feature / "language"

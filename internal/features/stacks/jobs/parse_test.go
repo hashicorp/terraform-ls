@@ -24,11 +24,6 @@ func TestParseStackConfiguration(t *testing.T) {
 		folderName string
 		extension  string
 	}{folderName: "simple-stack", extension: "tfcomponent.hcl"})
-
-	runTestParseStackConfiguration(t, struct {
-		folderName string
-		extension  string
-	}{folderName: "simple-stack-legacy-extension", extension: "tfstack.hcl"})
 }
 
 func runTestParseStackConfiguration(t *testing.T, tc struct {
@@ -94,23 +89,23 @@ func runTestParseStackConfiguration(t *testing.T, tc struct {
 	}
 
 	componentsFile := ast.StackFilename("components." + tc.extension)
-	// test if components.tfstack.hcl / components.tfcomponent.hcl is not the same as first seen
+	// test if components.tfcomponent.hcl is not the same as first seen
 	if before.ParsedFiles[componentsFile] == after.ParsedFiles[componentsFile] {
 		t.Fatal("file should mismatch")
 	}
 
 	variablesFile := ast.StackFilename("variables." + tc.extension)
-	// test if variables.tfstack.hcl / variables.tfcomponent.hcl is the same as first seen
+	// test if variables.tfcomponent.hcl is the same as first seen
 	if before.ParsedFiles[variablesFile] != after.ParsedFiles[variablesFile] {
 		t.Fatal("file mismatch")
 	}
 
-	// examine diags should change for components.tfstack.hcl / components.tfcomponent.hcl
+	// examine diags should change for components.tfcomponent.hcl
 	if before.Diagnostics[globalAst.HCLParsingSource][componentsFile][0] == after.Diagnostics[globalAst.HCLParsingSource][componentsFile][0] {
 		t.Fatal("diags should mismatch")
 	}
 
-	// examine diags should not change for variables.tfstack.hcl / variables.tfcomponent.hcl
+	// examine diags should not change for variables.tfcomponent.hcl
 	if before.Diagnostics[globalAst.HCLParsingSource][variablesFile][0] != after.Diagnostics[globalAst.HCLParsingSource][variablesFile][0] {
 		t.Fatal("diags should match")
 	}
