@@ -21,6 +21,7 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
 	"github.com/hashicorp/terraform-ls/internal/features/policy"
+	"github.com/hashicorp/terraform-ls/internal/features/policytest"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
 	"github.com/hashicorp/terraform-ls/internal/features/search"
 	"github.com/hashicorp/terraform-ls/internal/features/stacks"
@@ -56,6 +57,7 @@ type Features struct {
 	Tests       *ftests.TestsFeature
 	Search      *search.SearchFeature
 	Policy      *policy.PolicyFeature
+	PolicyTest  *policytest.PolicyTestFeature
 }
 
 type service struct {
@@ -570,6 +572,13 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 		policyFeature.SetLogger(svc.logger)
 		policyFeature.Start(svc.sessCtx)
 
+		policytestFeature, err := policytest.NewPolicyTestFeature(svc.eventBus, svc.stateStore, svc.fs, rootModulesFeature)
+		if err != nil {
+			return err
+		}
+		policytestFeature.SetLogger(svc.logger)
+		policytestFeature.Start(svc.sessCtx)
+
 		svc.features = &Features{
 			Modules:     modulesFeature,
 			RootModules: rootModulesFeature,
@@ -578,19 +587,21 @@ func (svc *service) configureSessionDependencies(ctx context.Context, cfgOpts *s
 			Tests:       testsFeature,
 			Search:      searchFeature,
 			Policy:      policyFeature,
+			PolicyTest:  policytestFeature,
 		}
 	}
 
 	svc.decoder = decoder.NewDecoder(&idecoder.GlobalPathReader{
 		PathReaderMap: idecoder.PathReaderMap{
-			"terraform":        svc.features.Modules,
-			"terraform-vars":   svc.features.Variables,
-			"terraform-stack":  svc.features.Stacks,
-			"terraform-deploy": svc.features.Stacks,
-			"terraform-test":   svc.features.Tests,
-			"terraform-mock":   svc.features.Tests,
-			"terraform-search": svc.features.Search,
-			"terraform-policy": svc.features.Policy,
+			"terraform":            svc.features.Modules,
+			"terraform-vars":       svc.features.Variables,
+			"terraform-stack":      svc.features.Stacks,
+			"terraform-deploy":     svc.features.Stacks,
+			"terraform-test":       svc.features.Tests,
+			"terraform-mock":       svc.features.Tests,
+			"terraform-search":     svc.features.Search,
+			"terraform-policy":     svc.features.Policy,
+			"terraform-policytest": svc.features.PolicyTest,
 		},
 	})
 	decoderContext := idecoder.DecoderContext(ctx)
@@ -691,6 +702,9 @@ func (svc *service) shutdown() {
 		}
 		if svc.features.Policy != nil {
 			svc.features.Policy.Stop()
+		}
+		if svc.features.PolicyTest != nil {
+			svc.features.PolicyTest.Stop()
 		}
 	}
 }

@@ -1,6 +1,6 @@
 kind: INTERNAL
 body: Minor fixes
-time: 2026-02-11T19:19:18.722747+05:30
+time: 2026-02-17T17:15:17.168574+05:30
 custom:
-    Issue: "2070"
+    Issue: "2074"
     Repository: terraform-ls
