@@ -1,3 +1,9 @@
+## 0.38.6 (25 March 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema to incorporate the latest provider definitions. ([#2102](https://github.com/hashicorp/terraform-ls/issues/2102))
+
 ## 0.38.5 (03 March 2026)
 
 ENHANCEMENTS:
