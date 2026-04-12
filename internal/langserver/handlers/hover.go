@@ -5,6 +5,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
@@ -43,6 +44,12 @@ func (svc *service) TextDocumentHover(ctx context.Context, params lsp.TextDocume
 	svc.logger.Printf("received hover data: %#v", hoverData)
 	if err != nil {
 		return nil, err
+	}
+
+	if hoverData != nil {
+		if docURL, resourceType := svc.resourceDocURLAtPos(dh, pos); docURL != "" {
+			hoverData.Content.Value += fmt.Sprintf("\n\n---\n\n[`%s` on registry.terraform.io](%s)", resourceType, docURL)
+		}
 	}
 
 	return ilsp.HoverData(hoverData, cc.TextDocument), nil

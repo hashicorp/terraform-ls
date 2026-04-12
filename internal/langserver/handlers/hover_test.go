@@ -263,3 +263,115 @@ func TestVarsHover_withValidData(t *testing.T) {
 			}
 		}`)
 }
+
+func TestHover_withDocumentationLink(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	var testSchema tfjson.ProviderSchemas
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {"textDocument": {"hover": {"contentFormat": ["markdown"]}}},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": "resource \"test_resource_1\" \"example\" {\n}\n",
+			"uri": "%s/main.tf"
+		}
+	}`, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	// Position 12 on line 0 lands inside the "test_resource_1" type label.
+	// The response should include the decoder's hover content for the resource
+	// type plus a documentation link footer appended by the handler.
+	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+		Method: "textDocument/hover",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			},
+			"position": {
+				"character": 12,
+				"line": 0
+			}
+		}`, tmpDir.URI)}, `{
+			"jsonrpc": "2.0",
+			"id": 3,
+			"result": {
+				"contents": {
+					"kind": "markdown",
+					"value": "`+"`test_resource_1`"+` test/test\n\nResource 1 description\n\n---\n\n[`+"`test_resource_1`"+` on registry.terraform.io](https://www.terraform.io/docs/providers/test/r/resource_1.html?utm_content=documentLink\u0026utm_source=terraform-ls)"
+				},
+				"range": {
+					"start": { "line": 0, "character": 9 },
+					"end":   { "line": 0, "character": 26 }
+				}
+			}
+		}`)
+}
