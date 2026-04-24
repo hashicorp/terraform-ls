@@ -38,10 +38,10 @@ github.com/cloudflare/circl v1.6.3 h1:9GPOhQGF9MCYUeXyMYlqTR6a5gTrgR/fBLXvUgtVcg
 github.com/cloudflare/circl v1.6.3/go.mod h1:2eXP6Qfat4O/Yhh8BznvKnJ+uzEoTQ6jVKJRn81BiS4=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
-github.com/creachadair/jrpc2 v1.3.4 h1:3bDFDlRORVAVuzBSpi4b81seIYZPSgdfZQQgGbGCbAA=
-github.com/creachadair/jrpc2 v1.3.4/go.mod h1:Rp2wYJ0fmAt66JlyLe+1zdM/a2DN5XmqffqDxANan+I=
-github.com/creachadair/mds v0.25.13 h1:PsSUHV6zsfPd29k4kvm1rMoee1YFia7JyNGeMPmDcPM=
-github.com/creachadair/mds v0.25.13/go.mod h1:4hatI3hRM+qhzuAmqPRFvaBM8mONkS7nsLxkcuTYUIs=
+github.com/creachadair/jrpc2 v1.3.5 h1:onJko+1u6xoiRph3xwWmfNISR91teCRhbJwSyS9Svzo=
+github.com/creachadair/jrpc2 v1.3.5/go.mod h1:YXDmS53AavsiytbAwskrczJPcVHvKC9GoyWzwfSQXoE=
+github.com/creachadair/mds v0.26.1 h1:CQG8f4cueHX/c20q5Sy/Ubk8Bvy+aRzVgbpxVieMBAs=
+github.com/creachadair/mds v0.26.1/go.mod h1:dMBTCSy3iS3dwh4Rb1zxeZz2d7K8+N24GCTsayWtQRI=
 github.com/cyphar/filepath-securejoin v0.4.1 h1:JyxxyPEaktOD+GAnqIqTf9A8tHyAG22rowi7HkoSU1s=
 github.com/cyphar/filepath-securejoin v0.4.1/go.mod h1:Sdj7gXlvMcPZsbhwhQ33GguGLDGQL7h7bg04C/+u9jI=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
