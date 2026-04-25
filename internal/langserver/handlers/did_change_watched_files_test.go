@@ -7,15 +7,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	osExec "os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
-	install "github.com/hashicorp/hc-install"
-	"github.com/hashicorp/hc-install/product"
-	"github.com/hashicorp/hc-install/releases"
-	"github.com/hashicorp/hc-install/src"
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-ls/internal/document"
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
@@ -1138,7 +1135,7 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 		"textDocument": {
 			"version": 0,
 			"languageId": "terraform",
-			"text": "module {\n  source = \"github.com/hashicorp/terraform-azurerm-hcp-consul?ref=v0.2.4\"\n}\n",
+			"text": "module \"consul\" {\n  source = \"github.com/hashicorp/terraform-azurerm-hcp-consul?ref=v0.2.4\"\n}\n",
 			"uri": "%s/main.tf"
 		}
 	}`, testHandle.URI)})
@@ -1151,28 +1148,37 @@ func TestLangServer_DidChangeWatchedFiles_moduleInstalled(t *testing.T) {
 		t.Fatalf("expected submodule not to be found: %s", err)
 	}
 
-	// Install Terraform
-	tfVersion := version.Must(version.NewVersion("1.1.7"))
-	i := install.NewInstaller()
-	execPath, err := i.Install(ctx, []src.Installable{
-		&releases.ExactVersion{
-			Product: product.Terraform,
-			Version: tfVersion,
-		},
-	})
+	// Create minimal module manifest + module directory, then trigger watched-files.
+	// This avoids relying on networked Terraform module installs in tests.
+	modulesDir := filepath.Join(testDir, ".terraform", "modules")
+	err = os.MkdirAll(modulesDir, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Ensure the module directory exists and contains at least one Terraform file.
+	// The indexer only needs a parsable module to create a ModuleRecord.
+	err = os.MkdirAll(submodulePath, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(filepath.Join(submodulePath, "main.tf"), []byte("variable \"x\" { type = string }\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(modulesDir, "modules.json")
+	manifest := fmt.Sprintf(`{"Modules":[{"Key":"consul","Source":"github.com/hashicorp/terraform-azurerm-hcp-consul?ref=v0.2.4","Dir":%q}]}`,
+		filepath.ToSlash(filepath.Join(".terraform", "modules", "azure-hcp-consul")))
+	err = os.WriteFile(manifestPath, []byte(manifest), 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Install submodule
-	tf, err := exec.NewExecutor(testHandle.Path(), execPath)
-	if err != nil {
-		t.Fatal(err)
+	// Sanity check: terraform is available on PATH for any follow-up behavior.
+	// (Not required for this test, but keeps environment assumptions explicit.)
+	if _, err := osExec.LookPath("terraform"); err != nil {
+		t.Fatalf("terraform not found on PATH: %v", err)
 	}
-	err = tf.Get(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// no-op; just ensuring path is well-formed
 
 	ls.Call(t, &langserver.CallRequest{
 		Method: "workspace/didChangeWatchedFiles",
