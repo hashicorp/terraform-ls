@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: "Added Terraform v1.11 test schema support"
+time: 2026-05-27T13:14:04.862574+05:30
+custom:
+    Issue: "2128"
+    Repository: terraform-ls
