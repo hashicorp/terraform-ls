@@ -228,6 +228,59 @@ func TestTokenEncoder_deltaStartCharBug(t *testing.T) {
 	}
 }
 
+// Regression test for https://github.com/hashicorp/terraform-ls/issues/2108
+//
+// When a multiline token (heredoc literal text) is followed by a single-line
+// token on its end line, the encoder must base deltaStartChar on the multiline
+// token's last emitted sub-entry (deltaStartChar=0), not its Start.Column
+// which is on a different line. Getting this wrong produces a negative delta
+// that wraps to ~4 billion as uint32, freezing the client.
+func TestTokenEncoder_multiLineTokenFollowedBySingleLine(t *testing.T) {
+	bytes := []byte(`  command = <<EOT
+    line1
+    export FOO="${var.foo}"
+    line3
+    export BAR="${var.bar}"
+  EOT
+`)
+	te := &TokenEncoder{
+		Lines: source.MakeSourceLines("test.tf", bytes),
+		Tokens: []lang.SemanticToken{
+			{
+				Type: lang.TokenString,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 3, Column: 27, Byte: 54},
+					End:      hcl.Pos{Line: 5, Column: 19, Byte: 91},
+				},
+			},
+			{
+				Type: lang.TokenReferenceStep,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 5, Column: 19, Byte: 91},
+					End:      hcl.Pos{Line: 5, Column: 22, Byte: 94},
+				},
+			},
+		},
+		ClientCaps: protocol.SemanticTokensClientCapabilities{
+			TokenTypes:     serverTokenTypes.AsStrings(),
+			TokenModifiers: serverTokenModifiers.AsStrings(),
+		},
+	}
+	data := te.Encode()
+
+	// The multiline string emits 3 sub-entries (lines 3, 4, 5).
+	// The reference step is the 4th entry → 5-tuple at index 15.
+	// Its deltaStartChar is at index 16 and should be 18 (col 19 - 1).
+	if len(data) != 20 {
+		t.Fatalf("expected 20 uint32s, got %d: %v", len(data), data)
+	}
+	if got := data[16]; got != 18 {
+		t.Errorf("deltaStartChar after multiline token: got %d, want 18", got)
+	}
+}
+
 func TestTokenEncoder_tokenModifiers(t *testing.T) {
 	bytes := []byte(`myblock "mytype" {
   str_attr = "something"
