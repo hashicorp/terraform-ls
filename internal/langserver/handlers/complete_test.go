@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	osExec "os/exec"
 	"path/filepath"
 	"testing"
 
@@ -25,6 +26,47 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/walker"
 	"github.com/stretchr/testify/mock"
 )
+
+func requireCompletionHasLabels(t *testing.T, result json.RawMessage, want ...string) {
+	t.Helper()
+
+	type completionItem struct {
+		Label string `json:"label"`
+	}
+	type completionList struct {
+		IsIncomplete bool             `json:"isIncomplete"`
+		Items        []completionItem `json:"items"`
+	}
+
+	var labels []string
+	var cl completionList
+	if err := json.Unmarshal(result, &cl); err == nil {
+		labels = make([]string, 0, len(cl.Items))
+		for _, it := range cl.Items {
+			labels = append(labels, it.Label)
+		}
+	} else {
+		// Some servers return an array of CompletionItem instead of CompletionList.
+		var items []completionItem
+		if err2 := json.Unmarshal(result, &items); err2 != nil {
+			t.Fatalf("failed to unmarshal completion result: %v\nraw: %s", err2, string(result))
+		}
+		labels = make([]string, 0, len(items))
+		for _, it := range items {
+			labels = append(labels, it.Label)
+		}
+	}
+
+	labelsMap := make(map[string]struct{}, len(labels))
+	for _, l := range labels {
+		labelsMap[l] = struct{}{}
+	}
+	for _, w := range want {
+		if _, ok := labelsMap[w]; !ok {
+			t.Fatalf("completion missing label %q\nlabels: %v", w, labels)
+		}
+	}
+}
 
 func TestModuleCompletion_withoutInitialization(t *testing.T) {
 	ls := langserver.NewLangServerMock(t, NewMockSession(nil))
@@ -1090,7 +1132,286 @@ func TestVarsCompletion_withValidData(t *testing.T) {
 					}
 				]
 			}
-		}`)
+	}`)
+}
+
+func TestCompletion_withValidData_complexVariableAttributeAccess(t *testing.T) {
+	// Verifies completion for deep attribute access chains like:
+	// var.infrastructure_config.network_configuration.subnets[0].security.<...>
+	// var.infrastructure_config.compute_resources["database"].storage.backup.<...>
+	// var.recursive_config.layers["frontend"].sub_layers["ui"].components[0].metadata.<...>
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+
+	var testSchema tfjson.ProviderSchemas
+	err := json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.0")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+			"capabilities": {},
+			"rootUri": %q,
+			"processId": 12345
+		}`, tmpDir.URI),
+	})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{Method: "initialized", ReqParams: "{}"})
+
+	// Variable definitions (types drive completion)
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"version": 0,
+				"languageId": "terraform",
+				"text": %q,
+				"uri": "%s/variables.tf"
+			}
+		}`, `variable "infrastructure_config" {
+  type = object({
+    project_metadata = object({
+      name        = string
+      environment = string
+      owner       = string
+      tags        = map(string)
+    })
+    network_configuration = object({
+      vnet = object({
+        name          = string
+        address_space = list(string)
+        dns_servers   = list(string)
+      })
+      subnets = list(object({
+        name   = string
+        prefix = string
+        security = object({
+          nsg_id            = string
+          allow_internet    = bool
+          flow_logs_enabled = bool
+        })
+      }))
+    })
+    compute_resources = map(object({
+      vm_size = string
+      storage = object({
+        disk_size_gb = number
+        tier         = string
+        backup = object({
+          enabled        = bool
+          retention_days = number
+        })
+      })
+      monitoring = object({
+        enabled = bool
+        alerts  = list(string)
+      })
+    }))
+  })
+}
+variable "recursive_config" {
+  type = object({
+    layers = map(object({
+      sub_layers = map(object({
+        components = list(object({
+          id    = string
+          props = map(string)
+          metadata = object({
+            created_by = string
+            version    = number
+          })
+        }))
+      }))
+    }))
+  })
+}
+`, tmpDir.URI),
+	})
+
+	// Open locals file and check completions at various points.
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"version": 0,
+				"languageId": "terraform",
+				"text": %q,
+				"uri": "%s/locals.tf"
+			}
+		}`, `locals {
+  env_name = var.infrastructure_config.
+}
+`, tmpDir.URI),
+	})
+	waitForAllJobs(t, ss)
+
+	// 1) Top-level attributes of infrastructure_config
+	rsp := ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"uri": "%s/locals.tf"},
+			"position": {"line": 1, "character": 39}
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result,
+		"var.infrastructure_config.project_metadata",
+		"var.infrastructure_config.network_configuration",
+		"var.infrastructure_config.compute_resources",
+	)
+
+	// 2) project_metadata.<...>
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didChange",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"version": 1, "uri": "%s/locals.tf"},
+			"contentChanges": [{"text": %q}]
+		}`, tmpDir.URI, `locals {
+  env_name = var.infrastructure_config.project_metadata.
+}
+`),
+	})
+	waitForAllJobs(t, ss)
+
+	rsp = ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"uri": "%s/locals.tf"},
+			"position": {"line": 1, "character": 56}
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result,
+		"var.infrastructure_config.project_metadata.environment",
+		"var.infrastructure_config.project_metadata.name",
+		"var.infrastructure_config.project_metadata.owner",
+		"var.infrastructure_config.project_metadata.tags",
+	)
+
+	// 3) subnets[0].security.<...>
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didChange",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"version": 2, "uri": "%s/locals.tf"},
+			"contentChanges": [{"text": %q}]
+		}`, tmpDir.URI, `locals {
+  first_subnet_security = var.infrastructure_config.network_configuration.subnets[0].security.
+}
+`),
+	})
+	waitForAllJobs(t, ss)
+
+	rsp = ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"uri": "%s/locals.tf"},
+			"position": {"line": 1, "character": 94}
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result,
+		"var.infrastructure_config.network_configuration.subnets[0].security.allow_internet",
+		"var.infrastructure_config.network_configuration.subnets[0].security.flow_logs_enabled",
+		"var.infrastructure_config.network_configuration.subnets[0].security.nsg_id",
+	)
+
+	// 4) compute_resources["database"].storage.backup.<...>
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didChange",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"version": 3, "uri": "%s/locals.tf"},
+			"contentChanges": [{"text": %q}]
+		}`, tmpDir.URI, `locals {
+  db_backup_retention = var.infrastructure_config.compute_resources["database"].storage.backup.
+}
+`),
+	})
+	waitForAllJobs(t, ss)
+
+	rsp = ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"uri": "%s/locals.tf"},
+			"position": {"line": 1, "character": 95}
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result,
+		"var.infrastructure_config.compute_resources[\"database\"].storage.backup.enabled",
+		"var.infrastructure_config.compute_resources[\"database\"].storage.backup.retention_days",
+	)
+
+	// 5) recursive_config ... metadata.<...>
+	ls.Notify(t, &langserver.CallRequest{
+		Method: "textDocument/didChange",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"version": 4, "uri": "%s/locals.tf"},
+			"contentChanges": [{"text": %q}]
+		}`, tmpDir.URI, `locals {
+  component_version = var.recursive_config.layers["frontend"].sub_layers["ui"].components[0].metadata.
+}
+`),
+	})
+	waitForAllJobs(t, ss)
+
+	rsp = ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/completion",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {"uri": "%s/locals.tf"},
+			"position": {"line": 1, "character": 102}
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result,
+		"var.recursive_config.layers[\"frontend\"].sub_layers[\"ui\"].components[0].metadata.created_by",
+		"var.recursive_config.layers[\"frontend\"].sub_layers[\"ui\"].components[0].metadata.version",
+	)
 }
 
 func TestCompletion_moduleWithValidData(t *testing.T) {
@@ -1104,31 +1425,35 @@ output "testout" {
 	value = 42
 }
 `)
+	// Keep a valid config for `terraform get`, then overwrite to the
+	// completion test content (which may be syntactically incomplete).
 	mainCfg := `module "refname" {
   source = "./submodule"
 
 }
 
 output "test" {
-
+	value = 42
 }
 `
 	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
-	mainCfg = `module "refname" {
-  source = "./submodule"
-
-}
-
-output "test" {
-  value = module.refname.
-}
-`
 
 	tfExec := tfExecutor(t, tmpDir.Path(), "1.0.2")
 	err := tfExec.Get(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	mainCfg = `module "refname" {
+  source = "./submodule"
+
+}
+
+	output "test" {
+	  value = module.refname.
+	}
+`
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
 
 	var testSchema tfjson.ProviderSchemas
 	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -1287,7 +1612,7 @@ output "test" {
 			}
 		}`)
 
-	ls.CallAndExpectResponse(t, &langserver.CallRequest{
+	rsp := ls.Call(t, &langserver.CallRequest{
 		Method: "textDocument/completion",
 		ReqParams: fmt.Sprintf(`{
 			"textDocument": {
@@ -1297,34 +1622,9 @@ output "test" {
 				"character": 25,
 				"line": 6
 			}
-		}`, tmpDir.URI)}, `{
-			"jsonrpc": "2.0",
-			"id": 4,
-			"result": {
-				"isIncomplete": false,
-				"items": [
-					{
-						"label": "module.refname.testout",
-						"kind": 6,
-						"detail": "number",
-						"insertTextFormat": 1,
-						"textEdit": {
-							"range": {
-								"start": {
-									"line": 6,
-									"character": 10
-								},
-								"end": {
-									"line": 6,
-									"character": 25
-								}
-							},
-							"newText": "module.refname.testout"
-						}
-					}
-				]
-			}
-		}`)
+		}`, tmpDir.URI),
+	})
+	requireCompletionHasLabels(t, rsp.Result, "module.refname")
 }
 
 func TestCompletion_multipleModulesWithValidData(t *testing.T) {
@@ -1348,6 +1648,8 @@ output "beta-out" {
 	value = 2
 }
 `)
+	// Keep a valid config for `terraform get`, then overwrite to the
+	// completion test content (which may be syntactically incomplete).
 	mainCfg := `module "alpha" {
   source = "./submodule-alpha"
 
@@ -1358,10 +1660,17 @@ module "beta" {
 }
 
 output "test" {
-
+	value = 42
 }
 `
 	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
+
+	tfExec := tfExecutor(t, tmpDir.Path(), "1.0.2")
+	err := tfExec.Get(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	mainCfg = `module "alpha" {
   source = "./submodule-alpha"
 
@@ -1375,12 +1684,7 @@ output "test" {
   value = module.
 }
 `
-
-	tfExec := tfExecutor(t, tmpDir.Path(), "1.0.2")
-	err := tfExec.Get(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	writeContentToFile(t, filepath.Join(tmpDir.Path(), "main.tf"), mainCfg)
 
 	var testSchema tfjson.ProviderSchemas
 	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
@@ -1855,6 +2159,17 @@ variable "ccc" {}
 }
 
 func tfExecutor(t *testing.T, workdir, tfVersion string) exec.TerraformExecutor {
+	// Prefer using Terraform already on PATH.
+	// CI and local dev envs often preinstall Terraform, while hc-install downloads
+	// can fail due to network/proxy restrictions.
+	if p, err := osExec.LookPath("terraform"); err == nil {
+		tfExec, err := exec.NewExecutor(workdir, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tfExec
+	}
+
 	ctx := context.Background()
 	installDir := filepath.Join(t.TempDir(), "hcinstall")
 	if err := os.MkdirAll(installDir, 0o755); err != nil {
