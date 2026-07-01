@@ -46,12 +46,6 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 
 	data := make([]uint32, 0)
 
-	// Client may not support multiline tokens which would be indicated
-	// via lsp.SemanticTokensCapabilities.MultilineTokenSupport
-	// once it becomes available in gopls LSP structs.
-	//
-	// For now we just safely assume client does *not* support it.
-
 	tokenLineDelta := token.Range.End.Line - token.Range.Start.Line
 
 	previousLine := 0
@@ -72,7 +66,7 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 		}
 	}
 
-	if tokenLineDelta == 0 || false /* te.clientCaps.MultilineTokenSupport */ {
+	if tokenLineDelta == 0 || te.ClientCaps.MultilineTokenSupport {
 		deltaLine := token.Range.Start.Line - 1 - previousLine
 		tokenLength := token.Range.End.Byte - token.Range.Start.Byte
 		deltaStartChar := token.Range.Start.Column - 1 - previousStartChar
