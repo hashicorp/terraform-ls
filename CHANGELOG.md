@@ -1,3 +1,10 @@
+## 0.38.8 (02 July 2026)
+
+ENHANCEMENTS:
+
+* Added type attribute to 1.15 output blocks ([terraform-schema#525](https://github.com/hashicorp/terraform-schema/issues/525))
+* Added failure_tolerance and eager_plan attribute to deployment_group ([terraform-schema#528](https://github.com/hashicorp/terraform-schema/issues/528))
+
 ## 0.38.7 (27 May 2026)
 
 ENHANCEMENTS:
