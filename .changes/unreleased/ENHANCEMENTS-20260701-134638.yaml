@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Added failure_tolerance and eager_plan attribute to deployment_group
+time: 2026-07-01T13:46:38.481248+05:30
+custom:
+    Issue: "528"
+    Repository: terraform-schema
