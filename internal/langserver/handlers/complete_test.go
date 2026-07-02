@@ -518,6 +518,26 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 				"isIncomplete": false,
 				"items": [
 					{
+						"label": "const",
+						"kind": 10,
+						"detail": "optional, bool",
+						"documentation": "Whether the variable is a constant, meaning it can be used during early stages of configuration evaluation, e.g. init.",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "const"
+						}
+					},
+					{
 						"label": "default",
 						"kind": 10,
 						"detail": "optional, any type",
@@ -535,6 +555,26 @@ func TestModuleCompletion_withValidData_tooNewVersion(t *testing.T) {
 								}
 							},
 							"newText": "default"
+						}
+					},
+					{
+						"label": "deprecated",
+						"kind": 10,
+						"detail": "optional, string",
+						"documentation": "Setting this value marks the variable as deprecated. The string value provided should describe the reason for deprecation and suggest an alternative. Any usage of a deprecated variable will result in a warning being emitted to the user.",
+						"insertTextFormat": 1,
+						"textEdit": {
+							"range": {
+								"start": {
+									"line": 1,
+									"character": 0
+								},
+								"end": {
+									"line": 1,
+									"character": 0
+								}
+							},
+							"newText": "deprecated"
 						}
 					},
 					{
