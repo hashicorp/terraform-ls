@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Added type attribute to 1.15 output blocks
+time: 2026-07-01T13:45:58.713358+05:30
+custom:
+    Issue: "525"
+    Repository: terraform-schema
