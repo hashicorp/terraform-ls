@@ -22,6 +22,25 @@ INTERNAL:
 
 * Bumped terraform-schema ([#2061](https://github.com/hashicorp/terraform-ls/issues/2061)) ([#2062](https://github.com/hashicorp/terraform-ls/issues/2062))
 
+## 0.38.8 (02 July 2026)
+
+ENHANCEMENTS:
+
+* Added type attribute to 1.15 output blocks ([terraform-schema#525](https://github.com/hashicorp/terraform-schema/issues/525))
+* Added failure_tolerance and eager_plan attribute to deployment_group ([terraform-schema#528](https://github.com/hashicorp/terraform-schema/issues/528))
+
+## 0.38.7 (27 May 2026)
+
+ENHANCEMENTS:
+
+* Added Terraform v1.11 test schema support ([#2128](https://github.com/hashicorp/terraform-ls/issues/2128))
+
+## 0.38.6 (25 March 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema to incorporate the latest provider definitions. ([#2102](https://github.com/hashicorp/terraform-ls/issues/2102))
+
 ## 0.38.5 (03 March 2026)
 
 ENHANCEMENTS:

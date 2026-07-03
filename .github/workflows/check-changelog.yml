@@ -22,7 +22,7 @@ jobs:
         # For each filter, it sets output variable named by the filter to the text:
         #  'true' - if any of changed files matches any of filter rules
         #  'false' - if none of changed files matches any of filter rules
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         id: changelog_check
         with:
           filters: |
@@ -31,6 +31,6 @@ jobs:
 
       - name: Fail job if changelog entry is missing and required
         if: steps.changelog_check.outputs.exists == 'false'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: core.setFailed('Changelog entry required to merge.')
