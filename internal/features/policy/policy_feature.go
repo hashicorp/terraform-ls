@@ -178,7 +178,7 @@ func (f *PolicyFeature) Telemetry(path string) map[string]interface{} {
 
 // MetadataReady checks if a given policy exists and if it's metadata has been
 // loaded. We need the metadata to enable other features like validation for
-// variables.
+// inputs.
 func (f *PolicyFeature) MetadataReady(dir document.DirHandle) (<-chan struct{}, bool, error) {
 	if !f.Store.Exists(dir.Path()) {
 		return nil, false, fmt.Errorf("%s: record not found", dir.Path())

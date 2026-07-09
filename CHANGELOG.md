@@ -1,3 +1,9 @@
+## 0.39.0-beta5 (09 July 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema ([#2148](https://github.com/hashicorp/terraform-ls/issues/2148))
+
 ## 0.39.0-beta4 (04 March 2026)
 
 INTERNAL:
