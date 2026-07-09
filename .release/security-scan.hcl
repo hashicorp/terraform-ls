@@ -14,6 +14,7 @@ binary {
 	triage {
 		suppress {
 			vulnerabilities = [
+				# suppressed temporarily as per: 
 				# https://github.com/hashicorp/terraform/pull/38332/changes
 				# https://github.com/hashicorp/terraform-provider-aws/pull/48838/changes
 				"GO-2026-5932",
