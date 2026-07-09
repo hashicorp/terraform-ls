@@ -23,8 +23,8 @@ import (
 // core schema of appropriate version (as obtained via [GetTerraformVersion])
 // and provider schemas ([PreloadEmbeddedSchema] or [ObtainSchema]).
 //
-// For example it tells us that variable block between certain LOC
-// can be referred to as var.foobar. This is useful e.g. during completion,
+// For example it tells us that input block between certain LOC
+// can be referred to as input.foobar. This is useful e.g. during completion,
 // go-to-definition or go-to-references.
 func DecodeReferenceTargets(ctx context.Context, policyStore *state.PolicyStore, rootFeature fdecoder.RootReader, policyPath string) error {
 	policy, err := policyStore.PolicyRecordByPath(policyPath)

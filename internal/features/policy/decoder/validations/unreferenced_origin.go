@@ -45,11 +45,11 @@ func UnreferencedOrigins(ctx context.Context, pathCtx *decoder.PathContext) lang
 			continue
 		}
 
-		// we only initially validate variables & local values
+		// we only initially validate inputs & local values
 		// resources and data sources can have unknown schema
 		// and will be researched at a later point
 		// TODO: revisit as part of https://github.com/hashicorp/terraform-ls/issues/1364
-		supported := []string{"var", "local"}
+		supported := []string{"input", "local"}
 		firstStep := address[0].String()
 		if !slices.Contains(supported, firstStep) {
 			continue

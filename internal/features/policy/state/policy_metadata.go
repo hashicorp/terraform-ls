@@ -16,7 +16,7 @@ type PolicyMetadata struct {
 	ResourcePolicies map[string]tfpolicy.ResourcePolicy
 	ProviderPolicies map[string]tfpolicy.ProviderPolicy
 	ModulePolicies   map[string]tfpolicy.ModulePolicy
-	Variables        map[string]tfpolicy.Variable
+	Inputs           map[string]tfpolicy.Input
 
 	Filenames []string
 }
@@ -49,10 +49,10 @@ func (mm PolicyMetadata) Copy() PolicyMetadata {
 		}
 	}
 
-	if mm.Variables != nil {
-		newMm.Variables = make(map[string]tfpolicy.Variable, len(mm.Variables))
-		for k, v := range mm.Variables {
-			newMm.Variables[k] = v
+	if mm.Inputs != nil {
+		newMm.Inputs = make(map[string]tfpolicy.Input, len(mm.Inputs))
+		for k, v := range mm.Inputs {
+			newMm.Inputs[k] = v
 		}
 	}
 	return newMm
