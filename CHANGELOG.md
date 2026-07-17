@@ -1,3 +1,9 @@
+## 0.39.0 (17 July 2026)
+
+ENHANCEMENTS:
+
+* Add support for Terraform Policy files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Policy files. ([#2105](https://github.com/hashicorp/terraform-ls/issues/2105))
+
 ## 0.39.0-beta5 (09 July 2026)
 
 ENHANCEMENTS:
