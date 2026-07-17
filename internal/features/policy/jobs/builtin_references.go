@@ -168,7 +168,7 @@ func referenceModulePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                modulePolicyScopeId,
 			Type:                   cty.DynamicPseudoType,
-			Description:            lang.Markdown("Attributes of the resource as defined by the provider"),
+			Description:            lang.Markdown("Provides access to the module's input variables. The available attributes depend on the input variables each Terraform module defines"),
 		},
 		{
 			LocalAddr: lang.Address{
