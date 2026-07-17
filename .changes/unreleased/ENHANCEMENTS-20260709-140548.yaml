@@ -1,6 +1,0 @@
-kind: ENHANCEMENTS
-body: Add support for Terraform Policy files. This provides block and attribute completion, hover, and diagnostics along with syntax validation for Terraform Policy files.
-time: 2026-07-09T14:05:48.191596+05:30
-custom:
-    Issue: "2105"
-    Repository: terraform-ls
