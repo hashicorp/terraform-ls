@@ -34,24 +34,33 @@ func _() {
 	_ = x[OpTypeTerraformValidate-23]
 	_ = x[OpTypeParseStackConfiguration-24]
 	_ = x[OpTypeParseSearchConfiguration-25]
-	_ = x[OpTypeLoadStackMetadata-26]
-	_ = x[OpTypeLoadSearchMetadata-27]
-	_ = x[OpTypeLoadStackRequiredTerraformVersion-28]
-	_ = x[OpTypeParseTestConfiguration-29]
-	_ = x[OpTypeLoadTestMetadata-30]
-	_ = x[OpTypeDecodeTestReferenceTargets-31]
-	_ = x[OpTypeDecodeTestReferenceOrigins-32]
-	_ = x[OpTypeDecodeWriteOnlyAttributes-33]
-	_ = x[OpTypeSchemaTestValidation-34]
+	_ = x[OpTypeParsePolicyConfiguration-26]
+	_ = x[OpTypeLoadPolicyMetadata-27]
+	_ = x[OpTypeSchemaPolicyValidation-28]
+	_ = x[OpTypeReferencePolicyValidation-29]
+	_ = x[OpTypeParsePolicyTestConfiguration-30]
+	_ = x[OpTypeLoadPolicyTestMetadata-31]
+	_ = x[OpTypeSchemaPolicyTestValidation-32]
+	_ = x[OpTypeReferencePolicyTestValidation-33]
+	_ = x[OpTypeLoadStackMetadata-34]
+	_ = x[OpTypeLoadSearchMetadata-35]
+	_ = x[OpTypeLoadStackRequiredTerraformVersion-36]
+	_ = x[OpTypeParseTestConfiguration-37]
+	_ = x[OpTypeLoadTestMetadata-38]
+	_ = x[OpTypeDecodeTestReferenceTargets-39]
+	_ = x[OpTypeDecodeTestReferenceOrigins-40]
+	_ = x[OpTypeDecodeWriteOnlyAttributes-41]
+	_ = x[OpTypeSchemaTestValidation-42]
 }
 
-const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeParseTerraformSourcesOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSearchPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaStackValidationOpTypeSchemaSearchValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeReferenceStackValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeParseSearchConfigurationOpTypeLoadStackMetadataOpTypeLoadSearchMetadataOpTypeLoadStackRequiredTerraformVersionOpTypeParseTestConfigurationOpTypeLoadTestMetadataOpTypeDecodeTestReferenceTargetsOpTypeDecodeTestReferenceOriginsOpTypeDecodeWriteOnlyAttributesOpTypeSchemaTestValidation"
+const _OpType_name = "OpTypeUnknownOpTypeGetTerraformVersionOpTypeGetInstalledTerraformVersionOpTypeObtainSchemaOpTypeParseModuleConfigurationOpTypeParseVariablesOpTypeParseModuleManifestOpTypeParseTerraformSourcesOpTypeLoadModuleMetadataOpTypeDecodeReferenceTargetsOpTypeDecodeReferenceOriginsOpTypeDecodeVarsReferencesOpTypeGetModuleDataFromRegistryOpTypeParseProviderVersionsOpTypePreloadEmbeddedSchemaOpTypeStacksPreloadEmbeddedSchemaOpTypeSearchPreloadEmbeddedSchemaOpTypeSchemaModuleValidationOpTypeSchemaStackValidationOpTypeSchemaSearchValidationOpTypeSchemaVarsValidationOpTypeReferenceValidationOpTypeReferenceStackValidationOpTypeTerraformValidateOpTypeParseStackConfigurationOpTypeParseSearchConfigurationOpTypeParsePolicyConfigurationOpTypeLoadPolicyMetadataOpTypeSchemaPolicyValidationOpTypeReferencePolicyValidationOpTypeParsePolicyTestConfigurationOpTypeLoadPolicyTestMetadataOpTypeSchemaPolicyTestValidationOpTypeReferencePolicyTestValidationOpTypeLoadStackMetadataOpTypeLoadSearchMetadataOpTypeLoadStackRequiredTerraformVersionOpTypeParseTestConfigurationOpTypeLoadTestMetadataOpTypeDecodeTestReferenceTargetsOpTypeDecodeTestReferenceOriginsOpTypeDecodeWriteOnlyAttributesOpTypeSchemaTestValidation"
 
-var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 192, 216, 244, 272, 298, 329, 356, 383, 416, 449, 477, 504, 532, 558, 583, 613, 636, 665, 695, 718, 742, 781, 809, 831, 863, 895, 926, 952}
+var _OpType_index = [...]uint16{0, 13, 38, 72, 90, 120, 140, 165, 192, 216, 244, 272, 298, 329, 356, 383, 416, 449, 477, 504, 532, 558, 583, 613, 636, 665, 695, 725, 749, 777, 808, 842, 870, 902, 937, 960, 984, 1023, 1051, 1073, 1105, 1137, 1168, 1194}
 
 func (i OpType) String() string {
-	if i >= OpType(len(_OpType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_OpType_index)-1 {
 		return "OpType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _OpType_name[_OpType_index[i]:_OpType_index[i+1]]
+	return _OpType_name[_OpType_index[idx]:_OpType_index[idx+1]]
 }

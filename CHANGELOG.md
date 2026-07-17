@@ -1,3 +1,33 @@
+## 0.39.0-beta5 (09 July 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema ([#2149](https://github.com/hashicorp/terraform-ls/issues/2149))
+
+## 0.39.0-beta4 (04 March 2026)
+
+INTERNAL:
+
+* Bumped terraform-schema ([#2070](https://github.com/hashicorp/terraform-ls/issues/2070)) ([#2074](https://github.com/hashicorp/terraform-ls/issues/2074))
+
+## 0.39.0-beta3 (23 February 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema ([#2078](https://github.com/hashicorp/terraform-ls/issues/2078))
+
+## 0.39.0-beta2 (10 February 2026)
+
+ENHANCEMENTS:
+
+* Bumped terraform-schema ([#2065](https://github.com/hashicorp/terraform-ls/issues/2065))
+
+## 0.39.0-beta1 (09 February 2026)
+
+INTERNAL:
+
+* Bumped terraform-schema ([#2061](https://github.com/hashicorp/terraform-ls/issues/2061)) ([#2062](https://github.com/hashicorp/terraform-ls/issues/2062))
+
 ## 0.38.8 (02 July 2026)
 
 ENHANCEMENTS:

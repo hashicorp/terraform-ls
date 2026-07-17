@@ -16,6 +16,8 @@ import (
 	"github.com/creachadair/jrpc2/handler"
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	fmodules "github.com/hashicorp/terraform-ls/internal/features/modules"
+	fpolicy "github.com/hashicorp/terraform-ls/internal/features/policy"
+	fpolicytest "github.com/hashicorp/terraform-ls/internal/features/policytest"
 	frootmodules "github.com/hashicorp/terraform-ls/internal/features/rootmodules"
 	fsearch "github.com/hashicorp/terraform-ls/internal/features/search"
 	fstacks "github.com/hashicorp/terraform-ls/internal/features/stacks"
@@ -179,6 +181,16 @@ func NewTestFeatures(eventBus *eventbus.EventBus, s *state.StateStore, fs *files
 		return nil, err
 	}
 
+	policyFeature, err := fpolicy.NewPolicyFeature(eventBus, s, fs, rootModulesFeature)
+	if err != nil {
+		return nil, err
+	}
+
+	policytestFeature, err := fpolicytest.NewPolicyTestFeature(eventBus, s, fs, rootModulesFeature)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Features{
 		Modules:     modulesFeature,
 		RootModules: rootModulesFeature,
@@ -186,5 +198,7 @@ func NewTestFeatures(eventBus *eventbus.EventBus, s *state.StateStore, fs *files
 		Stacks:      stacksFeature,
 		Tests:       testsFeature,
 		Search:      searchFeature,
+		Policy:      policyFeature,
+		PolicyTest:  policytestFeature,
 	}, nil
 }
