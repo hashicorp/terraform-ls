@@ -29,7 +29,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/stretchr/testify v1.11.1
 	github.com/vektra/mockery/v2 v2.53.6
-	github.com/zclconf/go-cty v1.18.1
+	github.com/zclconf/go-cty v1.19.0
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
 	go.bobheadxi.dev/gobenchdata v1.3.1
 	go.opentelemetry.io/otel/trace v1.44.0
@@ -38,6 +38,7 @@ require (
 
 require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
+	github.com/apparentlymart/go-textseg/v17 v17.0.1 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
