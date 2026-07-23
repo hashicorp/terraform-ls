@@ -53,13 +53,32 @@ func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
 		},
 		{
 			LocalAddr: lang.Address{
+				lang.RootStep{Name: "prior_attrs"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                resourcePolicyScopeId,
+			Type:                   cty.DynamicPseudoType,
+			Description:            lang.Markdown("Prior state of resource attributes before the change"),
+		},
+		{
+			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "resource_type"},
+				lang.AttrStep{Name: "module_path"},
 			},
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                resourcePolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("Resource type (specified in the label when wildcard is not used)"),
+			Description:            lang.Markdown("The module path the resource belongs to"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "operation"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                resourcePolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The operation being performed (create / update / delete)"),
 		},
 		{
 			LocalAddr: lang.Address{
@@ -74,22 +93,12 @@ func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "tfe_workspace"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                resourcePolicyScopeId,
-			Type:                   cty.DynamicPseudoType,
-			Description:            lang.Markdown("Workspace config for which the resource belongs to"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "address"},
+				lang.AttrStep{Name: "type"},
 			},
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                resourcePolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("Address of the resource within Terraform"),
+			Description:            lang.Markdown("The resource type, this is the first label of the matching resource block"),
 		},
 	}
 }
@@ -113,7 +122,7 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                providerPolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("The full, canonical registry address used to locate and download the provider plugin. It combines the namespace and the type"),
+			Description:            lang.Markdown("The full source of the provider"),
 		},
 		{
 			LocalAddr: lang.Address{
@@ -123,7 +132,37 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                providerPolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("Version of the provider"),
+			Description:            lang.Markdown("The resolved version of the provider"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "alias"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                providerPolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("Alias given to the provider"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "name"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                providerPolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The local name of the provider"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "namespace"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                providerPolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The provider's registry namespace"),
 		},
 		{
 			LocalAddr: lang.Address{
@@ -134,27 +173,6 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 			ScopeId:                providerPolicyScopeId,
 			Type:                   cty.String,
 			Description:            lang.Markdown("The official, short name of the provider. This is the simple identifier used to declare a provider block or resource type"),
-		},
-
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "alias"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("Local alias of the provider"),
-		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "address"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                providerPolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("Address of the provider within Terraform"),
 		},
 	}
 }
@@ -170,16 +188,7 @@ func referenceModulePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			Type:                   cty.DynamicPseudoType,
 			Description:            lang.Markdown("Provides access to the module's input variables. The available attributes depend on the input variables each Terraform module defines"),
 		},
-		{
-			LocalAddr: lang.Address{
-				lang.RootStep{Name: "meta"},
-				lang.AttrStep{Name: "address"},
-			},
-			TargetableFromRangePtr: rng.Ptr(),
-			ScopeId:                modulePolicyScopeId,
-			Type:                   cty.String,
-			Description:            lang.Markdown("The `address` is the internal, logical path used by Terraform to reference resources within a configuration for commands like state management"),
-		},
+
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "meta"},
@@ -199,6 +208,16 @@ func referenceModulePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			ScopeId:                modulePolicyScopeId,
 			Type:                   cty.String,
 			Description:            lang.Markdown("Version of the module"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "address"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                modulePolicyScopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The logical `address` of the module within the configuration"),
 		},
 	}
 }

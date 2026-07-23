@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Updated built in references for policy files
+time: 2026-07-23T11:33:19.866485+05:30
+custom:
+    Issue: "2156"
+    Repository: terraform-ls
