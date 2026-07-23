@@ -22,7 +22,7 @@ jobs:
         # For each filter, it sets output variable named by the filter to the text:
         #  'true' - if any of changed files matches any of filter rules
         #  'false' - if none of changed files matches any of filter rules
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         id: changelog_check
         with:
           filters: |
