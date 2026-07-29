@@ -34,6 +34,17 @@ type Terraform struct {
 	LogFilePath string `mapstructure:"logFilePath"`
 }
 
+type LinterOptions struct {
+	TFLint TFLint `mapstructure:"tflint"`
+}
+
+type TFLint struct {
+	Path       string `mapstructure:"path"`
+	ConfigPath string `mapstructure:"configPath"`
+	LintOnSave bool   `mapstructure:"lintOnSave"`
+	Timeout    string `mapstructure:"timeout"`
+}
+
 type Options struct {
 	CommandPrefix string   `mapstructure:"commandPrefix"`
 	Indexing      Indexing `mapstructure:"indexing"`
@@ -47,6 +58,8 @@ type Options struct {
 
 	Terraform Terraform `mapstructure:"terraform"`
 
+	Linters LinterOptions `mapstructure:"linters"`
+
 	XLegacyModulePaths              []string `mapstructure:"rootModulePaths"`
 	XLegacyExcludeModulePaths       []string `mapstructure:"excludeModulePaths"`
 	XLegacyIgnoreDirectoryNames     []string `mapstructure:"ignoreDirectoryNames"`
@@ -56,18 +69,11 @@ type Options struct {
 }
 
 func (o *Options) Validate() error {
-	if o.Terraform.Path != "" {
-		path := o.Terraform.Path
-		if !filepath.IsAbs(path) {
-			return fmt.Errorf("Expected absolute path for Terraform binary, got %q", path)
-		}
-		stat, err := os.Stat(path)
-		if err != nil {
-			return fmt.Errorf("Unable to find Terraform binary: %s", err)
-		}
-		if stat.IsDir() {
-			return fmt.Errorf("Expected a Terraform binary, got a directory: %q", path)
-		}
+	if err := validateBinaryPath("Terraform", o.Terraform.Path); err != nil {
+		return err
+	}
+	if err := validateBinaryPath("TFLint", o.Linters.TFLint.Path); err != nil {
+		return err
 	}
 
 	if len(o.Indexing.IgnoreDirectoryNames) > 0 {
@@ -82,6 +88,23 @@ func (o *Options) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+func validateBinaryPath(name string, path string) error {
+	if path == "" {
+		return nil
+	}
+	if !filepath.IsAbs(path) {
+		return fmt.Errorf("Expected absolute path for %s binary, got %q", name, path)
+	}
+	stat, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("Unable to find %s binary: %s", name, err)
+	}
+	if stat.IsDir() {
+		return fmt.Errorf("Expected a %s binary, got a directory: %q", name, path)
+	}
 	return nil
 }
 
