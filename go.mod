@@ -27,7 +27,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/otiai10/copy v1.14.1
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/vektra/mockery/v2 v2.53.6
 	github.com/zclconf/go-cty v1.19.0
 	github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940
@@ -50,7 +50,7 @@ require (
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
 require (
