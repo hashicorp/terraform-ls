@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -131,4 +132,178 @@ func TestDocumentLink_withValidData(t *testing.T) {
 				}
 			]
 		}`)
+}
+
+func TestDocumentLink_withResourceBlocks(t *testing.T) {
+	tmpDir := TempDir(t)
+	InitPluginCache(t, tmpDir.Path())
+	
+	terraformConfig := `provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "example" {
+  name     = "example-resources"
+  location = "West Europe"
+}
+
+resource "aws_instance" "web" {
+  ami           = "ami-0c55b159cbfafe1d0"
+  instance_type = "t2.micro"
+}
+
+data "azurerm_client_config" "current" {}
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+}
+`
+	
+	err := os.WriteFile(filepath.Join(tmpDir.Path(), "main.tf"), []byte(terraformConfig), 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var testSchema tfjson.ProviderSchemas
+	err = json.Unmarshal([]byte(testModuleSchemaOutput), &testSchema)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss, err := state.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	wc := walker.NewWalkerCollector()
+
+	ls := langserver.NewLangServerMock(t, NewMockSession(&MockSessionInput{
+		TerraformCalls: &exec.TerraformMockCalls{
+			PerWorkDir: map[string][]*mock.Call{
+				tmpDir.Path(): {
+					{
+						Method:        "Version",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							version.Must(version.NewVersion("0.12.1")),
+							nil,
+							nil,
+						},
+					},
+					{
+						Method:        "GetExecPath",
+						Repeatability: 1,
+						ReturnArguments: []interface{}{
+							"",
+						},
+					},
+					{
+						Method:        "ProviderSchemas",
+						Repeatability: 1,
+						Arguments: []interface{}{
+							mock.AnythingOfType(""),
+						},
+						ReturnArguments: []interface{}{
+							&testSchema,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		StateStore:      ss,
+		WalkerCollector: wc,
+	}))
+	stop := ls.Start(t)
+	defer stop()
+
+	ls.Call(t, &langserver.CallRequest{
+		Method: "initialize",
+		ReqParams: fmt.Sprintf(`{
+		"capabilities": {},
+		"rootUri": %q,
+		"processId": 12345
+	}`, tmpDir.URI)})
+	waitForWalkerPath(t, ss, wc, tmpDir)
+	ls.Notify(t, &langserver.CallRequest{
+		Method:    "initialized",
+		ReqParams: "{}",
+	})
+	ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/didOpen",
+		ReqParams: fmt.Sprintf(`{
+		"textDocument": {
+			"version": 0,
+			"languageId": "terraform",
+			"text": %q,
+			"uri": "%s/main.tf"
+		}
+	}`, terraformConfig, tmpDir.URI)})
+	waitForAllJobs(t, ss)
+
+	// Test that resource links are included in the response
+	resp := ls.Call(t, &langserver.CallRequest{
+		Method: "textDocument/documentLink",
+		ReqParams: fmt.Sprintf(`{
+			"textDocument": {
+				"uri": "%s/main.tf"
+			}
+		}`, tmpDir.URI)})
+
+	// Parse the response to check that resource links are present
+	var links []struct {
+		Range struct {
+			Start struct {
+				Line      int `json:"line"`
+				Character int `json:"character"`
+			} `json:"start"`
+			End struct {
+				Line      int `json:"line"`
+				Character int `json:"character"`
+			} `json:"end"`
+		} `json:"range"`
+		Target string `json:"target"`
+	}
+	
+	err = json.Unmarshal(resp.Result, &links)
+	if err != nil {
+		t.Fatalf("Failed to parse response: %v", err)
+	}
+	
+	// Check that we have resource and data source links
+	foundAzureResourceLink := false
+	foundAWSResourceLink := false
+	foundAzureDataLink := false
+	foundAWSDataLink := false
+	
+	for _, link := range links {
+		if strings.Contains(link.Target, "azurerm/r/resource_group.html") {
+			foundAzureResourceLink = true
+		}
+		if strings.Contains(link.Target, "aws/r/instance.html") {
+			foundAWSResourceLink = true
+		}
+		if strings.Contains(link.Target, "azurerm/d/client_config.html") {
+			foundAzureDataLink = true
+		}
+		if strings.Contains(link.Target, "aws/d/ami.html") {
+			foundAWSDataLink = true
+		}
+	}
+	
+	if !foundAzureResourceLink {
+		t.Error("Expected to find Azure resource group documentation link")
+	}
+	if !foundAWSResourceLink {
+		t.Error("Expected to find AWS instance documentation link")
+	}
+	if !foundAzureDataLink {
+		t.Error("Expected to find Azure client config data source documentation link")
+	}
+	if !foundAWSDataLink {
+		t.Error("Expected to find AWS AMI data source documentation link")
+	}
 }
