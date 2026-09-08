@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/hcl-lang/lang"
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/terraform-ls/internal/lsp/semtok"
 	"github.com/hashicorp/terraform-ls/internal/protocol"
 	"github.com/hashicorp/terraform-ls/internal/source"
 )
@@ -164,9 +165,62 @@ func TestTokenEncoder_multiLineTokens(t *testing.T) {
 	}
 	data := te.Encode()
 	expectedData := []uint32{
-		1, 2, 24, 9, 0,
+		1, 2, 22, 9, 0,
 		1, 0, 15, 9, 0,
 		1, 0, 11, 9, 0,
+	}
+
+	if diff := cmp.Diff(expectedData, data); diff != "" {
+		t.Fatalf("unexpected encoded data.\nexpected: %#v\ngiven:    %#v",
+			expectedData, data)
+	}
+}
+
+func TestTokenEncoder_multiLineTokensAfterInterpolation(t *testing.T) {
+	bytes := []byte("  ${local.foo}\n  ${local.bar}\n")
+	legend := TokenTypesLegend(serverTokenTypes.AsStrings())
+	stringTokenTypeIdx := legend.Index(semtok.TokenType(lang.TokenString))
+	referenceTokenTypeIdx := legend.Index(semtok.TokenType(lang.TokenReferenceStep))
+
+	te := &TokenEncoder{
+		Lines: source.MakeSourceLines("test.tf", bytes),
+		Tokens: []lang.SemanticToken{
+			{
+				Type: lang.TokenString,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 1, Column: 15, Byte: 14},
+					End:      hcl.Pos{Line: 2, Column: 3, Byte: 17},
+				},
+			},
+			{
+				Type: lang.TokenReferenceStep,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 2, Column: 5, Byte: 19},
+					End:      hcl.Pos{Line: 2, Column: 10, Byte: 24},
+				},
+			},
+			{
+				Type: lang.TokenReferenceStep,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 2, Column: 11, Byte: 25},
+					End:      hcl.Pos{Line: 2, Column: 14, Byte: 28},
+				},
+			},
+		},
+		ClientCaps: protocol.SemanticTokensClientCapabilities{
+			TokenTypes:     serverTokenTypes.AsStrings(),
+			TokenModifiers: serverTokenModifiers.AsStrings(),
+		},
+	}
+
+	data := te.Encode()
+	expectedData := []uint32{
+		1, 0, 2, uint32(stringTokenTypeIdx), 0,
+		0, 4, 5, uint32(referenceTokenTypeIdx), 0,
+		0, 6, 3, uint32(referenceTokenTypeIdx), 0,
 	}
 
 	if diff := cmp.Diff(expectedData, data); diff != "" {
