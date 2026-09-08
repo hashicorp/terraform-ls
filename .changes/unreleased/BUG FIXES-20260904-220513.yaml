@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Stop logging the internal `state not changed` no-op sentinel as an error when loading metadata
+time: 2026-09-04T22:05:13.050158+02:00
+custom:
+    Issue: "2176"
+    Repository: terraform-ls
