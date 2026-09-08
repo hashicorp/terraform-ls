@@ -188,8 +188,9 @@ func (w *Walker) walk(ctx context.Context, dir document.DirHandle) error {
 	}
 
 	w.eventBus.Discover(eventbus.DiscoverEvent{
-		Path:  dir.Path(),
-		Files: files,
+		Context: ctx,
+		Path:    dir.Path(),
+		Files:   files,
 	})
 
 	for _, dirEntry := range dirEntries {

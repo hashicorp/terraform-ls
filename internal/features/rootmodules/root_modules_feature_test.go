@@ -4,11 +4,13 @@
 package rootmodules
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-version"
+	lsctx "github.com/hashicorp/terraform-ls/internal/context"
 	"github.com/hashicorp/terraform-ls/internal/eventbus"
 	"github.com/hashicorp/terraform-ls/internal/filesystem"
 	globalState "github.com/hashicorp/terraform-ls/internal/state"
@@ -120,5 +122,43 @@ func TestRootModulesFeature_TerraformVersion(t *testing.T) {
 				t.Fatalf("version mismatch for %q: %s", tc.path, diff)
 			}
 		})
+	}
+}
+
+func TestRootModulesFeature_DiscoverDidOpen(t *testing.T) {
+	gs, err := globalState.NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	eventBus := eventbus.NewEventBus()
+	fs := filesystem.NewFilesystem(gs.DocumentStore)
+
+	feature, err := NewRootModulesFeature(eventBus, gs, fs, exec.NewMockExecutor(nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rootPath := t.TempDir()
+	ctx := lsctx.WithDocumentContext(context.Background(), lsctx.Document{})
+
+	dir, err := feature.discover(rootPath, []string{".terraform.lock.hcl"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dir == nil {
+		t.Fatalf("expected discover to register root module %q", rootPath)
+	}
+
+	if _, err := feature.didOpen(ctx, *dir); err != nil {
+		t.Fatal(err)
+	}
+
+	ids, err := gs.JobStore.ListIncompleteJobsForDir(*dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) == 0 {
+		t.Fatalf("expected jobs for inited root module %q", rootPath)
 	}
 }
