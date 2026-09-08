@@ -205,6 +205,10 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 		"options.terraform.timeout":                       "",
 		"options.terraform.logFilePath":                   false,
 		"options.validation.earlyValidation":              false,
+		"options.linters.tflint.path":                     false,
+		"options.linters.tflint.configPath":               false,
+		"options.linters.tflint.lintOnSave":               false,
+		"options.linters.tflint.timeout":                  "",
 		"root_uri":                                        "dir",
 		"lsVersion":                                       "",
 	}
@@ -221,6 +225,10 @@ func getTelemetryProperties(out *settings.DecodedOptions) map[string]interface{}
 	properties["options.terraform.timeout"] = out.Options.Terraform.Timeout
 	properties["options.terraform.logFilePath"] = len(out.Options.Terraform.LogFilePath) > 0
 	properties["options.validation.earlyValidation"] = out.Options.Validation.EnableEnhancedValidation
+	properties["options.linters.tflint.path"] = len(out.Options.Linters.TFLint.Path) > 0
+	properties["options.linters.tflint.configPath"] = len(out.Options.Linters.TFLint.ConfigPath) > 0
+	properties["options.linters.tflint.lintOnSave"] = out.Options.Linters.TFLint.LintOnSave
+	properties["options.linters.tflint.timeout"] = out.Options.Linters.TFLint.Timeout
 
 	return properties
 }
