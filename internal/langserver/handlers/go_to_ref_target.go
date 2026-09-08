@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl-lang/reference"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -20,6 +21,9 @@ func (svc *service) GoToDefinition(ctx context.Context, params lsp.TextDocumentP
 
 	targets, err := svc.goToReferenceTarget(ctx, params)
 	if err != nil {
+		if _, ok := err.(*reference.NoOriginFound); ok {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -34,6 +38,9 @@ func (svc *service) GoToDeclaration(ctx context.Context, params lsp.TextDocument
 
 	targets, err := svc.goToReferenceTarget(ctx, params)
 	if err != nil {
+		if _, ok := err.(*reference.NoOriginFound); ok {
+			return nil, nil
+		}
 		return nil, err
 	}
 
