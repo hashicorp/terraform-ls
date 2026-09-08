@@ -4,6 +4,7 @@
 package state
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -649,6 +651,63 @@ func TestJobStore_FinishJob_basic(t *testing.T) {
 	}
 	if diff := cmp.Diff(expectedQueuedIds, queuedIds); diff != "" {
 		t.Fatalf("unexpected queued jobs: %s", diff)
+	}
+}
+
+func TestJobStore_FinishJob_logging(t *testing.T) {
+	testCases := []struct {
+		name        string
+		jobErr      error
+		expectedErr string
+	}{
+		{
+			name:        "successful job",
+			jobErr:      nil,
+			expectedErr: "err = <nil>",
+		},
+		{
+			name:        "failed job",
+			jobErr:      errors.New("job went wrong"),
+			expectedErr: "err = job went wrong",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ss, err := NewStateStore()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			logBuf := &bytes.Buffer{}
+			ss.SetLogger(log.New(logBuf, "", 0))
+
+			ctx := context.Background()
+			ctx = lsctx.WithDocumentContext(ctx, lsctx.Document{})
+			id, err := ss.JobStore.EnqueueJob(ctx, job.Job{
+				Func: func(ctx context.Context) error {
+					return tc.jobErr
+				},
+				Dir:  document.DirHandleFromPath("/test-1"),
+				Type: "test-type",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = ss.JobStore.FinishJob(id, tc.jobErr)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			logged := logBuf.String()
+			if strings.Contains(logged, "%!") {
+				t.Fatalf("log contains a formatting error: %s", logged)
+			}
+			if !strings.Contains(logged, tc.expectedErr) {
+				t.Fatalf("expected log to contain %q, given: %s", tc.expectedErr, logged)
+			}
+		})
 	}
 }
 
