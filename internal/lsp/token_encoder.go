@@ -57,10 +57,22 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 	previousLine := 0
 	previousStartChar := 0
 	if i > 0 {
-		previousLine = te.Tokens[te.lastEncodedTokenIdx].Range.End.Line - 1
-		currentLine := te.Tokens[i].Range.End.Line - 1
+		prevToken := te.Tokens[te.lastEncodedTokenIdx]
+		previousLine = prevToken.Range.End.Line - 1
+		currentLine := token.Range.Start.Line - 1
 		if currentLine == previousLine {
-			previousStartChar = te.Tokens[te.lastEncodedTokenIdx].Range.Start.Column - 1
+			if prevToken.Range.Start.Line != prevToken.Range.End.Line {
+				// The previous token was emitted as multiple rows (see the
+				// multi-line branch below), so the last row we emitted for
+				// it is a continuation line, which always starts at column
+				// 0 - not at the overall token's Start.Column, which is on
+				// an earlier line. Using Start.Column here would produce a
+				// bogus (and potentially negative, i.e. underflowing the
+				// uint32 wire format) deltaStartChar for the next token.
+				previousStartChar = 0
+			} else {
+				previousStartChar = prevToken.Range.Start.Column - 1
+			}
 		}
 	}
 
