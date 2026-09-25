@@ -19,7 +19,9 @@ type TokenEncoder struct {
 
 	// lastEncodedTokenIdx tracks index of the last encoded token
 	// so we can account for any skipped tokens in calculating diff
-	lastEncodedTokenIdx int
+	lastEncodedTokenIdx  int
+	lastEncodedLine      int // actual last emitted line (0-indexed)
+	lastEncodedStartChar int // actual last emitted start char (0-indexed)
 }
 
 func (te *TokenEncoder) Encode() []uint32 {
@@ -54,13 +56,12 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 
 	tokenLineDelta := token.Range.End.Line - token.Range.Start.Line
 
-	previousLine := 0
+	previousLine := te.lastEncodedLine
 	previousStartChar := 0
 	if i > 0 {
-		previousLine = te.Tokens[te.lastEncodedTokenIdx].Range.End.Line - 1
 		currentLine := te.Tokens[i].Range.End.Line - 1
 		if currentLine == previousLine {
-			previousStartChar = te.Tokens[te.lastEncodedTokenIdx].Range.Start.Column - 1
+			previousStartChar = te.lastEncodedStartChar
 		}
 	}
 
@@ -76,6 +77,8 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 			uint32(tokenTypeIdx),
 			uint32(modifierBitMask),
 		}...)
+		te.lastEncodedLine = token.Range.Start.Line - 1
+		te.lastEncodedStartChar = token.Range.Start.Column - 1
 	} else {
 		// Add entry for each line of a multiline token
 		for tokenLine := token.Range.Start.Line - 1; tokenLine <= token.Range.End.Line-1; tokenLine++ {
@@ -103,6 +106,8 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 
 			previousLine = tokenLine
 		}
+		te.lastEncodedLine = token.Range.End.Line - 1
+		te.lastEncodedStartChar = 0
 	}
 
 	te.lastEncodedTokenIdx = i
@@ -156,7 +161,9 @@ func (te *TokenEncoder) resolveTokenType(token lang.SemanticToken) (semtok.Token
 	return "", false
 }
 
-func (te *TokenEncoder) resolveTokenModifiers(tokModifiers []lang.SemanticTokenModifier) semtok.TokenModifiers {
+func (te *TokenEncoder) resolveTokenModifiers(
+	tokModifiers []lang.SemanticTokenModifier,
+) semtok.TokenModifiers {
 	modifiers := make(semtok.TokenModifiers, 0)
 
 	for _, modifier := range tokModifiers {
@@ -180,7 +187,9 @@ func (te *TokenEncoder) resolveTokenModifiers(tokModifiers []lang.SemanticTokenM
 	return modifiers
 }
 
-func (te *TokenEncoder) firstSupportedTokenType(tokenTypes ...semtok.TokenType) (semtok.TokenType, bool) {
+func (te *TokenEncoder) firstSupportedTokenType(
+	tokenTypes ...semtok.TokenType,
+) (semtok.TokenType, bool) {
 	for _, tokenType := range tokenTypes {
 		if te.tokenTypeSupported(string(tokenType)) {
 			return tokenType, true

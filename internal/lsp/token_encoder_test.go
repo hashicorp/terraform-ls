@@ -382,3 +382,76 @@ func TestTokenEncoder_unsupported(t *testing.T) {
 			expectedData, data)
 	}
 }
+
+func TestTokenEncoder_multiLineTokenFollowedBySameEndLineToken(t *testing.T) {
+	// Simulates a heredoc with interpolation in its body:
+	//
+	//   message = <<-EOT
+	//     Some text on first line
+	//     Hello ${var.name} world
+	//   EOT
+	//
+	// hcl-lang produces (simplified):
+	//   1. A multi-line TokenString for the heredoc content before the interpolation
+	//      Start = {Line: 1, Column: 42}  (high column — position on the "message = <<-EOT" line)
+	//      End   = {Line: 3, Column: 11}  (just before ${var.name} on line 3)
+	//   2. A single-line TokenReferenceStep for "var" at {Line: 3, Column: 11}
+	//   3. A single-line TokenReferenceStep for "name" at {Line: 3, Column: 15}
+	//
+	// The bug: when encoding "var" (token 2), the encoder checks:
+	//   previousLine = Tokens[0].Range.End.Line - 1 = 3 - 1 = 2
+	//   currentLine  = Tokens[1].Range.End.Line - 1 = 3 - 1 = 2
+	//   currentLine == previousLine → previousStartChar = Tokens[0].Range.Start.Column - 1 = 41
+	//   deltaStartChar = var.Start.Column - 1 - 41 = 10 - 41 = -31 → uint32 overflow!
+	bytes := []byte(
+		"  message = <<-EOT\n    Some text on first line\n    Hello ${var.name} world\n  EOT\n",
+	)
+	te := &TokenEncoder{
+		Lines: source.MakeSourceLines("test.tf", bytes),
+		Tokens: []lang.SemanticToken{
+			// Multi-line string: starts at high column on line 1, ends on line 3
+			{
+				Type: lang.TokenString,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 1, Column: 42, Byte: 41},
+					End:      hcl.Pos{Line: 3, Column: 11, Byte: 57},
+				},
+			},
+			// "var" reference at line 3, column 11
+			{
+				Type: lang.TokenReferenceStep,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 3, Column: 11, Byte: 57},
+					End:      hcl.Pos{Line: 3, Column: 14, Byte: 60},
+				},
+			},
+			// "name" reference at line 3, column 15
+			{
+				Type: lang.TokenReferenceStep,
+				Range: hcl.Range{
+					Filename: "test.tf",
+					Start:    hcl.Pos{Line: 3, Column: 15, Byte: 61},
+					End:      hcl.Pos{Line: 3, Column: 19, Byte: 65},
+				},
+			},
+		},
+		ClientCaps: protocol.SemanticTokensClientCapabilities{
+			TokenTypes:     serverTokenTypes.AsStrings(),
+			TokenModifiers: serverTokenModifiers.AsStrings(),
+		},
+	}
+	data := te.Encode()
+	// Check for uint32 overflow in any deltaStart or deltaLine value.
+	// Values > 2^31 indicate a negative int was cast to uint32.
+	for i := 0; i < len(data); i += 5 {
+		if data[i] > 1<<31 {
+			t.Fatalf("token at data index %d has overflowed deltaLine: %d", i, data[i])
+		}
+		if data[i+1] > 1<<31 {
+			t.Fatalf("token at data index %d has overflowed deltaStart: %d", i, data[i+1])
+		}
+	}
+	t.Logf("encoded data: %v", data)
+}
