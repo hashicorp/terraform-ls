@@ -17,9 +17,9 @@ type TokenEncoder struct {
 	Tokens     []lang.SemanticToken
 	ClientCaps lsp.SemanticTokensClientCapabilities
 
-	// lastEncodedTokenIdx tracks index of the last encoded token
-	// so we can account for any skipped tokens in calculating diff
-	lastEncodedTokenIdx int
+	lastEncodedLine      int
+	lastEncodedStartChar int
+	hasEncodedToken      bool
 }
 
 func (te *TokenEncoder) Encode() []uint32 {
@@ -54,17 +54,8 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 
 	tokenLineDelta := token.Range.End.Line - token.Range.Start.Line
 
-	previousLine := 0
-	previousStartChar := 0
-	if i > 0 {
-		previousLine = te.Tokens[te.lastEncodedTokenIdx].Range.End.Line - 1
-		currentLine := te.Tokens[i].Range.End.Line - 1
-		if currentLine == previousLine {
-			previousStartChar = te.Tokens[te.lastEncodedTokenIdx].Range.Start.Column - 1
-		}
-	}
-
 	if tokenLineDelta == 0 || false /* te.clientCaps.MultilineTokenSupport */ {
+		previousLine, previousStartChar := te.lastPosition(token.Range.Start.Line - 1)
 		deltaLine := token.Range.Start.Line - 1 - previousLine
 		tokenLength := token.Range.End.Byte - token.Range.Start.Byte
 		deltaStartChar := token.Range.Start.Column - 1 - previousStartChar
@@ -76,22 +67,30 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 			uint32(tokenTypeIdx),
 			uint32(modifierBitMask),
 		}...)
+
+		te.recordPosition(token.Range.Start.Line-1, token.Range.Start.Column-1)
 	} else {
 		// Add entry for each line of a multiline token
 		for tokenLine := token.Range.Start.Line - 1; tokenLine <= token.Range.End.Line-1; tokenLine++ {
-			deltaLine := tokenLine - previousLine
-
-			deltaStartChar := 0
-			if tokenLine == token.Range.Start.Line-1 {
-				deltaStartChar = token.Range.Start.Column - 1 - previousStartChar
-			}
-
+			startChar := 0
 			lineBytes := bytes.TrimRight(te.Lines[tokenLine].Bytes, "\n\r")
 			length := len(lineBytes)
+			if tokenLine == token.Range.Start.Line-1 {
+				startChar = token.Range.Start.Column - 1
+				length -= startChar
+			}
 
 			if tokenLine == token.Range.End.Line-1 {
-				length = token.Range.End.Column - 1
+				length = token.Range.End.Column - 1 - startChar
 			}
+
+			if length <= 0 {
+				continue
+			}
+
+			previousLine, previousStartChar := te.lastPosition(tokenLine)
+			deltaLine := tokenLine - previousLine
+			deltaStartChar := startChar - previousStartChar
 
 			data = append(data, []uint32{
 				uint32(deltaLine),
@@ -101,13 +100,29 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 				uint32(modifierBitMask),
 			}...)
 
-			previousLine = tokenLine
+			te.recordPosition(tokenLine, startChar)
 		}
 	}
 
-	te.lastEncodedTokenIdx = i
-
 	return data
+}
+
+func (te *TokenEncoder) lastPosition(tokenLine int) (int, int) {
+	if !te.hasEncodedToken {
+		return 0, 0
+	}
+
+	if tokenLine == te.lastEncodedLine {
+		return te.lastEncodedLine, te.lastEncodedStartChar
+	}
+
+	return te.lastEncodedLine, 0
+}
+
+func (te *TokenEncoder) recordPosition(line, startChar int) {
+	te.lastEncodedLine = line
+	te.lastEncodedStartChar = startChar
+	te.hasEncodedToken = true
 }
 
 func (te *TokenEncoder) resolveTokenType(token lang.SemanticToken) (semtok.TokenType, bool) {
