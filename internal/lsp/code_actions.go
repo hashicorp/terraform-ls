@@ -5,6 +5,7 @@ package lsp
 
 import (
 	"sort"
+	"strings"
 
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -12,6 +13,7 @@ import (
 const (
 	// SourceFormatAllTerraform is a Terraform specific format code action.
 	SourceFormatAllTerraform = "source.formatAll.terraform"
+	ExtractPropertyToOutput  = "refactor.extract.propToOut"
 )
 
 type CodeActions map[lsp.CodeActionKind]bool
@@ -54,8 +56,10 @@ func (ca CodeActions) Only(only []lsp.CodeActionKind) CodeActions {
 	wanted := make(CodeActions, 0)
 
 	for _, kind := range only {
-		if v, ok := ca[kind]; ok {
-			wanted[kind] = v
+		for n, v := range ca {
+			if strings.HasPrefix(string(n), string(kind)) {
+				wanted[n] = v
+			}
 		}
 	}
 
