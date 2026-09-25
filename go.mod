@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.25.8
+go 1.25.13
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.32.1
@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-memdb v1.3.5
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-slug v0.16.8
-	github.com/hashicorp/go-uuid v1.0.3
+	github.com/hashicorp/go-uuid v1.0.4
 	github.com/hashicorp/go-version v1.9.0
 	github.com/hashicorp/hc-install v0.9.5
 	github.com/hashicorp/hcl-lang v0.0.0-20260717051043-ecfa08c1a13f
