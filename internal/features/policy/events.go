@@ -5,6 +5,7 @@ package policy
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -204,7 +205,7 @@ func (f *PolicyFeature) decodePolicy(ctx context.Context, dir document.DirHandle
 		IgnoreState: ignoreState,
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 			deferIds := make(job.IDs, 0)
-			if jobErr != nil {
+			if jobErr != nil && !errors.Is(jobErr, job.StateNotChangedErr{}) {
 				f.logger.Printf("loading policy metadata returned error: %s", jobErr)
 			}
 

@@ -5,6 +5,7 @@ package search
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -196,7 +197,7 @@ func (f *SearchFeature) decodeSearch(ctx context.Context, dir document.DirHandle
 		Defer: func(ctx context.Context, jobErr error) (job.IDs, error) {
 			deferIds := make(job.IDs, 0)
 
-			if jobErr != nil {
+			if jobErr != nil && !errors.Is(jobErr, job.StateNotChangedErr{}) {
 				f.logger.Printf("loading module metadata returned error: %s", jobErr)
 			}
 
