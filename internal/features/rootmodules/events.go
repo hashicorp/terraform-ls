@@ -18,17 +18,17 @@ import (
 	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
-func (f *RootModulesFeature) discover(path string, files []string) error {
+func (f *RootModulesFeature) discover(path string, files []string) (*document.DirHandle, error) {
 	rawUri := uri.FromPath(path)
 	if uri, ok := datadir.ModuleUriFromDataDir(rawUri); ok {
 		f.logger.Printf("discovered root module in %s", uri)
 		dir := document.DirHandleFromURI(uri)
 		err := f.Store.AddIfNotExists(dir.Path())
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		return nil
+		return &dir, nil
 	}
 
 	for _, file := range files {
@@ -37,14 +37,15 @@ func (f *RootModulesFeature) discover(path string, files []string) error {
 
 			err := f.Store.AddIfNotExists(path)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
-			break
+			dir := document.DirHandleFromPath(path)
+			return &dir, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (f *RootModulesFeature) didOpen(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
