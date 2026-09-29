@@ -398,14 +398,16 @@ func (js *JobStore) WaitForJobs(ctx context.Context, ids ...job.ID) error {
 		for _, id := range ids {
 			ids, err := js.waitForJobId(ctx, id)
 			if err != nil {
-				js.logger.Printf("error waiting for job %q: %s", id, err)
+				if !errors.Is(err, context.Canceled) {
+					js.logger.Printf("error waiting for job %q: %s", id, err)
+				}
 				return
 			}
 			deferredJobIds = append(deferredJobIds, ids...)
 		}
 
 		err := js.WaitForJobs(ctx, deferredJobIds...)
-		if err != nil {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			js.logger.Printf("error waiting for %d deferred jobs: %s", len(deferredJobIds), err)
 		}
 	}()

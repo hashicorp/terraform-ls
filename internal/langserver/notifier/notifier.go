@@ -51,6 +51,9 @@ func (n *Notifier) Start(ctx context.Context) {
 
 			err := n.notify(ctx)
 			if err != nil {
+				if errors.Is(err, context.Canceled) {
+					continue
+				}
 				n.logger.Printf("failed to notify a change batch: %s", err)
 			}
 		}
