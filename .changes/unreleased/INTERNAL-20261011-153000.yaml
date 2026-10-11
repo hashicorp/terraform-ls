@@ -1,0 +1,6 @@
+kind: INTERNAL
+body: 'github/add-copyright-headers: Opt in to fork checkout on actions/checkout v7 so the job runs on pull requests from forks'
+time: 2026-10-11T15:30:00.000000+02:00
+custom:
+    Issue: "2193"
+    Repository: terraform-ls
