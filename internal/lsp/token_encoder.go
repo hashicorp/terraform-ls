@@ -46,12 +46,6 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 
 	data := make([]uint32, 0)
 
-	// Client may not support multiline tokens which would be indicated
-	// via lsp.SemanticTokensCapabilities.MultilineTokenSupport
-	// once it becomes available in gopls LSP structs.
-	//
-	// For now we just safely assume client does *not* support it.
-
 	tokenLineDelta := token.Range.End.Line - token.Range.Start.Line
 
 	previousLine := 0
@@ -60,11 +54,19 @@ func (te *TokenEncoder) encodeTokenOfIndex(i int) []uint32 {
 		previousLine = te.Tokens[te.lastEncodedTokenIdx].Range.End.Line - 1
 		currentLine := te.Tokens[i].Range.End.Line - 1
 		if currentLine == previousLine {
-			previousStartChar = te.Tokens[te.lastEncodedTokenIdx].Range.Start.Column - 1
+			prevToken := te.Tokens[te.lastEncodedTokenIdx]
+			// For multiline tokens, Start.Column is on a different line
+			// than End.Line, so it must not be used as previousStartChar.
+			// The last sub-entry emitted for a multiline token always has
+			// deltaStartChar=0, so previousStartChar stays 0.
+			// see: https://github.com/hashicorp/terraform-ls/issues/2108
+			if prevToken.Range.Start.Line == prevToken.Range.End.Line {
+				previousStartChar = prevToken.Range.Start.Column - 1
+			}
 		}
 	}
 
-	if tokenLineDelta == 0 || false /* te.clientCaps.MultilineTokenSupport */ {
+	if tokenLineDelta == 0 || te.ClientCaps.MultilineTokenSupport {
 		deltaLine := token.Range.Start.Line - 1 - previousLine
 		tokenLength := token.Range.End.Byte - token.Range.Start.Byte
 		deltaStartChar := token.Range.Start.Column - 1 - previousStartChar
