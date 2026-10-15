@@ -55,6 +55,11 @@ func GetTerraformVersion(ctx context.Context, rootStore *state.RootStore, modPat
 	// from "terraform version" accounts for this.
 	// See https://github.com/hashicorp/terraform-ls/issues/24
 	pVersions := providerVersionsFromTfVersion(pv)
+	if v != nil {
+		// The builtin provider is versioned with core and never
+		// appears in the lock file or in "terraform version" output
+		pVersions[tfaddr.NewProvider(tfaddr.BuiltInProviderHost, tfaddr.BuiltInProviderNamespace, "terraform")] = v
+	}
 
 	sErr := rootStore.UpdateTerraformAndProviderVersions(modPath, v, pVersions, err)
 	if sErr != nil {
