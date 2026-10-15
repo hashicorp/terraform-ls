@@ -107,3 +107,21 @@ func TestValidate_relativePath(t *testing.T) {
 		t.Fatal("expected decoding of relative path to result in error")
 	}
 }
+
+func TestValidate_linterOptions(t *testing.T) {
+	out, err := DecodeOptions(map[string]interface{}{
+		"linters": map[string]interface{}{
+			"tflint": map[string]interface{}{
+				"path": "relative/path",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result := out.Options.Validate()
+	if result == nil {
+		t.Fatal("expected decoding of relative path to result in error")
+	}
+}
