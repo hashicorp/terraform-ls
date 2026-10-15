@@ -17,10 +17,10 @@ import (
 )
 
 func (svc *service) DidChangeWatchedFiles(ctx context.Context, params lsp.DidChangeWatchedFilesParams) error {
-	svc.logger.Printf("Received changes %q", len(params.Changes))
+	svc.logger.Printf("Received changes %d", len(params.Changes))
 
 	for _, change := range params.Changes {
-		svc.logger.Printf("Received change event for %q: %s", change.Type, change.URI)
+		svc.logger.Printf("Received change event for %v: %s", change.Type, change.URI)
 		rawURI := string(change.URI)
 
 		// This is necessary because clients may not send delete notifications
