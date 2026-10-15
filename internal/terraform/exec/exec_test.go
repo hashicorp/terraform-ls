@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -66,6 +67,14 @@ func TestExec_cancel(t *testing.T) {
 func newExecutor(t *testing.T) TerraformExecutor {
 	ctx := context.Background()
 	workDir := TempDir(t)
+	if p, err := exec.LookPath("terraform"); err == nil {
+		e, err := NewExecutor(workDir, p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return e
+	}
+
 	installDir := filepath.Join(workDir, "hcinstall")
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		t.Fatal(err)
