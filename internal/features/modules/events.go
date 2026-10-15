@@ -183,6 +183,7 @@ func (f *ModulesFeature) decodeDeclaredModuleCalls(ctx context.Context, dir docu
 	}
 
 	var errs *multierror.Error
+	seenModulePaths := make([]string, 0, len(declared))
 
 	for _, mc := range declared {
 		var mcPath string
@@ -214,6 +215,10 @@ func (f *ModulesFeature) decodeDeclaredModuleCalls(ctx context.Context, dir docu
 			multierror.Append(errs, err)
 			continue
 		}
+		if containsModulePath(seenModulePaths, mcPath) {
+			continue
+		}
+		seenModulePaths = append(seenModulePaths, mcPath)
 
 		mcIgnoreState := ignoreState
 		err = f.Store.Add(mcPath)
@@ -234,6 +239,16 @@ func (f *ModulesFeature) decodeDeclaredModuleCalls(ctx context.Context, dir docu
 	}
 
 	return jobIds, errs.ErrorOrNil()
+}
+
+func containsModulePath(paths []string, path string) bool {
+	for _, existingPath := range paths {
+		if existingPath == path {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (f *ModulesFeature) decodeModule(ctx context.Context, dir document.DirHandle, ignoreState bool, isFirstLevel bool) (job.IDs, error) {
