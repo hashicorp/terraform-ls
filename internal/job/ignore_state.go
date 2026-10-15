@@ -31,3 +31,8 @@ type StateNotChangedErr struct {
 func (e StateNotChangedErr) Error() string {
 	return fmt.Sprintf("%s: state not changed", e.Dir.URI)
 }
+
+func (e StateNotChangedErr) Is(target error) bool {
+	_, ok := target.(StateNotChangedErr)
+	return ok
+}

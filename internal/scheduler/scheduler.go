@@ -95,7 +95,7 @@ func (s *Scheduler) eval(ctx context.Context) {
 		jobErr := nextJob.Func(ctx)
 
 		if jobErr != nil {
-			if errors.Is(jobErr, job.StateNotChangedErr{Dir: nextJob.Dir}) {
+			if errors.Is(jobErr, job.StateNotChangedErr{}) {
 				span.SetStatus(codes.Ok, "state not changed")
 			} else {
 				span.RecordError(jobErr)
