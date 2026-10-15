@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-ls
 
-go 1.25.13
+go 1.26.8
 
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.32.1
@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.25.3
 	github.com/hashicorp/terraform-json v0.28.0
 	github.com/hashicorp/terraform-registry-address v0.5.0
-	github.com/hashicorp/terraform-schema v0.0.0-20260723071307-7ff79f07f1f9
+	github.com/hashicorp/terraform-schema v0.0.0-20261015055638-2a75ad28d592
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.5
