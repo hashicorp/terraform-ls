@@ -1,0 +1,6 @@
+kind: BUGFIX
+body: Avoid scheduling duplicate indexing pipelines for shared local modules
+time: 2026-09-25T15:00:00-04:00
+custom:
+    Issue: "2179"
+    Repository: terraform-ls
