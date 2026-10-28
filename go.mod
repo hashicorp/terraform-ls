@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.25.3
 	github.com/hashicorp/terraform-json v0.29.0
 	github.com/hashicorp/terraform-registry-address v0.5.0
-	github.com/hashicorp/terraform-schema v0.0.0-20261015055638-2a75ad28d592
+	github.com/hashicorp/terraform-schema v0.0.0-20261028060105-fc59ccdf4f6f
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/mh-cbon/go-fmt-fail v0.0.0-20160815164508-67765b3fbcb5
 	github.com/mitchellh/cli v1.1.5
@@ -105,7 +105,7 @@ require (
 	go.opentelemetry.io/otel v1.47.0
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
