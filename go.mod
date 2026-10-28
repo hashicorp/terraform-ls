@@ -5,7 +5,7 @@ go 1.26.8
 require (
 	github.com/algolia/algoliasearch-client-go/v3 v3.32.1
 	github.com/apparentlymart/go-textseg v1.0.0
-	github.com/creachadair/jrpc2 v1.3.5
+	github.com/creachadair/jrpc2 v1.3.6
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-memdb v1.3.5
@@ -65,7 +65,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/chigopher/pathlib v1.0.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
-	github.com/creachadair/mds v0.26.1 // indirect
+	github.com/creachadair/mds v0.31.0 // indirect
 	github.com/djherbis/buffer v1.2.0 // indirect
 	github.com/djherbis/nio/v3 v3.0.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
