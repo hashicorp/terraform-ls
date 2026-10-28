@@ -128,8 +128,10 @@ github.com/hashicorp/terraform-json v0.29.0 h1:ZggVL0YzGj5zdbafX4+rDcROM7EvVU0eX
 github.com/hashicorp/terraform-json v0.29.0/go.mod h1:PJIRf+Yzu5iLb52c/xYp1tUOL4jzMzfIAB5gvWWKIWE=
 github.com/hashicorp/terraform-registry-address v0.5.0 h1:FAlhWOLFgMvo/4f5DPhCTwRYfHYdF1DjiOtgxfGr4p0=
 github.com/hashicorp/terraform-registry-address v0.5.0/go.mod h1:wOJYCN60i/gSQGPCcGdamatjxn65EZBMFVt7c/Suzis=
-github.com/hashicorp/terraform-schema v0.0.0-20261015055638-2a75ad28d592 h1:EPgGVod8q5WcpKalsetiu3cnSjiRrZmKaABv9q7GMUs=
-github.com/hashicorp/terraform-schema v0.0.0-20261015055638-2a75ad28d592/go.mod h1:Ev2kniUmmP2eBlbtKoirGdpbnYU0g/okY7ExgKW0fCM=
+github.com/hashicorp/terraform-schema v0.0.0-20261028055228-840708b51d48 h1:fb7a6Qt1NcDo6NIdYP4FKNhZKjh5FEmMKRUzn18oe/A=
+github.com/hashicorp/terraform-schema v0.0.0-20261028055228-840708b51d48/go.mod h1:1MqlKGoj8bLVQ0w+H9tkqdDy9xc7K1em7skkGGWO1NY=
+github.com/hashicorp/terraform-schema v0.0.0-20261028060105-fc59ccdf4f6f h1:3BKimNG+kyOb3qOUSQ5VlgBvvviW2hlu9DHdiwlX9DI=
+github.com/hashicorp/terraform-schema v0.0.0-20261028060105-fc59ccdf4f6f/go.mod h1:1MqlKGoj8bLVQ0w+H9tkqdDy9xc7K1em7skkGGWO1NY=
 github.com/hashicorp/terraform-svchost v0.2.1 h1:ubvrTFw3Q7CsoEaX7V06PtCTKG3wu7GyyobAoN4eF3Q=
 github.com/hashicorp/terraform-svchost v0.2.1/go.mod h1:zDMheBLvNzu7Q6o9TBvPqiZToJcSuCLXjAXxBslSky4=
 github.com/hexops/autogold v1.3.1 h1:YgxF9OHWbEIUjhDbpnLhgVsjUDsiHDTyDfy2lrfdlzo=
@@ -311,8 +313,8 @@ golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLL
 golang.org/x/net v0.0.0-20210226172049-e18ecbb05110/go.mod h1:m0MpNAwzfU5UDzcl9v0D8zg8gWTRqZa9RBIspLL5mdg=
 golang.org/x/net v0.0.0-20220722155237-a158d28d115b/go.mod h1:XRhObCWvk6IyKnWLug+ECip1KBveYUHfp+8e9klMJ9c=
 golang.org/x/net v0.2.0/go.mod h1:KqCZLdyyvdV855qA2rE3GC2aiw5xGR5TEjj8smXukLY=
-golang.org/x/net v0.61.0 h1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=
-golang.org/x/net v0.61.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
+golang.org/x/net v0.62.0 h1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=
+golang.org/x/net v0.62.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.24.0 h1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=

@@ -1,0 +1,6 @@
+kind: ENHANCEMENTS
+body: Upgraded Terraform Policy syntax compatibility to v0.5.x
+time: 2026-10-27T11:23:01.773263+05:30
+custom:
+    Issue: "2202"
+    Repository: terraform-ls

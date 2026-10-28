@@ -41,7 +41,7 @@ func builtinReferences(record *state.PolicyRecord) reference.Targets {
 }
 
 func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
-	return reference.Targets{
+	targets := reference.Targets{
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "attrs"},
@@ -78,7 +78,7 @@ func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			TargetableFromRangePtr: rng.Ptr(),
 			ScopeId:                resourcePolicyScopeId,
 			Type:                   cty.String,
-			Description:            lang.Markdown("The operation being performed (create / update / delete)"),
+			Description:            lang.Markdown("The operation being performed: `create`, `update`, `delete` or `no-op`"),
 		},
 		{
 			LocalAddr: lang.Address{
@@ -101,10 +101,12 @@ func referenceResourcePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			Description:            lang.Markdown("The resource type, this is the first label of the matching resource block"),
 		},
 	}
+
+	return append(targets, tfeMetaTargets(rng, resourcePolicyScopeId)...)
 }
 
 func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
-	return reference.Targets{
+	targets := reference.Targets{
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "attrs"},
@@ -175,10 +177,12 @@ func referenceProviderPolicyStaticTargets(rng hcl.Range) reference.Targets {
 			Description:            lang.Markdown("The official, short name of the provider. This is the simple identifier used to declare a provider block or resource type"),
 		},
 	}
+
+	return append(targets, tfeMetaTargets(rng, providerPolicyScopeId)...)
 }
 
 func referenceModulePolicyStaticTargets(rng hcl.Range) reference.Targets {
-	return reference.Targets{
+	targets := reference.Targets{
 		{
 			LocalAddr: lang.Address{
 				lang.RootStep{Name: "attrs"},
@@ -218,6 +222,69 @@ func referenceModulePolicyStaticTargets(rng hcl.Range) reference.Targets {
 			ScopeId:                modulePolicyScopeId,
 			Type:                   cty.String,
 			Description:            lang.Markdown("The logical `address` of the module within the configuration"),
+		},
+	}
+
+	return append(targets, tfeMetaTargets(rng, modulePolicyScopeId)...)
+}
+
+func tfeMetaTargets(rng hcl.Range, scopeId lang.ScopeId) reference.Targets {
+	return reference.Targets{
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "tfe_stack"},
+				lang.AttrStep{Name: "stack_name"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                scopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The stack name for Terraform Stacks"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "tfe_stack"},
+				lang.AttrStep{Name: "deployment_name"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                scopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The deployment name for Terraform Stacks"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "tfe_stack"},
+				lang.AttrStep{Name: "deployment_group"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                scopeId,
+			Type:                   cty.String,
+			Description:            lang.Markdown("The deployment group for Terraform Stacks"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "tfe_workspace"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                scopeId,
+			Type: cty.Object(map[string]cty.Type{
+				"tags": cty.Map(cty.String),
+			}),
+			Description: lang.Markdown("Terraform workspace the policy set is evaluating for"),
+		},
+		{
+			LocalAddr: lang.Address{
+				lang.RootStep{Name: "meta"},
+				lang.AttrStep{Name: "tfe_workspace"},
+				lang.AttrStep{Name: "tags"},
+			},
+			TargetableFromRangePtr: rng.Ptr(),
+			ScopeId:                scopeId,
+			Type:                   cty.DynamicPseudoType,
+			Description:            lang.Markdown("Tags for the current workspace"),
 		},
 	}
 }
