@@ -1,6 +1,0 @@
-kind: INTERNAL
-body: 'Bumped: go version 1.26.8'
-time: 2026-10-15T11:34:41.788238+05:30
-custom:
-    Issue: "2197"
-    Repository: terraform-ls
