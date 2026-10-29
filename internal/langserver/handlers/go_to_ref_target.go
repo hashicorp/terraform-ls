@@ -5,9 +5,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/hashicorp/hcl-lang/decoder"
 	"github.com/hashicorp/hcl-lang/lang"
+	"github.com/hashicorp/hcl-lang/reference"
 	ilsp "github.com/hashicorp/terraform-ls/internal/lsp"
 	lsp "github.com/hashicorp/terraform-ls/internal/protocol"
 )
@@ -63,5 +65,14 @@ func (svc *service) goToReferenceTarget(ctx context.Context, params lsp.TextDocu
 		LanguageID: doc.LanguageID,
 	}
 
-	return svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename, pos)
+	targets, err := svc.decoder.ReferenceTargetsForOriginAtPos(path, doc.Filename, pos)
+	if err != nil {
+		var noOrigin *reference.NoOriginFound
+		if errors.As(err, &noOrigin) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return targets, nil
 }
