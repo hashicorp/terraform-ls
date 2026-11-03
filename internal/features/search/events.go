@@ -57,7 +57,7 @@ func (f *SearchFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, err
 	}
 
-	decodeIds, err := f.decodeSearch(ctx, dir, false, true)
+	decodeIds, err := f.decodeSearch(ctx, dir, f.parsedFilesChanged(path), true)
 	if err != nil {
 		return ids, err
 	}

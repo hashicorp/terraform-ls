@@ -58,7 +58,7 @@ func (f *TestsFeature) didOpen(ctx context.Context, dir document.DirHandle, lang
 		return ids, err
 	}
 
-	decodeIds, err := f.decodeTest(ctx, dir, false, true)
+	decodeIds, err := f.decodeTest(ctx, dir, f.parsedFilesChanged(path), true)
 	if err != nil {
 		return ids, err
 	}

@@ -73,7 +73,7 @@ func (f *StacksFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 	}
 	ids = append(ids, tfVersion)
 
-	decodeIds, err := f.decodeStack(ctx, dir, false, true)
+	decodeIds, err := f.decodeStack(ctx, dir, f.parsedFilesChanged(path), true)
 	if err != nil {
 		return ids, err
 	}

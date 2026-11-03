@@ -58,7 +58,7 @@ func (f *PolicyFeature) didOpen(ctx context.Context, dir document.DirHandle, lan
 		return ids, nil
 	}
 
-	return f.decodePolicy(ctx, dir, false, true)
+	return f.decodePolicy(ctx, dir, f.parsedFilesChanged(path), true)
 }
 
 func (f *PolicyFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {

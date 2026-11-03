@@ -56,7 +56,7 @@ func (f *VariablesFeature) didOpen(ctx context.Context, dir document.DirHandle, 
 		return ids, nil
 	}
 
-	return f.decodeVariable(ctx, dir, false)
+	return f.decodeVariable(ctx, dir, f.parsedFilesChanged(path))
 }
 
 func (f *VariablesFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {

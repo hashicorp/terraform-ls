@@ -1,0 +1,6 @@
+kind: BUG FIXES
+body: Re-index a directory when a document is opened and the directory's files no longer match what was indexed, so references no longer point at old content after a file changes on disk or is reloaded by the client
+time: 2026-11-02T22:38:41.000000-06:00
+custom:
+    Issue: "2205"
+    Repository: terraform-ls
