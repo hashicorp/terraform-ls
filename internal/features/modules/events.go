@@ -64,7 +64,7 @@ func (f *ModulesFeature) didOpen(ctx context.Context, dir document.DirHandle, la
 		return ids, nil
 	}
 
-	return f.decodeModule(ctx, dir, false, true)
+	return f.decodeModule(ctx, dir, f.parsedFilesChanged(path), true)
 }
 
 func (f *ModulesFeature) didChange(ctx context.Context, dir document.DirHandle) (job.IDs, error) {
