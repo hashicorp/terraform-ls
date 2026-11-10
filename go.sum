@@ -128,8 +128,6 @@ github.com/hashicorp/terraform-json v0.29.0 h1:ZggVL0YzGj5zdbafX4+rDcROM7EvVU0eX
 github.com/hashicorp/terraform-json v0.29.0/go.mod h1:PJIRf+Yzu5iLb52c/xYp1tUOL4jzMzfIAB5gvWWKIWE=
 github.com/hashicorp/terraform-registry-address v0.5.0 h1:FAlhWOLFgMvo/4f5DPhCTwRYfHYdF1DjiOtgxfGr4p0=
 github.com/hashicorp/terraform-registry-address v0.5.0/go.mod h1:wOJYCN60i/gSQGPCcGdamatjxn65EZBMFVt7c/Suzis=
-github.com/hashicorp/terraform-schema v0.0.0-20261028055228-840708b51d48 h1:fb7a6Qt1NcDo6NIdYP4FKNhZKjh5FEmMKRUzn18oe/A=
-github.com/hashicorp/terraform-schema v0.0.0-20261028055228-840708b51d48/go.mod h1:1MqlKGoj8bLVQ0w+H9tkqdDy9xc7K1em7skkGGWO1NY=
 github.com/hashicorp/terraform-schema v0.0.0-20261028060105-fc59ccdf4f6f h1:3BKimNG+kyOb3qOUSQ5VlgBvvviW2hlu9DHdiwlX9DI=
 github.com/hashicorp/terraform-schema v0.0.0-20261028060105-fc59ccdf4f6f/go.mod h1:1MqlKGoj8bLVQ0w+H9tkqdDy9xc7K1em7skkGGWO1NY=
 github.com/hashicorp/terraform-svchost v0.2.1 h1:ubvrTFw3Q7CsoEaX7V06PtCTKG3wu7GyyobAoN4eF3Q=
@@ -269,8 +267,8 @@ github.com/vektra/mockery/v2 v2.53.8/go.mod h1:MUc05xv+h/jtny5E3RrYgVwGmCuD+P2T/
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/zclconf/go-cty v1.19.0 h1:IV8WdqYZc2c5rLX9bEoLNXKojBAp0MZPBHMIrCoa/s4=
-github.com/zclconf/go-cty v1.19.0/go.mod h1:12W89jGn3JCOIQi7infWr9m80rOkb5RNYJqXMZcN4c8=
+github.com/zclconf/go-cty v1.20.0 h1:V2Mh9pu2xWPATCY7US3LnGBNSq/AAZDsqQZmmOAV7DI=
+github.com/zclconf/go-cty v1.20.0/go.mod h1:12W89jGn3JCOIQi7infWr9m80rOkb5RNYJqXMZcN4c8=
 github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940 h1:4r45xpDWB6ZMSMNJFMOjqrGHynW3DIBuR2H9j0ug+Mo=
 github.com/zclconf/go-cty-debug v0.0.0-20240509010212-0d6042c53940/go.mod h1:CmBdvvj3nqzfzJ6nTCIwDTPZ56aVGvDrmztiO5g3qrM=
 go.bobheadxi.dev/gobenchdata v1.3.1 h1:3Pts2nPUZdgFSU63nWzvfs2xRbK8WVSNeJ2H9e/Ypew=
