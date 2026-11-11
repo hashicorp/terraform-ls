@@ -35,10 +35,51 @@ func TestHandleFromURI(t *testing.T) {
 				Filename: "config.tf",
 			},
 		},
+		{
+			RawURI: "file:///random/path/to/dev%23local.tfvars",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "dev#local.tfvars",
+			},
+		},
+		{
+			RawURI: "file:///random/path/to/dev#local.tfvars",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "dev#local.tfvars",
+			},
+		},
+		{
+			RawURI: "file:///random/path/to/my%20config.tf",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "my config.tf",
+			},
+		},
+		{
+			RawURI: "file:///random/path/to/100%25.tf",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "100%.tf",
+			},
+		},
+		{
+			RawURI: "file:///random/path/to/a%2Bb.tf",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "a+b.tf",
+			},
+		},
+		{
+			RawURI: "file:///random/path/to/h%C3%A1zik.tf",
+			ExpectedHandle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "házik.tf",
+			},
+		},
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+	for i, tc := range testCases {		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			h := HandleFromURI(tc.RawURI)
 			if h != tc.ExpectedHandle {
 				t.Fatalf("expected handle: %#v, given: %#v", tc.ExpectedHandle, h)
@@ -148,10 +189,37 @@ func TestHandle_FullURI(t *testing.T) {
 			},
 			ExpectedURI: "file:///random/path/to/config.tf",
 		},
+		{
+			Handle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "dev#local.tfvars",
+			},
+			ExpectedURI: "file:///random/path/to/dev%23local.tfvars",
+		},
+		{
+			Handle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "my config.tf",
+			},
+			ExpectedURI: "file:///random/path/to/my%20config.tf",
+		},
+		{
+			Handle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "100%.tf",
+			},
+			ExpectedURI: "file:///random/path/to/100%25.tf",
+		},
+		{
+			Handle: Handle{
+				Dir:      DirHandle{URI: "file:///random/path/to"},
+				Filename: "házik.tf",
+			},
+			ExpectedURI: "file:///random/path/to/h%C3%A1zik.tf",
+		},
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+	for i, tc := range testCases {		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			if tc.ExpectedURI != tc.Handle.FullURI() {
 				t.Fatalf("expected URI: %#v, given: %#v", tc.ExpectedURI, tc.Handle.FullURI())
 			}
@@ -175,19 +243,31 @@ func TestHandle_FullPath(t *testing.T) {
 				},
 				ExpectedPath: `C:\random\path\to\config.tf`,
 			},
+			{
+				Handle: Handle{
+					Dir:      DirHandle{URI: "file:///C:/random/path/to"},
+					Filename: "dev#local.tfvars",
+				},
+				ExpectedPath: `C:\random\path\to\dev#local.tfvars`,
+			},
 		}
 	} else {
-		testCases = []testCase{
-			{
+		testCases = []testCase{			{
 				Handle: Handle{
 					Dir:      DirHandle{URI: "file:///random/path/to"},
 					Filename: "config.tf",
 				},
 				ExpectedPath: "/random/path/to/config.tf",
 			},
+			{
+				Handle: Handle{
+					Dir:      DirHandle{URI: "file:///random/path/to"},
+					Filename: "dev#local.tfvars",
+				},
+				ExpectedPath: "/random/path/to/dev#local.tfvars",
+			},
 		}
 	}
-
 	for i, tc := range testCases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			if tc.ExpectedPath != tc.Handle.FullPath() {

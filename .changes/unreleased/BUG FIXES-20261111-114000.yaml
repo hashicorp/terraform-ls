@@ -1,0 +1,7 @@
+kind: BUG FIXES
+body: Fix completion and other features for files with URI-escaped characters (such
+  as `#`) in their name
+time: 2026-11-11T11:40:00.000000000+00:00
+custom:
+    Issue: "2210"
+    Repository: terraform-ls
