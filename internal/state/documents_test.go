@@ -4,6 +4,7 @@
 package state
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -117,6 +118,29 @@ func TestDocumentStore_GetDocument_basic(t *testing.T) {
 	}
 	if diff := cmp.Diff(expectedDocument, doc); diff != "" {
 		t.Fatalf("File doesn't match: %s", diff)
+	}
+}
+
+func TestDocumentStore_GetDocument_escapedURI(t *testing.T) {
+	s, err := NewStateStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	uriHandle := document.HandleFromURI("file:///dir/dev%23local.tfvars")
+	err = s.DocumentStore.OpenDocument(uriHandle, "terraform-vars", 0, []byte("foo = 1\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pathHandle := document.HandleFromPath(filepath.Join("/dir", "dev#local.tfvars"))
+	doc, err := s.DocumentStore.GetDocument(pathHandle)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if doc.Filename != "dev#local.tfvars" {
+		t.Fatalf("expected filename: %q, given: %q", "dev#local.tfvars", doc.Filename)
 	}
 }
 

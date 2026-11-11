@@ -5,10 +5,13 @@ package document
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/hashicorp/terraform-ls/internal/uri"
 )
 
 // Handle represents a document location
@@ -26,8 +29,15 @@ type Handle struct {
 // It is however outside the scope of the function to verify
 // this is actually the case or whether the file exists.
 func HandleFromURI(docUri string) Handle {
-	filename := path.Base(docUri)
-	dirUri := strings.TrimSuffix(docUri, "/"+filename)
+	docUri = uri.MustParseURI(docUri)
+
+	escapedFilename := path.Base(docUri)
+	dirUri := strings.TrimSuffix(docUri, "/"+escapedFilename)
+
+	filename, err := url.PathUnescape(escapedFilename)
+	if err != nil {
+		filename = escapedFilename
+	}
 
 	return Handle{
 		Dir:      DirHandleFromURI(dirUri),
@@ -55,5 +65,10 @@ func (h Handle) FullPath() string {
 }
 
 func (h Handle) FullURI() string {
-	return h.Dir.URI + "/" + h.Filename
+	return h.Dir.URI + "/" + escapeFilename(h.Filename)
+}
+
+func escapeFilename(filename string) string {
+	u := &url.URL{Path: filename}
+	return u.EscapedPath()
 }
